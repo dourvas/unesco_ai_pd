@@ -1,0 +1,459 @@
+{% if current_tab == 'activity' %}
+
+<!-- ============================================================ -->
+<!-- M9 TAB3: ACTIVITY — AI-ENHANCED LESSON DESIGN               -->
+<!-- Challenge 1: Backward Design Sorter                          -->
+<!-- Challenge 2: UDL Profile Matcher                             -->
+<!-- Challenge 3: Lesson Design Decisions (subject-specific)      -->
+<!-- UNESCO Aspect 4: AI Pedagogy | Level: Deepen                 -->
+<!-- ============================================================ -->
+
+<h2 class="card-title text-2xl mb-2">🎯 Designing with AI — Three Challenges</h2>
+<p class="text-gray-600 mb-6">Three challenges that move from understanding backward design to differentiating for real learner profiles — and applying both to a lesson in your own subject.</p>
+
+<!-- Progress tracker -->
+<div class="flex gap-2 mb-8">
+  <div id="progress-c1" class="flex-1 rounded-full h-2 {% if activity.challenge1_completed %}bg-emerald-500{% else %}bg-base-300{% endif %}"></div>
+  <div id="progress-c2" class="flex-1 rounded-full h-2 {% if activity.challenge2_completed %}bg-emerald-500{% else %}bg-base-300{% endif %}"></div>
+  <div id="progress-c3" class="flex-1 rounded-full h-2 {% if activity.challenge3_completed %}bg-emerald-500{% else %}bg-base-300{% endif %}"></div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- CHALLENGE 1: BACKWARD DESIGN SORTER                          -->
+<!-- ============================================================ -->
+<div id="challenge1-section" class="card bg-base-200 border-2 {% if activity.challenge1_completed %}border-emerald-400{% else %}border-base-300{% endif %} mb-6">
+  <div class="card-body">
+
+    <div class="flex items-center gap-3 mb-2">
+      <div class="w-10 h-10 rounded-full bg-indigo-600 text-white flex items-center justify-center font-bold text-lg flex-shrink-0">1</div>
+      <div>
+        <h3 class="card-title text-lg">Backward Design Sorter</h3>
+        <p class="text-xs text-gray-500">Read each element · Assign it to the right stage · ~15 minutes</p>
+      </div>
+      {% if activity.challenge1_completed %}
+      <span class="badge badge-success ml-auto">✓ Complete</span>
+      {% endif %}
+    </div>
+
+    <p class="text-sm mb-4">Ten lesson planning elements are listed below. Some belong to Stage 1, Stage 2, or Stage 3 of backward design. Others are the forward planning trap — they don't belong in backward design at all. Assign each element to the right category.</p>
+
+    <div class="alert alert-info py-2 mb-4 text-sm">
+      <p><strong>Reminder:</strong> Stage 1 = desired outcome → Stage 2 = assessment evidence → Stage 3 = learning experiences. AI enters at Stage 3 only.</p>
+    </div>
+
+    {% if not activity.challenge1_completed %}
+
+    <form id="challenge1-form" class="space-y-3">
+
+      {% for el in c1_elements %}
+      <div class="card bg-white border border-indigo-100 p-4">
+        <p class="text-sm font-medium mb-3">{{ forloop.counter }}. {{ el.text }}</p>
+        <div class="flex flex-wrap gap-2">
+          {% for stage in c1_stages %}
+          <label class="flex items-center gap-2 cursor-pointer px-3 py-1.5 rounded-full border border-base-300 hover:border-indigo-400 hover:bg-indigo-50 transition-colors text-xs">
+            <input type="radio" name="el_{{ el.id }}" value="{{ stage.id }}" class="radio radio-xs radio-primary" />
+            <span>{{ stage.label }}</span>
+          </label>
+          {% endfor %}
+        </div>
+        <p class="text-error text-xs mt-1 hidden c1-item-error" data-id="{{ el.id }}">Please assign this element.</p>
+      </div>
+      {% endfor %}
+
+      <p id="c1-global-error" class="text-error text-xs hidden">Please assign all ten elements before submitting.</p>
+
+      <div class="flex justify-end">
+        <button type="button" id="submit-challenge1-btn" class="btn btn-primary btn-sm">
+          Check My Answers →
+        </button>
+      </div>
+
+    </form>
+
+    {% else %}
+
+    <!-- Completed state -->
+    <div class="alert alert-success py-3 mb-4">
+      <p class="text-sm">✓ Completed. You sorted the planning elements across the backward design stages.</p>
+    </div>
+
+    <div class="mt-2">
+      <p class="text-sm font-semibold mb-3">✅ The correct assignments — and why:</p>
+      <div class="space-y-2">
+        {% for el in c1_elements %}
+        <div class="collapse collapse-arrow bg-white border border-base-300">
+          <input type="checkbox" />
+          <div class="collapse-title text-sm font-medium">
+            {{ forloop.counter }}. {{ el.text }}
+            <span class="badge badge-outline badge-sm ml-2">
+              {% if el.correct_stage == 'stage1' %}Stage 1{% elif el.correct_stage == 'stage2' %}Stage 2{% elif el.correct_stage == 'stage3' %}Stage 3{% else %}Not backward design{% endif %}
+            </span>
+          </div>
+          <div class="collapse-content text-sm text-gray-700">{{ el.explanation }}</div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    {% endif %}
+
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- CHALLENGE 2: UDL PROFILE MATCHER                             -->
+<!-- ============================================================ -->
+<div id="challenge2-section" class="card bg-base-200 border-2 {% if activity.challenge2_completed %}border-emerald-400{% elif activity.challenge1_completed %}border-amber-400{% else %}border-base-300 opacity-60{% endif %} mb-6">
+  <div class="card-body">
+
+    <div class="flex items-center gap-3 mb-2">
+      <div class="w-10 h-10 rounded-full {% if activity.challenge1_completed %}bg-amber-500{% else %}bg-base-300{% endif %} text-white flex items-center justify-center font-bold text-lg flex-shrink-0">2</div>
+      <div>
+        <h3 class="card-title text-lg">UDL Profile Matcher</h3>
+        <p class="text-xs text-gray-500">Read the profile · Match principle + support · ~15 minutes</p>
+      </div>
+      {% if activity.challenge2_completed %}
+      <span class="badge badge-success ml-auto">✓ Complete</span>
+      {% endif %}
+    </div>
+
+    {% if not activity.challenge1_completed %}
+    <p class="text-sm text-gray-500 italic">Complete Challenge 1 to unlock this challenge.</p>
+    {% elif not activity.challenge2_completed %}
+
+    <p class="text-sm mb-2">Five learner descriptions. For each one, identify the UDL principle that applies and the most appropriate AI support type. Both must be correct.</p>
+    <p class="text-xs text-gray-500 mb-5">Hint: the barrier type (engagement, representation, expression) determines the principle. The support must address the specific barrier — not just the general category.</p>
+
+    <form id="challenge2-form" class="space-y-4">
+
+      {% for profile in c2_profiles %}
+      <div class="card bg-white border border-amber-200 p-4">
+        <p class="text-xs font-semibold text-amber-700 uppercase tracking-wide mb-2">Learner {{ forloop.counter }}</p>
+        <p class="text-sm mb-4 italic">{{ profile.description }}</p>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <!-- UDL Principle -->
+          <div>
+            <p class="text-xs font-semibold text-gray-600 mb-2">Which UDL principle applies?</p>
+            <div class="space-y-1">
+              {% for principle in c2_principles %}
+              <label class="flex items-start gap-2 cursor-pointer">
+                <input type="radio" name="principle_{{ profile.id }}" value="{{ principle.value }}" class="radio radio-xs radio-warning mt-0.5" />
+                <span class="text-xs">{{ principle.label }}</span>
+              </label>
+              {% endfor %}
+            </div>
+            <p class="text-error text-xs mt-1 hidden c2-principle-error" data-id="{{ profile.id }}">Select a principle.</p>
+          </div>
+
+          <!-- AI Support -->
+          <div>
+            <p class="text-xs font-semibold text-gray-600 mb-2">Which AI support fits best?</p>
+            <div class="space-y-1">
+              {% for support in c2_supports %}
+              <label class="flex items-start gap-2 cursor-pointer">
+                <input type="radio" name="support_{{ profile.id }}" value="{{ support.value }}" class="radio radio-xs radio-warning mt-0.5" />
+                <span class="text-xs">{{ support.label }}</span>
+              </label>
+              {% endfor %}
+            </div>
+            <p class="text-error text-xs mt-1 hidden c2-support-error" data-id="{{ profile.id }}">Select a support type.</p>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+
+      <p id="c2-global-error" class="text-error text-xs hidden">Please complete all five profiles before submitting.</p>
+
+      <div class="flex justify-end">
+        <button type="button" id="submit-challenge2-btn" class="btn btn-primary btn-sm">Check My Answers →</button>
+      </div>
+
+    </form>
+
+    {% else %}
+
+    <!-- Completed state -->
+    <div class="alert alert-success py-3 mb-4">
+      <p class="text-sm">✓ Completed. You matched UDL principles to learner profiles.</p>
+    </div>
+
+    <div class="mt-2">
+      <p class="text-sm font-semibold mb-3">✅ The correct matches — and why:</p>
+      <div class="space-y-2">
+        {% for profile in c2_profiles %}
+        <div class="collapse collapse-arrow bg-white border border-base-300">
+          <input type="checkbox" />
+          <div class="collapse-title text-sm font-medium">Learner {{ forloop.counter }} — {{ profile.description|truncatewords:12 }}</div>
+          <div class="collapse-content text-sm text-gray-700">{{ profile.explanation }}</div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    {% endif %}
+
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- CHALLENGE 3: LESSON DESIGN DECISIONS (subject-specific)      -->
+<!-- ============================================================ -->
+<div id="challenge3-section" class="card bg-base-200 border-2 {% if activity.challenge3_completed %}border-emerald-400{% elif activity.challenge2_completed %}border-teal-400{% else %}border-base-300 opacity-60{% endif %} mb-6">
+  <div class="card-body">
+
+    <div class="flex items-center gap-3 mb-2">
+      <div class="w-10 h-10 rounded-full {% if activity.challenge2_completed %}bg-teal-600{% else %}bg-base-300{% endif %} text-white flex items-center justify-center font-bold text-lg flex-shrink-0">3</div>
+      <div>
+        <h3 class="card-title text-lg">Lesson Design Decisions</h3>
+        <p class="text-xs text-gray-500">Five decisions · Your subject · ~20 minutes</p>
+      </div>
+      {% if activity.challenge3_completed %}
+      <span class="badge badge-success ml-auto">✓ Complete</span>
+      {% endif %}
+    </div>
+
+    {% if not activity.challenge2_completed %}
+    <p class="text-sm text-gray-500 italic">Complete Challenge 2 to unlock this challenge.</p>
+    {% elif not activity.challenge3_completed %}
+
+    <!-- Subject-specific scenario -->
+    <div class="card bg-white border border-teal-200 mb-5">
+      <div class="card-body py-4">
+        <p class="text-xs font-semibold text-teal-700 uppercase tracking-wide mb-1">📋 Your Lesson Scenario — {{ subject|title }}</p>
+        <p class="text-sm font-semibold mb-1">{{ c3_scenario.topic }}</p>
+        <p class="text-sm text-gray-600">{{ c3_scenario.context }}</p>
+      </div>
+    </div>
+
+    <p class="text-sm mb-5">Five design decisions for this lesson. For each one, select the approach that best reflects backward design, UDL, and the differentiation principles from this module.</p>
+
+    <form id="challenge3-form" class="space-y-4">
+
+      {% for decision in c3_scenario.decisions %}
+      <div class="card bg-white border border-teal-100 p-4">
+        <p class="text-sm font-semibold text-teal-800 mb-3">{{ decision.question }}</p>
+        <div class="space-y-2">
+          {% for opt in decision.options %}
+          <label class="flex items-start gap-3 cursor-pointer p-3 rounded-lg border border-base-300 hover:border-teal-300 hover:bg-teal-50 transition-colors">
+            <input type="radio" name="d_{{ decision.id }}" value="{{ opt.value }}" class="radio radio-sm radio-success mt-0.5" />
+            <div>
+              <span class="text-xs font-bold text-gray-500 mr-1">{{ opt.value }}.</span>
+              <span class="text-sm">{{ opt.text }}</span>
+            </div>
+          </label>
+          {% endfor %}
+        </div>
+        <p class="text-error text-xs mt-1 hidden c3-decision-error" data-id="{{ decision.id }}">Please select an option.</p>
+      </div>
+      {% endfor %}
+
+      <p id="c3-global-error" class="text-error text-xs hidden">Please answer all five decisions before submitting.</p>
+
+      <div class="flex justify-end">
+        <button type="button" id="submit-challenge3-btn" class="btn btn-primary btn-sm">See My Results →</button>
+      </div>
+
+    </form>
+
+    {% else %}
+
+    <!-- Completed state with reveal -->
+    <div class="alert alert-success py-3 mb-4">
+      <p class="text-sm">✓ Completed. Your lesson design decisions are below.</p>
+    </div>
+
+    <div class="mt-2">
+      <p class="text-sm font-semibold mb-3">💡 Rationale for each decision:</p>
+      <div class="space-y-2">
+        {% for decision in c3_scenario.decisions %}
+        <div class="collapse collapse-arrow bg-white border border-base-300">
+          <input type="checkbox" />
+          <div class="collapse-title text-sm font-medium">{{ decision.question }}</div>
+          <div class="collapse-content text-sm text-gray-700">
+            <p class="font-semibold text-teal-700 mb-1">Correct answer: {{ decision.correct }}</p>
+            <p>{{ decision.feedback }}</p>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    {% endif %}
+
+  </div>
+</div>
+
+
+<!-- Mark complete -->
+{% if activity.challenge3_completed and not progress.activity_completed %}
+<div class="card bg-success text-success-content p-5 mb-6">
+  <p class="font-semibold mb-3">🎉 All three challenges complete. You've applied backward design, UDL matching, and subject-specific lesson design decisions.</p>
+  <button id="mark-activity-complete-btn" class="btn btn-sm bg-white text-success border-0">
+    Mark Activity Complete & Continue →
+  </button>
+</div>
+{% elif progress.activity_completed %}
+<div class="alert alert-success">
+  <span>✓ Activity completed</span>
+</div>
+{% endif %}
+
+
+<script>
+// ── Correct answers (for client-side instant feedback) ──────────────────────
+const c1Correct = {
+  {% for el in c1_elements %}
+  '{{ el.id }}': '{{ el.correct_stage }}',
+  {% endfor %}
+};
+
+const c2Correct = {
+  {% for profile in c2_profiles %}
+  '{{ profile.id }}': { principle: '{{ profile.correct_principle }}', support: '{{ profile.correct_support }}' },
+  {% endfor %}
+};
+
+const c3Correct = {
+  {% for decision in c3_scenario.decisions %}
+  '{{ decision.id }}': '{{ decision.correct }}',
+  {% endfor %}
+};
+
+
+// ── CHALLENGE 1 SUBMIT ──────────────────────────────────────────────────────
+document.getElementById('submit-challenge1-btn')?.addEventListener('click', () => {
+  const elements = {{ c1_elements|length }};
+  let allAnswered = true;
+  const answers = {};
+
+  document.querySelectorAll('.c1-item-error').forEach(el => el.classList.add('hidden'));
+
+  {% for el in c1_elements %}
+  const val_{{ el.id }} = document.querySelector('input[name="el_{{ el.id }}"]:checked')?.value;
+  if (!val_{{ el.id }}) {
+    document.querySelector('.c1-item-error[data-id="{{ el.id }}"]').classList.remove('hidden');
+    allAnswered = false;
+  } else {
+    answers['{{ el.id }}'] = val_{{ el.id }};
+  }
+  {% endfor %}
+
+  document.getElementById('c1-global-error').classList.toggle('hidden', allAnswered);
+  if (!allAnswered) return;
+
+  // Score
+  let correct = 0;
+  Object.keys(answers).forEach(id => {
+    if (answers[id] === c1Correct[id]) correct++;
+  });
+
+  fetch(`/modules/modules/{{ module.code }}/tab3/challenge1/`, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}'},
+    body: JSON.stringify({ ...answers, score: correct, total: Object.keys(c1Correct).length })
+  })
+  .then(r => r.json())
+  .then(data => { if (data.success) location.reload(); });
+});
+
+
+// ── CHALLENGE 2 SUBMIT ──────────────────────────────────────────────────────
+document.getElementById('submit-challenge2-btn')?.addEventListener('click', () => {
+  let allAnswered = true;
+  const payload = {};
+
+  document.querySelectorAll('.c2-principle-error, .c2-support-error').forEach(el => el.classList.add('hidden'));
+
+  {% for profile in c2_profiles %}
+  const principle_{{ profile.id }} = document.querySelector('input[name="principle_{{ profile.id }}"]:checked')?.value;
+  const support_{{ profile.id }} = document.querySelector('input[name="support_{{ profile.id }}"]:checked')?.value;
+  if (!principle_{{ profile.id }}) {
+    document.querySelector('.c2-principle-error[data-id="{{ profile.id }}"]').classList.remove('hidden');
+    allAnswered = false;
+  }
+  if (!support_{{ profile.id }}) {
+    document.querySelector('.c2-support-error[data-id="{{ profile.id }}"]').classList.remove('hidden');
+    allAnswered = false;
+  }
+  if (principle_{{ profile.id }}) payload['principle_{{ profile.id }}'] = principle_{{ profile.id }};
+  if (support_{{ profile.id }}) payload['support_{{ profile.id }}'] = support_{{ profile.id }};
+  {% endfor %}
+
+  document.getElementById('c2-global-error').classList.toggle('hidden', allAnswered);
+  if (!allAnswered) return;
+
+  let correct = 0;
+  {% for profile in c2_profiles %}
+  if (payload['principle_{{ profile.id }}'] === c2Correct['{{ profile.id }}'].principle &&
+      payload['support_{{ profile.id }}'] === c2Correct['{{ profile.id }}'].support) {
+    correct++;
+  }
+  {% endfor %}
+  payload['score'] = correct;
+  payload['total'] = {{ c2_profiles|length }};
+
+  fetch(`/modules/modules/{{ module.code }}/tab3/challenge2/`, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}'},
+    body: JSON.stringify(payload)
+  })
+  .then(r => r.json())
+  .then(data => { if (data.success) location.reload(); });
+});
+
+
+// ── CHALLENGE 3 SUBMIT ──────────────────────────────────────────────────────
+document.getElementById('submit-challenge3-btn')?.addEventListener('click', () => {
+  let allAnswered = true;
+  const payload = {};
+
+  document.querySelectorAll('.c3-decision-error').forEach(el => el.classList.add('hidden'));
+
+  {% for decision in c3_scenario.decisions %}
+  const val_{{ decision.id }} = document.querySelector('input[name="d_{{ decision.id }}"]:checked')?.value;
+  if (!val_{{ decision.id }}) {
+    document.querySelector('.c3-decision-error[data-id="{{ decision.id }}"]').classList.remove('hidden');
+    allAnswered = false;
+  } else {
+    payload['{{ decision.id }}'] = val_{{ decision.id }};
+  }
+  {% endfor %}
+
+  document.getElementById('c3-global-error').classList.toggle('hidden', allAnswered);
+  if (!allAnswered) return;
+
+  let correct = 0;
+  Object.keys(c3Correct).forEach(id => {
+    if (payload[id] === c3Correct[id]) correct++;
+  });
+  payload['score'] = correct;
+  payload['total'] = Object.keys(c3Correct).length;
+  payload['subject'] = '{{ subject }}';
+
+  fetch(`/modules/modules/{{ module.code }}/tab3/challenge3/`, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}'},
+    body: JSON.stringify(payload)
+  })
+  .then(r => r.json())
+  .then(data => { if (data.success) location.reload(); });
+});
+
+
+// ── MARK ACTIVITY COMPLETE ──────────────────────────────────────────────────
+document.getElementById('mark-activity-complete-btn')?.addEventListener('click', () => {
+  fetch(`/modules/modules/{{ module.code }}/tab3/reflection/`, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}'},
+    body: JSON.stringify({ tab: 'activity' })
+  })
+  .then(r => r.json())
+  .then(data => { if (data.success) location.reload(); });
+});
+</script>
+
+{% endif %}

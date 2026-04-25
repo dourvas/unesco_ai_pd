@@ -1,0 +1,203 @@
+{% extends 'base.html' %}
+
+{% block title %}Profile Review{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    
+    <!-- Progress Bar -->
+    <div class="mb-8">
+        <div class="flex justify-between items-center mb-2">
+            <span class="text-sm font-medium">Progress</span>
+            <span class="text-sm font-medium">100%</span>
+        </div>
+        <progress class="progress progress-success w-full" value="100" max="100"></progress>
+    </div>
+
+    <!-- Header -->
+    <div class="text-center mb-8">
+        <div class="text-6xl mb-4">✅</div>
+        <h1 class="text-3xl font-bold mb-2">Profile Review</h1>
+        <p class="text-base-content/70">
+            Review your information before completing
+        </p>
+    </div>
+
+    <!-- Summary Card -->
+    <div class="card bg-base-100 shadow-xl mb-6">
+        <div class="card-body">
+            
+            <!-- Section 1: Teaching Context -->
+            <div class="mb-6">
+                <div class="flex justify-between items-center mb-3">
+                    <h2 class="text-xl font-bold flex items-center gap-2">
+                        <span>📚</span> Teaching Context
+                    </h2>
+                    <a href="{% url 'users:onboarding_step1' %}" class="btn btn-ghost btn-sm">
+                        Edit
+                    </a>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="stat bg-base-200 rounded-lg">
+                        <div class="stat-title">Subject Area</div>
+                        <div class="stat-value text-lg">{{ subject_display }}</div>
+                        {% if profile.subject_area_other %}
+                            <div class="stat-desc">{{ profile.subject_area_other }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="stat bg-base-200 rounded-lg">
+                        <div class="stat-title">Grade Level</div>
+                        <div class="stat-value text-lg">{{ grade_display }}</div>
+                    </div>
+                    <div class="stat bg-base-200 rounded-lg">
+                        <div class="stat-title">Teaching Experience</div>
+                        <div class="stat-value text-lg">{{ years_display }}</div>
+                    </div>
+                    <div class="stat bg-base-200 rounded-lg">
+                        <div class="stat-title">Location</div>
+                        <div class="stat-value text-lg">{{ location_display }}</div>
+                    </div>
+                    <div class="stat bg-base-200 rounded-lg">
+                        <div class="stat-title">Class Size</div>
+                        <div class="stat-value text-lg">{{ class_size_display }}</div>
+                    </div>
+                    <div class="stat bg-base-200 rounded-lg">
+                        <div class="stat-title">Completion</div>
+                        <div class="stat-value text-lg text-primary">{{ completion_percentage }}%</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="divider"></div>
+
+            <!-- Section 2: AI Experience -->
+            <div class="mb-6">
+                <div class="flex justify-between items-center mb-3">
+                    <h2 class="text-xl font-bold flex items-center gap-2">
+                        <span>🤖</span> AI Experience
+                    </h2>
+                    <a href="{% url 'users:onboarding_step2' %}" class="btn btn-ghost btn-sm">
+                        Edit
+                    </a>
+                </div>
+                <div class="space-y-4">
+                    <div class="stat bg-base-200 rounded-lg">
+                        <div class="stat-title">Familiarity Level</div>
+                        <div class="stat-value text-lg">{{ ai_exp_display }}</div>
+                    </div>
+                    
+                    {% if profile.ai_tools_used %}
+                    <div>
+                        <p class="font-medium mb-2">Tools you use:</p>
+                        <div class="flex flex-wrap gap-2">
+                            {% for tool in profile.ai_tools_used %}
+                                <span class="badge badge-primary badge-lg">{{ tool }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if profile.ai_teaching_integration %}
+                    <div>
+                        <p class="font-medium mb-2">Use in teaching:</p>
+                        <div class="bg-base-200 p-4 rounded-lg">
+                            <p class="text-sm">{{ profile.ai_teaching_integration }}</p>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="divider"></div>
+
+            <!-- Section 3: Goals & Preferences -->
+            <div class="mb-6">
+                <div class="flex justify-between items-center mb-3">
+                    <h2 class="text-xl font-bold flex items-center gap-2">
+                        <span>🎯</span> Goals & Preferences
+                    </h2>
+                    <a href="{% url 'users:onboarding_step3' %}" class="btn btn-ghost btn-sm">
+                        Edit
+                    </a>
+                </div>
+                <div class="space-y-4">
+                    {% if profile.primary_goals %}
+                    <div>
+                        <p class="font-medium mb-2">Main Goals:</p>
+                        <div class="flex flex-wrap gap-2">
+                            {% for goal in profile.primary_goals %}
+                                <span class="badge badge-accent badge-lg">
+                                    {% if goal == 'understand_ai' %}Understand AI
+                                    {% elif goal == 'practical_tools' %}Practical Tools
+                                    {% elif goal == 'ethical_use' %}Ethical Use
+                                    {% elif goal == 'student_engagement' %}Student Engagement
+                                    {% elif goal == 'differentiation' %}Differentiation
+                                    {% elif goal == 'assessment' %}Assessment
+                                    {% elif goal == 'content_creation' %}Content Creation
+                                    {% elif goal == 'leadership' %}Leadership
+                                    {% else %}{{ goal }}{% endif %}
+                                </span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="stat bg-base-200 rounded-lg">
+                        <div class="stat-title">Communication Style</div>
+                        <div class="stat-value text-lg">{{ comm_style_display }}</div>
+                    </div>
+                    
+                    <div>
+                        <p class="font-medium mb-2">Research Consent:</p>
+                        <div class="flex flex-col gap-2">
+                            <div class="flex items-center gap-2">
+                                {% if profile.research_consent %}
+                                    <span class="badge badge-success">✓</span>
+                                    <span>Consent to use data for research</span>
+                                {% else %}
+                                    <span class="badge badge-ghost">✗</span>
+                                    <span>Do not consent to research use</span>
+                                {% endif %}
+                            </div>
+                            <div class="flex items-center gap-2">
+                                {% if profile.contact_for_research %}
+                                    <span class="badge badge-success">✓</span>
+                                    <span>Available for research interview</span>
+                                {% else %}
+                                    <span class="badge badge-ghost">✗</span>
+                                    <span>Not available for interview</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Confirmation -->
+    <div class="card bg-primary text-primary-content shadow-xl mb-6">
+        <div class="card-body">
+            <h3 class="card-title">🎉 Almost done!</h3>
+            <p>
+                Please confirm that your information is correct. You can edit your profile 
+                anytime from your settings.
+            </p>
+            <form method="post" class="card-actions justify-end mt-4">
+                {% csrf_token %}
+                <a href="{% url 'users:onboarding_step3' %}" class="btn btn-ghost">
+                    ← Back to Step 3
+                </a>
+                <button type="submit" class="btn btn-accent btn-lg">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                    Complete Profile
+                </button>
+            </form>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

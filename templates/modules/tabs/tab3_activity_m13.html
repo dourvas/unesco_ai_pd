@@ -1,0 +1,729 @@
+{% if current_tab == 'activity' %}
+
+<!-- ============================================================ -->
+<!-- M13 TAB3: ACTIVITY — CREATING WITH AI: FROM PROMPT TO PLAN  -->
+<!-- Challenge 1: Prompt the Perfect Image                        -->
+<!-- Challenge 2: Design a Hybrid Workflow                        -->
+<!-- Challenge 3: The Disclosure Decision                         -->
+<!-- UNESCO Aspect 3: AI Foundations | Level: Create              -->
+<!-- ============================================================ -->
+
+<h2 class="card-title text-2xl mb-2">🎨 Creating with AI: From Prompt to Plan</h2>
+<p class="text-gray-600 mb-6">Three challenges that move from crafting a single image prompt to designing a full multimodal workflow — and confronting three real decisions every teacher using AI content will face.</p>
+
+<!-- Progress tracker -->
+<div class="flex gap-2 mb-8">
+  <div id="progress-c1" class="flex-1 rounded-full h-2 {% if activity.challenge1_completed %}bg-emerald-500{% else %}bg-base-300{% endif %}"></div>
+  <div id="progress-c2" class="flex-1 rounded-full h-2 {% if activity.challenge2_completed %}bg-emerald-500{% else %}bg-base-300{% endif %}"></div>
+  <div id="progress-c3" class="flex-1 rounded-full h-2 {% if activity.challenge3_completed %}bg-emerald-500{% else %}bg-base-300{% endif %}"></div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- CHALLENGE 1: PROMPT THE PERFECT IMAGE                        -->
+<!-- ============================================================ -->
+<div id="challenge1-section" class="card bg-base-200 border-2 {% if activity.challenge1_completed %}border-emerald-400{% else %}border-base-300{% endif %} mb-6">
+  <div class="card-body">
+
+    <div class="flex items-center gap-3 mb-2">
+      <div class="w-10 h-10 rounded-full bg-purple-600 text-white flex items-center justify-center font-bold text-lg flex-shrink-0">1</div>
+      <div>
+        <h3 class="card-title text-lg">Prompt the Perfect Image</h3>
+        <p class="text-xs text-gray-500">Build · Check · Refine · ~20 minutes</p>
+      </div>
+      {% if activity.challenge1_completed %}
+      <span class="badge badge-success ml-auto">✓ Complete</span>
+      {% endif %}
+    </div>
+
+    <p class="text-sm mb-5">You have learned the Contextual Prompting Framework. Now apply it to a real concept from your teaching. Build your prompt step by step, check it against the quality criteria, then refine it — because the first version is rarely the best one.</p>
+
+    {% if not activity.challenge1_completed %}
+
+    <form id="challenge1-form" class="space-y-6">
+
+      <!-- Step 1: Choose your concept type -->
+      <div>
+        <p class="text-sm font-semibold mb-1">Step 1 — What type of concept do you want to visualise?</p>
+        <p class="text-xs text-gray-500 mb-3">Choose the category that best describes what you are working with.</p>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          {% for opt in c1_subject_options %}
+          <label class="flex items-center gap-2 cursor-pointer p-2 rounded-lg border border-base-300 hover:border-purple-300 hover:bg-purple-50 transition-colors">
+            <input type="radio" name="concept_type" value="{{ opt.value }}" class="radio radio-sm radio-primary" />
+            <span class="text-sm">{{ opt.label }}</span>
+          </label>
+          {% endfor %}
+        </div>
+        <p id="c1-concept-error" class="text-error text-xs mt-1 hidden">Please select a concept type.</p>
+      </div>
+
+      <!-- Step 2: Build the prompt - 4 elements -->
+      <div class="card bg-white border border-purple-200 p-4 space-y-4">
+        <p class="text-sm font-semibold text-purple-800">Step 2 — Build your prompt using the 4-element formula</p>
+
+        <div>
+          <label class="text-xs font-bold text-purple-700 uppercase tracking-wide">WHO &amp; WHAT</label>
+          <p class="text-xs text-gray-500 mb-1">The subject and action — who or what is shown, and what is it doing?</p>
+          <input type="text" id="c1-who-what" name="who_what" class="input input-bordered input-sm w-full text-sm" placeholder="e.g. Plant cell cross-section showing organelles" maxlength="200" />
+        </div>
+
+        <div>
+          <label class="text-xs font-bold text-blue-700 uppercase tracking-wide">WHERE</label>
+          <p class="text-xs text-gray-500 mb-1">Setting and context — where does this happen or appear?</p>
+          <input type="text" id="c1-where" name="where" class="input input-bordered input-sm w-full text-sm" placeholder="e.g. in a textbook cutaway layout" maxlength="200" />
+        </div>
+
+        <div>
+          <label class="text-xs font-bold text-green-700 uppercase tracking-wide">HOW — Visual Style</label>
+          <p class="text-xs text-gray-500 mb-2">Choose the style that best fits your subject and students.</p>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {% for s in c1_how_styles %}
+            <label class="flex items-center gap-2 cursor-pointer p-2 rounded-lg border border-base-300 hover:border-green-300 hover:bg-green-50 transition-colors">
+              <input type="radio" name="how_style" value="{{ s.value }}" class="radio radio-sm radio-success" />
+              <span class="text-xs">{{ s.label }}</span>
+            </label>
+            {% endfor %}
+          </div>
+        </div>
+
+        <div>
+          <label class="text-xs font-bold text-yellow-700 uppercase tracking-wide">FOR WHOM</label>
+          <p class="text-xs text-gray-500 mb-1">Educational context — age group and purpose. This is the most important element.</p>
+          <input type="text" id="c1-for-whom" name="for_whom" class="input input-bordered input-sm w-full text-sm" placeholder="e.g. for high school biology students preparing for exams" maxlength="200" />
+        </div>
+
+        <p id="c1-prompt-error" class="text-error text-xs hidden">Please complete all four elements.</p>
+        <p id="c1-style-error" class="text-error text-xs hidden">Please select a visual style.</p>
+      </div>
+
+      <!-- Step 3: Quality check -->
+      <div>
+        <p class="text-sm font-semibold mb-1">Step 3 — Quality check before you generate</p>
+        <p class="text-xs text-gray-500 mb-3">Before sending your prompt to any tool, check your intentions against these criteria. Select all that apply to your planned image.</p>
+        <div class="space-y-2">
+          {% for qc in c1_quality_checks %}
+          <label class="flex items-center gap-2 cursor-pointer p-2 rounded-lg border border-base-300 hover:border-amber-300 hover:bg-amber-50 transition-colors">
+            <input type="checkbox" name="quality_checks" value="{{ qc.value }}" class="checkbox checkbox-sm checkbox-warning" />
+            <span class="text-sm">{{ qc.label }}</span>
+          </label>
+          {% endfor %}
+        </div>
+        <p id="c1-quality-error" class="text-error text-xs mt-1 hidden">Please check at least 3 criteria.</p>
+      </div>
+
+      <!-- Step 4: Refinement -->
+      <div class="card bg-indigo-50 border border-indigo-200 p-4">
+        <p class="text-sm font-semibold text-indigo-800 mb-1">Step 4 — Refinement</p>
+        <p class="text-xs text-indigo-700 mb-3">The first prompt is rarely the final one. Choose one element you would change in a second iteration, and explain what difference you expect that change to make.</p>
+        <div class="space-y-3">
+          <div>
+            <p class="text-xs font-semibold mb-2">Which element would you change?</p>
+            <div class="grid grid-cols-2 gap-2">
+              {% for r in c1_refinement_elements %}
+              <label class="flex items-center gap-2 cursor-pointer p-2 rounded-lg border border-indigo-200 hover:border-indigo-400 hover:bg-indigo-100 transition-colors">
+                <input type="radio" name="refinement_element" value="{{ r.value }}" class="radio radio-sm radio-primary" />
+                <span class="text-xs">{{ r.label }}</span>
+              </label>
+              {% endfor %}
+            </div>
+          </div>
+          <div>
+            <p class="text-xs font-semibold mb-1">What change would you make, and what difference do you expect?</p>
+            <textarea id="c1-refinement-text" name="refinement_text" class="textarea textarea-bordered w-full text-sm" rows="2" placeholder="I would change [element] to... because I expect the output to..." maxlength="400"></textarea>
+            <div class="flex justify-end mt-1">
+              <p class="text-xs text-gray-400"><span id="c1-refine-count">0</span>/400</p>
+            </div>
+          </div>
+        </div>
+        <p id="c1-refinement-error" class="text-error text-xs mt-1 hidden">Please select an element to refine and explain your change.</p>
+      </div>
+
+      <div class="flex justify-end">
+        <button type="button" id="submit-challenge1-btn" class="btn btn-primary btn-sm">
+          Save Prompt &amp; Continue →
+        </button>
+      </div>
+
+    </form>
+
+    {% else %}
+
+    <!-- Completed state -->
+    <div class="alert alert-success py-3 mb-4">
+      <p class="text-sm">✓ Completed. You built a structured educational image prompt and identified a refinement strategy.</p>
+    </div>
+
+    <div class="card bg-white border border-purple-200 p-4">
+      <p class="text-xs font-semibold text-purple-700 uppercase tracking-wide mb-3">📋 Your Prompt</p>
+      <div class="space-y-2 text-sm text-gray-800">
+        <p><span class="font-semibold text-purple-700">WHO &amp; WHAT:</span> {{ activity.challenge_data.challenge1_who_what }}</p>
+        <p><span class="font-semibold text-blue-700">WHERE:</span> {{ activity.challenge_data.challenge1_where }}</p>
+        <p><span class="font-semibold text-green-700">HOW:</span> {{ activity.challenge_data.challenge1_how_style }}</p>
+        <p><span class="font-semibold text-yellow-700">FOR WHOM:</span> {{ activity.challenge_data.challenge1_for_whom }}</p>
+        <div class="border-t border-purple-100 pt-2 mt-2">
+          <p class="text-xs font-semibold text-indigo-700 mb-1">Refinement plan:</p>
+          <p class="text-xs text-gray-700">{{ activity.challenge_data.challenge1_refinement_text }}</p>
+        </div>
+      </div>
+    </div>
+
+    {% endif %}
+
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- CHALLENGE 2: DESIGN A HYBRID WORKFLOW                        -->
+<!-- ============================================================ -->
+<div id="challenge2-section" class="card bg-base-200 border-2 {% if activity.challenge2_completed %}border-emerald-400{% elif activity.challenge1_completed %}border-amber-400{% else %}border-base-300 opacity-60{% endif %} mb-6">
+  <div class="card-body">
+
+    <div class="flex items-center gap-3 mb-2">
+      <div class="w-10 h-10 rounded-full {% if activity.challenge1_completed %}bg-amber-500{% else %}bg-base-300{% endif %} text-white flex items-center justify-center font-bold text-lg flex-shrink-0">2</div>
+      <div>
+        <h3 class="card-title text-lg">Design a Hybrid Workflow</h3>
+        <p class="text-xs text-gray-500">Plan · Map · Design · ~20 minutes</p>
+      </div>
+      {% if activity.challenge2_completed %}
+      <span class="badge badge-success ml-auto">✓ Complete</span>
+      {% endif %}
+    </div>
+
+    {% if not activity.challenge1_completed %}
+    <p class="text-sm text-gray-500 italic">Complete Challenge 1 to unlock this challenge.</p>
+    {% elif not activity.challenge2_completed %}
+
+    <p class="text-sm mb-2">A single modality is a good start. A well-designed workflow combining two or three modalities creates richer learning experiences. In this challenge you are not executing — you are thinking as an instructional designer. Use the Workflow Canvas to plan a multimodal mini-project for your students.</p>
+    <p class="text-xs text-gray-500 mb-5">Focus on the pedagogical logic, not the specific tools. Which modalities serve your learning goal? In what order? What does the student actually experience?</p>
+
+    <form id="challenge2-form" class="space-y-5">
+
+      <!-- Learning goal -->
+      <div>
+        <p class="text-sm font-semibold mb-2">What is the learning goal for this project?</p>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          {% for opt in c2_learning_goal_options %}
+          <label class="flex items-center gap-2 cursor-pointer p-2 rounded-lg border border-base-300 hover:border-amber-300 hover:bg-amber-50 transition-colors">
+            <input type="radio" name="learning_goal" value="{{ opt.value }}" class="radio radio-sm radio-warning" />
+            <span class="text-sm">{{ opt.label }}</span>
+          </label>
+          {% endfor %}
+        </div>
+        <p id="c2-goal-error" class="text-error text-xs mt-1 hidden">Please select a learning goal.</p>
+      </div>
+
+      <!-- Modalities -->
+      <div>
+        <p class="text-sm font-semibold mb-1">Which modalities will you combine? (select all that apply)</p>
+        <p class="text-xs text-gray-500 mb-3">Choose at least two — this is a hybrid workflow challenge.</p>
+        <div class="grid grid-cols-2 gap-2">
+          {% for m in c2_modality_options %}
+          <label class="flex items-center gap-2 cursor-pointer p-2 rounded-lg border border-base-300 hover:border-amber-300 hover:bg-amber-50 transition-colors">
+            <input type="checkbox" name="modalities" value="{{ m.value }}" class="checkbox checkbox-sm checkbox-warning" />
+            <span class="text-sm">{{ m.label }}</span>
+          </label>
+          {% endfor %}
+        </div>
+        <p id="c2-modality-error" class="text-error text-xs mt-1 hidden">Please select at least two modalities.</p>
+      </div>
+
+      <!-- Workflow Canvas -->
+      <div class="card bg-white border-2 border-amber-300 p-4">
+        <p class="text-sm font-semibold text-amber-800 mb-1">📋 Workflow Canvas</p>
+        <p class="text-xs text-gray-500 mb-4">Map your workflow step by step. You do not need to fill all five steps — use as many as your project requires.</p>
+        <div class="space-y-3">
+          {% for step in c2_canvas_steps %}
+          <div class="flex items-start gap-3">
+            <div class="w-7 h-7 rounded-full bg-amber-500 text-white flex items-center justify-center text-xs font-bold flex-shrink-0 mt-1">{{ step.step }}</div>
+            <div class="flex-1">
+              <p class="text-xs font-semibold text-amber-700 mb-0.5">{{ step.label }} — {{ step.hint }}</p>
+              <input type="text" name="canvas_step_{{ step.step }}" class="input input-bordered input-sm w-full text-sm" placeholder="{{ step.placeholder }}" maxlength="250" />
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        <p id="c2-canvas-error" class="text-error text-xs mt-2 hidden">Please complete at least the first three canvas steps.</p>
+      </div>
+
+      <!-- Tool categories -->
+      <div>
+        <p class="text-sm font-semibold mb-1">Which tool categories would you use? (select all that apply)</p>
+        <p class="text-xs text-gray-500 mb-3">Name the category, not the brand. This keeps your plan valid even as specific tools change.</p>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          {% for tc in c2_tool_category_options %}
+          <label class="flex items-center gap-2 cursor-pointer p-2 rounded-lg border border-base-300 hover:border-amber-300 hover:bg-amber-50 transition-colors">
+            <input type="checkbox" name="tool_categories" value="{{ tc.value }}" class="checkbox checkbox-sm checkbox-warning" />
+            <span class="text-sm">{{ tc.label }}</span>
+          </label>
+          {% endfor %}
+        </div>
+        <p id="c2-tools-error" class="text-error text-xs mt-1 hidden">Please select at least one tool category.</p>
+      </div>
+
+      <!-- Estimated time -->
+      <div>
+        <p class="text-sm font-semibold mb-2">Estimated preparation time for this workflow:</p>
+        <div class="flex flex-wrap gap-2">
+          {% for t in c2_prep_time_options %}
+          <label class="flex items-center gap-2 cursor-pointer px-3 py-1.5 rounded-full border border-base-300 hover:border-amber-400 hover:bg-amber-50 transition-colors">
+            <input type="radio" name="prep_time" value="{{ t }}" class="radio radio-xs radio-warning" />
+            <span class="text-sm">{{ t }}</span>
+          </label>
+          {% endfor %}
+        </div>
+        <p id="c2-time-error" class="text-error text-xs mt-1 hidden">Please estimate preparation time.</p>
+      </div>
+
+      <div class="flex justify-end">
+        <button type="button" id="submit-challenge2-btn" class="btn btn-warning btn-sm text-white">
+          Save Workflow Canvas →
+        </button>
+      </div>
+
+    </form>
+
+    {% else %}
+
+    <!-- Completed state -->
+    <div class="alert alert-success py-3 mb-4">
+      <p class="text-sm">✓ Completed. You designed a multimodal workflow using instructional design thinking.</p>
+    </div>
+
+    <div class="card bg-white border border-amber-200 p-4">
+      <p class="text-xs font-semibold text-amber-700 uppercase tracking-wide mb-3">📋 Your Workflow Canvas</p>
+      <div class="space-y-2 text-sm text-gray-800">
+        {% if activity.challenge_data.challenge2_canvas_step_1 %}
+        <div class="flex items-start gap-2">
+          <div class="w-6 h-6 rounded-full bg-amber-400 text-white flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">1</div>
+          <p class="text-sm">{{ activity.challenge_data.challenge2_canvas_step_1 }}</p>
+        </div>
+        {% endif %}
+        {% if activity.challenge_data.challenge2_canvas_step_2 %}
+        <div class="flex items-start gap-2">
+          <div class="w-6 h-6 rounded-full bg-amber-400 text-white flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">2</div>
+          <p class="text-sm">{{ activity.challenge_data.challenge2_canvas_step_2 }}</p>
+        </div>
+        {% endif %}
+        {% if activity.challenge_data.challenge2_canvas_step_3 %}
+        <div class="flex items-start gap-2">
+          <div class="w-6 h-6 rounded-full bg-amber-400 text-white flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">3</div>
+          <p class="text-sm">{{ activity.challenge_data.challenge2_canvas_step_3 }}</p>
+        </div>
+        {% endif %}
+        {% if activity.challenge_data.challenge2_canvas_step_4 %}
+        <div class="flex items-start gap-2">
+          <div class="w-6 h-6 rounded-full bg-amber-400 text-white flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">4</div>
+          <p class="text-sm">{{ activity.challenge_data.challenge2_canvas_step_4 }}</p>
+        </div>
+        {% endif %}
+        {% if activity.challenge_data.challenge2_canvas_step_5 %}
+        <div class="flex items-start gap-2">
+          <div class="w-6 h-6 rounded-full bg-amber-400 text-white flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">5</div>
+          <p class="text-sm">{{ activity.challenge_data.challenge2_canvas_step_5 }}</p>
+        </div>
+        {% endif %}
+        {% if activity.challenge_data.challenge2_prep_time %}
+        <p class="text-xs text-gray-500 pt-2 border-t border-amber-100">Estimated preparation time: {{ activity.challenge_data.challenge2_prep_time }}</p>
+        {% endif %}
+      </div>
+    </div>
+
+    {% endif %}
+
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- CHALLENGE 3: THE DISCLOSURE DECISION                         -->
+<!-- ============================================================ -->
+<div id="challenge3-section" class="card bg-base-200 border-2 {% if activity.challenge3_completed %}border-emerald-400{% elif activity.challenge2_completed %}border-rose-400{% else %}border-base-300 opacity-60{% endif %} mb-6">
+  <div class="card-body">
+
+    <div class="flex items-center gap-3 mb-2">
+      <div class="w-10 h-10 rounded-full {% if activity.challenge2_completed %}bg-rose-600{% else %}bg-base-300{% endif %} text-white flex items-center justify-center font-bold text-lg flex-shrink-0">3</div>
+      <div>
+        <h3 class="card-title text-lg">The Disclosure Decision</h3>
+        <p class="text-xs text-gray-500">Read · Decide · Reflect · ~20 minutes</p>
+      </div>
+      {% if activity.challenge3_completed %}
+      <span class="badge badge-success ml-auto">✓ Complete</span>
+      {% endif %}
+    </div>
+
+    {% if not activity.challenge2_completed %}
+    <p class="text-sm text-gray-500 italic">Complete Challenge 2 to unlock this challenge.</p>
+    {% elif not activity.challenge3_completed %}
+
+    <p class="text-sm mb-2">The ethical questions around AI-generated content are rarely black and white. The three scenarios below are grey zones — situations where reasonable educators disagree. For each one, make a decision and explain your reasoning. There are no universally correct answers, but your reasoning matters.</p>
+    <p class="text-xs text-gray-500 mb-5">Your responses are saved to your personal record and will feed into your TAB5 reflection.</p>
+
+    <form id="challenge3-form" class="space-y-8">
+
+      {% for scenario in c3_scenarios %}
+      <div class="card bg-white border border-rose-200">
+        <div class="card-body p-4">
+
+          <!-- Scenario header — Scenario 1 is subject-specific -->
+          {% if scenario.id == 1 %}
+
+            {% if teacher_profile.subject_area == 'mathematics' %}{% with v=c3_scenario1_variants.mathematics %}
+            <div class="flex items-center gap-2 mb-3"><span class="text-2xl">{{ v.icon }}</span><div><p class="text-sm font-bold text-rose-800">Scenario 1: {{ v.title }}</p><p class="text-xs text-rose-600">Tension: {{ v.tension }}</p></div></div>
+            <div class="bg-rose-50 rounded-lg p-3 mb-4"><p class="text-xs font-semibold text-rose-700 uppercase tracking-wide mb-1">The Situation</p><p class="text-sm leading-relaxed text-gray-800">{{ v.situation }}</p></div>
+            {% endwith %}{% elif teacher_profile.subject_area == 'language_arts' %}{% with v=c3_scenario1_variants.language_arts %}
+            <div class="flex items-center gap-2 mb-3"><span class="text-2xl">{{ v.icon }}</span><div><p class="text-sm font-bold text-rose-800">Scenario 1: {{ v.title }}</p><p class="text-xs text-rose-600">Tension: {{ v.tension }}</p></div></div>
+            <div class="bg-rose-50 rounded-lg p-3 mb-4"><p class="text-xs font-semibold text-rose-700 uppercase tracking-wide mb-1">The Situation</p><p class="text-sm leading-relaxed text-gray-800">{{ v.situation }}</p></div>
+            {% endwith %}{% elif teacher_profile.subject_area == 'science' %}{% with v=c3_scenario1_variants.science %}
+            <div class="flex items-center gap-2 mb-3"><span class="text-2xl">{{ v.icon }}</span><div><p class="text-sm font-bold text-rose-800">Scenario 1: {{ v.title }}</p><p class="text-xs text-rose-600">Tension: {{ v.tension }}</p></div></div>
+            <div class="bg-rose-50 rounded-lg p-3 mb-4"><p class="text-xs font-semibold text-rose-700 uppercase tracking-wide mb-1">The Situation</p><p class="text-sm leading-relaxed text-gray-800">{{ v.situation }}</p></div>
+            {% endwith %}{% elif teacher_profile.subject_area == 'physics' %}{% with v=c3_scenario1_variants.physics %}
+            <div class="flex items-center gap-2 mb-3"><span class="text-2xl">{{ v.icon }}</span><div><p class="text-sm font-bold text-rose-800">Scenario 1: {{ v.title }}</p><p class="text-xs text-rose-600">Tension: {{ v.tension }}</p></div></div>
+            <div class="bg-rose-50 rounded-lg p-3 mb-4"><p class="text-xs font-semibold text-rose-700 uppercase tracking-wide mb-1">The Situation</p><p class="text-sm leading-relaxed text-gray-800">{{ v.situation }}</p></div>
+            {% endwith %}{% elif teacher_profile.subject_area == 'chemistry' %}{% with v=c3_scenario1_variants.chemistry %}
+            <div class="flex items-center gap-2 mb-3"><span class="text-2xl">{{ v.icon }}</span><div><p class="text-sm font-bold text-rose-800">Scenario 1: {{ v.title }}</p><p class="text-xs text-rose-600">Tension: {{ v.tension }}</p></div></div>
+            <div class="bg-rose-50 rounded-lg p-3 mb-4"><p class="text-xs font-semibold text-rose-700 uppercase tracking-wide mb-1">The Situation</p><p class="text-sm leading-relaxed text-gray-800">{{ v.situation }}</p></div>
+            {% endwith %}{% elif teacher_profile.subject_area == 'biology' %}{% with v=c3_scenario1_variants.biology %}
+            <div class="flex items-center gap-2 mb-3"><span class="text-2xl">{{ v.icon }}</span><div><p class="text-sm font-bold text-rose-800">Scenario 1: {{ v.title }}</p><p class="text-xs text-rose-600">Tension: {{ v.tension }}</p></div></div>
+            <div class="bg-rose-50 rounded-lg p-3 mb-4"><p class="text-xs font-semibold text-rose-700 uppercase tracking-wide mb-1">The Situation</p><p class="text-sm leading-relaxed text-gray-800">{{ v.situation }}</p></div>
+            {% endwith %}{% elif teacher_profile.subject_area == 'history' %}{% with v=c3_scenario1_variants.history %}
+            <div class="flex items-center gap-2 mb-3"><span class="text-2xl">{{ v.icon }}</span><div><p class="text-sm font-bold text-rose-800">Scenario 1: {{ v.title }}</p><p class="text-xs text-rose-600">Tension: {{ v.tension }}</p></div></div>
+            <div class="bg-rose-50 rounded-lg p-3 mb-4"><p class="text-xs font-semibold text-rose-700 uppercase tracking-wide mb-1">The Situation</p><p class="text-sm leading-relaxed text-gray-800">{{ v.situation }}</p></div>
+            {% endwith %}{% elif teacher_profile.subject_area == 'geography' %}{% with v=c3_scenario1_variants.geography %}
+            <div class="flex items-center gap-2 mb-3"><span class="text-2xl">{{ v.icon }}</span><div><p class="text-sm font-bold text-rose-800">Scenario 1: {{ v.title }}</p><p class="text-xs text-rose-600">Tension: {{ v.tension }}</p></div></div>
+            <div class="bg-rose-50 rounded-lg p-3 mb-4"><p class="text-xs font-semibold text-rose-700 uppercase tracking-wide mb-1">The Situation</p><p class="text-sm leading-relaxed text-gray-800">{{ v.situation }}</p></div>
+            {% endwith %}{% elif teacher_profile.subject_area == 'social_studies' %}{% with v=c3_scenario1_variants.social_studies %}
+            <div class="flex items-center gap-2 mb-3"><span class="text-2xl">{{ v.icon }}</span><div><p class="text-sm font-bold text-rose-800">Scenario 1: {{ v.title }}</p><p class="text-xs text-rose-600">Tension: {{ v.tension }}</p></div></div>
+            <div class="bg-rose-50 rounded-lg p-3 mb-4"><p class="text-xs font-semibold text-rose-700 uppercase tracking-wide mb-1">The Situation</p><p class="text-sm leading-relaxed text-gray-800">{{ v.situation }}</p></div>
+            {% endwith %}{% elif teacher_profile.subject_area == 'foreign_languages' %}{% with v=c3_scenario1_variants.foreign_languages %}
+            <div class="flex items-center gap-2 mb-3"><span class="text-2xl">{{ v.icon }}</span><div><p class="text-sm font-bold text-rose-800">Scenario 1: {{ v.title }}</p><p class="text-xs text-rose-600">Tension: {{ v.tension }}</p></div></div>
+            <div class="bg-rose-50 rounded-lg p-3 mb-4"><p class="text-xs font-semibold text-rose-700 uppercase tracking-wide mb-1">The Situation</p><p class="text-sm leading-relaxed text-gray-800">{{ v.situation }}</p></div>
+            {% endwith %}{% elif teacher_profile.subject_area == 'computer_science' %}{% with v=c3_scenario1_variants.computer_science %}
+            <div class="flex items-center gap-2 mb-3"><span class="text-2xl">{{ v.icon }}</span><div><p class="text-sm font-bold text-rose-800">Scenario 1: {{ v.title }}</p><p class="text-xs text-rose-600">Tension: {{ v.tension }}</p></div></div>
+            <div class="bg-rose-50 rounded-lg p-3 mb-4"><p class="text-xs font-semibold text-rose-700 uppercase tracking-wide mb-1">The Situation</p><p class="text-sm leading-relaxed text-gray-800">{{ v.situation }}</p></div>
+            {% endwith %}{% elif teacher_profile.subject_area == 'physical_education' %}{% with v=c3_scenario1_variants.physical_education %}
+            <div class="flex items-center gap-2 mb-3"><span class="text-2xl">{{ v.icon }}</span><div><p class="text-sm font-bold text-rose-800">Scenario 1: {{ v.title }}</p><p class="text-xs text-rose-600">Tension: {{ v.tension }}</p></div></div>
+            <div class="bg-rose-50 rounded-lg p-3 mb-4"><p class="text-xs font-semibold text-rose-700 uppercase tracking-wide mb-1">The Situation</p><p class="text-sm leading-relaxed text-gray-800">{{ v.situation }}</p></div>
+            {% endwith %}{% elif teacher_profile.subject_area == 'arts' %}{% with v=c3_scenario1_variants.arts %}
+            <div class="flex items-center gap-2 mb-3"><span class="text-2xl">{{ v.icon }}</span><div><p class="text-sm font-bold text-rose-800">Scenario 1: {{ v.title }}</p><p class="text-xs text-rose-600">Tension: {{ v.tension }}</p></div></div>
+            <div class="bg-rose-50 rounded-lg p-3 mb-4"><p class="text-xs font-semibold text-rose-700 uppercase tracking-wide mb-1">The Situation</p><p class="text-sm leading-relaxed text-gray-800">{{ v.situation }}</p></div>
+            {% endwith %}{% elif teacher_profile.subject_area == 'special_education' %}{% with v=c3_scenario1_variants.special_education %}
+            <div class="flex items-center gap-2 mb-3"><span class="text-2xl">{{ v.icon }}</span><div><p class="text-sm font-bold text-rose-800">Scenario 1: {{ v.title }}</p><p class="text-xs text-rose-600">Tension: {{ v.tension }}</p></div></div>
+            <div class="bg-rose-50 rounded-lg p-3 mb-4"><p class="text-xs font-semibold text-rose-700 uppercase tracking-wide mb-1">The Situation</p><p class="text-sm leading-relaxed text-gray-800">{{ v.situation }}</p></div>
+            {% endwith %}{% elif teacher_profile.subject_area == 'early_childhood' %}{% with v=c3_scenario1_variants.early_childhood %}
+            <div class="flex items-center gap-2 mb-3"><span class="text-2xl">{{ v.icon }}</span><div><p class="text-sm font-bold text-rose-800">Scenario 1: {{ v.title }}</p><p class="text-xs text-rose-600">Tension: {{ v.tension }}</p></div></div>
+            <div class="bg-rose-50 rounded-lg p-3 mb-4"><p class="text-xs font-semibold text-rose-700 uppercase tracking-wide mb-1">The Situation</p><p class="text-sm leading-relaxed text-gray-800">{{ v.situation }}</p></div>
+            {% endwith %}{% else %}{% with v=c3_scenario1_variants.other %}
+            <div class="flex items-center gap-2 mb-3"><span class="text-2xl">{{ v.icon }}</span><div><p class="text-sm font-bold text-rose-800">Scenario 1: {{ v.title }}</p><p class="text-xs text-rose-600">Tension: {{ v.tension }}</p></div></div>
+            <div class="bg-rose-50 rounded-lg p-3 mb-4"><p class="text-xs font-semibold text-rose-700 uppercase tracking-wide mb-1">The Situation</p><p class="text-sm leading-relaxed text-gray-800">{{ v.situation }}</p></div>
+            {% endwith %}{% endif %}
+
+          {% else %}
+
+          <!-- Scenarios 2 and 3 — universal -->
+          <div class="flex items-center gap-2 mb-3">
+            <span class="text-2xl">{{ scenario.icon }}</span>
+            <div>
+              <p class="text-sm font-bold text-rose-800">Scenario {{ scenario.id }}: {{ scenario.title }}</p>
+              <p class="text-xs text-rose-600">Tension: {{ scenario.tension }}</p>
+            </div>
+          </div>
+          <div class="bg-rose-50 rounded-lg p-3 mb-4">
+            <p class="text-xs font-semibold text-rose-700 uppercase tracking-wide mb-1">The Situation</p>
+            <p class="text-sm leading-relaxed text-gray-800">{{ scenario.situation }}</p>
+          </div>
+
+          {% endif %}
+
+          <!-- Decision -->
+          <div class="mb-4">
+            <p class="text-sm font-semibold mb-2">What do you decide?</p>
+            <div class="space-y-2">
+              {% for opt in scenario.options %}
+              <label class="flex items-start gap-3 cursor-pointer p-3 rounded-lg border border-base-300 hover:border-rose-300 hover:bg-rose-50 transition-colors">
+                <input type="radio" name="scenario_{{ scenario.id }}_decision" value="{{ opt.value }}" class="radio radio-sm radio-error mt-0.5" />
+                <span class="text-sm">{{ opt.label }}</span>
+              </label>
+              {% endfor %}
+            </div>
+            <p id="c3-s{{ scenario.id }}-decision-error" class="text-error text-xs mt-1 hidden">Please make a decision for this scenario.</p>
+          </div>
+
+          <!-- Disclosure phrase -->
+          <div class="mb-4">
+            <label class="text-sm font-semibold block mb-1">{{ scenario.disclosure_prompt }}</label>
+            <textarea name="scenario_{{ scenario.id }}_disclosure" class="textarea textarea-bordered w-full text-sm" rows="2" placeholder="Write the exact words you would use, or explain why you would say nothing..." maxlength="400"></textarea>
+          </div>
+
+          <!-- Reflection -->
+          <div>
+            <label class="text-sm font-semibold block mb-1">{{ scenario.reflection_prompt }}</label>
+            <textarea name="scenario_{{ scenario.id }}_reflection" class="textarea textarea-bordered w-full text-sm c3-reflection" rows="2" placeholder="This scenario reveals that I..." maxlength="400"></textarea>
+            <p id="c3-s{{ scenario.id }}-reflection-error" class="text-error text-xs mt-1 hidden">Please write a brief reflection (at least a few words).</p>
+          </div>
+
+        </div>
+      </div>
+      {% endfor %}
+
+      <p id="c3-general-error" class="text-error text-xs hidden">Please complete all three scenarios — a decision and reflection for each.</p>
+
+      <div class="flex justify-end">
+        <button type="button" id="submit-challenge3-btn" class="btn btn-error btn-sm text-white">
+          Save My Decisions →
+        </button>
+      </div>
+
+    </form>
+
+    {% else %}
+
+    <!-- Completed state -->
+    <div class="alert alert-success py-3 mb-4">
+      <p class="text-sm">✓ Completed. You worked through three real disclosure dilemmas and articulated your professional reasoning.</p>
+    </div>
+
+    <!-- Summary of decisions -->
+    <div class="space-y-3">
+      {% for scenario in c3_scenarios %}
+      <div class="card bg-white border border-rose-100 p-3">
+        <p class="text-xs font-semibold text-rose-700 mb-1">{{ scenario.icon }} Scenario {{ scenario.id }}: {{ scenario.title }}</p>
+        {% if scenario.id == 1 %}
+          <p class="text-xs text-gray-700"><strong>Your decision:</strong> {{ activity.challenge_data.challenge3_s1_decision }}</p>
+          {% if activity.challenge_data.challenge3_s1_reflection %}
+          <p class="text-xs text-gray-600 mt-1 italic">{{ activity.challenge_data.challenge3_s1_reflection }}</p>
+          {% endif %}
+        {% elif scenario.id == 2 %}
+          <p class="text-xs text-gray-700"><strong>Your decision:</strong> {{ activity.challenge_data.challenge3_s2_decision }}</p>
+          {% if activity.challenge_data.challenge3_s2_reflection %}
+          <p class="text-xs text-gray-600 mt-1 italic">{{ activity.challenge_data.challenge3_s2_reflection }}</p>
+          {% endif %}
+        {% elif scenario.id == 3 %}
+          <p class="text-xs text-gray-700"><strong>Your decision:</strong> {{ activity.challenge_data.challenge3_s3_decision }}</p>
+          {% if activity.challenge_data.challenge3_s3_reflection %}
+          <p class="text-xs text-gray-600 mt-1 italic">{{ activity.challenge_data.challenge3_s3_reflection }}</p>
+          {% endif %}
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- Educator perspectives -->
+    <div class="mt-4">
+      <p class="text-sm font-semibold mb-3">💡 How educators approach these grey zones:</p>
+      <div class="space-y-2">
+        <div class="collapse collapse-arrow bg-white border border-base-300">
+          <input type="checkbox" />
+          <div class="collapse-title text-sm font-medium">On accuracy thresholds (Scenario 1)</div>
+          <div class="collapse-content text-sm text-gray-700">
+            <p>Many educators draw the line based on <em>purpose</em>, not <em>perfection</em>. An image used as a discussion starter has a different accuracy threshold than one used as a reference diagram for an exam. The key is being transparent with students about the intended use. Pointing out the inaccuracy — as in the second option — actually creates a richer learning moment than a perfect image would.</p>
+          </div>
+        </div>
+        <div class="collapse collapse-arrow bg-white border border-base-300">
+          <input type="checkbox" />
+          <div class="collapse-title text-sm font-medium">On voice cloning and real people (Scenario 2)</div>
+          <div class="collapse-content text-sm text-gray-700">
+            <p>The core issue is not the quality of the content — it is the identity claim. Using a voice that sounds like a specific real person, without their consent, creates an implicit claim that they said or endorsed something. Most professional ethics frameworks distinguish clearly between using AI voices generally (acceptable with disclosure) and mimicking identifiable individuals (requires consent or avoidance). The engagement benefit does not override this.</p>
+          </div>
+        </div>
+        <div class="collapse collapse-arrow bg-white border border-base-300">
+          <input type="checkbox" />
+          <div class="collapse-title text-sm font-medium">On disclosure after heavy editing (Scenario 3)</div>
+          <div class="collapse-content text-sm text-gray-700">
+            <p>The question of "how much editing changes the obligation to disclose" does not have a universal answer. What most transparency frameworks agree on is this: the obligation to disclose is not primarily about how much of the final content the AI produced — it is about modelling the transparency you expect from students. If you are asking students to disclose their AI use, disclosing your own (even briefly) is consistent professional practice.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {% endif %}
+
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- COMPLETION STATE                                              -->
+<!-- ============================================================ -->
+{% if activity.activity_completed %}
+<div class="card bg-emerald-50 border-2 border-emerald-400 mb-6">
+  <div class="card-body text-center">
+    <p class="text-2xl mb-2">🎨</p>
+    <h3 class="card-title justify-center text-emerald-800">Activity Complete!</h3>
+    <p class="text-sm text-emerald-700 mt-2">You have built a structured image prompt, designed a hybrid multimodal workflow, and worked through three real disclosure decisions. These are the core professional skills of a teacher who creates with AI.</p>
+    <div class="mt-4">
+      <p class="text-xs text-gray-500">Ready to test your knowledge? Continue to the Assessment →</p>
+    </div>
+  </div>
+</div>
+
+{% include "community/partials/tab_forum_trigger.html" with tab_name="activity" module_code=module.code trigger_style="post_completion" %}
+
+{% endif %}
+
+{% if not activity.activity_completed %}
+<div id="mark-complete-section" class="{% if not activity.challenge3_completed %}hidden{% endif %} text-center mt-4">
+  <button id="mark-activity-complete-btn" class="btn btn-success btn-lg">
+    ✓ Mark Activity Complete
+  </button>
+</div>
+{% endif %}
+
+
+<!-- ============================================================ -->
+<!-- JAVASCRIPT                                                    -->
+<!-- ============================================================ -->
+<script>
+
+// ── Character counters ───────────────────────────────────────────
+const c1RefineTextarea = document.getElementById('c1-refinement-text');
+const c1RefineCount = document.getElementById('c1-refine-count');
+if (c1RefineTextarea) {
+  c1RefineTextarea.addEventListener('input', () => {
+    c1RefineCount.textContent = c1RefineTextarea.value.length;
+  });
+}
+
+// ── CHALLENGE 1 SUBMIT ───────────────────────────────────────────
+document.getElementById('submit-challenge1-btn')?.addEventListener('click', () => {
+  const conceptType     = document.querySelector('input[name="concept_type"]:checked')?.value;
+  const whoWhat         = document.getElementById('c1-who-what')?.value?.trim();
+  const where           = document.getElementById('c1-where')?.value?.trim();
+  const howStyle        = document.querySelector('input[name="how_style"]:checked')?.value;
+  const forWhom         = document.getElementById('c1-for-whom')?.value?.trim();
+  const qualityChecks   = Array.from(document.querySelectorAll('input[name="quality_checks"]:checked')).map(el => el.value);
+  const refinementEl    = document.querySelector('input[name="refinement_element"]:checked')?.value;
+  const refinementText  = document.getElementById('c1-refinement-text')?.value?.trim();
+
+  const promptOk    = !!(whoWhat && where && forWhom);
+  const styleOk     = !!howStyle;
+  const conceptOk   = !!conceptType;
+  const qualityOk   = qualityChecks.length >= 3;
+  const refinementOk = !!(refinementEl && refinementText && refinementText.length >= 10);
+
+  document.getElementById('c1-concept-error').classList.toggle('hidden', conceptOk);
+  document.getElementById('c1-prompt-error').classList.toggle('hidden', promptOk);
+  document.getElementById('c1-style-error').classList.toggle('hidden', styleOk);
+  document.getElementById('c1-quality-error').classList.toggle('hidden', qualityOk);
+  document.getElementById('c1-refinement-error').classList.toggle('hidden', refinementOk);
+
+  if (!conceptOk || !promptOk || !styleOk || !qualityOk || !refinementOk) return;
+
+  fetch(`/modules/modules/{{ module.code }}/tab3/challenge1/`, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}'},
+    body: JSON.stringify({
+      concept_type:     conceptType,
+      who_what:         whoWhat,
+      where:            where,
+      how_style:        howStyle,
+      for_whom:         forWhom,
+      quality_checks:   qualityChecks,
+      refinement_element: refinementEl,
+      refinement_text:  refinementText,
+    })
+  })
+  .then(r => r.json())
+  .then(data => { if (data.success) location.reload(); });
+});
+
+
+// ── CHALLENGE 2 SUBMIT ───────────────────────────────────────────
+document.getElementById('submit-challenge2-btn')?.addEventListener('click', () => {
+  const learningGoal    = document.querySelector('input[name="learning_goal"]:checked')?.value;
+  const modalities      = Array.from(document.querySelectorAll('input[name="modalities"]:checked')).map(el => el.value);
+  const toolCategories  = Array.from(document.querySelectorAll('input[name="tool_categories"]:checked')).map(el => el.value);
+  const prepTime        = document.querySelector('input[name="prep_time"]:checked')?.value;
+
+  const canvasStep1 = document.querySelector('input[name="canvas_step_1"]')?.value?.trim();
+  const canvasStep2 = document.querySelector('input[name="canvas_step_2"]')?.value?.trim();
+  const canvasStep3 = document.querySelector('input[name="canvas_step_3"]')?.value?.trim();
+  const canvasStep4 = document.querySelector('input[name="canvas_step_4"]')?.value?.trim();
+  const canvasStep5 = document.querySelector('input[name="canvas_step_5"]')?.value?.trim();
+
+  const goalOk     = !!learningGoal;
+  const modalOk    = modalities.length >= 2;
+  const canvasOk   = !!(canvasStep1 && canvasStep2 && canvasStep3);
+  const toolsOk    = toolCategories.length >= 1;
+  const timeOk     = !!prepTime;
+
+  document.getElementById('c2-goal-error').classList.toggle('hidden', goalOk);
+  document.getElementById('c2-modality-error').classList.toggle('hidden', modalOk);
+  document.getElementById('c2-canvas-error').classList.toggle('hidden', canvasOk);
+  document.getElementById('c2-tools-error').classList.toggle('hidden', toolsOk);
+  document.getElementById('c2-time-error').classList.toggle('hidden', timeOk);
+
+  if (!goalOk || !modalOk || !canvasOk || !toolsOk || !timeOk) return;
+
+  fetch(`/modules/modules/{{ module.code }}/tab3/challenge2/`, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}'},
+    body: JSON.stringify({
+      learning_goal:    learningGoal,
+      modalities:       modalities,
+      canvas_step_1:    canvasStep1,
+      canvas_step_2:    canvasStep2,
+      canvas_step_3:    canvasStep3,
+      canvas_step_4:    canvasStep4,
+      canvas_step_5:    canvasStep5,
+      tool_categories:  toolCategories,
+      prep_time:        prepTime,
+    })
+  })
+  .then(r => r.json())
+  .then(data => { if (data.success) location.reload(); });
+});
+
+
+// ── CHALLENGE 3 SUBMIT ───────────────────────────────────────────
+document.getElementById('submit-challenge3-btn')?.addEventListener('click', () => {
+
+  let allValid = true;
+
+  const payload = {};
+
+  [1, 2, 3].forEach(n => {
+    const decision   = document.querySelector(`input[name="scenario_${n}_decision"]:checked`)?.value;
+    const disclosure = document.querySelector(`textarea[name="scenario_${n}_disclosure"]`)?.value?.trim();
+    const reflection = document.querySelector(`textarea[name="scenario_${n}_reflection"]`)?.value?.trim();
+
+    const decisionOk    = !!decision;
+    const reflectionOk  = !!(reflection && reflection.length >= 10);
+
+    document.getElementById(`c3-s${n}-decision-error`).classList.toggle('hidden', decisionOk);
+    document.getElementById(`c3-s${n}-reflection-error`).classList.toggle('hidden', reflectionOk);
+
+    if (!decisionOk || !reflectionOk) allValid = false;
+
+    payload[`s${n}_decision`]   = decision;
+    payload[`s${n}_disclosure`] = disclosure;
+    payload[`s${n}_reflection`] = reflection;
+  });
+
+  document.getElementById('c3-general-error').classList.toggle('hidden', allValid);
+  if (!allValid) return;
+
+  fetch(`/modules/modules/{{ module.code }}/tab3/challenge3/`, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}'},
+    body: JSON.stringify(payload)
+  })
+  .then(r => r.json())
+  .then(data => { if (data.success) location.reload(); });
+});
+
+
+// ── MARK ACTIVITY COMPLETE ───────────────────────────────────────
+document.getElementById('mark-activity-complete-btn')?.addEventListener('click', () => {
+  fetch(`/modules/modules/{{ module.code }}/tab3/reflection/`, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}'},
+    body: JSON.stringify({ tab: 'activity' })
+  })
+  .then(r => r.json())
+  .then(data => { if (data.success) location.reload(); });
+});
+
+</script>
+
+{% endif %}

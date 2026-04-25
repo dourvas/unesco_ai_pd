@@ -1,0 +1,155 @@
+{% extends 'base.html' %}
+
+{% block title %}Step 3: Goals & Preferences{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto">
+    
+    <!-- Progress Bar -->
+    <div class="mb-8">
+        <div class="flex justify-between items-center mb-2">
+            <span class="text-sm font-medium">Progress</span>
+            <span class="text-sm font-medium">{{ current_step }}/{{ total_steps }}</span>
+        </div>
+        <progress class="progress progress-primary w-full" value="{{ progress_percentage }}" max="100"></progress>
+    </div>
+
+    <!-- Step Header -->
+    <div class="text-center mb-8">
+        <div class="text-6xl mb-4">🎯</div>
+        <h1 class="text-3xl font-bold mb-2">Step 3: Goals & Preferences</h1>
+        <p class="text-base-content/70">
+            What do you want to achieve and how do you prefer to learn?
+        </p>
+    </div>
+
+    <!-- Form Card -->
+    <div class="card bg-base-100 shadow-xl">
+        <div class="card-body">
+            <form method="post">
+                {% csrf_token %}
+                
+                <!-- Learning Goals -->
+                <div class="form-control w-full mb-6">
+                    <label class="label">
+                        <span class="label-text font-medium">What are your main goals?</span>
+                        <span class="label-text-alt text-warning">Select up to 3</span>
+                    </label>
+                    <div class="space-y-2">
+                        {% for checkbox in form.goals_checkboxes %}
+                            <label class="label cursor-pointer justify-start gap-3 p-3 border-2 rounded-lg hover:border-primary transition-colors">
+                                {{ checkbox.tag }}
+                                <span class="label-text">{{ checkbox.choice_label }}</span>
+                            </label>
+                        {% endfor %}
+                    </div>
+                    {% if form.goals_checkboxes.errors %}
+                        <label class="label">
+                            <span class="label-text-alt text-error">{{ form.goals_checkboxes.errors.0 }}</span>
+                        </label>
+                    {% endif %}
+                </div>
+
+                <!-- Communication Style -->
+                <div class="form-control w-full mb-6">
+                    <label class="label">
+                        <span class="label-text font-medium">Preferred Communication Style *</span>
+                        <span class="label-text-alt">How do you prefer content to be presented?</span>
+                    </label>
+                    <div class="space-y-3">
+                        {% for radio in form.preferred_communication_style %}
+                            <label class="label cursor-pointer justify-start gap-3 p-4 border-2 rounded-lg hover:border-primary transition-colors">
+                                {{ radio.tag }}
+                                <span class="label-text">{{ radio.choice_label }}</span>
+                            </label>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="divider">Research Consent</div>
+
+                <!-- Research Consent -->
+                <div class="form-control mb-4">
+                    <label class="label cursor-pointer justify-start gap-3 p-4 bg-base-200 rounded-lg">
+                        {{ form.research_consent }}
+                        <div>
+                            <span class="label-text font-medium">Consent to use data for research purposes</span>
+                            <p class="text-sm text-base-content/70 mt-1">
+                                Your data will be used anonymously for research purposes (doctoral dissertation).
+                            </p>
+                        </div>
+                    </label>
+                </div>
+
+                <!-- Contact for Research -->
+                <div class="form-control mb-6">
+                    <label class="label cursor-pointer justify-start gap-3 p-4 bg-base-200 rounded-lg">
+                        {{ form.contact_for_research }}
+                        <div>
+                            <span class="label-text font-medium">I'm available for a research interview (optional)</span>
+                            <p class="text-sm text-base-content/70 mt-1">
+                                We may contact you for a brief interview about your experience.
+                            </p>
+                        </div>
+                    </label>
+                </div>
+
+                <!-- Privacy Notice -->
+                <div class="alert alert-info mb-6">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 w-6 h-6">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <div class="text-sm">
+                        <p class="font-medium mb-1">🔒 Data Protection</p>
+                        <p>Your information is protected in accordance with GDPR. You can withdraw your consent at any time.</p>
+                    </div>
+                </div>
+
+                <!-- Form Actions -->
+                <div class="card-actions justify-between mt-6">
+                    <a href="{% url 'users:onboarding_step2' %}" class="btn btn-ghost">
+                        ← Back
+                    </a>
+                    <button type="submit" class="btn btn-primary">
+                        Complete
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                        </svg>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+</div>
+
+<script>
+// Limit goals selection to 3
+document.addEventListener('DOMContentLoaded', function() {
+    const goalCheckboxes = document.querySelectorAll('input[name="goals_checkboxes"]');
+    const maxSelections = 3;
+    
+    goalCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            const checkedCount = document.querySelectorAll('input[name="goals_checkboxes"]:checked').length;
+            
+            if (checkedCount >= maxSelections) {
+                // Disable unchecked boxes
+                goalCheckboxes.forEach(cb => {
+                    if (!cb.checked) {
+                        cb.disabled = true;
+                        cb.parentElement.classList.add('opacity-50');
+                    }
+                });
+            } else {
+                // Enable all boxes
+                goalCheckboxes.forEach(cb => {
+                    cb.disabled = false;
+                    cb.parentElement.classList.remove('opacity-50');
+                });
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

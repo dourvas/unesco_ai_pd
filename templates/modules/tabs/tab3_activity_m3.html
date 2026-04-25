@@ -1,0 +1,536 @@
+{% if current_tab == 'activity' %}
+
+<!-- ============================================================ -->
+<!-- M3 TAB3: ACTIVITY — EVALUATE, BUILD & CURATE -->
+<!-- 3 Challenges: Reliability Check → Toolkit Builder → Spot the Category -->
+<!-- UNESCO Aspect 3: AI Foundations | Level: Acquire -->
+<!-- ============================================================ -->
+
+<h2 class="card-title text-2xl mb-2">🔍 Evaluate, Build &amp; Curate</h2>
+<p class="text-gray-600 mb-6">Three challenges that move from evaluating a real AI tool to building your personal toolkit — and sharpening your eye for AI categories.</p>
+
+<!-- Progress tracker -->
+<div class="flex gap-2 mb-8">
+  <div id="progress-c1" class="flex-1 rounded-full h-2 {% if activity.challenge1_completed %}bg-emerald-500{% else %}bg-base-300{% endif %}"></div>
+  <div id="progress-c2" class="flex-1 rounded-full h-2 {% if activity.challenge2_completed %}bg-emerald-500{% else %}bg-base-300{% endif %}"></div>
+  <div id="progress-c3" class="flex-1 rounded-full h-2 {% if activity.challenge3_completed %}bg-emerald-500{% else %}bg-base-300{% endif %}"></div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- CHALLENGE 1: RELIABILITY FRAMEWORK IN ACTION -->
+<!-- ============================================================ -->
+<div id="challenge1-section" class="card bg-base-200 border-2 {% if activity.challenge1_completed %}border-emerald-400{% else %}border-base-300{% endif %} mb-6">
+  <div class="card-body">
+
+    <div class="flex items-center gap-3 mb-2">
+      <div class="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-lg flex-shrink-0">1</div>
+      <div>
+        <h3 class="card-title text-lg">Reliability Framework in Action</h3>
+        <p class="text-xs text-gray-500">Try · Evaluate · Decide · ~25 minutes</p>
+      </div>
+      {% if activity.challenge1_completed %}
+      <span class="badge badge-success ml-auto">✓ Complete</span>
+      {% endif %}
+    </div>
+
+    <p class="text-sm mb-4">The Reliability Framework from Part 3 only becomes useful when you apply it to a real tool. In this challenge you will try an AI tool — or evaluate one you already use — then rate it across the five dimensions and reach a decision.</p>
+
+    <!-- Step 1: Choose your tool -->
+    <div class="card bg-white border border-blue-200 mb-4">
+      <div class="card-body py-4">
+        <p class="text-xs font-semibold text-blue-600 uppercase tracking-wide mb-3">Step 1 — Choose Your Tool</p>
+
+        <div class="form-control mb-3">
+          <label class="label pb-1">
+            <span class="label-text font-semibold text-sm">Which tool will you evaluate?</span>
+          </label>
+          <input type="text" id="c1-tool-name" placeholder="e.g. ChatGPT, Gemini, Kahoot, Diffit, or any tool you use…"
+            class="input input-bordered input-sm w-full"
+            {% if activity.challenge1_completed %}value="{{ activity.challenge_data.challenge1_tool_name }}" disabled{% endif %} />
+          <p id="c1-tool-name-error" class="text-error text-xs mt-1 hidden">Please enter the name of the tool you are evaluating.</p>
+        </div>
+
+        <!-- Option B: Try one of these first -->
+        {% if not activity.challenge1_completed %}
+        <div class="collapse collapse-arrow bg-blue-50 border border-blue-200 rounded-lg">
+          <input type="checkbox" />
+          <div class="collapse-title text-sm font-medium text-blue-800">
+            💡 Haven't used an AI tool yet? Try one of these first (5 minutes)
+          </div>
+          <div class="collapse-content">
+            <div class="space-y-3 mt-2">
+              {% for tool in c1_starter_tools %}
+              <div class="bg-white border border-blue-100 rounded-lg p-3">
+                <div class="flex items-start gap-3">
+                  <span class="badge badge-outline badge-sm mt-1">{{ tool.category }}</span>
+                  <div>
+                    <p class="font-semibold text-sm text-blue-800">{{ tool.name }}</p>
+                    <p class="text-xs text-gray-600 mt-1"><strong>Quick task:</strong> {{ tool.task }}</p>
+                    <a href="{{ tool.url }}" target="_blank" class="btn btn-xs btn-outline mt-2">Open {{ tool.name }} →</a>
+                  </div>
+                </div>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Step 2: Rate each dimension -->
+    <div class="card bg-white border border-blue-200 mb-4">
+      <div class="card-body py-4">
+        <p class="text-xs font-semibold text-blue-600 uppercase tracking-wide mb-3">Step 2 — Rate the Five Dimensions</p>
+        <p class="text-xs text-gray-500 mb-4">For each dimension, rate your tool based on your experience. Use "Not tested" if you genuinely couldn't check that dimension.</p>
+
+        {% if activity.challenge1_completed %}
+        <!-- Summary view when completed -->
+        <div class="bg-gray-50 border border-gray-200 rounded-lg p-4 space-y-2">
+          <p class="text-xs font-semibold text-gray-600 mb-2">Your ratings:</p>
+          <div class="grid grid-cols-2 gap-2 text-xs">
+            <div>🎯 Accuracy: <strong>{{ activity.challenge_data.challenge1_accuracy|default:"—" }}</strong></div>
+            <div>👥 Appropriateness: <strong>{{ activity.challenge_data.challenge1_appropriateness|default:"—" }}</strong></div>
+            <div>🗺️ Local Context: <strong>{{ activity.challenge_data.challenge1_local_context|default:"—" }}</strong></div>
+            <div>♿ Accessibility: <strong>{{ activity.challenge_data.challenge1_accessibility|default:"—" }}</strong></div>
+            <div>💰 Cost: <strong>{{ activity.challenge_data.challenge1_cost|default:"—" }}</strong></div>
+          </div>
+        </div>
+        {% else %}
+        <div class="space-y-4">
+          {% for dim in c1_dimensions %}
+          <div class="border border-gray-100 rounded-lg p-3 bg-gray-50">
+            <div class="flex items-start gap-2 mb-2">
+              <span class="text-lg">{{ dim.icon }}</span>
+              <div>
+                <p class="font-semibold text-sm">{{ dim.label }}</p>
+                <p class="text-xs text-gray-600">{{ dim.question }}</p>
+                <p class="text-xs text-gray-400 italic mt-1">{{ dim.hint }}</p>
+              </div>
+            </div>
+            <div class="flex flex-wrap gap-2 mt-2">
+              {% for rating in c1_ratings %}
+              <label class="flex items-center gap-1 cursor-pointer">
+                <input type="radio" name="dim_{{ dim.key }}" value="{{ rating.value }}" class="radio radio-sm radio-{{ rating.color }}">
+                <span class="text-xs">{{ rating.label }}</span>
+              </label>
+              {% endfor %}
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+        <p id="c1-ratings-error" class="text-error text-xs mt-2 hidden">Please rate all five dimensions before continuing.</p>
+      </div>
+    </div>
+
+    <!-- Step 3: Your decision -->
+    <div class="card bg-white border border-blue-200 mb-4">
+      <div class="card-body py-4">
+        <p class="text-xs font-semibold text-blue-600 uppercase tracking-wide mb-3">Step 3 — Your Decision</p>
+        <p class="text-xs text-gray-500 mb-3">Based on your evaluation, what is your overall decision about this tool?</p>
+
+        {% if activity.challenge1_completed %}
+        <div class="alert alert-success py-2">
+          <p class="text-sm font-semibold">{{ activity.challenge_data.challenge1_decision }}</p>
+        </div>
+        {% else %}
+        <div class="space-y-2">
+          {% for decision in c1_decisions %}
+          <label class="flex items-center gap-3 cursor-pointer p-2 rounded-lg hover:bg-gray-50 border border-transparent hover:border-gray-200">
+            <input type="radio" name="c1_decision" value="{{ decision.value }}" class="radio radio-primary radio-sm">
+            <span class="text-sm">{{ decision.label }}</span>
+          </label>
+          {% endfor %}
+        </div>
+        <p id="c1-decision-error" class="text-error text-xs mt-2 hidden">Please select a decision.</p>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Step 4: One insight -->
+    {% if not activity.challenge1_completed %}
+    <div class="card bg-white border border-blue-200 mb-4">
+      <div class="card-body py-4">
+        <p class="text-xs font-semibold text-blue-600 uppercase tracking-wide mb-2">Step 4 — One Insight</p>
+        <p class="text-xs text-gray-500 mb-2">What surprised you most about this tool — positively or negatively? (minimum 20 characters)</p>
+        <textarea id="c1-insight" rows="2" maxlength="500"
+          class="textarea textarea-bordered w-full text-sm"
+          placeholder="e.g. I was surprised that it struggled with questions in my language, even though it claimed multilingual support…"></textarea>
+        <div class="flex justify-between mt-1">
+          <p id="c1-insight-error" class="text-error text-xs hidden">Please share at least one insight (20+ characters).</p>
+          <span class="text-xs text-gray-400"><span id="c1-char-count">0</span>/500</span>
+        </div>
+      </div>
+    </div>
+
+    <button id="submit-challenge1-btn" class="btn btn-primary btn-sm mt-2">
+      Submit Reliability Card →
+    </button>
+    {% endif %}
+
+    {% if activity.challenge1_completed %}
+    <div class="alert alert-success mt-4 py-2">
+      <div>
+        <p class="font-semibold text-sm">✓ Reliability Card Complete</p>
+        <p class="text-xs mt-1">Your insight: <em>{{ activity.challenge_data.challenge1_insight }}</em></p>
+      </div>
+    </div>
+    {% endif %}
+
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- CHALLENGE 2: BUILD YOUR STARTER TOOLKIT -->
+<!-- ============================================================ -->
+<div id="challenge2-section" class="card bg-base-200 border-2 {% if activity.challenge2_completed %}border-emerald-400{% elif not activity.challenge1_completed %}border-base-300 opacity-60{% else %}border-base-300{% endif %} mb-6">
+  <div class="card-body">
+
+    <div class="flex items-center gap-3 mb-2">
+      <div class="w-10 h-10 rounded-full bg-purple-600 text-white flex items-center justify-center font-bold text-lg flex-shrink-0">2</div>
+      <div>
+        <h3 class="card-title text-lg">Build Your Starter Toolkit</h3>
+        <p class="text-xs text-gray-500">Organise · Justify · Plan · ~20 minutes</p>
+      </div>
+      {% if activity.challenge2_completed %}
+      <span class="badge badge-success ml-auto">✓ Complete</span>
+      {% endif %}
+    </div>
+
+    {% if not activity.challenge1_completed %}
+    <div class="alert alert-info py-2">
+      <p class="text-sm">Complete Challenge 1 first to unlock this challenge.</p>
+    </div>
+    {% else %}
+
+    <p class="text-sm mb-4">A Personal AI Toolkit is not a list of apps — it is a curated, organised collection matched to specific teaching purposes. For each of the five pedagogical categories below, name one AI tool you already use or want to try, and briefly explain why it fits that purpose.</p>
+
+    <div class="alert alert-info py-2 mb-4">
+      <p class="text-xs"><strong>💡 Tip:</strong> You can use the same tool in multiple categories. You can also write "None yet" for categories you haven't explored — the goal is honest reflection, not a complete toolkit. That comes with time.</p>
+    </div>
+
+    {% if activity.challenge2_completed %}
+    <!-- Summary view when completed -->
+    <div class="space-y-2 mt-2">
+      <div class="grid grid-cols-1 gap-2 text-xs">
+        <div class="bg-gray-50 rounded p-2 flex gap-4"><span class="font-medium w-36">✍️ Content Creation</span><span class="text-gray-700">{{ activity.challenge_data.challenge2_content_creation_tool|default:"—" }}</span><span class="text-gray-500 italic">{{ activity.challenge_data.challenge2_content_creation_why|default:"" }}</span></div>
+        <div class="bg-gray-50 rounded p-2 flex gap-4"><span class="font-medium w-36">📊 Assessment</span><span class="text-gray-700">{{ activity.challenge_data.challenge2_assessment_tool|default:"—" }}</span><span class="text-gray-500 italic">{{ activity.challenge_data.challenge2_assessment_why|default:"" }}</span></div>
+        <div class="bg-gray-50 rounded p-2 flex gap-4"><span class="font-medium w-36">🎯 Differentiation</span><span class="text-gray-700">{{ activity.challenge_data.challenge2_differentiation_tool|default:"—" }}</span><span class="text-gray-500 italic">{{ activity.challenge_data.challenge2_differentiation_why|default:"" }}</span></div>
+        <div class="bg-gray-50 rounded p-2 flex gap-4"><span class="font-medium w-36">💬 Feedback</span><span class="text-gray-700">{{ activity.challenge_data.challenge2_feedback_tool|default:"—" }}</span><span class="text-gray-500 italic">{{ activity.challenge_data.challenge2_feedback_why|default:"" }}</span></div>
+        <div class="bg-gray-50 rounded p-2 flex gap-4"><span class="font-medium w-36">🔧 Admin</span><span class="text-gray-700">{{ activity.challenge_data.challenge2_admin_tool|default:"—" }}</span><span class="text-gray-500 italic">{{ activity.challenge_data.challenge2_admin_why|default:"" }}</span></div>
+      </div>
+    </div>
+    {% else %}
+    <div class="space-y-4">
+      {% for cat in c2_categories %}
+      <div class="card bg-white border border-gray-200 p-4">
+        <div class="flex items-start gap-3 mb-2">
+          <div>
+            <p class="font-semibold text-sm">{{ cat.label }}</p>
+            <p class="text-xs text-gray-500">{{ cat.description }}</p>
+            <p class="text-xs text-gray-400 italic">{{ cat.example }}</p>
+          </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-2">
+          <div>
+            <label class="label py-0"><span class="label-text text-xs">Tool name</span></label>
+            <input type="text" id="c2-{{ cat.key }}-tool"
+              class="input input-bordered input-sm w-full"
+              placeholder="Tool name or 'None yet'…" />
+          </div>
+          <div>
+            <label class="label py-0"><span class="label-text text-xs">Why it fits this purpose</span></label>
+            <input type="text" id="c2-{{ cat.key }}-why"
+              class="input input-bordered input-sm w-full"
+              placeholder="One sentence reason…" />
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if not activity.challenge2_completed %}
+    <p id="c2-error" class="text-error text-xs mt-3 hidden">Please fill in at least 3 categories before submitting.</p>
+
+    <button id="submit-challenge2-btn" class="btn btn-primary btn-sm mt-4">
+      Save My Toolkit →
+    </button>
+    {% endif %}
+
+    {% if activity.challenge2_completed %}
+    <div class="alert alert-success mt-4 py-2">
+      <p class="text-sm font-semibold">✓ Starter Toolkit Saved</p>
+    </div>
+    {% endif %}
+
+    {% endif %}
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- CHALLENGE 3: SPOT THE CATEGORY -->
+<!-- ============================================================ -->
+<div id="challenge3-section" class="card bg-base-200 border-2 {% if activity.challenge3_completed %}border-emerald-400{% elif not activity.challenge2_completed %}border-base-300 opacity-60{% else %}border-base-300{% endif %} mb-6">
+  <div class="card-body">
+
+    <div class="flex items-center gap-3 mb-2">
+      <div class="w-10 h-10 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-lg flex-shrink-0">3</div>
+      <div>
+        <h3 class="card-title text-lg">Spot the Category</h3>
+        <p class="text-xs text-gray-500">Read · Classify · Explain · ~15 minutes</p>
+      </div>
+      {% if activity.challenge3_completed %}
+      <span class="badge badge-success ml-auto">✓ Complete</span>
+      {% endif %}
+    </div>
+
+    {% if not activity.challenge2_completed %}
+    <div class="alert alert-info py-2">
+      <p class="text-sm">Complete Challenge 2 first to unlock this challenge.</p>
+    </div>
+    {% else %}
+
+    <p class="text-sm mb-2">Five AI tools are described below. For each one, identify whether it is Symbolic, Predictive, or Generative AI — and briefly explain your reasoning. There are no trick questions, but read carefully: some descriptions are easy to confuse.</p>
+
+    <div class="alert alert-warning py-2 mb-4">
+      <p class="text-xs"><strong>💡 Hint:</strong> Ask yourself: Does it follow fixed rules? (Symbolic) Does it learn from data to predict outcomes? (Predictive) Does it create new content? (Generative)</p>
+    </div>
+
+    <div class="space-y-4">
+      {% for tool in c3_tools %}
+      <div class="card bg-white border border-gray-200 p-4">
+        <div class="flex items-start gap-2 mb-3">
+          <span class="badge badge-neutral badge-sm mt-1">{{ forloop.counter }}</span>
+          <div>
+            <p class="font-semibold text-sm">{{ tool.name }}</p>
+            <p class="text-sm text-gray-700 mt-1 leading-relaxed">{{ tool.description }}</p>
+          </div>
+        </div>
+
+        {% if activity.challenge3_completed %}
+        <!-- Show result with feedback -->
+        <div class="space-y-2">
+          <!-- Determine user's answer for this tool -->
+          {% if tool.id == 'tool_a' %}
+            {% if activity.challenge_data.challenge3_tool_a == tool.correct %}<span class="badge badge-success badge-sm">✓ Correct — {{ activity.challenge_data.challenge3_tool_a }}</span>{% else %}<span class="badge badge-error badge-sm">✗ Incorrect — you answered: {{ activity.challenge_data.challenge3_tool_a|default:"—" }}</span>{% endif %}
+          {% endif %}
+          {% if tool.id == 'tool_b' %}
+            {% if activity.challenge_data.challenge3_tool_b == tool.correct %}<span class="badge badge-success badge-sm">✓ Correct — {{ activity.challenge_data.challenge3_tool_b }}</span>{% else %}<span class="badge badge-error badge-sm">✗ Incorrect — you answered: {{ activity.challenge_data.challenge3_tool_b|default:"—" }}</span>{% endif %}
+          {% endif %}
+          {% if tool.id == 'tool_c' %}
+            {% if activity.challenge_data.challenge3_tool_c == tool.correct %}<span class="badge badge-success badge-sm">✓ Correct — {{ activity.challenge_data.challenge3_tool_c }}</span>{% else %}<span class="badge badge-error badge-sm">✗ Incorrect — you answered: {{ activity.challenge_data.challenge3_tool_c|default:"—" }}</span>{% endif %}
+          {% endif %}
+          {% if tool.id == 'tool_d' %}
+            {% if activity.challenge_data.challenge3_tool_d == tool.correct %}<span class="badge badge-success badge-sm">✓ Correct — {{ activity.challenge_data.challenge3_tool_d }}</span>{% else %}<span class="badge badge-error badge-sm">✗ Incorrect — you answered: {{ activity.challenge_data.challenge3_tool_d|default:"—" }}</span>{% endif %}
+          {% endif %}
+          {% if tool.id == 'tool_e' %}
+            {% if activity.challenge_data.challenge3_tool_e == tool.correct %}<span class="badge badge-success badge-sm">✓ Correct — {{ activity.challenge_data.challenge3_tool_e }}</span>{% else %}<span class="badge badge-error badge-sm">✗ Incorrect — you answered: {{ activity.challenge_data.challenge3_tool_e|default:"—" }}</span>{% endif %}
+          {% endif %}
+          <div class="bg-emerald-50 border border-emerald-200 rounded p-2 text-xs text-emerald-800 mt-2">
+            <strong>{{ tool.correct|title }} AI.</strong> {{ tool.explanation }}
+          </div>
+        </div>
+        {% else %}
+        <!-- Radio selection -->
+        <div class="flex flex-wrap gap-3 mb-3">
+          {% for cat in c3_categories %}
+          <label class="flex items-center gap-2 cursor-pointer">
+            <input type="radio" name="c3_{{ tool.id }}" value="{{ cat.value }}" class="radio radio-sm radio-primary">
+            <div>
+              <span class="text-sm font-medium">{{ cat.label }}</span>
+              <span class="text-xs text-gray-500 block">{{ cat.sublabel }}</span>
+            </div>
+          </label>
+          {% endfor %}
+        </div>
+        {% endif %}
+
+      </div>
+      {% endfor %}
+    </div>
+
+    {% if not activity.challenge3_completed %}
+    <p id="c3-error" class="text-error text-xs mt-3 hidden">Please classify all five tools before submitting.</p>
+    <button id="submit-challenge3-btn" class="btn btn-primary btn-sm mt-4">
+      Submit Classifications →
+    </button>
+    {% endif %}
+
+    {% if activity.challenge3_completed %}
+    <!-- Score display -->
+    <div class="alert alert-success mt-4">
+      <div>
+        <p class="font-semibold text-sm">✓ Classifications Submitted</p>
+        <p class="text-xs mt-1">Score: {{ activity.challenge_data.challenge3_score }}/5 correct</p>
+      </div>
+    </div>
+    {% endif %}
+
+    {% endif %}
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- COMPLETION CARD -->
+<!-- ============================================================ -->
+{% if activity.activity_completed %}
+<div class="card bg-emerald-50 border border-emerald-300 mb-6">
+  <div class="card-body">
+    <h3 class="card-title text-emerald-800">🎉 Activity Complete!</h3>
+    <p class="text-sm text-emerald-700 mb-3">You now have three practical tools:</p>
+    <ul class="list-disc list-inside text-sm text-emerald-800 space-y-1 mb-4">
+      <li>A completed <strong>Reliability Card</strong> for a real AI tool in your context</li>
+      <li>A <strong>Personal Starter Toolkit</strong> organised by pedagogical purpose</li>
+      <li>A sharper eye for <strong>AI categories</strong> — useful for explaining tools to colleagues and parents</li>
+    </ul>
+    <div class="bg-white border border-emerald-200 rounded-lg p-3 text-xs text-gray-600">
+      <p><strong>📚 Coming up in Module 5:</strong> Prompt Engineering as Reflective Practice — the RPE Framework for crafting prompts that work every time.</p>
+      <p class="mt-1"><strong>📚 Coming up in Module 8:</strong> EduPrompt Studio — a full prompt engineering environment built for educators.</p>
+    </div>
+  </div>
+</div>
+
+{% include "community/partials/tab_forum_trigger.html" with tab_name="activity" module_code=module.code trigger_style="post_completion" %}
+{% endif %}
+
+{% if not activity.activity_completed %}
+<div id="mark-complete-section" class="{% if not activity.challenge3_completed %}hidden{% endif %} text-center mt-4">
+  <button id="mark-activity-complete-btn" class="btn btn-success btn-lg">
+    ✓ Mark Activity Complete
+  </button>
+</div>
+{% endif %}
+
+
+<!-- ============================================================ -->
+<!-- JAVASCRIPT -->
+<!-- ============================================================ -->
+<script>
+// ── Character counter ────────────────────────────────────────────
+const c1Insight = document.getElementById('c1-insight');
+const c1CharCount = document.getElementById('c1-char-count');
+if (c1Insight) {
+  c1Insight.addEventListener('input', () => {
+    c1CharCount.textContent = c1Insight.value.length;
+  });
+}
+
+// ── CHALLENGE 1 SUBMIT ───────────────────────────────────────────
+document.getElementById('submit-challenge1-btn')?.addEventListener('click', () => {
+  const toolName = document.getElementById('c1-tool-name')?.value?.trim();
+  const dimensions = ['accuracy', 'appropriateness', 'local_context', 'accessibility', 'cost'];
+  const ratings = {};
+  let allRated = true;
+  dimensions.forEach(dim => {
+    const val = document.querySelector(`input[name="dim_${dim}"]:checked`)?.value;
+    if (!val) allRated = false;
+    ratings[dim] = val || null;
+  });
+  const decision = document.querySelector('input[name="c1_decision"]:checked')?.value;
+  const insight = c1Insight?.value?.trim();
+
+  // Show errors
+  const toolNameError = document.getElementById('c1-tool-name-error');
+  if (toolNameError) toolNameError.classList.toggle('hidden', !!toolName);
+  document.getElementById('c1-ratings-error').classList.toggle('hidden', allRated);
+  document.getElementById('c1-decision-error').classList.toggle('hidden', !!decision);
+  document.getElementById('c1-insight-error').classList.toggle('hidden', !!(insight && insight.length >= 20));
+
+  if (!toolName || !allRated || !decision || !insight || insight.length < 20) return;
+
+  fetch(`/modules/modules/{{ module.code }}/tab3/challenge1/`, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}'},
+    body: JSON.stringify({
+      tool_name: toolName,
+      ...ratings,
+      decision: decision,
+      insight: insight
+    })
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.success) location.reload();
+    else console.error('Challenge 1 error:', data.message);
+  })
+  .catch(err => console.error('Challenge 1 fetch error:', err));
+});
+
+// ── CHALLENGE 2 SUBMIT ───────────────────────────────────────────
+document.getElementById('submit-challenge2-btn')?.addEventListener('click', () => {
+  const categories = ['content_creation', 'assessment', 'differentiation', 'feedback', 'admin'];
+  const payload = {};
+  let filledCount = 0;
+
+  categories.forEach(cat => {
+    const tool = document.getElementById(`c2-${cat}-tool`)?.value?.trim();
+    const why = document.getElementById(`c2-${cat}-why`)?.value?.trim();
+    if (tool && tool.toLowerCase() !== 'none yet') filledCount++;
+    payload[`${cat}_tool`] = tool || '';
+    payload[`${cat}_why`] = why || '';
+  });
+
+  const errorEl = document.getElementById('c2-error');
+  if (filledCount < 3) {
+    errorEl.classList.remove('hidden');
+    return;
+  }
+  errorEl.classList.add('hidden');
+
+  fetch(`/modules/modules/{{ module.code }}/tab3/challenge2/`, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}'},
+    body: JSON.stringify(payload)
+  })
+  .then(r => r.json())
+  .then(data => { if (data.success) location.reload(); });
+});
+
+// ── CHALLENGE 3 SUBMIT ───────────────────────────────────────────
+document.getElementById('submit-challenge3-btn')?.addEventListener('click', () => {
+  const tools = ['tool_a', 'tool_b', 'tool_c', 'tool_d', 'tool_e'];
+  const correct = { tool_a: 'symbolic', tool_b: 'predictive', tool_c: 'generative', tool_d: 'predictive', tool_e: 'symbolic' };
+  const answers = {};
+  let allAnswered = true;
+
+  tools.forEach(t => {
+    const val = document.querySelector(`input[name="c3_${t}"]:checked`)?.value;
+    if (!val) allAnswered = false;
+    answers[t] = val || null;
+  });
+
+  document.getElementById('c3-error').classList.toggle('hidden', allAnswered);
+  if (!allAnswered) return;
+
+  // Calculate score client-side (also verified server-side)
+  let score = 0;
+  tools.forEach(t => { if (answers[t] === correct[t]) score++; });
+
+  fetch(`/modules/modules/{{ module.code }}/tab3/challenge3/`, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}'},
+    body: JSON.stringify({ ...answers, score: score })
+  })
+  .then(r => r.json())
+  .then(data => { if (data.success) location.reload(); });
+});
+
+// ── MARK ACTIVITY COMPLETE ───────────────────────────────────────
+document.getElementById('mark-activity-complete-btn')?.addEventListener('click', () => {
+  fetch(`/modules/modules/{{ module.code }}/tab3/reflection/`, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}'},
+    body: JSON.stringify({ tab: 'activity' })
+  })
+  .then(r => r.json())
+  .then(data => { if (data.success) location.reload(); });
+});
+</script>
+
+{% endif %}

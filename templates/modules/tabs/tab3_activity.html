@@ -1,0 +1,709 @@
+<!-- apps/modules/templates/modules/tab3_activity.html -->
+
+{% load static %}
+
+
+<div class="container mx-auto px-4 py-8 max-w-5xl">
+    
+    {# HEADER #}
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold mb-2">🎯 AI Tool Exploration Activity</h1>
+        <p class="text-lg text-base-content/70">
+            Test AI tools with our prompts and discover what works best for you
+        </p>
+        <div class="text-sm text-base-content/60 mt-2">
+            Estimated time: 45-60 minutes
+        </div>
+    </div>
+    
+    {# PROGRESS BAR #}
+    <div class="card bg-base-200 mb-6">
+        <div class="card-body p-4">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-sm font-medium">Your Progress</span>
+                <span class="text-sm">{{ activity.completion_percentage|floatformat:0 }}%</span>
+            </div>
+            <progress class="progress progress-primary w-full" 
+                      value="{{ activity.completion_percentage }}" 
+                      max="100"></progress>
+            
+            <div class="flex gap-4 mt-3 text-xs">
+                <div class="flex items-center gap-1">
+                    {% if activity.challenge1_completed %}
+                        <span class="text-success">✓</span>
+                    {% else %}
+                        <span class="text-base-content/30">○</span>
+                    {% endif %}
+                    <span>Challenge 1</span>
+                </div>
+                <div class="flex items-center gap-1">
+                    {% if activity.challenge2_completed %}
+                        <span class="text-success">✓</span>
+                    {% else %}
+                        <span class="text-base-content/30">○</span>
+                    {% endif %}
+                    <span>Challenge 2</span>
+                </div>
+                <div class="flex items-center gap-1">
+                    {% if activity.challenge3_completed %}
+                        <span class="text-success">✓</span>
+                    {% else %}
+                        <span class="text-base-content/30">○</span>
+                    {% endif %}
+                    <span>Challenge 3</span>
+                </div>
+                <div class="flex items-center gap-1">
+                    {% if activity.reflection_completed %}
+                        <span class="text-success">✓</span>
+                    {% else %}
+                        <span class="text-base-content/30">○</span>
+                    {% endif %}
+                    <span>Reflection</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    {# PART 1: SETUP #}
+    <div class="collapse collapse-arrow bg-base-200 mb-4" id="setup-section">
+        <input type="checkbox" checked /> 
+        <div class="collapse-title text-xl font-medium">
+            🚀 Part 1: Choose Your AI Tool
+        </div>
+        <div class="collapse-content">
+            <div class="prose max-w-none mb-6">
+                <p>Select 1-2 AI tools to test. All have free tiers:</p>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {% for tool in ai_tools %}
+                <div class="card bg-base-100 shadow-sm hover:shadow-md transition-shadow">
+                    <div class="card-body p-4">
+                        <h3 class="card-title text-base">{{ tool.label }}</h3>
+                        <p class="text-sm text-base-content/70">{{ tool.description }}</p>
+                        {% if tool.url %}
+                        <div class="card-actions justify-end">
+                            <a href="{{ tool.url }}" 
+                               target="_blank" 
+                               class="btn btn-sm btn-outline btn-primary">
+                                Open Tool →
+                            </a>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            
+            <div class="alert alert-info mt-6">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 w-6 h-6">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <span><strong>Tip:</strong> Choose a tool you haven't used before to broaden your experience!</span>
+            </div>
+        </div>
+    </div>
+    
+    {# CHALLENGE 1: GOOD PROMPT #}
+    <div class="collapse collapse-arrow bg-base-200 mb-4" id="challenge1-section">
+        <input type="checkbox" {% if not activity.challenge1_completed %}checked{% endif %} /> 
+        <div class="collapse-title text-xl font-medium">
+            📝 Challenge 1: The Well-Crafted Prompt
+            {% if activity.challenge1_completed %}
+                <span class="badge badge-success ml-2">✓ Complete</span>
+            {% endif %}
+        </div>
+        <div class="collapse-content">
+            <div class="bg-base-100 p-6 rounded-lg mb-6">
+                <div class="flex justify-between items-start mb-4">
+                    <div>
+                        <div class="badge badge-primary mb-2">{{ subject }} | {{ grade_level }}</div>
+                        <h3 class="text-lg font-bold">Good Prompt Example:</h3>
+                    </div>
+                    <button onclick="copyPrompt('good-prompt')" 
+                            class="btn btn-sm btn-outline btn-primary">
+                        📋 Copy Prompt
+                    </button>
+                </div>
+                
+                <div class="bg-base-200 p-4 rounded font-mono text-sm whitespace-pre-wrap" 
+                     id="good-prompt">{{ good_prompt.prompt_template }}</div>
+            </div>
+            
+            <div class="divider">Test & Report</div>
+            
+            <form id="challenge1-form" class="space-y-4">
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text font-medium">Which tool did you use?</span>
+                    </label>
+                    <select name="tool" class="select select-bordered" required>
+                        <option value="">Select a tool...</option>
+                        {% for tool in ai_tools %}
+                        <option value="{{ tool.value }}">{{ tool.label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text font-medium">Rate the result:</span>
+                    </label>
+                    <div class="rating rating-lg">
+                        <input type="radio" name="rating" value="1" class="mask mask-star-2 bg-orange-400" />
+                        <input type="radio" name="rating" value="2" class="mask mask-star-2 bg-orange-400" />
+                        <input type="radio" name="rating" value="3" class="mask mask-star-2 bg-orange-400" />
+                        <input type="radio" name="rating" value="4" class="mask mask-star-2 bg-orange-400" checked />
+                        <input type="radio" name="rating" value="5" class="mask mask-star-2 bg-orange-400" />
+                    </div>
+                </div>
+                
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text font-medium">Tag the result (select all that apply):</span>
+                    </label>
+                    <div class="flex flex-wrap gap-2">
+                        <label class="label cursor-pointer">
+                            <input type="checkbox" name="tags" value="Accurate" class="checkbox checkbox-sm mr-2" />
+                            <span class="label-text">Accurate</span>
+                        </label>
+                        <label class="label cursor-pointer">
+                            <input type="checkbox" name="tags" value="Creative" class="checkbox checkbox-sm mr-2" />
+                            <span class="label-text">Creative</span>
+                        </label>
+                        <label class="label cursor-pointer">
+                            <input type="checkbox" name="tags" value="Well-structured" class="checkbox checkbox-sm mr-2" />
+                            <span class="label-text">Well-structured</span>
+                        </label>
+                        <label class="label cursor-pointer">
+                            <input type="checkbox" name="tags" value="Subject-appropriate" class="checkbox checkbox-sm mr-2" />
+                            <span class="label-text">Subject-appropriate</span>
+                        </label>
+                        <label class="label cursor-pointer">
+                            <input type="checkbox" name="tags" value="Needs editing" class="checkbox checkbox-sm mr-2" />
+                            <span class="label-text">Needs editing</span>
+                        </label>
+                        <label class="label cursor-pointer">
+                            <input type="checkbox" name="tags" value="Confusing" class="checkbox checkbox-sm mr-2" />
+                            <span class="label-text">Confusing</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text">Quick note (optional - 50 words):</span>
+                    </label>
+                    <textarea name="note" class="textarea textarea-bordered" rows="3" 
+                              maxlength="250" placeholder="Any observations..."></textarea>
+                </div>
+                
+                <button type="submit" class="btn btn-primary">
+                    ✓ Mark Challenge 1 Complete
+                </button>
+            </form>
+        </div>
+    </div>
+    
+    {# CHALLENGE 2: BAD PROMPT #}
+    <div class="collapse collapse-arrow bg-base-200 mb-4" id="challenge2-section">
+        <input type="checkbox" {% if activity.challenge1_completed and not activity.challenge2_completed %}checked{% endif %} /> 
+        <div class="collapse-title text-xl font-medium">
+            📝 Challenge 2: The Vague Prompt
+            {% if activity.challenge2_completed %}
+                <span class="badge badge-success ml-2">✓ Complete</span>
+            {% elif not activity.challenge1_completed %}
+                <span class="badge badge-ghost ml-2">🔒 Complete Challenge 1 first</span>
+            {% endif %}
+        </div>
+        <div class="collapse-content">
+            {% if not activity.challenge1_completed %}
+            <div class="alert alert-warning">
+                <span>Please complete Challenge 1 before starting Challenge 2.</span>
+            </div>
+            {% else %}
+            <div class="bg-base-100 p-6 rounded-lg mb-6">
+                <div class="flex justify-between items-start mb-4">
+                    <h3 class="text-lg font-bold">Bad Prompt Example:</h3>
+                    <button onclick="copyPrompt('bad-prompt')" 
+                            class="btn btn-sm btn-outline btn-primary">
+                        📋 Copy Prompt
+                    </button>
+                </div>
+                
+                <div class="bg-base-200 p-4 rounded font-mono text-sm" 
+                     id="bad-prompt">{{ bad_prompt.prompt_template }}</div>
+            </div>
+            
+            <div class="divider">Test & Compare</div>
+            
+            <form id="challenge2-form" class="space-y-4">
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text font-medium">What happened? (Check all that apply):</span>
+                    </label>
+                    <div class="space-y-2">
+                        <label class="label cursor-pointer justify-start">
+                            <input type="checkbox" name="observations" value="too_generic" class="checkbox mr-3" />
+                            <span class="label-text">Result was too generic/mixed topics</span>
+                        </label>
+                        <label class="label cursor-pointer justify-start">
+                            <input type="checkbox" name="observations" value="wrong_difficulty" class="checkbox mr-3" />
+                            <span class="label-text">Wrong difficulty level for my grade</span>
+                        </label>
+                        <label class="label cursor-pointer justify-start">
+                            <input type="checkbox" name="observations" value="no_structure" class="checkbox mr-3" />
+                            <span class="label-text">No clear structure or organization</span>
+                        </label>
+                        <label class="label cursor-pointer justify-start">
+                            <input type="checkbox" name="observations" value="needs_editing" class="checkbox mr-3" />
+                            <span class="label-text">Would need heavy editing to use</span>
+                        </label>
+                        <label class="label cursor-pointer justify-start">
+                            <input type="checkbox" name="observations" value="missing_details" class="checkbox mr-3" />
+                            <span class="label-text">Missing key details I needed</span>
+                        </label>
+                        <label class="label cursor-pointer justify-start">
+                            <input type="checkbox" name="observations" value="surprisingly_good" class="checkbox mr-3" />
+                            <span class="label-text">Actually, it was pretty good!</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text font-medium">Compare to Challenge 1: What was missing from this prompt? (50 words)</span>
+                    </label>
+                    <textarea name="comparison" class="textarea textarea-bordered" rows="4" 
+                              maxlength="300" required 
+                              placeholder="The good prompt had specific details like..."></textarea>
+                </div>
+                
+                <div class="alert alert-info">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 w-6 h-6">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <div>
+                        <h3 class="font-bold">💡 Key Learning:</h3>
+                        <div class="text-sm">The more specific you are about topic, grade level, format, and criteria - the better the AI result will be!</div>
+                    </div>
+                </div>
+                
+                <button type="submit" class="btn btn-primary">
+                    ✓ Mark Challenge 2 Complete
+                </button>
+            </form>
+            {% endif %}
+        </div>
+    </div>
+    
+{# CHALLENGE 3: YOUR SUBJECT PROMPT #}
+    <div class="collapse collapse-arrow bg-base-200 mb-4" id="challenge3-section">
+        <input type="checkbox" {% if activity.challenge2_completed and not activity.challenge3_completed %}checked{% endif %} /> 
+        <div class="collapse-title text-xl font-medium">
+            📝 Challenge 3: Your Subject Prompt
+            {% if activity.challenge3_completed %}
+                <span class="badge badge-success ml-2">✓ Complete</span>
+            {% elif not activity.challenge2_completed %}
+                <span class="badge badge-ghost ml-2">🔒 Complete Challenge 2 first</span>
+            {% endif %}
+        </div>
+        <div class="collapse-content">
+            {% if not activity.challenge2_completed %}
+            <div class="alert alert-warning">
+                <span>Please complete Challenge 2 before starting Challenge 3.</span>
+            </div>
+            {% else %}
+            <div class="bg-base-100 p-6 rounded-lg mb-6">
+                <h3 class="text-lg font-bold mb-4">Pick ONE prompt to test for YOUR classroom:</h3>
+                
+                <div class="space-y-4">
+                    {% for prompt in subject_prompts %}
+                    <div class="card bg-base-200">
+                        <div class="card-body p-4">
+                            <div class="flex justify-between items-start">
+                                <h4 class="font-bold">
+                                    {% if prompt.prompt_type == 'lesson_plan' %}
+                                    🔹 Option A: Lesson Plan Generator
+                                    {% elif prompt.prompt_type == 'quiz' %}
+                                    🔹 Option B: Quiz/Assessment Creator
+                                    {% elif prompt.prompt_type == 'differentiation' %}
+                                    🔹 Option C: Differentiation Helper
+                                    {% endif %}
+                                </h4>
+                                <button onclick="copyPrompt('prompt-{{ prompt.id }}')" 
+                                        class="btn btn-sm btn-outline btn-primary">
+                                    📋 Copy
+                                </button>
+                            </div>
+                            <div class="bg-base-300 p-3 rounded font-mono text-sm mt-2 whitespace-pre-wrap" 
+                                 id="prompt-{{ prompt.id }}">{{ prompt.prompt_template }}</div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <div class="divider">After Testing, Report Back</div>
+            
+            <form id="challenge3-form" class="space-y-4">
+                <input type="hidden" name="prompt_choice" value="lesson_plan" />
+                <input type="hidden" name="prompt_text" value="" />
+                
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text font-medium">Customize your prompt (optional):</span>
+                    </label>
+                    <div class="grid grid-cols-2 gap-4">
+                        <input type="text" name="custom_topic" placeholder="Topic (e.g., Quadratic Equations)" 
+                               class="input input-bordered" />
+                        <input type="text" name="custom_grade" placeholder="Grade (e.g., Grade 10)" 
+                               class="input input-bordered" />
+                    </div>
+                </div>
+                
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text font-medium">Which tool did you use?</span>
+                    </label>
+                    <select name="tool" class="select select-bordered" required>
+                        <option value="">Select a tool...</option>
+                        {% for tool in ai_tools %}
+                        <option value="{{ tool.value }}">{{ tool.label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text font-medium">Rate the result:</span>
+                    </label>
+                    <div class="rating rating-lg">
+                        <input type="radio" name="rating" value="1" class="mask mask-star-2 bg-orange-400" />
+                        <input type="radio" name="rating" value="2" class="mask mask-star-2 bg-orange-400" />
+                        <input type="radio" name="rating" value="3" class="mask mask-star-2 bg-orange-400" />
+                        <input type="radio" name="rating" value="4" class="mask mask-star-2 bg-orange-400" checked />
+                        <input type="radio" name="rating" value="5" class="mask mask-star-2 bg-orange-400" />
+                    </div>
+                </div>
+                
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text font-medium">Will you use this in your classroom?</span>
+                    </label>
+                    <select name="will_use" class="select select-bordered" required>
+                        <option value="">Select...</option>
+                        <option value="as_is">Yes, as-is</option>
+                        <option value="minor_edits">Yes, with minor edits</option>
+                        <option value="needs_work">Maybe, needs work</option>
+                        <option value="not_useful">No, not useful</option>
+                    </select>
+                </div>
+                
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text font-medium">Paste the AI result here (optional):</span>
+                    </label>
+                    <textarea name="result_text" class="textarea textarea-bordered" rows="6" 
+                              placeholder="Paste the result you got from the AI tool..."></textarea>
+                </div>
+                
+                <div class="form-control">
+                    <label class="label cursor-pointer">
+                        <span class="label-text">💾 Save this to my toolkit for future use</span>
+                        <input type="checkbox" name="save_to_toolkit" class="checkbox checkbox-primary" checked />
+                    </label>
+                </div>
+                
+                <button type="submit" class="btn btn-primary">
+                    ✓ Mark Challenge 3 Complete
+                </button>
+            </form>
+            {% endif %}
+        </div>
+    </div>
+    
+{# REFLECTION SECTION #}
+    <div class="collapse collapse-arrow bg-base-200 mb-4" id="reflection-section">
+        <input type="checkbox" {% if activity.challenge3_completed and not activity.reflection_completed %}checked{% endif %} /> 
+        <div class="collapse-title text-xl font-medium">
+            🤔 Reflection
+            {% if activity.reflection_completed %}
+                <span class="badge badge-success ml-2">✓ Complete</span>
+            {% elif not activity.challenge3_completed %}
+                <span class="badge badge-ghost ml-2">🔒 Complete Challenge 3 first</span>
+            {% endif %}
+        </div>
+        <div class="collapse-content">
+            {% if not activity.challenge3_completed %}
+            <div class="alert alert-warning">
+                <span>Please complete Challenge 3 before starting the reflection.</span>
+            </div>
+            {% else %}
+            <form id="reflection-form" class="space-y-4">
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text font-medium">1. Which tool worked best for you? Why? (50 words)</span>
+                    </label>
+                    <textarea name="best_tool" class="textarea textarea-bordered" rows="3" 
+                              maxlength="300" required 
+                              placeholder="I found [tool] most useful because..."></textarea>
+                    <label class="label">
+                        <span class="label-text-alt">Character count: <span id="best-tool-count">0</span>/300</span>
+                    </label>
+                </div>
+                
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text font-medium">2. What surprised you most about the results? (50 words)</span>
+                    </label>
+                    <textarea name="surprise" class="textarea textarea-bordered" rows="3" 
+                              maxlength="300" required 
+                              placeholder="I was surprised that..."></textarea>
+                    <label class="label">
+                        <span class="label-text-alt">Character count: <span id="surprise-count">0</span>/300</span>
+                    </label>
+                </div>
+                
+                <button type="submit" class="btn btn-primary btn-lg">
+                    🎉 Complete Activity
+                </button>
+            </form>
+            {% endif %}
+        </div>
+    </div>    
+    {# RPE TEASER - Shows when activity complete #}
+    {% if activity.activity_completed %}
+    <div class="card bg-gradient-to-r from-primary/10 to-secondary/10 border-2 border-primary/30 mt-8">
+        <div class="card-body">
+            <h2 class="card-title">🎉 Activity Complete!</h2>
+            
+            <div class="space-y-3">
+                <p>You discovered that:</p>
+                <ul class="list-disc list-inside space-y-1">
+                    <li>Prompt quality dramatically affects results</li>
+                    <li>Different AI tools have different strengths</li>
+                    <li>AI can help with real teaching tasks</li>
+                </ul>
+            </div>
+            
+            <div class="divider"></div>
+            
+            <h3 class="font-bold text-lg">💡 What Makes a Good Prompt?</h3>
+            <p class="text-sm">
+                You saw that detailed prompts (Challenge 1) worked better than vague ones (Challenge 2). 
+                Key elements include:
+            </p>
+            <ul class="list-disc list-inside text-sm space-y-1">
+                <li>Clear task description</li>
+                <li>Specific context</li>
+                <li>Expected format</li>
+                <li>Constraints/criteria</li>
+            </ul>
+            
+            <div class="alert alert-info mt-4">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 w-6 h-6">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <div>
+                    <h3 class="font-bold">📚 In Module 5...</h3>
+                    <div class="text-sm">
+                        You'll learn the <strong>RPE Framework</strong> (Reflective Prompt Engineering) - 
+                        a systematic approach to crafting perfect prompts every time.
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card-actions justify-end mt-4">
+                <a href="/modules/modules/M1/?tab=assessment" class="btn btn-primary btn-lg">
+                    Continue to Tab 4: Assessment →
+                </a>
+            </div>
+        </div>
+    </div>
+    <!-- Forum Trigger: Post-Activity Completion -->
+    {% include "community/partials/tab_forum_trigger.html" with tab_name="activity" module_code=module.code trigger_style="post_completion" %}
+    {% endif %}
+    
+</div>
+
+<script>
+//const csrftoken = '{{ csrf_token }}';
+
+// Copy prompt to clipboard
+function copyPrompt(elementId) {
+    const text = document.getElementById(elementId).textContent;
+    navigator.clipboard.writeText(text).then(() => {
+        const toast = document.createElement('div');
+        toast.className = 'toast toast-top toast-center';
+        toast.innerHTML = '<div class="alert alert-success"><span>✓ Prompt copied!</span></div>';
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 2000);
+    });
+}
+
+// Challenge 1 Form Submission
+document.getElementById('challenge1-form')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const formData = new FormData(e.target);
+    const tags = [];
+    formData.getAll('tags').forEach(tag => tags.push(tag));
+    
+    const data = {
+        tool: formData.get('tool'),
+        rating: parseInt(formData.get('rating')),
+        tags: tags,
+        note: formData.get('note') || ''
+    };
+    
+    console.log('Challenge 1 data:', data);
+    
+    try {
+        const response = await fetch(`/modules/modules/{{ module_code }}/tab3/challenge1/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrftoken
+            },
+            body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        console.log('Challenge 1 result:', result);
+        
+        if (result.success) {
+            alert('✓ Challenge 1 completed!');
+            location.reload();
+        } else {
+            alert('Error: ' + result.message);
+        }
+    } catch (error) {
+        console.error('Challenge 1 error:', error);
+        alert('Submission failed. Check console for details.');
+    }
+});
+
+// Challenge 2 Form Submission
+document.getElementById('challenge2-form')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const formData = new FormData(e.target);
+    const observations = [];
+    formData.getAll('observations').forEach(obs => observations.push(obs));
+    
+    const data = {
+        observations: observations,
+        comparison: formData.get('comparison') || ''
+    };
+    
+    console.log('Challenge 2 data:', data);
+    
+    try {
+        const response = await fetch(`/modules/modules/{{ module_code }}/tab3/challenge2/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrftoken
+            },
+            body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        console.log('Challenge 2 result:', result);
+        
+        if (result.success) {
+            alert('✓ Challenge 2 completed!');
+            location.reload();
+        } else {
+            alert('Error: ' + result.message);
+        }
+    } catch (error) {
+        console.error('Challenge 2 error:', error);
+        alert('Submission failed. Check console for details.');
+    }
+});
+
+// Challenge 3 Form Submission
+document.getElementById('challenge3-form')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const formData = new FormData(e.target);
+    
+    const data = {
+        prompt_choice: formData.get('prompt_choice'),
+        custom_topic: formData.get('custom_topic') || '',
+        custom_grade: formData.get('custom_grade') || '',
+        tool: formData.get('tool'),
+        rating: parseInt(formData.get('rating')),
+        will_use: formData.get('will_use'),
+        result_text: formData.get('result_text') || '',
+        save_to_toolkit: formData.get('save_to_toolkit') === 'on',
+        prompt_text: formData.get('prompt_text') || ''
+    };
+    
+    console.log('Challenge 3 data:', data);
+    
+    try {
+        const response = await fetch(`/modules/modules/{{ module_code }}/tab3/challenge3/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrftoken
+            },
+            body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        console.log('Challenge 3 result:', result);
+        
+        if (result.success) {
+            alert('✓ Challenge 3 completed and saved to toolkit!');
+            location.reload();
+        } else {
+            alert('Error: ' + result.message);
+        }
+    } catch (error) {
+        console.error('Challenge 3 error:', error);
+        alert('Submission failed. Check console for details.');
+    }
+});
+
+// Reflection Form Submission
+document.getElementById('reflection-form')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const formData = new FormData(e.target);
+    
+    const data = {
+        best_tool: formData.get('best_tool') || '',
+        surprise: formData.get('surprise') || ''
+    };
+    
+    console.log('Reflection data:', data);
+    
+    try {
+        const response = await fetch(`/modules/modules/{{ module_code }}/tab3/reflection/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrftoken
+            },
+            body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        console.log('Reflection result:', result);
+        
+        if (result.success) {
+            alert('🎉 Activity completed successfully!');
+            window.location.href = result.redirect || '/modules/modules/M1/?tab=assessment';
+        } else {
+            alert('Error: ' + result.message);
+        }
+    } catch (error) {
+        console.error('Reflection error:', error);
+        alert('Submission failed. Check console for details.');
+    }
+});
+</script>

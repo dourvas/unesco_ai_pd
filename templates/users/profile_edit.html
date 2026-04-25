@@ -1,0 +1,255 @@
+{% extends 'base.html' %}
+
+{% block title %}Edit Profile{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    
+    <!-- Header -->
+    <div class="mb-8">
+        <div class="flex items-center gap-4 mb-4">
+            <a href="{% url 'users:profile_view' %}" class="btn btn-ghost btn-circle">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                </svg>
+            </a>
+            <div>
+                <h1 class="text-3xl font-bold">Edit Profile</h1>
+                <p class="text-base-content/70">Update your information</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Form Card -->
+    <div class="card bg-base-100 shadow-xl">
+        <div class="card-body">
+            <form method="post">
+                {% csrf_token %}
+                
+                <!-- Teaching Context Section -->
+                <div class="mb-8">
+                    <h2 class="text-2xl font-bold mb-4 flex items-center gap-2">
+                        <span>📚</span> Teaching Context
+                    </h2>
+                    
+                    <!-- Subject Area -->
+                    <div class="form-control w-full mb-4">
+                        <label class="label">
+                            <span class="label-text font-medium">Subject Area *</span>
+                        </label>
+                        {{ form.subject_area }}
+                        {% if form.subject_area.errors %}
+                            <label class="label">
+                                <span class="label-text-alt text-error">{{ form.subject_area.errors.0 }}</span>
+                            </label>
+                        {% endif %}
+                    </div>
+
+                    <!-- Subject Area Other -->
+                    <div class="form-control w-full mb-4" id="subject_other_field" style="display: none;">
+                        <label class="label">
+                            <span class="label-text font-medium">Specify Subject</span>
+                        </label>
+                        {{ form.subject_area_other }}
+                    </div>
+
+                    <!-- Grade Level -->
+                    <div class="form-control w-full mb-4">
+                        <label class="label">
+                            <span class="label-text font-medium">Grade Level *</span>
+                        </label>
+                        {{ form.grade_level }}
+                        {% if form.grade_level.errors %}
+                            <label class="label">
+                                <span class="label-text-alt text-error">{{ form.grade_level.errors.0 }}</span>
+                            </label>
+                        {% endif %}
+                    </div>
+
+                    <!-- Teaching Years -->
+                    <div class="form-control w-full mb-4">
+                        <label class="label">
+                            <span class="label-text font-medium">Years of Teaching Experience</span>
+                        </label>
+                        {{ form.teaching_years }}
+                    </div>
+
+                    <!-- School Location -->
+                    <div class="form-control w-full mb-4">
+                        <label class="label">
+                            <span class="label-text font-medium">School Location</span>
+                        </label>
+                        {{ form.school_location }}
+                    </div>
+
+                    <!-- Average Class Size -->
+                    <div class="form-control w-full mb-4">
+                        <label class="label">
+                            <span class="label-text font-medium">Average Class Size</span>
+                        </label>
+                        {{ form.average_class_size }}
+                    </div>
+                </div>
+
+                <div class="divider"></div>
+
+                <!-- AI Experience Section -->
+                <div class="mb-8">
+                    <h2 class="text-2xl font-bold mb-4 flex items-center gap-2">
+                        <span>🤖</span> AI Experience
+                    </h2>
+                    
+                    <!-- AI Experience -->
+                    <div class="form-control w-full mb-4">
+                        <label class="label">
+                            <span class="label-text font-medium">Your AI Experience Level *</span>
+                        </label>
+                        {{ form.ai_experience }}
+                        {% if form.ai_experience.errors %}
+                            <label class="label">
+                                <span class="label-text-alt text-error">{{ form.ai_experience.errors.0 }}</span>
+                            </label>
+                        {% endif %}
+                    </div>
+
+                    <!-- AI Tools -->
+                    <div class="form-control w-full mb-4">
+                        <label class="label">
+                            <span class="label-text font-medium">AI Tools You've Used</span>
+                        </label>
+                        <div class="grid grid-cols-2 gap-2">
+                            {% for checkbox in form.ai_tools_checkboxes %}
+                                <label class="label cursor-pointer justify-start gap-2">
+                                    {{ checkbox.tag }}
+                                    <span class="label-text">{{ checkbox.choice_label }}</span>
+                                </label>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- AI Teaching Integration -->
+                    <div class="form-control w-full mb-4">
+                        <label class="label">
+                            <span class="label-text font-medium">Use of AI in Teaching</span>
+                        </label>
+                        {{ form.ai_teaching_integration }}
+                    </div>
+                </div>
+
+                <div class="divider"></div>
+
+                <!-- Goals & Preferences Section -->
+                <div class="mb-8">
+                    <h2 class="text-2xl font-bold mb-4 flex items-center gap-2">
+                        <span>🎯</span> Goals & Preferences
+                    </h2>
+                    
+                    <!-- Goals -->
+                    <div class="form-control w-full mb-4">
+                        <label class="label">
+                            <span class="label-text font-medium">Primary Goals</span>
+                            <span class="label-text-alt text-warning">Up to 3</span>
+                        </label>
+                        <div class="grid grid-cols-1 gap-2">
+                            {% for checkbox in form.goals_checkboxes %}
+                                <label class="label cursor-pointer justify-start gap-2">
+                                    {{ checkbox.tag }}
+                                    <span class="label-text">{{ checkbox.choice_label }}</span>
+                                </label>
+                            {% endfor %}
+                        </div>
+                        {% if form.goals_checkboxes.errors %}
+                            <label class="label">
+                                <span class="label-text-alt text-error">{{ form.goals_checkboxes.errors.0 }}</span>
+                            </label>
+                        {% endif %}
+                    </div>
+
+                    <!-- Communication Style -->
+                    <div class="form-control w-full mb-4">
+                        <label class="label">
+                            <span class="label-text font-medium">Communication Style *</span>
+                        </label>
+                        {{ form.preferred_communication_style }}
+                    </div>
+
+                    <!-- Research Consent -->
+                    <div class="form-control mb-4">
+                        <label class="label cursor-pointer justify-start gap-3">
+                            {{ form.research_consent }}
+                            <span class="label-text">I consent to the use of my data for research</span>
+                        </label>
+                    </div>
+
+                    <!-- Contact for Research -->
+                    <div class="form-control mb-4">
+                        <label class="label cursor-pointer justify-start gap-3">
+                            {{ form.contact_for_research }}
+                            <span class="label-text">I am open to being contacted for research interviews</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Form Actions -->
+                <div class="card-actions justify-between mt-6">
+                    <a href="{% url 'users:profile_view' %}" class="btn btn-ghost">
+                        Cancel
+                    </a>
+                    <button type="submit" class="btn btn-primary">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                        </svg>
+                        Save Changes
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+</div>
+
+<script>
+// Show/hide subject_area_other field
+document.addEventListener('DOMContentLoaded', function() {
+    const subjectSelect = document.querySelector('select[name="subject_area"]');
+    const otherField = document.getElementById('subject_other_field');
+    
+    function toggleOtherField() {
+        if (subjectSelect && subjectSelect.value === 'other') {
+            otherField.style.display = 'block';
+        } else if (otherField) {
+            otherField.style.display = 'none';
+        }
+    }
+    
+    if (subjectSelect) {
+        subjectSelect.addEventListener('change', toggleOtherField);
+        toggleOtherField(); // Check on load
+    }
+    
+    // Limit goals to 3
+    const goalCheckboxes = document.querySelectorAll('input[name="goals_checkboxes"]');
+    const maxSelections = 3;
+    
+    goalCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            const checkedCount = document.querySelectorAll('input[name="goals_checkboxes"]:checked').length;
+            
+            if (checkedCount >= maxSelections) {
+                goalCheckboxes.forEach(cb => {
+                    if (!cb.checked) {
+                        cb.disabled = true;
+                        cb.parentElement.classList.add('opacity-50');
+                    }
+                });
+            } else {
+                goalCheckboxes.forEach(cb => {
+                    cb.disabled = false;
+                    cb.parentElement.classList.remove('opacity-50');
+                });
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

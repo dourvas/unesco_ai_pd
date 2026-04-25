@@ -1,0 +1,348 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PROODOS EduAI - AI Teacher Professional Development</title>
+    <meta name="description" content="UNESCO-aligned AI competency development for educators. Master AI integration through progressive learning pathways.">
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.4.19/dist/full.min.css" rel="stylesheet" type="text/css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <style>
+        /* Animated Gradient Background */
+        @keyframes gradient-flow {
+            0%, 100% { 
+                background-position: 0% 50%; 
+            }
+            50% { 
+                background-position: 100% 50%; 
+            }
+        }
+
+        .hero-gradient {
+            background: linear-gradient(
+                135deg, 
+                #1e40af 0%,   /* Navy Blue - Acquire */
+                #0891b2 30%,  /* Teal - Deepen */
+                #14b8a6 60%,  /* Turquoise - Create */
+                #0891b2 90%,  /* Back to Teal */
+                #1e40af 100%  /* Back to Navy */
+            );
+            background-size: 400% 400%;
+            animation: gradient-flow 8s ease-in-out infinite;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Subtle Geometric Pattern Overlay */
+        .hero-gradient::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: 
+                /* Dots pattern */
+                radial-gradient(circle at 20% 30%, rgba(255,255,255,0.08) 2px, transparent 2px),
+                radial-gradient(circle at 60% 70%, rgba(255,255,255,0.08) 2px, transparent 2px),
+                radial-gradient(circle at 80% 20%, rgba(255,255,255,0.06) 1.5px, transparent 1.5px),
+                /* Grid pattern */
+                linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+            background-size: 
+                100px 100px,
+                120px 120px,
+                80px 80px,
+                50px 50px,
+                50px 50px;
+            background-position: 
+                0 0,
+                40px 60px,
+                20px 30px,
+                0 0,
+                0 0;
+            opacity: 0.6;
+            pointer-events: none;
+        }
+
+        /* Content text color adjustment for readability */
+        .hero-gradient .hero-content {
+            position: relative;
+            z-index: 1;
+            color: white;
+        }
+
+        .hero-gradient .hero-content h1,
+        .hero-gradient .hero-content p {
+            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        /* Ensure stats card and buttons are visible */
+        .hero-gradient .stats {
+            background-color: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <div class="navbar bg-base-100 shadow-lg sticky top-0 z-50">
+        <div class="navbar-start">
+            <a href="/" class="flex items-center gap-3 px-4">
+                <img src="{% static 'images/logo.png' %}" alt="PROODOS EduAI" class="h-10">
+                <div class="hidden md:block">
+                    <div class="text-xl font-bold text-primary">PROODOS</div>
+                    <div class="text-sm text-accent">EduAI</div>
+                </div>
+            </a>
+        </div>
+        <div class="navbar-end gap-2">
+            <a href="{% url 'users:login' %}" class="btn btn-ghost">Login</a>
+            <a href="{% url 'users:register' %}" class="btn btn-primary">Get Started</a>
+        </div>
+    </div>
+
+    <!-- Hero Section -->
+    <div class="hero min-h-screen hero-gradient">
+        <div class="hero-content text-center">
+            <div class="max-w-4xl">
+                <!-- Logo -->
+                <div class="mb-8">
+                    <img src="{% static 'images/logo.png' %}" alt="PROODOS EduAI Logo" class="h-32 mx-auto mb-4">
+                </div>
+
+                <h1 class="text-6xl font-bold mb-6">
+                    <span class="text-primary">PROODOS</span> 
+                    <span class="text-accent">EduAI</span>
+                </h1>
+                
+                <p class="text-2xl mb-4 font-semibold text-primary">
+                    AI-Powered Teacher Professional Development
+                </p>
+                
+                <p class="text-xl mb-8 text-base-content/80">
+                    Master AI integration in education through UNESCO's AI Competency Framework. 
+                    Progressive learning pathways designed for educators across all subjects and grade levels.
+                </p>
+                
+                <!-- Stats -->
+                <div class="stats shadow mb-8 bg-base-100">
+                    <div class="stat">
+                        <div class="stat-title">Modules</div>
+                        <div class="stat-value text-primary">15</div>
+                        <div class="stat-desc">Comprehensive pathways</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-title">Subjects</div>
+                        <div class="stat-value text-secondary">15</div>
+                        <div class="stat-desc">Personalized content</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-title">AI-Powered</div>
+                        <div class="stat-value text-accent">✨</div>
+                        <div class="stat-desc">Adaptive learning</div>
+                    </div>
+                </div>
+
+                <!-- CTA Buttons -->
+                <div class="flex gap-4 justify-center">
+                    <a href="{% url 'users:register' %}" class="btn btn-primary btn-lg gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                        </svg>
+                        Start Your Journey
+                    </a>
+                    <a href="{% url 'users:login' %}" class="btn btn-outline btn-lg">
+                        Login
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Progressive Learning Section -->
+    <div class="py-20 bg-base-100">
+        <div class="container mx-auto px-4">
+            <h2 class="text-4xl font-bold text-center mb-4">Progressive Learning</h2>
+            <p class="text-center text-xl mb-12 text-base-content/70">
+                Three proficiency levels aligned with UNESCO framework
+            </p>
+            
+            <div class="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+                <!-- Acquire -->
+                <div class="card bg-gradient-to-br from-primary/10 to-primary/5 shadow-xl">
+                    <div class="card-body items-center text-center">
+                        <div class="w-16 h-24 bg-primary rounded flex items-end justify-center text-white font-bold text-sm pb-2">
+                            acquire
+                        </div>
+                        <h3 class="card-title text-2xl mt-4">Acquire</h3>
+                        <p>Build foundational understanding of AI concepts and tools for education.</p>
+                        <div class="badge badge-primary">Modules 1-5</div>
+                    </div>
+                </div>
+
+                <!-- Deepen -->
+                <div class="card bg-gradient-to-br from-secondary/10 to-secondary/5 shadow-xl">
+                    <div class="card-body items-center text-center">
+                        <div class="w-16 h-32 bg-secondary rounded flex items-end justify-center text-white font-bold text-sm pb-2">
+                            deepen
+                        </div>
+                        <h3 class="card-title text-2xl mt-4">Deepen</h3>
+                        <p>Develop advanced skills in AI pedagogy and ethical implementation.</p>
+                        <div class="badge badge-secondary">Modules 6-10</div>
+                    </div>
+                </div>
+
+                <!-- Create -->
+                <div class="card bg-gradient-to-br from-accent/10 to-accent/5 shadow-xl">
+                    <div class="card-body items-center text-center">
+                        <div class="w-16 h-40 bg-accent rounded flex items-end justify-center text-white font-bold text-sm pb-2 relative">
+                            create
+                            <div class="absolute -top-6 left-1/2 transform -translate-x-1/2">
+                                <svg class="w-12 h-12 text-accent" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M10 3.5L6 7.5h3v6h2v-6h3L10 3.5z"/>
+                                    <circle cx="10" cy="3" r="2"/>
+                                </svg>
+                            </div>
+                        </div>
+                        <h3 class="card-title text-2xl mt-4">Create</h3>
+                        <p>Design innovative AI-enhanced learning experiences and lead transformation.</p>
+                        <div class="badge badge-accent">Modules 11-15</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Features Section -->
+    <div class="py-20 bg-base-200">
+        <div class="container mx-auto px-4">
+            <h2 class="text-4xl font-bold text-center mb-12">What You'll Master</h2>
+            
+            <div class="grid md:grid-cols-3 gap-8">
+                <!-- Feature 1 -->
+                <div class="card bg-base-100 shadow-xl hover:shadow-2xl transition-shadow">
+                    <div class="card-body">
+                        <div class="text-4xl mb-4">🤖</div>
+                        <h3 class="card-title text-xl">AI Foundations</h3>
+                        <p>Understand AI concepts, capabilities, and limitations in educational contexts.</p>
+                    </div>
+                </div>
+
+                <!-- Feature 2 -->
+                <div class="card bg-base-100 shadow-xl hover:shadow-2xl transition-shadow">
+                    <div class="card-body">
+                        <div class="text-4xl mb-4">🎯</div>
+                        <h3 class="card-title text-xl">AI Pedagogy</h3>
+                        <p>Design effective AI-enhanced lessons aligned with learning objectives.</p>
+                    </div>
+                </div>
+
+                <!-- Feature 3 -->
+                <div class="card bg-base-100 shadow-xl hover:shadow-2xl transition-shadow">
+                    <div class="card-body">
+                        <div class="text-4xl mb-4">⚖️</div>
+                        <h3 class="card-title text-xl">Ethics & Equity</h3>
+                        <p>Navigate ethical considerations and ensure equitable AI integration.</p>
+                    </div>
+                </div>
+
+                <!-- Feature 4 -->
+                <div class="card bg-base-100 shadow-xl hover:shadow-2xl transition-shadow">
+                    <div class="card-body">
+                        <div class="text-4xl mb-4">🛠️</div>
+                        <h3 class="card-title text-xl">Practical Tools</h3>
+                        <p>Hands-on experience with AI tools designed for education.</p>
+                    </div>
+                </div>
+
+                <!-- Feature 5 -->
+                <div class="card bg-base-100 shadow-xl hover:shadow-2xl transition-shadow">
+                    <div class="card-body">
+                        <div class="text-4xl mb-4">📊</div>
+                        <h3 class="card-title text-xl">Personalized Path</h3>
+                        <p>Content adapted to your subject, grade level, and experience.</p>
+                    </div>
+                </div>
+
+                <!-- Feature 6 -->
+                <div class="card bg-base-100 shadow-xl hover:shadow-2xl transition-shadow">
+                    <div class="card-body">
+                        <div class="text-4xl mb-4">🎓</div>
+                        <h3 class="card-title text-xl">UNESCO Aligned</h3>
+                        <p>Based on UNESCO AI Competency Framework for Teachers.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- How It Works Section -->
+    <div class="py-20 bg-base-100">
+        <div class="container mx-auto px-4">
+            <h2 class="text-4xl font-bold text-center mb-12">Your Learning Journey</h2>
+            
+            <div class="max-w-4xl mx-auto">
+                <ul class="steps steps-vertical lg:steps-horizontal w-full">
+                    <li class="step step-primary">
+                        <div class="text-left">
+                            <h3 class="font-bold text-lg">1. Create Account</h3>
+                            <p class="text-sm">Quick registration in 2 minutes</p>
+                        </div>
+                    </li>
+                    <li class="step step-primary">
+                        <div class="text-left">
+                            <h3 class="font-bold text-lg">2. Profile Setup</h3>
+                            <p class="text-sm">Tell us about your teaching context</p>
+                        </div>
+                    </li>
+                    <li class="step">
+                        <div class="text-left">
+                            <h3 class="font-bold text-lg">3. Start Learning</h3>
+                            <p class="text-sm">Begin with Module 1: AI Foundations</p>
+                        </div>
+                    </li>
+                    <li class="step">
+                        <div class="text-left">
+                            <h3 class="font-bold text-lg">4. Progress</h3>
+                            <p class="text-sm">15 modules at your own pace</p>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="text-center mt-12">
+                <a href="{% url 'users:register' %}" class="btn btn-primary btn-lg gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                    </svg>
+                    Begin Your Journey
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer footer-center p-10 bg-base-300 text-base-content">
+        <div>
+            <img src="{% static 'images/logo.png' %}" alt="PROODOS EduAI" class="h-16 mb-4">
+            <p class="font-bold text-lg">
+                PROODOS EduAI
+            </p>
+            <p class="text-sm">UNESCO-Aligned AI Teacher Professional Development</p>
+            <p class="text-xs">Research Project - Aristotle University of Thessaloniki</p>
+            <p class="text-xs">© 2026 PROODOS EduAI - All rights reserved</p>
+        </div>
+        <div>
+            <div class="grid grid-flow-col gap-4">
+                <a href="#" class="link link-hover">About</a>
+                <a href="#" class="link link-hover">Contact</a>
+                <a href="#" class="link link-hover">Privacy Policy</a>
+                <a href="#" class="link link-hover">Terms of Service</a>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>

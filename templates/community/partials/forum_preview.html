@@ -1,0 +1,59 @@
+{% load static %}
+{% if post_count > 0 %}
+<div class="forum-preview-widget mt-2">
+  
+  <div class="flex items-center gap-3 mb-3 text-sm text-base-content/60">
+    <span>💬 <strong class="text-base-content">{{ post_count }}</strong> posts</span>
+    <span>·</span>
+    <span>👥 <strong class="text-base-content">{{ participant_count }}</strong> participants</span>
+  </div>
+
+  <div class="space-y-3">
+    {% for post in posts %}
+    <div class="flex items-start gap-3 p-3 bg-base-200 rounded-lg">
+      <div class="avatar placeholder flex-shrink-0">
+        <div class="bg-primary/20 text-primary rounded-full w-8 h-8 flex items-center justify-center text-xs font-bold">
+          {{ post.author_pseudonym|slice:":2"|upper }}
+        </div>
+      </div>
+      <div class="flex-1 min-w-0">
+        <div class="flex items-center gap-2 mb-1">
+          <span class="text-xs font-medium">{{ post.author_pseudonym }}</span>
+          {% if post.author_context_label %}
+          <span class="text-xs text-base-content/40">· {{ post.author_context_label }}</span>
+          {% endif %}
+        </div>
+        <p class="text-sm text-base-content/80 line-clamp-2">
+          {{ post.content|truncatechars:120 }}
+        </p>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <div class="flex gap-2 mt-3">
+    <a href="/community/{{ module_code }}/" 
+       class="btn btn-ghost btn-sm flex-1 text-primary">
+      View all →
+    </a>
+    <button 
+      onclick="openQuickPostModal('{{ module_code }}')"
+      class="btn btn-primary btn-sm flex-1">
+      ✏️ Share
+    </button>
+  </div>
+
+</div>
+
+{% else %}
+<div class="forum-preview-widget mt-2">
+  <div class="text-center py-4 text-base-content/50">
+    <p class="text-sm">Be the first to share your thoughts!</p>
+    <button 
+      onclick="openQuickPostModal('{{ module_code }}')"
+      class="btn btn-primary btn-sm mt-3">
+      ✏️ Start the discussion
+    </button>
+  </div>
+</div>
+{% endif %}

@@ -1,0 +1,33 @@
+<!-- TAB 3: Activity -->
+<h2 class="card-title text-2xl mb-4">Activity</h2>
+
+{% if content %}
+<div class="prose max-w-none mb-6">
+    {{ content.content_data|safe }}
+</div>
+
+{% if not progress.activity_completed %}
+<form id="activity-form" class="space-y-4">
+    <div class="form-control">
+        <label class="label">
+            <span class="label-text">Your Submission (min 100 characters)</span>
+        </label>
+        <textarea name="submission" 
+                  class="textarea textarea-bordered h-32" 
+                  placeholder="Write your response here..."
+                  required></textarea>
+    </div>
+    
+    <div class="card-actions justify-end">
+        <button type="submit" class="btn btn-primary">
+            Submit Activity →
+        </button>
+    </div>
+</form>
+{% else %}
+<div class="alert alert-success">
+    <span>✓ Activity completed</span>
+</div>
+{% endif %}
+
+{% endif %}

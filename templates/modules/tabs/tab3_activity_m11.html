@@ -1,0 +1,470 @@
+{% if current_tab == 'activity' %}
+
+<!-- ============================================================ -->
+<!-- M11 TAB3: ACTIVITY -- YOUR VOICE IN THE AI SCHOOL -->
+<!-- 3 Challenges: Stakeholder Conversation > Teaching Move > AI Stance Canvas -->
+<!-- UNESCO Aspect 1: Human-Centred Mindset | Level: Create -->
+<!-- ============================================================ -->
+
+<h2 class="card-title text-2xl mb-2">&#x1F3AF; Leadership in Practice</h2>
+<p class="text-gray-600 mb-6">Three challenges that move from navigating a difficult school moment, to designing your first AI literacy teaching move, to committing your professional stance in writing — ready to use.</p>
+
+<!-- Progress tracker -->
+<div class="flex gap-2 mb-8">
+  <div id="progress-c1" class="flex-1 rounded-full h-2 {% if activity.challenge1_completed %}bg-emerald-500{% else %}bg-base-300{% endif %}"></div>
+  <div id="progress-c2" class="flex-1 rounded-full h-2 {% if activity.challenge2_completed %}bg-emerald-500{% else %}bg-base-300{% endif %}"></div>
+  <div id="progress-c3" class="flex-1 rounded-full h-2 {% if activity.challenge3_completed %}bg-emerald-500{% else %}bg-base-300{% endif %}"></div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- CHALLENGE 1: STAKEHOLDER CONVERSATION -->
+<!-- ============================================================ -->
+<div id="challenge1-section" class="card bg-base-200 border-2 {% if activity.challenge1_completed %}border-emerald-400{% else %}border-base-300{% endif %} mb-6">
+  <div class="card-body">
+
+    <div class="flex items-center gap-3 mb-2">
+      <div class="w-10 h-10 rounded-full bg-indigo-600 text-white flex items-center justify-center font-bold text-lg flex-shrink-0">1</div>
+      <div>
+        <h3 class="card-title text-lg">{{ conversation_scenario.title }}</h3>
+        <p class="text-xs text-gray-500">Read &middot; Map &middot; Draft &middot; ~20 minutes</p>
+      </div>
+      {% if activity.challenge1_completed %}
+      <span class="badge badge-success ml-auto">&#x2713; Complete</span>
+      {% endif %}
+    </div>
+
+    <p class="text-sm mb-4">Leadership without authority often comes down to a single moment. Read the situation carefully — then decide how to use your thirty seconds.</p>
+
+    <!-- Scenario -->
+    <div class="card bg-white border border-indigo-200 mb-5">
+      <div class="card-body py-4">
+        <p class="text-xs font-semibold text-indigo-600 uppercase tracking-wide mb-2">&#x1F4CB; The Situation</p>
+        <p class="text-sm leading-relaxed">{{ conversation_scenario.text|linebreaksbr }}</p>
+        <div class="flex flex-wrap gap-2 mt-3">
+          {% for tag in conversation_scenario.tags %}
+          <span class="badge badge-outline badge-sm">{{ tag }}</span>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    {% if not activity.challenge1_completed %}
+
+    <form id="challenge1-form" class="space-y-5">
+
+      <!-- Step 1: Who is in the room -->
+      <div>
+        <p class="text-sm font-semibold mb-1">Step 1 &mdash; Who matters most in this moment?</p>
+        <p class="text-xs text-gray-500 mb-3">Select all the stakeholders whose reaction you need to think about as you speak.</p>
+        <div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
+          {% for s in stakeholders %}
+          <label class="flex items-center gap-2 cursor-pointer p-2 rounded-lg border border-base-300 hover:border-indigo-300 hover:bg-indigo-50 transition-colors">
+            <input type="checkbox" name="stakeholders" value="{{ s.value }}" class="checkbox checkbox-sm checkbox-primary" />
+            <span class="text-sm">{{ s.label }}</span>
+          </label>
+          {% endfor %}
+        </div>
+        <p id="c1-stakeholders-error" class="text-error text-xs mt-1 hidden">Please select at least one stakeholder.</p>
+      </div>
+
+      <!-- Step 2: Your goal -->
+      <div>
+        <p class="text-sm font-semibold mb-2">Step 2 &mdash; What is your goal in the next 30 seconds?</p>
+        <div class="space-y-2">
+          {% for g in conversation_goals %}
+          <label class="flex items-start gap-3 cursor-pointer p-3 rounded-lg border border-base-300 hover:border-indigo-300 hover:bg-indigo-50 transition-colors">
+            <input type="radio" name="goal" value="{{ g.value }}" class="radio radio-sm radio-primary mt-0.5" />
+            <div>
+              <p class="text-sm font-medium">{{ g.label }}</p>
+              <p class="text-xs text-gray-500 mt-0.5">{{ g.note }}</p>
+            </div>
+          </label>
+          {% endfor %}
+        </div>
+        <p id="c1-goal-error" class="text-error text-xs mt-1 hidden">Please select your goal.</p>
+      </div>
+
+      <!-- Step 3: Draft your response -->
+      <div>
+        <label class="text-sm font-semibold mb-1 block">Step 3 &mdash; What do you actually say?</label>
+        <p class="text-xs text-gray-500 mb-2">Write your response as you would say it in the room. Not a speech &mdash; one or two sentences, maximum. Remember: thirty seconds.</p>
+
+        <div class="card bg-indigo-50 border border-indigo-200 p-3 mb-3">
+          <p class="text-xs font-semibold text-indigo-700 mb-2">Think about:</p>
+          <ul class="space-y-1">
+            {% for prompt in response_prompts %}
+            <li class="text-xs text-indigo-600">&bull; {{ prompt }}</li>
+            {% endfor %}
+          </ul>
+        </div>
+
+        <textarea id="c1-response" name="response" class="textarea textarea-bordered w-full text-sm" rows="3"
+          placeholder="What I would say: ..." maxlength="500"></textarea>
+        <div class="flex justify-between mt-1">
+          <p id="c1-response-error" class="text-error text-xs hidden">Please write your response (at least 20 characters).</p>
+          <p class="text-xs text-gray-400 ml-auto"><span id="c1-char-count">0</span>/500</p>
+        </div>
+      </div>
+
+      <div class="flex justify-end">
+        <button type="button" id="submit-challenge1-btn" class="btn btn-primary btn-sm">
+          Submit &amp; See Analysis &#x2192;
+        </button>
+      </div>
+
+    </form>
+
+    {% else %}
+
+    <!-- Completed state -->
+    <div class="alert alert-success py-3 mb-4">
+      <p class="text-sm">&#x2713; Completed. You mapped the room, chose your goal, and drafted your professional response.</p>
+    </div>
+
+    <div class="mt-2">
+      <p class="text-sm font-semibold mb-3">&#x1F4A1; What experienced teacher-leaders have learned:</p>
+      <div class="space-y-2">
+        {% for pv in conversation_perspectives %}
+        <div class="collapse collapse-arrow bg-white border border-base-300">
+          <input type="checkbox" />
+          <div class="collapse-title text-sm font-medium">{{ pv.title }}</div>
+          <div class="collapse-content text-sm text-gray-700">{{ pv.text }}</div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    {% endif %}
+
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- CHALLENGE 2: AI LITERACY TEACHING MOVE -->
+<!-- ============================================================ -->
+<div id="challenge2-section" class="card bg-base-200 border-2 {% if activity.challenge2_completed %}border-emerald-400{% elif activity.challenge1_completed %}border-amber-400{% else %}border-base-300 opacity-60{% endif %} mb-6">
+  <div class="card-body">
+
+    <div class="flex items-center gap-3 mb-2">
+      <div class="w-10 h-10 rounded-full {% if activity.challenge1_completed %}bg-amber-500{% else %}bg-gray-400{% endif %} text-white flex items-center justify-center font-bold text-lg flex-shrink-0">2</div>
+      <div>
+        <h3 class="card-title text-lg">Design Your Teaching Move</h3>
+        <p class="text-xs text-gray-500">Choose &middot; Adapt &middot; Commit &middot; ~20 minutes</p>
+      </div>
+      {% if activity.challenge2_completed %}
+      <span class="badge badge-success ml-auto">&#x2713; Complete</span>
+      {% endif %}
+    </div>
+
+    {% if not activity.challenge1_completed %}
+    <p class="text-sm text-gray-400 italic">Complete Challenge 1 to unlock this section.</p>
+    {% elif not activity.challenge2_completed %}
+
+    <p class="text-sm mb-4">Part 3 of this module gave you five teaching moves that build AI literacy. Now you design one for your actual classroom &mdash; choosing the move, adapting it for your students' age, and writing the exact words you would use.</p>
+
+    <form id="challenge2-form" class="space-y-5">
+
+      <!-- Step 1: Choose your move -->
+      <div>
+        <p class="text-sm font-semibold mb-2">Step 1 &mdash; Which teaching move fits your context best?</p>
+        <div class="space-y-2">
+          {% for move in teaching_moves %}
+          <label class="flex items-start gap-3 cursor-pointer p-3 rounded-lg border border-base-300 hover:border-amber-300 hover:bg-amber-50 transition-colors">
+            <input type="radio" name="teaching_move" value="{{ move.value }}" class="radio radio-sm radio-warning mt-0.5" />
+            <div>
+              <p class="text-sm font-medium">{{ move.label }}</p>
+              <p class="text-xs text-gray-500 mt-0.5">{{ move.description }}</p>
+              <p class="text-xs text-amber-700 mt-1 italic">Example: {{ move.example }}</p>
+            </div>
+          </label>
+          {% endfor %}
+        </div>
+        <p id="c2-move-error" class="text-error text-xs mt-1 hidden">Please select a teaching move.</p>
+      </div>
+
+      <!-- Step 2: Choose age group -->
+      <div>
+        <p class="text-sm font-semibold mb-2">Step 2 &mdash; Which age group are you designing this for?</p>
+        <div class="grid grid-cols-2 gap-2 sm:grid-cols-4">
+          {% for ag in age_groups %}
+          <label class="flex items-center gap-2 cursor-pointer p-2 rounded-lg border border-base-300 hover:border-amber-300 hover:bg-amber-50 transition-colors">
+            <input type="radio" name="age_group" value="{{ ag.value }}" class="radio radio-sm radio-warning" />
+            <span class="text-sm">{{ ag.label }}</span>
+          </label>
+          {% endfor %}
+        </div>
+        <p id="c2-age-error" class="text-error text-xs mt-1 hidden">Please select an age group.</p>
+      </div>
+
+      <!-- Step 3: Write your version -->
+      <div>
+        <label class="text-sm font-semibold mb-1 block">Step 3 &mdash; Write your version in your own words</label>
+        <p class="text-xs text-gray-500 mb-2">Adapt the move for your subject area and your students. Write the exact words you would say &mdash; or describe the exact task you would set. Be specific enough that you could do this next week.</p>
+        <textarea id="c2-adaptation" name="adaptation" class="textarea textarea-bordered w-full text-sm" rows="4"
+          placeholder="In my class, I would..." maxlength="600"></textarea>
+        <div class="flex justify-between mt-1">
+          <p id="c2-adaptation-error" class="text-error text-xs hidden">Please write your adaptation (at least 30 characters).</p>
+          <p class="text-xs text-gray-400 ml-auto"><span id="c2-char-count">0</span>/600</p>
+        </div>
+      </div>
+
+      <!-- Step 4: Commit -->
+      <div>
+        <label class="text-sm font-semibold mb-1 block">Step 4 &mdash; When will you try it?</label>
+        <p class="text-xs text-gray-500 mb-2">Not "soon" &mdash; a specific lesson or week. The more specific the commitment, the more likely it happens.</p>
+        <input type="text" id="c2-when" name="when" class="input input-bordered w-full text-sm"
+          placeholder="e.g. Week 3 of next term / This Thursday / Year 10 double period..." maxlength="150" />
+        <p id="c2-when-error" class="text-error text-xs mt-1 hidden">Please write when you will try this (at least 5 characters).</p>
+      </div>
+
+      <div class="flex justify-end">
+        <button type="button" id="submit-challenge2-btn" class="btn btn-warning btn-sm text-white">
+          Save Teaching Move &#x2192;
+        </button>
+      </div>
+
+    </form>
+
+    {% else %}
+
+    <!-- Completed state -->
+    <div class="alert alert-success py-3 mb-4">
+      <p class="text-sm">&#x2713; Completed. You designed a concrete AI literacy teaching move and committed to a specific time to try it.</p>
+    </div>
+
+    {% if activity.challenge_data.challenge2_teaching_move %}
+    <div class="card bg-white border border-base-300 p-4 mt-2">
+      <p class="text-xs font-semibold text-amber-700 uppercase tracking-wide mb-2">Your saved teaching move</p>
+      <p class="text-sm"><strong>Move:</strong> {{ activity.challenge_data.challenge2_teaching_move }}</p>
+      {% if activity.challenge_data.challenge2_adaptation %}
+      <p class="text-sm mt-1"><strong>Your version:</strong> {{ activity.challenge_data.challenge2_adaptation }}</p>
+      {% endif %}
+      {% if activity.challenge_data.challenge2_when %}
+      <p class="text-sm mt-1"><strong>When:</strong> {{ activity.challenge_data.challenge2_when }}</p>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    {% endif %}
+
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- CHALLENGE 3: THE PROPOSAL (AI STANCE CANVAS) -->
+<!-- ============================================================ -->
+<div id="challenge3-section" class="card bg-base-200 border-2 {% if activity.challenge3_completed %}border-emerald-400{% elif activity.challenge2_completed %}border-violet-400{% else %}border-base-300 opacity-60{% endif %} mb-6">
+  <div class="card-body">
+
+    <div class="flex items-center gap-3 mb-2">
+      <div class="w-10 h-10 rounded-full {% if activity.challenge2_completed %}bg-violet-600{% else %}bg-gray-400{% endif %} text-white flex items-center justify-center font-bold text-lg flex-shrink-0">3</div>
+      <div>
+        <h3 class="card-title text-lg">My AI Stance Canvas</h3>
+        <p class="text-xs text-gray-500">Reflect &middot; Commit &middot; Name your allies &middot; ~15 minutes</p>
+      </div>
+      {% if activity.challenge3_completed %}
+      <span class="badge badge-success ml-auto">&#x2713; Complete</span>
+      {% endif %}
+    </div>
+
+    {% if not activity.challenge2_completed %}
+    <p class="text-sm text-gray-400 italic">Complete Challenge 2 to unlock this section.</p>
+    {% elif not activity.challenge3_completed %}
+
+    <p class="text-sm mb-4">The AI Stance Canvas from Part 5 is your practical leadership tool. Here you complete a working version &mdash; four concrete responses that turn your values into action. Be honest, not aspirational.</p>
+
+    <form id="challenge3-form" class="space-y-5">
+
+      {% for section in canvas_sections %}
+      <div class="card bg-white border border-violet-100 p-4">
+        <p class="text-sm font-semibold mb-1">{{ section.label }}</p>
+        <p class="text-xs text-gray-500 mb-1">{{ section.prompt }}</p>
+        <p class="text-xs text-violet-600 italic mb-2">{{ section.hint }}</p>
+        <textarea id="c3-{{ section.id }}" name="{{ section.id }}"
+          class="textarea textarea-bordered w-full text-sm" rows="2"
+          placeholder="{{ section.placeholder }}" maxlength="400"></textarea>
+        <p id="c3-{{ section.id }}-error" class="text-error text-xs mt-1 hidden">Please complete this section.</p>
+      </div>
+      {% endfor %}
+
+      <div class="flex justify-end">
+        <button type="button" id="submit-challenge3-btn" class="btn btn-success btn-sm">
+          Complete My Canvas &#x2192;
+        </button>
+      </div>
+
+    </form>
+
+    {% else %}
+
+    <!-- Completed state -->
+    <div class="alert alert-success py-3 mb-4">
+      <p class="text-sm">&#x2713; Completed. Your AI Stance Canvas is saved and ready to use.</p>
+    </div>
+
+    <div class="space-y-3 mt-2">
+      <p class="text-sm font-semibold">&#x1F4A1; Reflection prompts for your canvas:</p>
+      {% for prompt in canvas_completed_prompts %}
+      <div class="collapse collapse-arrow bg-white border border-base-300">
+        <input type="checkbox" />
+        <div class="collapse-title text-sm font-medium">{{ prompt }}</div>
+        <div class="collapse-content text-sm text-gray-700">
+          <p>Your canvas is a living document. Come back to it at the start of each term and ask whether your position has evolved &mdash; and whether you kept the commitments you made.</p>
+        </div>
+      </div>
+      {% endfor %}
+
+      {% if activity.challenge_data.challenge3_position %}
+      <div class="card bg-violet-50 border border-violet-200 p-4 mt-2">
+        <p class="text-xs font-semibold text-violet-700 uppercase tracking-wide mb-2">Your saved canvas</p>
+        <p class="text-sm"><strong>My position:</strong> {{ activity.challenge_data.challenge3_position }}</p>
+        {% if activity.challenge_data.challenge3_non_negotiable %}
+        <p class="text-sm mt-1"><strong>Non-negotiable:</strong> {{ activity.challenge_data.challenge3_non_negotiable }}</p>
+        {% endif %}
+        {% if activity.challenge_data.challenge3_first_step %}
+        <p class="text-sm mt-1"><strong>First step:</strong> {{ activity.challenge_data.challenge3_first_step }}</p>
+        {% endif %}
+        {% if activity.challenge_data.challenge3_first_ally %}
+        <p class="text-sm mt-1"><strong>First conversation:</strong> {{ activity.challenge_data.challenge3_first_ally }}</p>
+        {% endif %}
+      </div>
+      {% endif %}
+
+    </div>
+
+    {% endif %}
+
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- COMPLETION CARD -->
+<!-- ============================================================ -->
+{% if activity.challenge3_completed %}
+<div class="card bg-emerald-50 border-2 border-emerald-400 mb-6">
+  <div class="card-body text-center">
+    <div class="text-4xl mb-3">&#x2705;</div>
+    <h3 class="card-title justify-center text-emerald-800 text-xl mb-2">Activity Complete</h3>
+    <p class="text-sm text-emerald-700 mb-4">
+      You have navigated a difficult stakeholder moment, designed a concrete AI literacy teaching move, and completed your AI Stance Canvas.
+      These are not exercises &mdash; they are your tools for leading AI in your school without needing a title.
+    </p>
+    <div class="alert bg-white border border-emerald-300 text-left">
+      <p class="text-sm font-medium text-emerald-900">
+        &#x1F4CC; You are always the final judge. And now you have the tools to make that judgment heard.
+      </p>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{% include "community/partials/tab_forum_trigger.html" with tab_name="activity" module_code=module.code trigger_style="post_completion" %}
+
+{% if not activity.activity_completed %}
+<div id="mark-complete-section" class="{% if not activity.challenge3_completed %}hidden{% endif %} text-center mt-4">
+  <button id="mark-activity-complete-btn" class="btn btn-success btn-lg">
+    &#x2713; Mark Activity Complete
+  </button>
+</div>
+{% endif %}
+
+
+<!-- ============================================================ -->
+<!-- JAVASCRIPT -->
+<!-- ============================================================ -->
+<script>
+// -- Character counters ------------------------------------------------
+const c1Response = document.getElementById('c1-response');
+const c1CharCount = document.getElementById('c1-char-count');
+if (c1Response) c1Response.addEventListener('input', () => { c1CharCount.textContent = c1Response.value.length; });
+
+const c2Adaptation = document.getElementById('c2-adaptation');
+const c2CharCount = document.getElementById('c2-char-count');
+if (c2Adaptation) c2Adaptation.addEventListener('input', () => { c2CharCount.textContent = c2Adaptation.value.length; });
+
+// -- CHALLENGE 1 SUBMIT -----------------------------------------------
+document.getElementById('submit-challenge1-btn')?.addEventListener('click', () => {
+  const stakeholders = Array.from(document.querySelectorAll('input[name="stakeholders"]:checked')).map(el => el.value);
+  const goal = document.querySelector('input[name="goal"]:checked')?.value;
+  const response = document.getElementById('c1-response')?.value?.trim();
+
+  document.getElementById('c1-stakeholders-error').classList.toggle('hidden', stakeholders.length > 0);
+  document.getElementById('c1-goal-error').classList.toggle('hidden', !!goal);
+  document.getElementById('c1-response-error').classList.toggle('hidden', !!(response && response.length >= 20));
+  if (!stakeholders.length || !goal || !response || response.length < 20) return;
+
+  fetch(`/modules/modules/{{ module.code }}/tab3/challenge1/`, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}'},
+    body: JSON.stringify({ stakeholders, goal, response })
+  })
+  .then(r => r.json())
+  .then(data => { if (data.success) location.reload(); });
+});
+
+// -- CHALLENGE 2 SUBMIT -----------------------------------------------
+document.getElementById('submit-challenge2-btn')?.addEventListener('click', () => {
+  const move = document.querySelector('input[name="teaching_move"]:checked')?.value;
+  const ageGroup = document.querySelector('input[name="age_group"]:checked')?.value;
+  const adaptation = document.getElementById('c2-adaptation')?.value?.trim();
+  const when = document.getElementById('c2-when')?.value?.trim();
+
+  document.getElementById('c2-move-error').classList.toggle('hidden', !!move);
+  document.getElementById('c2-age-error').classList.toggle('hidden', !!ageGroup);
+  document.getElementById('c2-adaptation-error').classList.toggle('hidden', !!(adaptation && adaptation.length >= 30));
+  document.getElementById('c2-when-error').classList.toggle('hidden', !!(when && when.length >= 5));
+  if (!move || !ageGroup || !adaptation || adaptation.length < 30 || !when || when.length < 5) return;
+
+  fetch(`/modules/modules/{{ module.code }}/tab3/challenge2/`, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}'},
+    body: JSON.stringify({ teaching_move: move, age_group: ageGroup, adaptation, when })
+  })
+  .then(r => r.json())
+  .then(data => { if (data.success) location.reload(); });
+});
+
+// -- CHALLENGE 3 SUBMIT -----------------------------------------------
+document.getElementById('submit-challenge3-btn')?.addEventListener('click', () => {
+  const sections = ['position', 'non_negotiable', 'first_step', 'first_ally'];
+  const minLengths = { position: 30, non_negotiable: 20, first_step: 30, first_ally: 20 };
+  let valid = true;
+  const payload = {};
+
+  sections.forEach(id => {
+    const val = document.getElementById(`c3-${id}`)?.value?.trim();
+    const min = minLengths[id];
+    const ok = !!(val && val.length >= min);
+    document.getElementById(`c3-${id}-error`).classList.toggle('hidden', ok);
+    if (!ok) valid = false;
+    payload[id] = val || '';
+  });
+
+  if (!valid) return;
+
+  fetch(`/modules/modules/{{ module.code }}/tab3/challenge3/`, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}'},
+    body: JSON.stringify(payload)
+  })
+  .then(r => r.json())
+  .then(data => { if (data.success) location.reload(); });
+});
+
+// -- MARK ACTIVITY COMPLETE -------------------------------------------
+document.getElementById('mark-activity-complete-btn')?.addEventListener('click', () => {
+  fetch(`/modules/modules/{{ module.code }}/tab3/reflection/`, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}'},
+    body: JSON.stringify({ tab: 'activity' })
+  })
+  .then(r => r.json())
+  .then(data => { if (data.success) location.reload(); });
+});
+</script>
+
+{% endif %}

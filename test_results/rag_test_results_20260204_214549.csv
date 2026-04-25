@@ -1,0 +1,3 @@
+timestamp,test_id,test_type,category,subject,grade_level,execution_time,status,error
+2026-02-04T21:45:38.034084,SD01,subject_diversity,STEM - Mathematics,Mathematics,High School,18.19,FAILED,'feedback'
+2026-02-04T21:45:48.658805,EC01,edge_case,Vague Input,Mathematics,Middle School,9.62,FAILED,'feedback'

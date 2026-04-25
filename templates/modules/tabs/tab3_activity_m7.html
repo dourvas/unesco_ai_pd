@@ -1,0 +1,557 @@
+{% if current_tab == 'activity' %}
+
+<!-- ============================================================ -->
+<!-- M7 TAB3: ACTIVITY — NAVIGATING ETHICAL DILEMMAS IN PRACTICE -->
+<!-- 3 Challenges: Dilemma Mapping → Integrity Action Plan → AI Detector Reality Check -->
+<!-- UNESCO Aspect 2: Ethics | Level: Deepen -->
+<!-- ============================================================ -->
+
+<h2 class="card-title text-2xl mb-2">⚖️ Navigating Ethical Dilemmas in Practice</h2>
+<p class="text-gray-600 mb-6">Three challenges that move from recognising ethical tension to building real classroom strategies — and confronting one of the most dangerous tools in education today.</p>
+
+<!-- Progress tracker -->
+<div class="flex gap-2 mb-8">
+  <div id="progress-c1" class="flex-1 rounded-full h-2 {% if activity.challenge1_completed %}bg-emerald-500{% else %}bg-base-300{% endif %}"></div>
+  <div id="progress-c2" class="flex-1 rounded-full h-2 {% if activity.challenge2_completed %}bg-emerald-500{% else %}bg-base-300{% endif %}"></div>
+  <div id="progress-c3" class="flex-1 rounded-full h-2 {% if activity.challenge3_completed %}bg-emerald-500{% else %}bg-base-300{% endif %}"></div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- CHALLENGE 1: DILEMMA MAPPING -->
+<!-- ============================================================ -->
+<div id="challenge1-section" class="card bg-base-200 border-2 {% if activity.challenge1_completed %}border-emerald-400{% else %}border-base-300{% endif %} mb-6">
+  <div class="card-body">
+
+    <div class="flex items-center gap-3 mb-2">
+      <div class="w-10 h-10 rounded-full bg-indigo-600 text-white flex items-center justify-center font-bold text-lg flex-shrink-0">1</div>
+      <div>
+        <h3 class="card-title text-lg">Dilemma Mapping</h3>
+        <p class="text-xs text-gray-500">Read · Analyse · Decide · ~20 minutes</p>
+      </div>
+      {% if activity.challenge1_completed %}
+      <span class="badge badge-success ml-auto">✓ Complete</span>
+      {% endif %}
+    </div>
+
+    <p class="text-sm mb-4">Real ethical dilemmas resist simple answers because two valid principles point in different directions. Read the following scenario carefully. Your task is not to find the "correct" answer — it is to map the competing principles, articulate the tension, and make a principled professional judgment.</p>
+
+    <!-- Scenario card -->
+    <div class="card bg-white border border-indigo-200 mb-5">
+      <div class="card-body py-4">
+        <p class="text-xs font-semibold text-indigo-600 uppercase tracking-wide mb-2">📋 The Scenario</p>
+        <p class="text-sm leading-relaxed">{{ scenario.text|linebreaksbr }}</p>
+        <div class="flex flex-wrap gap-2 mt-3">
+          {% for tag in scenario.tags %}
+          <span class="badge badge-outline badge-sm">{{ tag }}</span>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    {% if not activity.challenge1_completed %}
+
+    <form id="challenge1-form" class="space-y-5">
+
+      <!-- Step 1: Principles in tension -->
+      <div>
+        <p class="text-sm font-semibold mb-1">Step 1 — Which principles are in genuine tension here?</p>
+        <p class="text-xs text-gray-500 mb-3">Select the principles that most directly conflict in this scenario.</p>
+        <div class="grid grid-cols-2 gap-2 sm:grid-cols-3">
+          {% for p in principles %}
+          <label class="flex items-center gap-2 cursor-pointer p-2 rounded-lg border border-base-300 hover:border-indigo-300 hover:bg-indigo-50 transition-colors">
+            <input type="checkbox" name="principles" value="{{ p.value }}" class="checkbox checkbox-sm checkbox-primary" />
+            <span class="text-sm">{{ p.label }}</span>
+          </label>
+          {% endfor %}
+        </div>
+        <p id="c1-principles-error" class="text-error text-xs mt-1 hidden">Please select at least one principle.</p>
+      </div>
+
+      <!-- Step 2: Core tension -->
+      <div>
+        <p class="text-sm font-semibold mb-2">Step 2 — Where is the core tension?</p>
+        <div class="space-y-2">
+          {% for t in tensions %}
+          <label class="flex items-start gap-3 cursor-pointer p-3 rounded-lg border border-base-300 hover:border-indigo-300 hover:bg-indigo-50 transition-colors">
+            <input type="radio" name="tension" value="{{ t.value }}" class="radio radio-sm radio-primary mt-0.5" />
+            <div>
+              <p class="text-sm font-medium">{{ t.label }}</p>
+              <p class="text-xs text-gray-500 mt-0.5">{{ t.note }}</p>
+            </div>
+          </label>
+          {% endfor %}
+        </div>
+        <p id="c1-tension-error" class="text-error text-xs mt-1 hidden">Please identify the core tension.</p>
+      </div>
+
+      <!-- Step 3: Professional judgment -->
+      <div>
+        <p class="text-sm font-semibold mb-2">Step 3 — What is your professional judgment?</p>
+        <div class="space-y-2">
+          {% for d in decisions %}
+          <label class="flex items-start gap-3 cursor-pointer p-3 rounded-lg border border-base-300 hover:border-indigo-300 hover:bg-indigo-50 transition-colors">
+            <input type="radio" name="decision" value="{{ d.value }}" class="radio radio-sm radio-primary mt-0.5" />
+            <div>
+              <p class="text-sm font-medium">{{ d.label }}</p>
+              <p class="text-xs text-gray-500 mt-0.5">{{ d.note }}</p>
+            </div>
+          </label>
+          {% endfor %}
+        </div>
+        <p id="c1-decision-error" class="text-error text-xs mt-1 hidden">Please select an approach.</p>
+      </div>
+
+      <!-- Step 4: Reasoning -->
+      <div>
+        <label class="text-sm font-semibold mb-1 block">In 2–3 sentences: what is your reasoning?</label>
+        <p class="text-xs text-gray-500 mb-2">Explain the principle that most guides your judgment here — not what feels right, but why it feels right.</p>
+        <textarea id="c1-reasoning" name="reasoning" class="textarea textarea-bordered w-full text-sm" rows="3" placeholder="The principle I'm prioritising is... because..." maxlength="600"></textarea>
+        <div class="flex justify-between mt-1">
+          <p id="c1-reasoning-error" class="text-error text-xs hidden">Please share your reasoning (at least 20 characters).</p>
+          <p class="text-xs text-gray-400 ml-auto"><span id="c1-char-count">0</span>/600</p>
+        </div>
+      </div>
+
+      <div class="flex justify-end">
+        <button type="button" id="submit-challenge1-btn" class="btn btn-primary btn-sm">
+          Submit & See Perspectives →
+        </button>
+      </div>
+
+    </form>
+
+    {% else %}
+
+    <!-- Completed state -->
+    <div class="alert alert-success py-3 mb-4">
+      <p class="text-sm">✓ Completed. You mapped the competing principles and made a principled professional judgment.</p>
+    </div>
+
+    <!-- Perspectives -->
+    <div class="mt-2">
+      <p class="text-sm font-semibold mb-3">💡 How experienced educators approach this dilemma:</p>
+      <div class="space-y-2">
+        {% for pv in perspectives %}
+        <div class="collapse collapse-arrow bg-white border border-base-300">
+          <input type="checkbox" />
+          <div class="collapse-title text-sm font-medium">{{ pv.title }}</div>
+          <div class="collapse-content text-sm text-gray-700">{{ pv.text }}</div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    {% endif %}
+
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- CHALLENGE 2: ACADEMIC INTEGRITY ACTION PLAN BUILDER -->
+<!-- ============================================================ -->
+<div id="challenge2-section" class="card bg-base-200 border-2 {% if activity.challenge2_completed %}border-emerald-400{% elif activity.challenge1_completed %}border-amber-400{% else %}border-base-300 opacity-60{% endif %} mb-6">
+  <div class="card-body">
+
+    <div class="flex items-center gap-3 mb-2">
+      <div class="w-10 h-10 rounded-full {% if activity.challenge1_completed %}bg-amber-500{% else %}bg-base-300{% endif %} text-white flex items-center justify-center font-bold text-lg flex-shrink-0">2</div>
+      <div>
+        <h3 class="card-title text-lg">Academic Integrity Action Plan</h3>
+        <p class="text-xs text-gray-500">Choose · Build · Take away · ~15 minutes</p>
+      </div>
+      {% if activity.challenge2_completed %}
+      <span class="badge badge-success ml-auto">✓ Complete</span>
+      {% endif %}
+    </div>
+
+    {% if not activity.challenge1_completed %}
+    <p class="text-sm text-gray-500 italic">Complete Challenge 1 to unlock this challenge.</p>
+    {% elif not activity.challenge2_completed %}
+
+    <p class="text-sm mb-2">The four pedagogical strategies in Module 7 are not abstract ideals — they are actionable choices. For each one, select the concrete step you will take in your classroom. You will leave with a personalised action plan you can implement immediately.</p>
+    <p class="text-xs text-gray-500 mb-5">Your choices are saved to your personal record. You can refer back to this plan at any time.</p>
+
+    <form id="challenge2-form" class="space-y-4">
+
+      {% for num, strategy in strategy_options.items %}
+      <div class="card bg-white border border-amber-200 p-4">
+        <p class="text-sm font-semibold text-amber-700 mb-1">Strategy {{ num }} — {{ strategy.title }}</p>
+        <p class="text-xs text-gray-500 mb-3">{{ strategy.hint }}</p>
+        <div class="space-y-2">
+          {% for opt in strategy.options %}
+          <label class="flex items-start gap-2 cursor-pointer">
+            <input type="radio" name="strategy_{{ num }}" value="{{ opt.value }}" class="radio radio-sm radio-warning mt-0.5" />
+            <span class="text-sm">{{ opt.text }}</span>
+          </label>
+          {% endfor %}
+        </div>
+      </div>
+      {% endfor %}
+
+      <!-- Commitment -->
+      <div>
+        <label class="text-sm font-semibold mb-1 block">One thing you will do differently starting next week:</label>
+        <textarea id="c2-commitment" name="commitment" class="textarea textarea-bordered w-full text-sm" rows="2" placeholder="From next week, I will..." maxlength="400"></textarea>
+        <p id="c2-commitment-error" class="text-error text-xs mt-1 hidden">Please write a brief commitment (at least 20 characters).</p>
+      </div>
+
+      <p id="c2-selection-error" class="text-error text-xs hidden">Please make a selection for all four strategies.</p>
+
+      <div class="flex gap-3 justify-end">
+        <button type="button" id="preview-plan-btn" class="btn btn-outline btn-sm">👁 Preview My Plan</button>
+        <button type="button" id="submit-challenge2-btn" class="btn btn-primary btn-sm">Save Plan & Continue →</button>
+      </div>
+
+      <!-- Plan preview -->
+      <div id="plan-preview" class="hidden card bg-amber-50 border border-amber-200 p-4">
+        <p class="text-xs font-semibold text-amber-700 uppercase tracking-wide mb-2">📋 Your Academic Integrity Action Plan</p>
+        <div id="preview-plan-text" class="text-sm leading-relaxed space-y-2 text-gray-800"></div>
+      </div>
+
+    </form>
+
+    {% else %}
+
+    <!-- Completed state -->
+    <div class="alert alert-success py-3 mb-4">
+      <p class="text-sm">✓ Completed. Your Academic Integrity Action Plan is saved.</p>
+    </div>
+
+    <div class="card bg-white border border-emerald-200 p-4 mb-3">
+      <p class="text-xs font-semibold text-emerald-700 uppercase tracking-wide mb-2">📋 Your Action Plan</p>
+      <div class="text-sm leading-relaxed space-y-2 text-gray-800">
+        <p><strong>Process:</strong> {{ activity.challenge_data.challenge2_strategy_1 }}</p>
+        <p><strong>Authenticity:</strong> {{ activity.challenge_data.challenge2_strategy_2 }}</p>
+        <p><strong>Disclosure:</strong> {{ activity.challenge_data.challenge2_strategy_3 }}</p>
+        <p><strong>Dialogue:</strong> {{ activity.challenge_data.challenge2_strategy_4 }}</p>
+        {% if activity.challenge_data.challenge2_commitment %}
+        <p class="mt-3 border-t border-gray-100 pt-3"><strong>My commitment:</strong> {{ activity.challenge_data.challenge2_commitment }}</p>
+        {% endif %}
+      </div>
+    </div>
+    <button onclick="copyPlan()" class="btn btn-outline btn-sm">📋 Copy My Plan</button>
+
+    {% endif %}
+
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- CHALLENGE 3: AI DETECTOR REALITY CHECK -->
+<!-- ============================================================ -->
+<div id="challenge3-section" class="card bg-base-200 border-2 {% if activity.challenge3_completed %}border-emerald-400{% elif activity.challenge2_completed %}border-rose-400{% else %}border-base-300 opacity-60{% endif %} mb-6">
+  <div class="card-body">
+
+    <div class="flex items-center gap-3 mb-2">
+      <div class="w-10 h-10 rounded-full {% if activity.challenge2_completed %}bg-rose-500{% else %}bg-base-300{% endif %} text-white flex items-center justify-center font-bold text-lg flex-shrink-0">3</div>
+      <div>
+        <h3 class="card-title text-lg">AI Detector Reality Check</h3>
+        <p class="text-xs text-gray-500">Identify · Confront the evidence · Build your protocol · ~15 minutes</p>
+      </div>
+      {% if activity.challenge3_completed %}
+      <span class="badge badge-success ml-auto">✓ Complete</span>
+      {% endif %}
+    </div>
+
+    {% if not activity.challenge2_completed %}
+    <p class="text-sm text-gray-500 italic">Complete Challenge 2 to unlock this challenge.</p>
+    {% elif not activity.challenge3_completed %}
+
+    <p class="text-sm mb-2">AI detection tools are widely used — and widely misunderstood. Before you can make an ethical decision about whether to use them, you need to understand what they actually do and what they cannot do.</p>
+    <p class="text-xs text-gray-500 mb-5">Read three short writing samples and identify which you believe was AI-generated. Then you'll encounter the research — and build your personal protocol.</p>
+
+    <form id="challenge3-form" class="space-y-5">
+
+      <!-- Writing samples -->
+      <div>
+        <p class="text-sm font-semibold mb-3">Step 1 — Read these three writing samples. Which one do you think was written by AI?</p>
+        <div class="space-y-3 mb-4">
+
+          <div class="card bg-white border border-rose-100 p-4">
+            <p class="text-xs font-semibold text-rose-600 uppercase tracking-wide mb-2">Sample A</p>
+            <p class="text-sm leading-relaxed italic">"The use of artificial intelligence in educational settings presents both significant opportunities and notable challenges. Key considerations include the potential for personalised learning pathways, the importance of maintaining academic integrity, and the need for teachers to develop appropriate digital literacy skills. Ultimately, a balanced approach that leverages AI's capabilities while preserving the centrality of human judgment appears most productive."</p>
+          </div>
+
+          <div class="card bg-white border border-rose-100 p-4">
+            <p class="text-xs font-semibold text-rose-600 uppercase tracking-wide mb-2">Sample B</p>
+            <p class="text-sm leading-relaxed italic">"I wasn't sure I wanted to write about this topic at first. It felt too abstract — 'AI in education' sounds like something from a conference brochure. But then I thought about my student last year who stayed after class to show me a conversation he'd had with ChatGPT about the French Revolution. He was more engaged with that conversation than he'd been with anything I'd taught him all term. That made me uncomfortable. Still does."</p>
+          </div>
+
+          <div class="card bg-white border border-rose-100 p-4">
+            <p class="text-xs font-semibold text-rose-600 uppercase tracking-wide mb-2">Sample C</p>
+            <p class="text-sm leading-relaxed italic">"AI tools in classrooms remind me of calculators in math class — everyone was worried they'd make students lazy, but we figured out how to use them well. The difference is calculators don't pretend to be students. When I use Grammarly to fix my writing, that feels different from using ChatGPT to write my essay. I think the line is somewhere around 'did I do the thinking?' but I'm honestly not sure where exactly."</p>
+          </div>
+        </div>
+
+        <div class="space-y-2">
+          <label class="flex items-center gap-3 cursor-pointer p-3 rounded-lg border border-base-300 hover:border-rose-300 hover:bg-rose-50 transition-colors">
+            <input type="radio" name="detector_guess" value="A" class="radio radio-sm radio-error" />
+            <span class="text-sm font-medium">Sample A — this reads like AI</span>
+          </label>
+          <label class="flex items-center gap-3 cursor-pointer p-3 rounded-lg border border-base-300 hover:border-rose-300 hover:bg-rose-50 transition-colors">
+            <input type="radio" name="detector_guess" value="B" class="radio radio-sm radio-error" />
+            <span class="text-sm font-medium">Sample B — this reads like AI</span>
+          </label>
+          <label class="flex items-center gap-3 cursor-pointer p-3 rounded-lg border border-base-300 hover:border-rose-300 hover:bg-rose-50 transition-colors">
+            <input type="radio" name="detector_guess" value="C" class="radio radio-sm radio-error" />
+            <span class="text-sm font-medium">Sample C — this reads like AI</span>
+          </label>
+        </div>
+        <p id="c3-guess-error" class="text-error text-xs mt-1 hidden">Please select a sample.</p>
+      </div>
+
+      <!-- Confidence -->
+      <div>
+        <p class="text-sm font-semibold mb-2">Step 2 — How confident are you in your identification?</p>
+        <div class="flex gap-4 flex-wrap">
+          <label class="flex items-center gap-2 cursor-pointer">
+            <input type="radio" name="confidence" value="very" class="radio radio-sm radio-warning" />
+            <span class="text-sm">Very confident</span>
+          </label>
+          <label class="flex items-center gap-2 cursor-pointer">
+            <input type="radio" name="confidence" value="somewhat" class="radio radio-sm radio-warning" />
+            <span class="text-sm">Somewhat confident</span>
+          </label>
+          <label class="flex items-center gap-2 cursor-pointer">
+            <input type="radio" name="confidence" value="guessing" class="radio radio-sm radio-warning" />
+            <span class="text-sm">Mostly guessing</span>
+          </label>
+        </div>
+        <p id="c3-confidence-error" class="text-error text-xs mt-1 hidden">Please select your confidence level.</p>
+      </div>
+
+      <!-- Personal protocol -->
+      <div>
+        <p class="text-sm font-semibold mb-2">Step 3 — Before you see the reveal, write your personal protocol:</p>
+        <p class="text-xs text-gray-500 mb-3">Based on everything you've learned in this module, complete these two sentences:</p>
+        <div class="space-y-3">
+          <div>
+            <label class="text-xs font-semibold text-gray-600 block mb-1">When I suspect a student has used AI in their work, my first step will be:</label>
+            <textarea id="c3-first-step" name="first_step" class="textarea textarea-bordered w-full text-sm" rows="2" placeholder="My first step will be..." maxlength="300"></textarea>
+          </div>
+          <div>
+            <label class="text-xs font-semibold text-gray-600 block mb-1">I will / will not use AI detection tools in my classroom because:</label>
+            <textarea id="c3-detector-decision" name="detector_decision" class="textarea textarea-bordered w-full text-sm" rows="2" placeholder="I will / will not use AI detectors because..." maxlength="300"></textarea>
+          </div>
+        </div>
+        <p id="c3-protocol-error" class="text-error text-xs mt-1 hidden">Please complete both protocol fields (at least 20 characters each).</p>
+      </div>
+
+      <div class="flex justify-end">
+        <button type="button" id="submit-challenge3-btn" class="btn btn-primary btn-sm">Reveal & Complete →</button>
+      </div>
+
+    </form>
+
+    {% else %}
+
+    <!-- Completed state with reveal -->
+    <div class="alert alert-success py-3 mb-4">
+      <p class="text-sm">✓ Completed. Your personal protocol is saved.</p>
+    </div>
+
+    <!-- The Reveal -->
+    <div class="card bg-rose-50 border border-rose-200 mb-5">
+      <div class="card-body">
+        <h3 class="card-title text-base text-rose-700">🔍 The Reveal</h3>
+        <p class="text-sm mb-4"><strong>All three samples were written by humans.</strong> Sample A was written by a teacher who was trying to sound "professional and balanced." It was flagged as AI-generated by two popular AI detection tools. Samples B and C were written authentically by practising teachers reflecting on their experience.</p>
+        <div class="space-y-3">
+          <div class="bg-white border-l-4 border-rose-400 p-3 rounded text-sm">
+            <p class="font-semibold mb-1">What AI detectors actually measure</p>
+            <p class="text-gray-700">AI detectors measure statistical patterns in text — specifically, how "predictable" each word choice is given the words that came before. Formal, structured writing — the kind teachers are often trained to produce — looks very similar to AI output by these metrics. Non-native speakers, students with certain writing styles, and anyone who has been taught to write "academically" are at elevated risk of false positive detection.</p>
+          </div>
+          <div class="bg-white border-l-4 border-rose-400 p-3 rounded text-sm">
+            <p class="font-semibold mb-1">The evidence on accuracy</p>
+            <p class="text-gray-700">Major AI detection tools report false positive rates of 1–4% in controlled studies — but in real classroom conditions, rates are significantly higher for non-native speakers and for formal academic writing. A 2% false positive rate across 200 essays means 4 students wrongly suspected. No AI detector manufacturer recommends using their tool as the sole basis for an academic integrity decision.</p>
+          </div>
+          <div class="bg-white border-l-4 border-amber-400 p-3 rounded text-sm">
+            <p class="font-semibold mb-1">The ethical problem with detectors</p>
+            <p class="text-gray-700">Using an AI detector as evidence in an integrity case creates a situation where a statistical probability is treated as proof — without the student's knowledge of what evidence is being used, or the ability to effectively challenge it. This is not a standard that would be accepted in any other professional context involving serious consequences for an individual.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Their saved protocol -->
+    <div class="card bg-white border border-emerald-200 p-4">
+      <p class="text-xs font-semibold text-emerald-700 uppercase tracking-wide mb-2">📋 Your Personal Protocol</p>
+      <div class="text-sm leading-relaxed space-y-2 text-gray-800">
+        <p><strong>First step:</strong> {{ activity.challenge_data.challenge3_first_step }}</p>
+        <p><strong>On AI detectors:</strong> {{ activity.challenge_data.challenge3_detector_decision }}</p>
+      </div>
+    </div>
+
+    {% endif %}
+
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- COMPLETION STATE -->
+<!-- ============================================================ -->
+{% if activity.activity_completed %}
+<div class="card bg-emerald-50 border-2 border-emerald-400 mb-6">
+  <div class="card-body text-center">
+    <p class="text-2xl mb-2">⚖️</p>
+    <h3 class="card-title justify-center text-emerald-800">Activity Complete!</h3>
+    <p class="text-sm text-emerald-700 mt-2">You've mapped a real ethical dilemma, built a personalised integrity action plan, and confronted the evidence on AI detection tools. These aren't abstract exercises — they are professional decisions you are now better equipped to make.</p>
+    <div class="mt-4">
+      <p class="text-xs text-gray-500">Ready to test your reasoning? Continue to the Assessment →</p>
+    </div>
+  </div>
+</div>
+
+{% include "community/partials/tab_forum_trigger.html" with tab_name="activity" module_code=module.code trigger_style="post_completion" %}
+
+{% endif %}
+
+{% if not activity.activity_completed %}
+<div id="mark-complete-section" class="{% if not activity.challenge3_completed %}hidden{% endif %} text-center mt-4">
+  <button id="mark-activity-complete-btn" class="btn btn-success btn-lg">
+    ✓ Mark Activity Complete
+  </button>
+</div>
+{% endif %}
+
+
+<!-- ============================================================ -->
+<!-- JAVASCRIPT -->
+<!-- ============================================================ -->
+<script>
+// ── Character counter ───────────────────────────────────────────
+const c1Reasoning = document.getElementById('c1-reasoning');
+const c1CharCount = document.getElementById('c1-char-count');
+if (c1Reasoning) {
+  c1Reasoning.addEventListener('input', () => {
+    c1CharCount.textContent = c1Reasoning.value.length;
+  });
+}
+
+// ── Strategy option texts (for preview) ────────────────────────
+const strategyTexts = {
+  s1a: "Process: Add a 'process note' requirement — students answer: what did you struggle with, and what decisions did you make?",
+  s1b: "Process: Ask students to submit a draft alongside their final work for at least one assignment this term.",
+  s1c: "Process: Introduce a short oral check-in — asking each student to explain one key decision they made.",
+  s2a: "Authenticity: Redesign one assignment to require reference to specific classroom discussions, local events, or students' own experiences.",
+  s2b: "Authenticity: Replace a general essay prompt with a task requiring students to take and defend a personal position.",
+  s2c: "Authenticity: Add a 'connection to our community' requirement to an existing assignment.",
+  s3a: "Disclosure: Introduce an AI use disclosure field as a standard part of at least one assignment this term.",
+  s3b: "Disclosure: Have an explicit classroom conversation about AI use before the next major assignment.",
+  s3c: "Disclosure: Share my own AI use with students and demonstrate how I acknowledge it.",
+  s4a: "Dialogue: Commit to a private conversation with any student whose work raises concerns before formal action.",
+  s4b: "Dialogue: Prepare a short list of neutral process questions for these conversations.",
+  s4c: "Dialogue: Discuss with a colleague how we would handle a suspected AI misuse case together.",
+};
+
+// ── Plan preview ────────────────────────────────────────────────
+document.getElementById('preview-plan-btn')?.addEventListener('click', () => {
+  const strategies = ['1', '2', '3', '4'];
+  const preview = document.getElementById('plan-preview');
+  const previewText = document.getElementById('preview-plan-text');
+  const selected = strategies.map(s => {
+    const el = document.querySelector(`input[name="strategy_${s}"]:checked`);
+    return el ? strategyTexts[el.value] : null;
+  }).filter(Boolean);
+  if (selected.length === 0) return;
+  previewText.innerHTML = selected.map(t => `<p>${t}</p>`).join('');
+  const commitment = document.getElementById('c2-commitment')?.value?.trim();
+  if (commitment) {
+    previewText.innerHTML += `<p class="mt-2 pt-2 border-t border-amber-200"><strong>My commitment:</strong> ${commitment}</p>`;
+  }
+  preview.classList.remove('hidden');
+});
+
+// ── Copy plan ───────────────────────────────────────────────────
+function copyPlan() {
+  const els = document.querySelectorAll('#challenge2-section .text-sm.leading-relaxed p');
+  const joined = Array.from(els).map(p => p.textContent).join('\n\n');
+  navigator.clipboard.writeText(joined).then(() => { alert('Action plan copied to clipboard!'); });
+}
+
+// ── CHALLENGE 1 SUBMIT ──────────────────────────────────────────
+document.getElementById('submit-challenge1-btn')?.addEventListener('click', () => {
+  const principles = Array.from(document.querySelectorAll('input[name="principles"]:checked')).map(el => el.value);
+  const tension = document.querySelector('input[name="tension"]:checked')?.value;
+  const decision = document.querySelector('input[name="decision"]:checked')?.value;
+  const reasoning = document.getElementById('c1-reasoning')?.value?.trim();
+
+  document.getElementById('c1-principles-error').classList.toggle('hidden', principles.length > 0);
+  document.getElementById('c1-tension-error').classList.toggle('hidden', !!tension);
+  document.getElementById('c1-decision-error').classList.toggle('hidden', !!decision);
+  document.getElementById('c1-reasoning-error').classList.toggle('hidden', !!(reasoning && reasoning.length >= 20));
+  if (!principles.length || !tension || !decision || !reasoning || reasoning.length < 20) return;
+
+  fetch(`/modules/modules/{{ module.code }}/tab3/challenge1/`, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}'},
+    body: JSON.stringify({ principles, tension, decision, reasoning })
+  })
+  .then(r => r.json())
+  .then(data => { if (data.success) location.reload(); });
+});
+
+// ── CHALLENGE 2 SUBMIT ──────────────────────────────────────────
+document.getElementById('submit-challenge2-btn')?.addEventListener('click', () => {
+  const strategies = ['1', '2', '3', '4'];
+  const values = strategies.map(s => ({
+    key: s,
+    val: document.querySelector(`input[name="strategy_${s}"]:checked`)?.value
+  }));
+  const missing = values.some(v => !v.val);
+  const commitment = document.getElementById('c2-commitment')?.value?.trim();
+  const commitmentValid = !!(commitment && commitment.length >= 20);
+
+  document.getElementById('c2-selection-error').classList.toggle('hidden', !missing);
+  document.getElementById('c2-commitment-error').classList.toggle('hidden', commitmentValid);
+  if (missing || !commitmentValid) return;
+
+  const payload = { commitment };
+  values.forEach(v => { payload[`strategy_${v.key}`] = strategyTexts[v.val]; });
+
+  fetch(`/modules/modules/{{ module.code }}/tab3/challenge2/`, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}'},
+    body: JSON.stringify(payload)
+  })
+  .then(r => r.json())
+  .then(data => { if (data.success) location.reload(); });
+});
+
+// ── CHALLENGE 3 SUBMIT ──────────────────────────────────────────
+document.getElementById('submit-challenge3-btn')?.addEventListener('click', () => {
+  const guess = document.querySelector('input[name="detector_guess"]:checked')?.value;
+  const confidence = document.querySelector('input[name="confidence"]:checked')?.value;
+  const firstStep = document.getElementById('c3-first-step')?.value?.trim();
+  const detectorDecision = document.getElementById('c3-detector-decision')?.value?.trim();
+
+  document.getElementById('c3-guess-error').classList.toggle('hidden', !!guess);
+  document.getElementById('c3-confidence-error').classList.toggle('hidden', !!confidence);
+  const protocolValid = !!(firstStep && firstStep.length >= 20 && detectorDecision && detectorDecision.length >= 20);
+  document.getElementById('c3-protocol-error').classList.toggle('hidden', protocolValid);
+  if (!guess || !confidence || !protocolValid) return;
+
+  fetch(`/modules/modules/{{ module.code }}/tab3/challenge3/`, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}'},
+    body: JSON.stringify({ guess, confidence, first_step: firstStep, detector_decision: detectorDecision })
+  })
+  .then(r => r.json())
+  .then(data => { if (data.success) location.reload(); });
+});
+
+// ── MARK ACTIVITY COMPLETE ──────────────────────────────────────
+document.getElementById('mark-activity-complete-btn')?.addEventListener('click', () => {
+  fetch(`/modules/modules/{{ module.code }}/tab3/reflection/`, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}'},
+    body: JSON.stringify({ tab: 'activity' })
+  })
+  .then(r => r.json())
+  .then(data => { if (data.success) location.reload(); });
+});
+</script>
+
+{% endif %}

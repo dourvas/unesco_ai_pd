@@ -1,0 +1,536 @@
+{% if current_tab == 'activity' %}
+
+<!-- ============================================================ -->
+<!-- M15 TAB3: ACTIVITY — PROFESSIONAL TRANSFORMATION SYNTHESIS  -->
+<!-- 3 Challenges: Turning Points → Portfolio Builder → Leadership Stance -->
+<!-- UNESCO Aspect 5: Professional Development | Level: Create    -->
+<!-- ============================================================ -->
+
+<h2 class="card-title text-2xl mb-2">🌱 Professional Transformation Synthesis</h2>
+<p class="text-gray-600 mb-6">Three synthesis activities that move from recognising your turning points to building your portfolio structure to choosing your leadership stance. All selections are saved to your record.</p>
+
+<!-- Progress tracker -->
+<div class="flex gap-2 mb-8">
+  <div id="progress-c1" class="flex-1 rounded-full h-2 {% if activity.challenge1_completed %}bg-emerald-500{% else %}bg-base-300{% endif %}"></div>
+  <div id="progress-c2" class="flex-1 rounded-full h-2 {% if activity.challenge2_completed %}bg-emerald-500{% else %}bg-base-300{% endif %}"></div>
+  <div id="progress-c3" class="flex-1 rounded-full h-2 {% if activity.challenge3_completed %}bg-emerald-500{% else %}bg-base-300{% endif %}"></div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- CHALLENGE 1: TURNING POINTS MAPPER                          -->
+<!-- ============================================================ -->
+<div id="challenge1-section" class="card bg-base-200 border-2 {% if activity.challenge1_completed %}border-emerald-400{% else %}border-base-300{% endif %} mb-6">
+  <div class="card-body">
+
+    <div class="flex items-center gap-3 mb-2">
+      <div class="w-10 h-10 rounded-full bg-green-700 text-white flex items-center justify-center font-bold text-lg flex-shrink-0">1</div>
+      <div>
+        <h3 class="card-title text-lg">Turning Points Mapper</h3>
+        <p class="text-xs text-gray-500">Read · Select 5 · ~10 minutes</p>
+      </div>
+      {% if activity.challenge1_completed %}
+      <span class="badge badge-success ml-auto">✓ Complete</span>
+      {% endif %}
+    </div>
+
+    <p class="text-sm mb-4">Below are fifteen moments that a teacher might experience across a professional development journey with AI. Select the <strong>five that feel most true</strong> for your own journey — the moments that actually happened, or that resonate most with how your thinking has changed.</p>
+    <p class="text-xs text-gray-500 mb-5">There are no right answers. These are the turning points you will carry into your portfolio and your TAB5 reflection.</p>
+
+    {% if not activity.challenge1_completed %}
+
+    <div id="challenge1-form">
+
+      <div class="space-y-2 mb-5">
+        {% for tp in turning_points %}
+        <label class="flex items-start gap-3 cursor-pointer p-3 rounded-lg border border-base-300 hover:border-green-400 hover:bg-green-50 transition-colors turning-point-option">
+          <input type="checkbox" name="turning_points" value="{{ tp.value }}"
+                 class="checkbox checkbox-sm checkbox-success mt-0.5 flex-shrink-0 tp-checkbox" />
+          <span class="text-sm leading-relaxed">{{ tp.label }}</span>
+        </label>
+        {% endfor %}
+      </div>
+
+      <div class="flex items-center justify-between">
+        <p id="c1-count-display" class="text-sm text-gray-500">
+          <span id="c1-selected-count">0</span> / 5 selected
+        </p>
+        <p id="c1-error" class="text-error text-xs hidden">Please select exactly 5 turning points.</p>
+        <button type="button" id="submit-challenge1-btn" class="btn btn-success btn-sm">
+          Save My Turning Points →
+        </button>
+      </div>
+
+    </div>
+
+    {% else %}
+
+    <!-- Completed state -->
+    <div class="alert alert-success py-3 mb-4">
+      <p class="text-sm">✓ Completed. Your five turning points are saved.</p>
+    </div>
+
+    <div class="space-y-2">
+      <p class="text-sm font-semibold text-gray-700 mb-2">Your turning points:</p>
+      {% for tp in turning_points %}
+        {% if tp.value in activity.challenge_data.challenge1_turning_points %}
+        <div class="flex items-start gap-2 p-3 bg-green-50 border border-green-200 rounded-lg">
+          <span class="text-green-600 flex-shrink-0 mt-0.5">✓</span>
+          <span class="text-sm text-green-800">{{ tp.label }}</span>
+        </div>
+        {% endif %}
+      {% endfor %}
+    </div>
+
+    {% endif %}
+
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- CHALLENGE 2: PORTFOLIO BUILDER                              -->
+<!-- ============================================================ -->
+<div id="challenge2-section" class="card bg-base-200 border-2 {% if activity.challenge2_completed %}border-emerald-400{% elif activity.challenge1_completed %}border-amber-400{% else %}border-base-300 opacity-60{% endif %} mb-6">
+  <div class="card-body">
+
+    <div class="flex items-center gap-3 mb-2">
+      <div class="w-10 h-10 rounded-full {% if activity.challenge1_completed %}bg-amber-500{% else %}bg-base-300{% endif %} text-white flex items-center justify-center font-bold text-lg flex-shrink-0">2</div>
+      <div>
+        <h3 class="card-title text-lg">Portfolio Builder</h3>
+        <p class="text-xs text-gray-500">Assign · Select strongest · ~15 minutes</p>
+      </div>
+      {% if activity.challenge2_completed %}
+      <span class="badge badge-success ml-auto">✓ Complete</span>
+      {% endif %}
+    </div>
+
+    {% if not activity.challenge1_completed %}
+    <p class="text-sm text-gray-500 italic">Complete Challenge 1 to unlock this challenge.</p>
+
+    {% elif not activity.challenge2_completed %}
+
+    <p class="text-sm mb-2">Your transformation portfolio has four components. Below are eight artefact descriptions — examples of the kind of evidence that belongs in a portfolio. Assign each artefact to the column it fits best. Then, for each column, select the artefact that would be your <strong>strongest evidence</strong>.</p>
+    <p class="text-xs text-gray-500 mb-5">Some artefacts could fit more than one column — choose the best fit. There are no wrong answers, but your choices should reflect your own professional judgment.</p>
+
+    <!-- Portfolio columns -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+
+      <!-- Prompt Library — blue -->
+      {% with col=portfolio_columns.0 %}
+      <div class="card bg-white border-2 border-blue-200 p-4">
+        <p class="text-sm font-bold text-blue-700 mb-1">{{ col.icon }} {{ col.title }}</p>
+        <p class="text-xs text-gray-500 mb-3">{{ col.description }}</p>
+        <div class="space-y-2">
+          {% for card in portfolio_cards %}
+          <label class="flex items-start gap-2 cursor-pointer p-2 rounded border border-base-200 hover:border-blue-300 hover:bg-blue-50 transition-colors">
+            <input type="radio" name="col_{{ col.key }}" value="{{ card.value }}" class="radio radio-sm mt-0.5 flex-shrink-0" />
+            <div>
+              <p class="text-xs leading-relaxed">{{ card.text }}</p>
+              <p class="text-xs text-gray-400 italic mt-0.5">{{ card.hint }}</p>
+            </div>
+          </label>
+          {% endfor %}
+        </div>
+        <p id="c2-error-{{ col.key }}" class="text-error text-xs mt-2 hidden">Please select an artefact for this column.</p>
+      </div>
+      {% endwith %}
+
+      <!-- Annotated Reflections — purple -->
+      {% with col=portfolio_columns.1 %}
+      <div class="card bg-white border-2 border-purple-200 p-4">
+        <p class="text-sm font-bold text-purple-700 mb-1">{{ col.icon }} {{ col.title }}</p>
+        <p class="text-xs text-gray-500 mb-3">{{ col.description }}</p>
+        <div class="space-y-2">
+          {% for card in portfolio_cards %}
+          <label class="flex items-start gap-2 cursor-pointer p-2 rounded border border-base-200 hover:border-purple-300 hover:bg-purple-50 transition-colors">
+            <input type="radio" name="col_{{ col.key }}" value="{{ card.value }}" class="radio radio-sm mt-0.5 flex-shrink-0" />
+            <div>
+              <p class="text-xs leading-relaxed">{{ card.text }}</p>
+              <p class="text-xs text-gray-400 italic mt-0.5">{{ card.hint }}</p>
+            </div>
+          </label>
+          {% endfor %}
+        </div>
+        <p id="c2-error-{{ col.key }}" class="text-error text-xs mt-2 hidden">Please select an artefact for this column.</p>
+      </div>
+      {% endwith %}
+
+      <!-- Lesson Cycle — teal -->
+      {% with col=portfolio_columns.2 %}
+      <div class="card bg-white border-2 border-teal-200 p-4">
+        <p class="text-sm font-bold text-teal-700 mb-1">{{ col.icon }} {{ col.title }}</p>
+        <p class="text-xs text-gray-500 mb-3">{{ col.description }}</p>
+        <div class="space-y-2">
+          {% for card in portfolio_cards %}
+          <label class="flex items-start gap-2 cursor-pointer p-2 rounded border border-base-200 hover:border-teal-300 hover:bg-teal-50 transition-colors">
+            <input type="radio" name="col_{{ col.key }}" value="{{ card.value }}" class="radio radio-sm mt-0.5 flex-shrink-0" />
+            <div>
+              <p class="text-xs leading-relaxed">{{ card.text }}</p>
+              <p class="text-xs text-gray-400 italic mt-0.5">{{ card.hint }}</p>
+            </div>
+          </label>
+          {% endfor %}
+        </div>
+        <p id="c2-error-{{ col.key }}" class="text-error text-xs mt-2 hidden">Please select an artefact for this column.</p>
+      </div>
+      {% endwith %}
+
+      <!-- Community Contribution — green -->
+      {% with col=portfolio_columns.3 %}
+      <div class="card bg-white border-2 border-green-200 p-4">
+        <p class="text-sm font-bold text-green-700 mb-1">{{ col.icon }} {{ col.title }}</p>
+        <p class="text-xs text-gray-500 mb-3">{{ col.description }}</p>
+        <div class="space-y-2">
+          {% for card in portfolio_cards %}
+          <label class="flex items-start gap-2 cursor-pointer p-2 rounded border border-base-200 hover:border-green-300 hover:bg-green-50 transition-colors">
+            <input type="radio" name="col_{{ col.key }}" value="{{ card.value }}" class="radio radio-sm mt-0.5 flex-shrink-0" />
+            <div>
+              <p class="text-xs leading-relaxed">{{ card.text }}</p>
+              <p class="text-xs text-gray-400 italic mt-0.5">{{ card.hint }}</p>
+            </div>
+          </label>
+          {% endfor %}
+        </div>
+        <p id="c2-error-{{ col.key }}" class="text-error text-xs mt-2 hidden">Please select an artefact for this column.</p>
+      </div>
+      {% endwith %}
+
+    </div>
+
+    <p id="c2-global-error" class="text-error text-xs mb-3 hidden">Please make a selection for all four columns.</p>
+
+    <div class="flex justify-end">
+      <button type="button" id="submit-challenge2-btn" class="btn btn-warning btn-sm">
+        Save My Portfolio Structure →
+      </button>
+    </div>
+
+    {% else %}
+
+    <!-- Completed state -->
+    <div class="alert alert-success py-3 mb-4">
+      <p class="text-sm">✓ Completed. Your portfolio structure is saved.</p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+      <div class="card bg-white border border-blue-200 p-3">
+        <p class="text-xs font-bold text-blue-700 mb-1">💬 Prompt Library</p>
+        <p class="text-xs text-gray-500">Artefact selected ✓</p>
+      </div>
+      <div class="card bg-white border border-purple-200 p-3">
+        <p class="text-xs font-bold text-purple-700 mb-1">📝 Annotated Reflections</p>
+        <p class="text-xs text-gray-500">Artefact selected ✓</p>
+      </div>
+      <div class="card bg-white border border-teal-200 p-3">
+        <p class="text-xs font-bold text-teal-700 mb-1">🎓 Lesson Cycle</p>
+        <p class="text-xs text-gray-500">Artefact selected ✓</p>
+      </div>
+      <div class="card bg-white border border-green-200 p-3">
+        <p class="text-xs font-bold text-green-700 mb-1">🌐 Community Contribution</p>
+        <p class="text-xs text-gray-500">Artefact selected ✓</p>
+      </div>
+    </div>
+
+    {% endif %}
+
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- CHALLENGE 3: LEADERSHIP STANCE SELECTOR                     -->
+<!-- ============================================================ -->
+<div id="challenge3-section" class="card bg-base-200 border-2 {% if activity.challenge3_completed %}border-emerald-400{% elif activity.challenge2_completed %}border-purple-400{% else %}border-base-300 opacity-60{% endif %} mb-6">
+  <div class="card-body">
+
+    <div class="flex items-center gap-3 mb-2">
+      <div class="w-10 h-10 rounded-full {% if activity.challenge2_completed %}bg-purple-600{% else %}bg-base-300{% endif %} text-white flex items-center justify-center font-bold text-lg flex-shrink-0">3</div>
+      <div>
+        <h3 class="card-title text-lg">Leadership Stance Selector</h3>
+        <p class="text-xs text-gray-500">Read · Choose at three levels · ~10 minutes</p>
+      </div>
+      {% if activity.challenge3_completed %}
+      <span class="badge badge-success ml-auto">✓ Complete</span>
+      {% endif %}
+    </div>
+
+    {% if not activity.challenge2_completed %}
+    <p class="text-sm text-gray-500 italic">Complete Challenge 2 to unlock this challenge.</p>
+
+    {% elif not activity.challenge3_completed %}
+
+    <!-- Scenario -->
+    <div class="card bg-white border border-purple-200 mb-5">
+      <div class="card-body py-4">
+        <p class="text-xs font-semibold text-purple-600 uppercase tracking-wide mb-2">📋 The Scenario</p>
+        <p class="text-sm leading-relaxed">{{ leadership_scenario.text }}</p>
+        <div class="flex flex-wrap gap-2 mt-3">
+          {% for tag in leadership_scenario.tags %}
+          <span class="badge badge-outline badge-sm">{{ tag }}</span>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <p class="text-sm mb-5">A leader at the Create level responds at more than one level. For each of the three levels below, select the response that best matches how you would actually act — not the "ideal" answer, but the one that is honest and realistic for you right now.</p>
+
+    <div class="space-y-5" id="challenge3-form">
+
+      <!-- Colleague level — blue -->
+      {% with level_key="colleague" level_data=leadership_responses.colleague %}
+      <div class="card bg-white border-2 border-blue-200 p-4">
+        <p class="text-sm font-bold text-blue-700 mb-1">
+          {{ level_data.icon }} {{ level_data.level }}
+        </p>
+        <div class="space-y-2 mt-3">
+          {% for opt in level_data.options %}
+          <label class="flex items-start gap-3 cursor-pointer p-3 rounded-lg border border-base-300 hover:border-blue-300 hover:bg-blue-50 transition-colors">
+            <input type="radio" name="level_{{ level_key }}" value="{{ opt.value }}"
+                   class="radio radio-sm mt-0.5 flex-shrink-0" />
+            <div>
+              <p class="text-sm font-medium">{{ opt.label }}</p>
+              <p class="text-xs text-gray-500 mt-0.5">{{ opt.note }}</p>
+            </div>
+          </label>
+          {% endfor %}
+        </div>
+        <p id="c3-error-{{ level_key }}" class="text-error text-xs mt-2 hidden">Please select a response for this level.</p>
+      </div>
+      {% endwith %}
+
+      <!-- School level — amber -->
+      {% with level_key="school" level_data=leadership_responses.school %}
+      <div class="card bg-white border-2 border-amber-200 p-4">
+        <p class="text-sm font-bold text-amber-700 mb-1">
+          {{ level_data.icon }} {{ level_data.level }}
+        </p>
+        <div class="space-y-2 mt-3">
+          {% for opt in level_data.options %}
+          <label class="flex items-start gap-3 cursor-pointer p-3 rounded-lg border border-base-300 hover:border-amber-300 hover:bg-amber-50 transition-colors">
+            <input type="radio" name="level_{{ level_key }}" value="{{ opt.value }}"
+                   class="radio radio-sm mt-0.5 flex-shrink-0" />
+            <div>
+              <p class="text-sm font-medium">{{ opt.label }}</p>
+              <p class="text-xs text-gray-500 mt-0.5">{{ opt.note }}</p>
+            </div>
+          </label>
+          {% endfor %}
+        </div>
+        <p id="c3-error-{{ level_key }}" class="text-error text-xs mt-2 hidden">Please select a response for this level.</p>
+      </div>
+      {% endwith %}
+
+      <!-- System level — green -->
+      {% with level_key="system" level_data=leadership_responses.system %}
+      <div class="card bg-white border-2 border-green-200 p-4">
+        <p class="text-sm font-bold text-green-700 mb-1">
+          {{ level_data.icon }} {{ level_data.level }}
+        </p>
+        <div class="space-y-2 mt-3">
+          {% for opt in level_data.options %}
+          <label class="flex items-start gap-3 cursor-pointer p-3 rounded-lg border border-base-300 hover:border-green-300 hover:bg-green-50 transition-colors">
+            <input type="radio" name="level_{{ level_key }}" value="{{ opt.value }}"
+                   class="radio radio-sm mt-0.5 flex-shrink-0" />
+            <div>
+              <p class="text-sm font-medium">{{ opt.label }}</p>
+              <p class="text-xs text-gray-500 mt-0.5">{{ opt.note }}</p>
+            </div>
+          </label>
+          {% endfor %}
+        </div>
+        <p id="c3-error-{{ level_key }}" class="text-error text-xs mt-2 hidden">Please select a response for this level.</p>
+      </div>
+      {% endwith %}
+
+    </div>
+
+    <p id="c3-global-error" class="text-error text-xs mt-3 mb-2 hidden">Please make a selection at all three levels.</p>
+
+    <div class="flex justify-end mt-4">
+      <button type="button" id="submit-challenge3-btn" class="btn btn-primary btn-sm">
+        Save My Leadership Stance →
+      </button>
+    </div>
+
+    {% else %}
+
+    <!-- Completed state -->
+    <div class="alert alert-success py-3 mb-4">
+      <p class="text-sm">✓ Completed. Your leadership stance is saved.</p>
+    </div>
+
+    <div class="space-y-3">
+      <div class="card bg-white border border-blue-200 p-3">
+        <p class="text-xs font-bold text-blue-700 mb-1">👩‍🏫 Your response to your colleague</p>
+        <p class="text-xs text-gray-500">Response selected ✓</p>
+      </div>
+      <div class="card bg-white border border-amber-200 p-3">
+        <p class="text-xs font-bold text-amber-700 mb-1">🏫 Your response at school level</p>
+        <p class="text-xs text-gray-500">Response selected ✓</p>
+      </div>
+      <div class="card bg-white border border-green-200 p-3">
+        <p class="text-xs font-bold text-green-700 mb-1">🌐 Your response at systemic level</p>
+        <p class="text-xs text-gray-500">Response selected ✓</p>
+      </div>
+    </div>
+
+    {% endif %}
+
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- MARK COMPLETE — only when all 3 challenges done             -->
+<!-- ============================================================ -->
+{% if activity.challenge1_completed and activity.challenge2_completed and activity.challenge3_completed %}
+
+  {% if not activity.completed_at %}
+  <div class="card bg-green-50 border border-green-300 p-5 mb-6">
+    <p class="text-sm text-green-800 mb-3">
+      You have mapped your turning points, built your portfolio structure, and chosen your leadership stance.
+      These selections will inform your TAB5 reflection. Mark this activity complete to continue.
+    </p>
+    <div class="flex justify-end">
+      <button id="mark-activity-complete-btn" class="btn btn-success">
+        Mark Activity Complete & Continue →
+      </button>
+    </div>
+  </div>
+  {% else %}
+  <div class="alert alert-success mb-6">
+    <span>✓ Activity completed.</span>
+  </div>
+  {% endif %}
+
+{% endif %}
+
+
+<!-- ============================================================ -->
+<!-- JAVASCRIPT                                                   -->
+<!-- ============================================================ -->
+<script>
+
+// ── CHALLENGE 1: Turning Points counter & submit ──────────────
+const tpCheckboxes = document.querySelectorAll('.tp-checkbox');
+const c1CountDisplay = document.getElementById('c1-selected-count');
+
+if (tpCheckboxes.length) {
+  tpCheckboxes.forEach(cb => {
+    cb.addEventListener('change', () => {
+      const selected = document.querySelectorAll('.tp-checkbox:checked');
+      const count = selected.length;
+      if (c1CountDisplay) c1CountDisplay.textContent = count;
+
+      // Disable unchecked once 5 selected
+      tpCheckboxes.forEach(c => {
+        if (!c.checked) c.disabled = count >= 5;
+      });
+    });
+  });
+}
+
+document.getElementById('submit-challenge1-btn')?.addEventListener('click', () => {
+  const selected = Array.from(document.querySelectorAll('.tp-checkbox:checked')).map(c => c.value);
+  const error = document.getElementById('c1-error');
+  if (selected.length !== 5) {
+    error.classList.remove('hidden');
+    return;
+  }
+  error.classList.add('hidden');
+
+  fetch(`/modules/modules/{{ module.code }}/tab3/challenge1/`, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}'},
+    body: JSON.stringify({ turning_points: selected })
+  })
+  .then(r => r.json())
+  .then(data => { if (data.success) location.reload(); });
+});
+
+
+// ── CHALLENGE 2: Portfolio Builder submit ─────────────────────
+document.getElementById('submit-challenge2-btn')?.addEventListener('click', () => {
+  const cols = ['prompt_library', 'reflections', 'lesson_cycle', 'contribution'];
+  const values = {};
+  let hasError = false;
+
+  cols.forEach(col => {
+    const selected = document.querySelector(`input[name="col_${col}"]:checked`);
+    const errorEl = document.getElementById(`c2-error-${col}`);
+    if (!selected) {
+      if (errorEl) errorEl.classList.remove('hidden');
+      hasError = true;
+    } else {
+      if (errorEl) errorEl.classList.add('hidden');
+      values[col] = selected.value;
+    }
+  });
+
+  const globalError = document.getElementById('c2-global-error');
+  if (hasError) {
+    if (globalError) globalError.classList.remove('hidden');
+    return;
+  }
+  if (globalError) globalError.classList.add('hidden');
+
+  fetch(`/modules/modules/{{ module.code }}/tab3/challenge2/`, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}'},
+    body: JSON.stringify(values)
+  })
+  .then(r => r.json())
+  .then(data => { if (data.success) location.reload(); });
+});
+
+
+// ── CHALLENGE 3: Leadership Stance submit ─────────────────────
+document.getElementById('submit-challenge3-btn')?.addEventListener('click', () => {
+  const levels = ['colleague', 'school', 'system'];
+  const values = {};
+  let hasError = false;
+
+  levels.forEach(level => {
+    const selected = document.querySelector(`input[name="level_${level}"]:checked`);
+    const errorEl = document.getElementById(`c3-error-${level}`);
+    if (!selected) {
+      if (errorEl) errorEl.classList.remove('hidden');
+      hasError = true;
+    } else {
+      if (errorEl) errorEl.classList.add('hidden');
+      values[level] = selected.value;
+    }
+  });
+
+  const globalError = document.getElementById('c3-global-error');
+  if (hasError) {
+    if (globalError) globalError.classList.remove('hidden');
+    return;
+  }
+  if (globalError) globalError.classList.add('hidden');
+
+  fetch(`/modules/modules/{{ module.code }}/tab3/challenge3/`, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}'},
+    body: JSON.stringify(values)
+  })
+  .then(r => r.json())
+  .then(data => { if (data.success) location.reload(); });
+});
+
+
+// ── MARK ACTIVITY COMPLETE ────────────────────────────────────
+document.getElementById('mark-activity-complete-btn')?.addEventListener('click', () => {
+  fetch(`/modules/modules/{{ module.code }}/tab3/reflection/`, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}'},
+    body: JSON.stringify({ tab: 'activity' })
+  })
+  .then(r => r.json())
+  .then(data => { if (data.success) location.reload(); });
+});
+
+</script>
+
+{% endif %}

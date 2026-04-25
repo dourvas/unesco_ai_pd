@@ -1,0 +1,11 @@
+timestamp,test_id,test_type,category,subject,grade_level,reflection_length,feedback_length,execution_time,cost_estimate,chunks_retrieved,elements_found,status
+2026-02-04T21:49:11.991679,SD01,subject_diversity,STEM - Mathematics,Mathematics,High School,191,2697,10.41,0,0,4-Mar,SUCCESS
+2026-02-04T21:49:25.133358,SD02,subject_diversity,STEM - Computer Science,Computer Science,University,216,2435,12.14,0,0,4-Jan,SUCCESS
+2026-02-04T21:49:36.873199,SD03,subject_diversity,STEM - Physics,Physics,High School,145,2466,10.74,0,0,4-Mar,SUCCESS
+2026-02-04T21:49:48.013915,SD04,subject_diversity,Humanities - Language Arts,Language Arts,Middle School,186,2556,10.14,0,0,4-Mar,SUCCESS
+2026-02-04T21:50:00.565867,SD05,subject_diversity,Humanities - History,History,High School,170,2797,11.55,0,0,4-Mar,SUCCESS
+2026-02-04T21:50:10.610059,SD06,subject_diversity,Arts - Visual Arts,Art,Elementary,213,2719,9.04,0,0,4-Feb,SUCCESS
+2026-02-04T21:50:23.551624,SD07,subject_diversity,Vocational - Physical Education,Physical Education,High School,185,2600,11.94,0,0,4-Mar,SUCCESS
+2026-02-04T21:50:33.827336,SD08,subject_diversity,Early Childhood - Kindergarten,Kindergarten Generalist,Kindergarten,185,2798,9.27,0,0,4-Mar,SUCCESS
+2026-02-04T21:50:45.530018,EC01,edge_case,Vague Input,Mathematics,Middle School,19,2174,10.7,0,0,N/A,SUCCESS
+2026-02-04T21:51:04.923166,EC02,edge_case,Off-Topic Input,Science,High School,97,2518,18.39,0,0,N/A,SUCCESS

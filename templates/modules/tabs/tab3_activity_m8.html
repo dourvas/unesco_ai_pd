@@ -1,0 +1,478 @@
+{% if current_tab == 'activity' %}
+
+<!-- ============================================================ -->
+<!-- M8 TAB3: ACTIVITY — EDUPROMPT STUDIO -->
+<!-- Flow: Build → Execute (locked) → Evaluate → AI Feedback (optional) -->
+<!-- UNESCO Aspect 3: AI Foundations | Level: Deepen -->
+<!-- ============================================================ -->
+
+<h2 class="card-title text-2xl mb-2">🛠️ Build, Execute &amp; Evaluate</h2>
+<p class="text-gray-600 mb-6">One excellent prompt — built with care, tested in practice, evaluated with intention.</p>
+
+<!-- Progress tracker -->
+<div class="flex gap-2 mb-8">
+  <div id="progress-c1" class="flex-1 rounded-full h-2 {% if activity.challenge1_completed %}bg-emerald-500{% else %}bg-base-300{% endif %}"></div>
+  <div id="progress-c2" class="flex-1 rounded-full h-2 {% if activity.challenge2_completed %}bg-emerald-500{% else %}bg-base-300{% endif %}"></div>
+  <div id="progress-c3" class="flex-1 rounded-full h-2 {% if activity.challenge3_completed %}bg-emerald-500{% else %}bg-base-300{% endif %}"></div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- PHASE 1: BUILD IN EDUPROMPT STUDIO -->
+<!-- ============================================================ -->
+<div class="card bg-base-200 border-2 {% if activity.challenge1_completed %}border-emerald-400{% else %}border-blue-300{% endif %} mb-6">
+  <div class="card-body">
+    <div class="flex items-center gap-3 mb-3">
+      <div class="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-lg flex-shrink-0">1</div>
+      <div>
+        <h3 class="card-title text-lg">🏗️ Build Your Prompt</h3>
+        <p class="text-xs text-gray-500">EduPrompt Studio · RPE Framework · Enhanced Mode · Improvement feature</p>
+      </div>
+      {% if activity.challenge1_completed %}
+      <span class="badge badge-success ml-auto">✓ Complete</span>
+      {% endif %}
+    </div>
+
+    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+      <p class="text-sm text-blue-800">{{ phase1_intro }}</p>
+    </div>
+
+    <!-- Studio iframe -->
+    <div class="card bg-white border border-gray-200 p-2 mb-4">
+      <div class="flex items-center justify-between px-2 py-1 mb-1">
+        <p class="text-xs font-semibold text-gray-500">EduPrompt Studio</p>
+        <a href="{{ studio_url }}" target="_blank" class="btn btn-xs btn-ghost">Open in new tab ↗</a>
+      </div>
+      <iframe
+        src="{{ studio_url }}"
+        width="100%"
+        height="1400"
+        frameborder="0"
+        allow="clipboard-write"
+        class="rounded-lg"
+        title="EduPrompt Studio">
+      </iframe>
+    </div>
+
+    {% if activity.challenge1_completed %}
+    <div class="alert alert-success py-2">
+      <p class="text-sm font-semibold">✓ Prompt saved. Continue to Phase 2 below.</p>
+    </div>
+    {% else %}
+    <!-- Prompt paste + save -->
+    <div class="card bg-white border border-blue-100 p-4">
+      <p class="text-xs font-semibold text-blue-600 uppercase tracking-wide mb-2">When your prompt is ready — paste it here:</p>
+      <textarea
+        id="c1-prompt-text"
+        rows="6"
+        maxlength="3000"
+        class="textarea textarea-bordered w-full text-sm font-mono"
+        placeholder="Paste your completed prompt from EduPrompt Studio here…"></textarea>
+      <div class="flex justify-between mt-1">
+        <p id="c1-error" class="text-error text-xs hidden">Please paste your prompt (minimum 50 characters).</p>
+        <span class="text-xs text-gray-400"><span id="c1-char-count">0</span>/3000</span>
+      </div>
+      <button id="submit-challenge1-btn" class="btn btn-primary btn-sm mt-3">
+        Save Prompt &amp; Continue →
+      </button>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- PHASE 2: EXECUTE -->
+<!-- ============================================================ -->
+<div id="challenge2-section" class="card bg-base-200 border-2 {% if activity.challenge2_completed %}border-emerald-400{% elif not activity.challenge1_completed %}border-base-300 opacity-60{% else %}border-purple-300{% endif %} mb-6">
+  <div class="card-body">
+    <div class="flex items-center gap-3 mb-3">
+      <div class="w-10 h-10 rounded-full bg-purple-600 text-white flex items-center justify-center font-bold text-lg flex-shrink-0">2</div>
+      <div>
+        <h3 class="card-title text-lg">⚡ Execute &amp; See the Output</h3>
+        <p class="text-xs text-gray-500">One-time execution via Gemini 2.5 Flash</p>
+      </div>
+      {% if activity.challenge2_completed %}
+      <span class="badge badge-success ml-auto">✓ Complete</span>
+      {% endif %}
+    </div>
+
+    {% if not activity.challenge1_completed %}
+    <div class="alert alert-info py-2">
+      <p class="text-sm">Complete Phase 1 first.</p>
+    </div>
+
+    {% elif activity.challenge2_completed %}
+    <!-- Show saved prompt + output -->
+    <div class="space-y-4">
+      <div class="card bg-white border border-gray-200 p-4">
+        <p class="text-xs font-semibold text-gray-500 mb-2">Your prompt:</p>
+        <p class="text-sm font-mono text-gray-800 leading-relaxed whitespace-pre-wrap">{{ activity.challenge_data.challenge1_prompt }}</p>
+      </div>
+      <div class="card bg-purple-50 border border-purple-200 p-4">
+        <p class="text-xs font-semibold text-purple-600 mb-2">Gemini 2.5 Flash output:</p>
+          <div class="text-sm text-gray-800 leading-relaxed prose prose-sm max-w-none max-h-96 overflow-y-auto border border-gray-100 rounded p-2">{{ activity.challenge_data.challenge2_output|safe }}</div>
+      </div>
+      <div class="alert alert-warning py-2">
+        <p class="text-xs">For further testing, open EduPrompt Studio in a new tab and run your prompts directly in ChatGPT, Gemini, or Claude.</p>
+      </div>
+    </div>
+
+    {% else %}
+    <!-- Execute button -->
+    <div class="bg-purple-50 border border-purple-200 rounded-lg p-4 mb-4">
+      <p class="text-sm text-purple-800">{{ phase2_intro }}</p>
+    </div>
+    <div class="alert alert-info py-2 mb-4">
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 w-4 h-4"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+  <p class="text-xs">For very detailed prompts, the output may be truncated here. If this happens, copy your prompt and run it directly in ChatGPT, Gemini, or Claude for the full response.</p>
+</div>
+
+    <div class="card bg-white border border-purple-100 p-4">
+      <p class="text-xs font-semibold text-gray-500 mb-2">Your saved prompt:</p>
+      <p class="text-sm font-mono text-gray-700 leading-relaxed bg-gray-50 rounded p-3 whitespace-pre-wrap">{{ activity.challenge_data.challenge1_prompt }}</p>
+    </div>
+
+    <div class="text-center mt-4">
+      <button id="execute-prompt-btn" class="btn btn-primary btn-lg gap-2">
+        <span id="execute-spinner" class="loading loading-spinner loading-sm hidden"></span>
+        <span id="execute-text">⚡ Run with Gemini 2.5 Flash</span>
+      </button>
+      <p class="text-xs text-gray-500 mt-2">This will use one Gemini API call. The result will be saved.</p>
+    </div>
+
+    <!-- Output display (shown after execution) -->
+    <div id="output-display" class="hidden mt-6">
+      <div class="card bg-purple-50 border border-purple-200 p-4">
+        <p class="text-xs font-semibold text-purple-600 mb-2">Gemini 2.5 Flash output:</p>
+          <div id="output-text" class="text-sm text-gray-800 leading-relaxed prose prose-sm max-w-none max-h-96 overflow-y-auto border border-gray-100 rounded p-2"></div>      </div>
+      <div class="text-center mt-4">
+        <div class="alert alert-warning py-2 mb-3">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 w-4 h-4"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.538-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+          <p class="text-xs">💡 If the output appears incomplete, copy your prompt and run it in a new window in ChatGPT, Gemini, or Claude for the full response.</p>
+        </div>
+        <button id="save-output-btn" class="btn btn-success btn-sm">
+          ✓ Save Output &amp; Continue to Evaluation →
+        </button>
+      </div>
+    </div>
+    {% endif %}
+
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- PHASE 3: EVALUATE -->
+<!-- ============================================================ -->
+<div id="challenge3-section" class="card bg-base-200 border-2 {% if activity.challenge3_completed %}border-emerald-400{% elif not activity.challenge2_completed %}border-base-300 opacity-60{% else %}border-amber-300{% endif %} mb-6">
+  <div class="card-body">
+    <div class="flex items-center gap-3 mb-3">
+      <div class="w-10 h-10 rounded-full bg-amber-500 text-white flex items-center justify-center font-bold text-lg flex-shrink-0">3</div>
+      <div>
+        <h3 class="card-title text-lg">📊 Evaluate the Output</h3>
+        <p class="text-xs text-gray-500">Structured evaluation · ~5 minutes</p>
+      </div>
+      {% if activity.challenge3_completed %}
+      <span class="badge badge-success ml-auto">✓ Complete</span>
+      {% endif %}
+    </div>
+
+    {% if not activity.challenge2_completed %}
+    <div class="alert alert-info py-2">
+      <p class="text-sm">Complete Phase 2 first.</p>
+    </div>
+    {% else %}
+
+    <div class="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4">
+      <p class="text-sm text-amber-800">{{ phase3_intro }}</p>
+    </div>
+
+    {% if activity.challenge3_completed %}
+    <!-- Show saved evaluation -->
+    <div class="space-y-3 text-sm">
+      <div class="bg-white border border-gray-200 rounded p-3">
+        <p class="text-xs text-gray-500 mb-1">Usability:</p>
+        <p class="font-medium">{{ activity.challenge_data.challenge3_usability }}</p>
+      </div>
+      <div class="bg-white border border-gray-200 rounded p-3">
+        <p class="text-xs text-gray-500 mb-1">RPE strategies visible in output:</p>
+        <p class="font-medium">{{ activity.challenge_data.challenge3_rpe_visible }}</p>
+      </div>
+      <div class="bg-white border border-gray-200 rounded p-3">
+        <p class="text-xs text-gray-500 mb-1">Cognitive level match:</p>
+        <p class="font-medium">{{ activity.challenge_data.challenge3_cognitive }}</p>
+      </div>
+      {% if activity.challenge_data.eval_one_change %}
+      <div class="bg-white border border-gray-200 rounded p-3">
+        <p class="text-xs text-gray-500 mb-1">One thing to change:</p>
+        <p class="font-medium">{{ activity.challenge_data.challenge3_one_change }}</p>
+      </div>
+      {% endif %}
+    </div>
+
+    {% else %}
+    <!-- Evaluation form -->
+    <div class="space-y-6">
+
+      <!-- Q1: Usability -->
+      <div class="card bg-white border border-gray-200 p-4">
+        <p class="text-sm font-semibold mb-3">{{ evaluation_questions.usability.label }}</p>
+        <div class="space-y-2">
+          {% for opt in evaluation_questions.usability.options %}
+          <label class="flex items-center gap-3 cursor-pointer p-2 rounded hover:bg-gray-50">
+            <input type="radio" name="eval_usability" value="{{ opt.value }}" class="radio radio-primary radio-sm">
+            <span class="text-sm">{{ opt.label }}</span>
+          </label>
+          {% endfor %}
+        </div>
+        <p id="eval-usability-error" class="text-error text-xs mt-1 hidden">Please select an option.</p>
+      </div>
+
+      <!-- Q2: RPE visible (checkboxes) -->
+      <div class="card bg-white border border-gray-200 p-4">
+        <p class="text-sm font-semibold mb-1">{{ evaluation_questions.rpe_visible.label }}</p>
+        <p class="text-xs text-gray-500 mb-3">Select all that apply.</p>
+        <div class="space-y-2">
+          {% for opt in evaluation_questions.rpe_visible.options %}
+          <label class="flex items-center gap-3 cursor-pointer p-2 rounded hover:bg-gray-50">
+            <input type="checkbox" name="eval_rpe" value="{{ opt.value }}" class="checkbox checkbox-primary checkbox-sm">
+            <span class="text-sm">{{ opt.label }}</span>
+          </label>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- Q3: Cognitive match -->
+      <div class="card bg-white border border-gray-200 p-4">
+        <p class="text-sm font-semibold mb-3">{{ evaluation_questions.cognitive_match.label }}</p>
+        <div class="space-y-2">
+          {% for opt in evaluation_questions.cognitive_match.options %}
+          <label class="flex items-center gap-3 cursor-pointer p-2 rounded hover:bg-gray-50">
+            <input type="radio" name="eval_cognitive" value="{{ opt.value }}" class="radio radio-primary radio-sm">
+            <span class="text-sm">{{ opt.label }}</span>
+          </label>
+          {% endfor %}
+        </div>
+        <p id="eval-cognitive-error" class="text-error text-xs mt-1 hidden">Please select an option.</p>
+      </div>
+
+      <!-- Q4: One change (short text) -->
+      <div class="card bg-white border border-gray-200 p-4">
+        <p class="text-sm font-semibold mb-2">What is the one thing you would change about your prompt to improve the output?</p>
+        <input
+          type="text"
+          id="eval-one-change"
+          maxlength="120"
+          class="input input-bordered input-sm w-full text-sm"
+          placeholder="e.g. Add more specific context about student prior knowledge…" />
+        <div class="flex justify-between mt-1">
+          <p class="text-xs text-gray-400">Optional — max 120 characters</p>
+          <span class="text-xs text-gray-400"><span id="eval-change-count">0</span>/120</span>
+        </div>
+      </div>
+
+    </div>
+
+    <button id="submit-challenge3-btn" class="btn btn-primary btn-sm mt-4">
+      Save Evaluation →
+    </button>
+    {% endif %}
+
+    {% endif %}
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- COMPLETION CARD -->
+<!-- ============================================================ -->
+{% if activity.activity_completed %}
+<div class="card bg-emerald-50 border border-emerald-300 mb-6">
+  <div class="card-body">
+    <h3 class="card-title text-emerald-800">🎉 Activity Complete!</h3>
+    <p class="text-sm text-emerald-700 mt-1">{{ completion_message }}</p>
+  </div>
+</div>
+{% include "community/partials/tab_forum_trigger.html" with tab_name="activity" module_code=module.code trigger_style="post_completion" %}
+{% endif %}
+
+{% if not activity.activity_completed %}
+<div id="mark-complete-section" class="{% if not activity.challenge3_completed %}hidden{% endif %} text-center mt-4">
+  <button id="mark-activity-complete-btn" class="btn btn-success btn-lg">
+    ✓ Mark Activity Complete
+  </button>
+</div>
+{% endif %}
+
+
+<!-- ============================================================ -->
+<!-- JAVASCRIPT -->
+<!-- ============================================================ -->
+<script>
+const CSRF = '{{ csrf_token }}';
+const MODULE_CODE = '{{ module.code }}';
+
+// ── Character counters ───────────────────────────────────────────
+document.getElementById('c1-prompt-text')?.addEventListener('input', function() {
+  document.getElementById('c1-char-count').textContent = this.value.length;
+});
+document.getElementById('eval-one-change')?.addEventListener('input', function() {
+  document.getElementById('eval-change-count').textContent = this.value.length;
+});
+
+// ── PHASE 1: Save prompt ─────────────────────────────────────────
+document.getElementById('submit-challenge1-btn')?.addEventListener('click', () => {
+  const prompt = document.getElementById('c1-prompt-text')?.value?.trim();
+  const errorEl = document.getElementById('c1-error');
+  if (!prompt || prompt.length < 50) {
+    errorEl?.classList.remove('hidden');
+    return;
+  }
+  errorEl?.classList.add('hidden');
+
+  fetch(`/modules/modules/${MODULE_CODE}/tab3/challenge1/`, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json', 'X-CSRFToken': CSRF},
+    body: JSON.stringify({ prompt: prompt })
+  })
+  .then(r => r.json())
+  .then(data => { if (data.success) location.reload(); })
+  .catch(err => console.error('Phase 1 error:', err));
+});
+
+// ── PHASE 2: Execute prompt via Gemini ───────────────────────────
+document.getElementById('execute-prompt-btn')?.addEventListener('click', () => {
+  const btn = document.getElementById('execute-prompt-btn');
+  const spinner = document.getElementById('execute-spinner');
+  const text = document.getElementById('execute-text');
+  btn.disabled = true;
+  spinner.classList.remove('hidden');
+  text.textContent = 'Running…';
+
+  fetch(`/modules/modules/${MODULE_CODE}/tab3/execute-prompt/`, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json', 'X-CSRFToken': CSRF},
+    body: JSON.stringify({})
+  })
+  .then(r => r.json())
+  .then(data => {
+    spinner.classList.add('hidden');
+    if (data.success) {
+      document.getElementById('output-text').innerHTML = data.output_html;
+      document.getElementById('output-display').classList.remove('hidden');
+      btn.style.display = 'none';
+    } else {
+      text.textContent = '⚡ Run with Gemini 2.5 Flash';
+      btn.disabled = false;
+      alert('Error: ' + (data.message || 'Could not execute prompt.'));
+    }
+  })
+  .catch(err => {
+    console.error('Execute error:', err);
+    btn.disabled = false;
+    spinner.classList.add('hidden');
+    text.textContent = '⚡ Run with Gemini 2.5 Flash';
+  });
+});
+
+// ── PHASE 2: Save output ─────────────────────────────────────────
+document.getElementById('save-output-btn')?.addEventListener('click', () => {
+  const outputHtml = document.getElementById('output-text')?.innerHTML;
+  fetch(`/modules/modules/${MODULE_CODE}/tab3/challenge2/`, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json', 'X-CSRFToken': CSRF},
+    body: JSON.stringify({ output_html: outputHtml })
+  })
+  .then(r => r.json())
+  .then(data => { if (data.success) location.reload(); })
+  .catch(err => console.error('Save output error:', err));
+});
+
+// ── PHASE 3: Save evaluation ─────────────────────────────────────
+document.getElementById('submit-challenge3-btn')?.addEventListener('click', () => {
+  const usability = document.querySelector('input[name="eval_usability"]:checked')?.value;
+  const cognitive = document.querySelector('input[name="eval_cognitive"]:checked')?.value;
+  const rpeVisible = Array.from(document.querySelectorAll('input[name="eval_rpe"]:checked')).map(el => el.value);
+  const oneChange = document.getElementById('eval-one-change')?.value?.trim();
+
+  document.getElementById('eval-usability-error').classList.toggle('hidden', !!usability);
+  document.getElementById('eval-cognitive-error').classList.toggle('hidden', !!cognitive);
+  if (!usability || !cognitive) return;
+
+  fetch(`/modules/modules/${MODULE_CODE}/tab3/challenge3/`, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json', 'X-CSRFToken': CSRF},
+    body: JSON.stringify({
+      usability: usability,
+      rpe_visible: rpeVisible,
+      cognitive: cognitive,
+      one_change: oneChange
+    })
+  })
+  .then(r => r.json())
+  .then(data => { if (data.success) location.reload(); })
+  .catch(err => console.error('Evaluation error:', err));
+});
+
+// ── PHASE 4: Get AI feedback ─────────────────────────────────────
+document.getElementById('get-ai-feedback-btn')?.addEventListener('click', () => {
+  const btn = document.getElementById('get-ai-feedback-btn');
+  const spinner = document.getElementById('feedback-spinner');
+  const text = document.getElementById('feedback-text');
+  btn.disabled = true;
+  spinner.classList.remove('hidden');
+  text.textContent = 'Analysing…';
+
+  fetch(`/modules/modules/${MODULE_CODE}/tab3/rpe-feedback/`, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json', 'X-CSRFToken': CSRF},
+    body: JSON.stringify({})
+  })
+  .then(r => r.json())
+  .then(data => {
+    spinner.classList.add('hidden');
+    if (data.success) {
+      document.getElementById('feedback-content').innerHTML = data.feedback_html;
+      document.getElementById('feedback-display').classList.remove('hidden');
+      btn.style.display = 'none';
+    } else {
+      text.textContent = '✦ Get AI Feedback';
+      btn.disabled = false;
+      alert('Error: ' + (data.message || 'Could not get feedback.'));
+    }
+  })
+  .catch(err => {
+    console.error('Feedback error:', err);
+    btn.disabled = false;
+    spinner.classList.add('hidden');
+    text.textContent = '✦ Get AI Feedback';
+  });
+});
+
+// ── Save AI feedback ─────────────────────────────────────────────
+document.getElementById('save-feedback-btn')?.addEventListener('click', () => {
+  const feedbackHtml = document.getElementById('feedback-content')?.innerHTML;
+  fetch(`/modules/modules/${MODULE_CODE}/tab3/save-rpe-feedback/`, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json', 'X-CSRFToken': CSRF},
+    body: JSON.stringify({ feedback_html: feedbackHtml })
+  })
+  .then(r => r.json())
+  .then(data => { if (data.success) location.reload(); })
+  .catch(err => console.error('Save feedback error:', err));
+});
+
+// ── Mark activity complete ───────────────────────────────────────
+document.getElementById('mark-activity-complete-btn')?.addEventListener('click', () => {
+  fetch(`/modules/modules/${MODULE_CODE}/tab3/reflection/`, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json', 'X-CSRFToken': CSRF},
+    body: JSON.stringify({ tab: 'activity' })
+  })
+  .then(r => r.json())
+  .then(data => { if (data.success) location.reload(); });
+});
+</script>
+
+{% endif %}

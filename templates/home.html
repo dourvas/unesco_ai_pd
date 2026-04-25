@@ -1,0 +1,88 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard - UNESCO AI PD{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto">
+    
+    <div class="hero bg-base-100 rounded-box shadow-xl mb-8">
+        <div class="hero-content text-center py-12">
+            <div class="max-w-md">
+                <h1 class="text-5xl font-bold">Welcome!</h1>
+                <p class="py-6 text-lg">
+                    To the professional development platform for educators in Artificial Intelligence.
+                </p>
+                
+                {% if not profile.profile_completed and not profile.profile_skipped %}
+                    <a href="{% url 'users:onboarding_welcome' %}" class="btn btn-primary btn-lg">
+                        🚀 Start Your Profile
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    {% if profile.profile_completed %}
+    <div class="card bg-base-100 shadow-xl mb-8">
+        <div class="card-body">
+            <h2 class="card-title">📊 Your Profile</h2>
+            <div class="stats stats-vertical lg:stats-horizontal shadow">
+                <div class="stat">
+                    <div class="stat-title">Completion</div>
+                    <div class="stat-value text-primary">{{ profile.completion_percentage }}%</div>
+                    <div class="stat-desc">{{ profile.profile_summary }}</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-title">Grade Level</div>
+                    <div class="stat-value text-sm">{{ profile.get_grade_level_display }}</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-title">Subject Area</div>
+                    <div class="stat-value text-sm">{{ profile.get_subject_area_display }}</div>
+                </div>
+            </div>
+            <div class="card-actions justify-end mt-4">
+                <a href="{% url 'users:profile_view' %}" class="btn btn-outline btn-sm">View Profile</a>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="card bg-base-100 shadow-xl">
+    <div class="card-body">
+        <h2 class="card-title">📚 Professional Development Modules</h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+            {% for item in modules_with_progress %}
+            <div class="card bg-base-200 hover:bg-base-300 transition-colors">
+                <div class="card-body">
+                    <h3 class="card-title text-sm">{{ item.module.code }}: {{ item.module.title }}</h3>
+                    
+                    {% if item.progress.completed %}
+                        <div class="badge badge-success">✓ Completed</div>
+                        <progress class="progress progress-success w-full" value="100" max="100"></progress>
+                    {% elif item.progress.started %}
+                        <div class="badge badge-warning">In Progress</div>
+                        <progress class="progress progress-warning w-full" 
+                                  value="{{ item.progress.percentage }}" max="100"></progress>
+                        <span class="text-xs text-gray-500">{{ item.progress.percentage }}%</span>
+                    {% else %}
+                        <div class="badge badge-info">Available</div>
+                    {% endif %}
+                    
+                    <div class="card-actions justify-end mt-2">
+                        <a href="{% url 'modules:detail' item.module.code %}" 
+                           class="btn btn-sm btn-primary">
+                            {% if item.progress.started %}Continue{% else %}Start{% endif %}
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <p class="text-gray-500 col-span-3">No modules available yet.</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+</div>
+{% endblock %}

@@ -1,0 +1,51 @@
+<!-- TAB 2: Main Content -->
+<h2 class="card-title text-2xl mb-4">Main Content</h2>
+
+{% if content %}
+<div class="prose max-w-none mb-6">
+     {{ content_html|safe }}
+</div>
+
+{# ============================================================ #}
+{# SUBJECT-SPECIFIC BOXES - Personalized content for teacher    #}
+{# ============================================================ #}
+
+{# Box Part 2: GenAI Capabilities for your subject #}
+{% if subject_box_part2 %}
+    {{ subject_box_part2.content_data|safe }}
+{% endif %}
+
+{# Box Part 4: AI Tools for your subject #}
+{% if subject_box_part4 %}
+    {{ subject_box_part4.content_data|safe }}
+{% endif %}
+
+{# ============================================================ #}
+
+{% if personalized_example %}
+<div class="alert alert-warning mb-6">
+    <div>
+        <h4 class="font-bold">For {{ teacher_profile.subject_area }} Teachers:</h4>
+        <p>{{ personalized_example }}</p>
+    </div>
+</div>
+{% endif %}
+
+{% if not progress.main_content_completed %}
+<div class="card-actions justify-end">
+    <button onclick="markTabComplete('{{ module.code }}', 'main_content')" 
+            class="btn btn-primary">
+        Mark as Complete & Continue →
+    </button>
+</div>
+{% else %}
+<div class="alert alert-success">
+    <span>✓ Tab completed</span>
+</div>
+{% endif %}
+
+{% else %}
+<div class="alert alert-error">
+    <span>Content not found. Please contact administrator.</span>
+</div>
+{% endif %}

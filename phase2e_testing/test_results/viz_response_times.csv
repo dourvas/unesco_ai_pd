@@ -1,0 +1,11 @@
+test_id,subject,response_time_seconds
+TC01,Mathematics,11.56
+TC02,Computer Science,13.06
+TC03,Physics,11.18
+TC04,Language Arts,12.25
+TC05,History,9.42
+TC06,Visual Arts,12.52
+TC07,Physical Education,10.43
+TC08,Kindergarten,12.62
+TC09,Mathematics,9.56
+TC10,Computer Science,12.3

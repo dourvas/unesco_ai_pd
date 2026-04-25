@@ -1,0 +1,232 @@
+{% extends 'base.html' %}
+
+{% block title %}My Profile{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto">
+    
+    <!-- Header -->
+    <div class="flex justify-between items-center mb-8">
+        <div>
+            <h1 class="text-3xl font-bold mb-2">My Profile</h1>
+            <p class="text-base-content/70">
+                View and manage your information
+            </p>
+        </div>
+        <a href="{% url 'users:profile_edit' %}" class="btn btn-primary">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+            </svg>
+            Edit
+        </a>
+    </div>
+
+    <!-- Completion Status -->
+    <div class="alert mb-6 
+        {% if profile.profile_completed %}alert-success{% elif profile.profile_skipped %}alert-warning{% else %}alert-info{% endif %}">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 w-6 h-6">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        </svg>
+        <div>
+            {% if profile.profile_completed %}
+                <span class="font-medium">✅ Your profile is complete!</span>
+                <p class="text-sm">Completed on {{ profile.profile_completion_date|date:"M d, Y H:i" }}</p>
+            {% elif profile.profile_skipped %}
+                <span class="font-medium">⚠️ You skipped onboarding</span>
+                <p class="text-sm">
+                    <a href="{% url 'onboarding_welcome' %}" class="underline">Complete it now</a> for a personalized experience!
+                </p>
+            {% else %}
+                <span class="font-medium">📝 Your profile is incomplete</span>
+                <p class="text-sm">
+                    <a href="{% url 'onboarding_welcome' %}" class="underline">Complete it</a> to unlock all features!
+                </p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Profile Completion Progress -->
+    <div class="card bg-base-100 shadow-xl mb-6">
+        <div class="card-body">
+            <h2 class="card-title">📊 Profile Completion</h2>
+            <div class="flex items-center gap-4">
+                <progress class="progress progress-primary w-full" value="{{ completion_percentage }}" max="100"></progress>
+                <span class="text-2xl font-bold text-primary">{{ completion_percentage }}%</span>
+            </div>
+            <p class="text-sm text-base-content/70">
+                {{ profile.profile_summary }}
+            </p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        
+        <!-- Teaching Context -->
+        <div class="card bg-base-100 shadow-xl">
+            <div class="card-body">
+                <h2 class="card-title flex items-center gap-2">
+                    <span>📚</span> Teaching Context
+                </h2>
+                <div class="space-y-3">
+                    <div>
+                        <p class="text-sm text-base-content/70">Subject Area</p>
+                        <p class="font-medium">
+                            {{ subject_display }}
+                            {% if profile.subject_area_other %}
+                                <span class="text-sm">({{ profile.subject_area_other }})</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-base-content/70">Grade Level</p>
+                        <p class="font-medium">{{ grade_display }}</p>
+                    </div>
+                    {% if profile.teaching_years %}
+                    <div>
+                        <p class="text-sm text-base-content/70">Teaching Experience</p>
+                        <p class="font-medium">{{ profile.get_teaching_years_display }}</p>
+                    </div>
+                    {% endif %}
+                    {% if profile.school_location %}
+                    <div>
+                        <p class="text-sm text-base-content/70">School Location</p>
+                        <p class="font-medium">{{ profile.get_school_location_display }}</p>
+                    </div>
+                    {% endif %}
+                    {% if profile.average_class_size %}
+                    <div>
+                        <p class="text-sm text-base-content/70">Average Class Size</p>
+                        <p class="font-medium">{{ profile.get_average_class_size_display }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- AI Experience -->
+        <div class="card bg-base-100 shadow-xl">
+            <div class="card-body">
+                <h2 class="card-title flex items-center gap-2">
+                    <span>🤖</span> AI Experience
+                </h2>
+                <div class="space-y-3">
+                    <div>
+                        <p class="text-sm text-base-content/70">Experience Level</p>
+                        <p class="font-medium">{{ profile.get_ai_experience_display }}</p>
+                    </div>
+                    {% if profile.ai_tools_used %}
+                    <div>
+                        <p class="text-sm text-base-content/70 mb-2">AI Tools</p>
+                        <div class="flex flex-wrap gap-2">
+                            {% for tool in profile.ai_tools_used %}
+                                <span class="badge badge-primary">{{ tool }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% if profile.ai_teaching_integration %}
+                    <div>
+                        <p class="text-sm text-base-content/70 mb-2">Use in Teaching</p>
+                        <div class="bg-base-200 p-3 rounded-lg">
+                            <p class="text-sm">{{ profile.ai_teaching_integration }}</p>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Goals & Preferences -->
+        <div class="card bg-base-100 shadow-xl">
+            <div class="card-body">
+                <h2 class="card-title flex items-center gap-2">
+                    <span>🎯</span> Goals & Preferences
+                </h2>
+                <div class="space-y-3">
+                    {% if profile.primary_goals %}
+                    <div>
+                        <p class="text-sm text-base-content/70 mb-2">Primary Goals</p>
+                        <div class="flex flex-wrap gap-2">
+                            {% for goal in profile.primary_goals %}
+                                <span class="badge badge-accent">
+                                    {% if goal == 'understand_ai' %}Understand AI
+                                    {% elif goal == 'practical_tools' %}Practical Tools
+                                    {% elif goal == 'ethical_use' %}Ethical Use
+                                    {% elif goal == 'student_engagement' %}Student Engagement
+                                    {% elif goal == 'differentiation' %}Differentiation
+                                    {% elif goal == 'assessment' %}Assessment
+                                    {% elif goal == 'content_creation' %}Content Creation
+                                    {% elif goal == 'leadership' %}Leadership
+                                    {% else %}{{ goal }}{% endif %}
+                                </span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+                    <div>
+                        <p class="text-sm text-base-content/70">Communication Style</p>
+                        <p class="font-medium">{{ profile.get_preferred_communication_style_display }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Research Consent -->
+        <div class="card bg-base-100 shadow-xl">
+            <div class="card-body">
+                <h2 class="card-title flex items-center gap-2">
+                    <span>🔬</span> Research Participation
+                </h2>
+                <div class="space-y-3">
+                    <div class="flex items-center gap-3">
+                        {% if profile.research_consent %}
+                            <span class="badge badge-success badge-lg">✓</span>
+                            <span>Consent for research use</span>
+                        {% else %}
+                            <span class="badge badge-ghost badge-lg">✗</span>
+                            <span>No consent for research</span>
+                        {% endif %}
+                    </div>
+                    <div class="flex items-center gap-3">
+                        {% if profile.contact_for_research %}
+                            <span class="badge badge-success badge-lg">✓</span>
+                            <span>Open to interview contact</span>
+                        {% else %}
+                            <span class="badge badge-ghost badge-lg">✗</span>
+                            <span>No contact desired</span>
+                        {% endif %}
+                    </div>
+                    {% if profile.consent_timestamp %}
+                    <p class="text-xs text-base-content/60">
+                        Consent given on {{ profile.consent_timestamp|date:"M d, Y H:i" }}
+                    </p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Account Info -->
+    <div class="card bg-base-100 shadow-xl mt-6">
+        <div class="card-body">
+            <h2 class="card-title">👤 Account Information</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <p class="text-sm text-base-content/70">Username</p>
+                    <p class="font-medium">{{ user.username }}</p>
+                </div>
+                <div>
+                    <p class="text-sm text-base-content/70">Email</p>
+                    <p class="font-medium">{{ user.email }}</p>
+                </div>
+                <div>
+                    <p class="text-sm text-base-content/70">Member Since</p>
+                    <p class="font-medium">{{ user.date_joined|date:"M d, Y" }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

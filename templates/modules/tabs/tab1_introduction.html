@@ -1,0 +1,122 @@
+<!-- TAB 1: Introduction -->
+<h2 class="card-title text-2xl mb-4">{{ module_title }}</h2>
+{% if learning_objectives %}
+<div class="mb-6">
+    <h3 class="text-lg font-semibold mb-2">Learning Objectives:</h3>
+    <ul class="list-disc list-inside space-y-1">
+        {% for objective in learning_objectives %}
+        <li>{{ objective }}</li>
+        {% endfor %}
+    </ul>
+</div>
+{% endif %}
+{% if module_overview %}
+<div class="prose max-w-none mb-6">
+    {{ module_overview }}
+</div>
+{% endif %}
+<div class="alert alert-info mb-6">
+    <span>⏱️ Estimated time: {{ estimated_hours }} hours</span>
+</div>
+
+<!-- ============================================================ -->
+<!-- FRAMEWORK ALIGNMENT BLOCK                                    -->
+<!-- Shared across all M1–M15. No per-module changes needed.     -->
+<!-- ============================================================ -->
+<div class="mt-2 mb-6 border border-base-300 rounded-xl overflow-hidden">
+
+    <!-- Header bar -->
+    <div class="bg-base-200 px-5 py-3 flex items-center gap-2 border-b border-base-300">
+        <span class="text-base">📋</span>
+        <span class="font-semibold text-sm text-base-content">About this module</span>
+    </div>
+
+    <div class="p-5 space-y-4">
+
+        <!-- UNESCO Alignment -->
+        <div class="flex flex-col sm:flex-row sm:items-center gap-3">
+            <span class="text-sm text-base-content/60 font-medium min-w-fit">Framework</span>
+            <div class="flex flex-wrap gap-2">
+                <span class="badge badge-primary badge-outline px-3 py-3 text-xs font-medium">
+                    UNESCO AI Competency Framework
+                </span>
+                <span class="badge badge-secondary px-3 py-3 text-xs font-medium">
+                    {{ module.get_unesco_aspect_display }}
+                </span>
+                <span class="badge badge-accent px-3 py-3 text-xs font-medium">
+                    {{ module.get_proficiency_level_display }} Level
+                </span>
+            </div>
+        </div>
+
+        <div class="divider my-1"></div>
+
+        <!-- Evidence-Informed Content -->
+        <div class="flex items-start gap-3">
+            <div class="mt-0.5 w-8 h-8 rounded-full bg-success/10 flex items-center justify-center flex-shrink-0">
+                <span class="text-success text-base">✓</span>
+            </div>
+            <div>
+                <p class="text-sm font-semibold text-base-content mb-0.5">Evidence-informed content</p>
+                <p class="text-xs text-base-content/70 leading-relaxed">
+                    This module draws on professional development programmes delivered at the
+                    International Hellenic University, where participant evaluations were consistently positive.
+                    Content is further grounded in peer-reviewed research on AI in education.
+                </p>
+            </div>
+        </div>
+
+        <div class="divider my-1"></div>
+
+        <!-- Why this module — expandable -->
+        <details class="group">
+            <summary class="flex items-center gap-2 cursor-pointer list-none text-sm text-base-content/70 hover:text-base-content transition-colors">
+                <span class="group-open:hidden">▶</span>
+                <span class="hidden group-open:inline">▼</span>
+                <span>Why is this module part of your learning path?</span>
+            </summary>
+            <div class="mt-3 pl-5 text-xs text-base-content/70 leading-relaxed space-y-2 border-l-2 border-base-300">
+                <p>
+                    The content in each module was selected through a three-step process:
+                    alignment with UNESCO AI competency indicators, grounding in current research
+                    on digital pedagogy, and informed by prior professional development programmes
+                    at IHU where similar content was positively evaluated by participants.
+                </p>
+                <p>
+                    This module addresses <strong>{{ module.get_unesco_aspect_display }}</strong> at the
+                    <strong>{{ module.get_proficiency_level_display }}</strong> level — meaning the focus is on
+                    {% if module.proficiency_level == 'acquire' %}
+                        building foundational awareness and understanding.
+                    {% elif module.proficiency_level == 'deepen' %}
+                        applying and deepening knowledge through practice.
+                    {% else %}
+                        creating, leading, and sharing expertise with others.
+                    {% endif %}
+                </p>
+                <p class="text-base-content/50 italic">
+                    Content selection rationale is documented in the PROODOS Research Framework
+                    (IHU Doctoral Research Programme).
+                </p>
+            </div>
+        </details>
+
+    </div>
+</div>
+<!-- ============================================================ -->
+<!-- END FRAMEWORK ALIGNMENT BLOCK                               -->
+<!-- ============================================================ -->
+
+<!-- Forum Trigger: Introduce Yourself -->
+{% include "community/partials/tab_forum_trigger.html" with tab_name="introduction" module_code=module.code trigger_style="social_proof" %}
+{% if not progress.introduction_completed %}
+<div class="card-actions justify-end mt-4">
+    <button onclick="markTabComplete('{{ module.code }}', 'introduction')" 
+            class="btn btn-primary">
+        Mark as Complete & Continue →
+    </button>
+</div>
+{% else %}
+<div class="alert alert-success mt-4">
+    <span>✓ Tab completed on {{ progress.introduction_completed_at|date:"M d, Y" }}</span>
+</div>
+{% endif %}

@@ -1,0 +1,560 @@
+{% if current_tab == 'activity' %}
+
+<!-- ============================================================ -->
+<!-- M6 TAB3: ACTIVITY -- HUMAN ACCOUNTABILITY IN AI SYSTEMS -->
+<!-- 3 Challenges: AI Audit > Evaluation Card > Override Decision -->
+<!-- UNESCO Aspect 1: Human-Centred Mindset | Level: Deepen -->
+<!-- ============================================================ -->
+
+<h2 class="card-title text-2xl mb-2">&#x1F50D; Accountability in Action</h2>
+<p class="text-gray-600 mb-6">Three challenges that move from reading AI vendor claims critically, to applying a structured evaluation framework, to making the hardest call: when to override what the AI says.</p>
+
+<!-- Progress tracker -->
+<div class="flex gap-2 mb-8">
+  <div id="progress-c1" class="flex-1 rounded-full h-2 {% if activity.challenge1_completed %}bg-emerald-500{% else %}bg-base-300{% endif %}"></div>
+  <div id="progress-c2" class="flex-1 rounded-full h-2 {% if activity.challenge2_completed %}bg-emerald-500{% else %}bg-base-300{% endif %}"></div>
+  <div id="progress-c3" class="flex-1 rounded-full h-2 {% if activity.challenge3_completed %}bg-emerald-500{% else %}bg-base-300{% endif %}"></div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- CHALLENGE 1: AI AUDIT -->
+<!-- ============================================================ -->
+<div id="challenge1-section" class="card bg-base-200 border-2 {% if activity.challenge1_completed %}border-emerald-400{% else %}border-base-300{% endif %} mb-6">
+  <div class="card-body">
+
+    <div class="flex items-center gap-3 mb-2">
+      <div class="w-10 h-10 rounded-full bg-indigo-600 text-white flex items-center justify-center font-bold text-lg flex-shrink-0">1</div>
+      <div>
+        <h3 class="card-title text-lg">AI Audit</h3>
+        <p class="text-xs text-gray-500">Read &middot; Question &middot; Recommend &middot; ~20 minutes</p>
+      </div>
+      {% if activity.challenge1_completed %}
+      <span class="badge badge-success ml-auto">&#x2713; Complete</span>
+      {% endif %}
+    </div>
+
+    <p class="text-sm mb-4">Real AI vendor claims often look impressive on the surface. Your job here is to read carefully, identify what is missing, and make a professional recommendation before a purchasing decision is made.</p>
+
+    <!-- Scenario card -->
+    <div class="card bg-white border border-indigo-200 mb-5">
+      <div class="card-body py-4">
+        <p class="text-xs font-semibold text-indigo-600 uppercase tracking-wide mb-2">&#x1F4CB; The Situation</p>
+        <p class="text-sm leading-relaxed">{{ scenario.text|linebreaksbr }}</p>
+        <div class="flex flex-wrap gap-2 mt-3">
+          {% for tag in scenario.tags %}
+          <span class="badge badge-outline badge-sm">{{ tag }}</span>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    {% if not activity.challenge1_completed %}
+
+    <form id="challenge1-form" class="space-y-5">
+
+      <!-- Step 1: Critical questions -->
+      <div>
+        <p class="text-sm font-semibold mb-1">Step 1 &mdash; Which questions should you raise right now?</p>
+        <p class="text-xs text-gray-500 mb-3">Select the questions most critical to raise before the contract is signed. Choose all that genuinely concern you.</p>
+        <div class="grid grid-cols-2 gap-2 sm:grid-cols-2">
+          {% for p in principles %}
+          <label class="flex items-center gap-2 cursor-pointer p-2 rounded-lg border border-base-300 hover:border-indigo-300 hover:bg-indigo-50 transition-colors">
+            <input type="checkbox" name="principles" value="{{ p.value }}" class="checkbox checkbox-sm checkbox-primary" />
+            <span class="text-sm">{{ p.label }}</span>
+          </label>
+          {% endfor %}
+        </div>
+        <p id="c1-principles-error" class="text-error text-xs mt-1 hidden">Please select at least one question.</p>
+      </div>
+
+      <!-- Step 2: Core transparency gap -->
+      <div>
+        <p class="text-sm font-semibold mb-2">Step 2 &mdash; What is the single most important transparency gap?</p>
+        <div class="space-y-2">
+          {% for t in tensions %}
+          <label class="flex items-start gap-3 cursor-pointer p-3 rounded-lg border border-base-300 hover:border-indigo-300 hover:bg-indigo-50 transition-colors">
+            <input type="radio" name="tension" value="{{ t.value }}" class="radio radio-sm radio-primary mt-0.5" />
+            <div>
+              <p class="text-sm font-medium">{{ t.label }}</p>
+              <p class="text-xs text-gray-500 mt-0.5">{{ t.note }}</p>
+            </div>
+          </label>
+          {% endfor %}
+        </div>
+        <p id="c1-tension-error" class="text-error text-xs mt-1 hidden">Please identify the core transparency gap.</p>
+      </div>
+
+      <!-- Step 3: Professional recommendation -->
+      <div>
+        <p class="text-sm font-semibold mb-2">Step 3 &mdash; What is your professional recommendation?</p>
+        <div class="space-y-2">
+          {% for d in decisions %}
+          <label class="flex items-start gap-3 cursor-pointer p-3 rounded-lg border border-base-300 hover:border-indigo-300 hover:bg-indigo-50 transition-colors">
+            <input type="radio" name="decision" value="{{ d.value }}" class="radio radio-sm radio-primary mt-0.5" />
+            <div>
+              <p class="text-sm font-medium">{{ d.label }}</p>
+              <p class="text-xs text-gray-500 mt-0.5">{{ d.note }}</p>
+            </div>
+          </label>
+          {% endfor %}
+        </div>
+        <p id="c1-decision-error" class="text-error text-xs mt-1 hidden">Please select a recommendation.</p>
+      </div>
+
+      <!-- Step 4: Reasoning -->
+      <div>
+        <label class="text-sm font-semibold mb-1 block">In 2&ndash;3 sentences: what is your core argument?</label>
+        <p class="text-xs text-gray-500 mb-2">Explain which missing information concerns you most and why. This is your professional voice, not the &ldquo;right answer.&rdquo;</p>
+        <textarea id="c1-reasoning" name="reasoning" class="textarea textarea-bordered w-full text-sm" rows="3" placeholder="The most important missing information is... because..." maxlength="600"></textarea>
+        <div class="flex justify-between mt-1">
+          <p id="c1-reasoning-error" class="text-error text-xs hidden">Please share your reasoning (at least 20 characters).</p>
+          <p class="text-xs text-gray-400 ml-auto"><span id="c1-char-count">0</span>/600</p>
+        </div>
+      </div>
+
+      <div class="flex justify-end">
+        <button type="button" id="submit-challenge1-btn" class="btn btn-primary btn-sm">
+          Submit &amp; See Analysis &#x2192;
+        </button>
+      </div>
+
+    </form>
+
+    {% else %}
+
+    <!-- Completed state -->
+    <div class="alert alert-success py-3 mb-4">
+      <p class="text-sm">&#x2713; Completed. You identified the critical transparency gaps and made a professional recommendation.</p>
+    </div>
+
+    <!-- Perspectives -->
+    <div class="mt-2">
+      <p class="text-sm font-semibold mb-3">&#x1F4A1; Analysis: what experienced educators focus on:</p>
+      <div class="space-y-2">
+        {% for pv in perspectives %}
+        <div class="collapse collapse-arrow bg-white border border-base-300">
+          <input type="checkbox" />
+          <div class="collapse-title text-sm font-medium">{{ pv.title }}</div>
+          <div class="collapse-content text-sm text-gray-700">{{ pv.text }}</div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    {% endif %}
+
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- CHALLENGE 2: EVALUATION CARD IN ACTION -->
+<!-- ============================================================ -->
+<div id="challenge2-section" class="card bg-base-200 border-2 {% if activity.challenge2_completed %}border-emerald-400{% elif activity.challenge1_completed %}border-amber-400{% else %}border-base-300 opacity-60{% endif %} mb-6">
+  <div class="card-body">
+
+    <div class="flex items-center gap-3 mb-2">
+      <div class="w-10 h-10 rounded-full {% if activity.challenge1_completed %}bg-amber-500{% else %}bg-gray-400{% endif %} text-white flex items-center justify-center font-bold text-lg flex-shrink-0">2</div>
+      <div>
+        <h3 class="card-title text-lg">Evaluation Card in Action</h3>
+        <p class="text-xs text-gray-500">Apply &middot; Analyse &middot; Conclude &middot; ~20 minutes</p>
+      </div>
+      {% if activity.challenge2_completed %}
+      <span class="badge badge-success ml-auto">&#x2713; Complete</span>
+      {% endif %}
+    </div>
+
+    {% if not activity.challenge1_completed %}
+    <p class="text-sm text-gray-400 italic">Complete Challenge 1 to unlock this section.</p>
+    {% elif not activity.challenge2_completed %}
+
+    <p class="text-sm mb-4">You now have the Critical AI Evaluation Card from Part 5 of this module. Here you will use it on a real scenario &mdash; working through all five questions, identifying the worst-case answers, and reaching a professional conclusion.</p>
+
+    <!-- Tool description -->
+    <div class="card bg-white border border-amber-200 mb-5">
+      <div class="card-body py-4">
+        <p class="text-xs font-semibold text-amber-600 uppercase tracking-wide mb-2">&#x1F6E0;&#xFE0F; The Tool: {{ eval_tool.name }}</p>
+        <p class="text-sm leading-relaxed">{{ eval_tool.description }}</p>
+      </div>
+    </div>
+
+    <p class="text-sm font-semibold mb-3">Work through the five Card questions. In each case, the scenario tells you what you actually find out &mdash; select that answer.</p>
+
+    <form id="challenge2-form" class="space-y-5">
+      {% for cq in card_questions %}
+      <div class="card bg-white border border-base-200 p-4">
+        <p class="text-sm font-semibold mb-3">{{ cq.question }}</p>
+        <div class="space-y-2">
+          {% for opt in cq.options %}
+          <label class="flex items-start gap-3 cursor-pointer p-3 rounded-lg border border-base-300 hover:border-amber-300 hover:bg-amber-50 transition-colors">
+            <input type="radio" name="{{ cq.id }}" value="{{ opt.value }}" class="radio radio-sm radio-warning mt-0.5" />
+            <span class="text-sm">{{ opt.label }}</span>
+          </label>
+          {% endfor %}
+        </div>
+        <p id="c2-error-{{ cq.id }}" class="text-error text-xs mt-2 hidden">Please select an answer.</p>
+      </div>
+      {% endfor %}
+
+      <!-- Overall conclusion -->
+      <div>
+        <p class="text-sm font-semibold mb-2">Based on all five questions: what is your overall conclusion about SmartLearn Adaptive Quiz?</p>
+        <div class="space-y-2">
+          <label class="flex items-start gap-3 cursor-pointer p-3 rounded-lg border border-base-300 hover:border-amber-300 hover:bg-amber-50 transition-colors">
+            <input type="radio" name="c2_conclusion" value="do_not_use" class="radio radio-sm radio-warning mt-0.5" />
+            <div>
+              <p class="text-sm font-medium">Do not use &mdash; too many unresolved concerns</p>
+              <p class="text-xs text-gray-500">GDPR risk, no explainability, and auto-sent parent reports without teacher review is too many red flags.</p>
+            </div>
+          </label>
+          <label class="flex items-start gap-3 cursor-pointer p-3 rounded-lg border border-base-300 hover:border-amber-300 hover:bg-amber-50 transition-colors">
+            <input type="radio" name="c2_conclusion" value="use_with_conditions" class="radio radio-sm radio-warning mt-0.5" />
+            <div>
+              <p class="text-sm font-medium">Use with conditions &mdash; resolve GDPR and disable auto-send first</p>
+              <p class="text-xs text-gray-500">The quiz component may be useful; the automated parent reports are the problem.</p>
+            </div>
+          </label>
+          <label class="flex items-start gap-3 cursor-pointer p-3 rounded-lg border border-base-300 hover:border-amber-300 hover:bg-amber-50 transition-colors">
+            <input type="radio" name="c2_conclusion" value="use_carefully" class="radio radio-sm radio-warning mt-0.5" />
+            <div>
+              <p class="text-sm font-medium">Use carefully &mdash; it is a free tool, the risks are manageable</p>
+              <p class="text-xs text-gray-500">Worth trying as a low-stakes quiz generator, with teacher oversight of everything student-facing.</p>
+            </div>
+          </label>
+        </div>
+        <p id="c2-conclusion-error" class="text-error text-xs mt-2 hidden">Please select your overall conclusion.</p>
+      </div>
+
+      <div class="flex justify-end">
+        <button type="button" id="submit-challenge2-btn" class="btn btn-warning btn-sm text-white">
+          Submit Evaluation &#x2192;
+        </button>
+      </div>
+
+    </form>
+
+    {% else %}
+
+    <!-- Completed state -->
+    <div class="alert alert-success py-3 mb-4">
+      <p class="text-sm">&#x2713; Completed. You applied all five questions of the Critical AI Evaluation Card and reached a professional conclusion.</p>
+    </div>
+
+    <div class="card bg-white border border-base-300 p-4 mt-2">
+      <p class="text-sm font-semibold mb-3">&#x1F4CC; What the Card revealed:</p>
+      <div class="space-y-2 text-sm text-gray-700">
+        <p><strong>Question 1 (Purpose):</strong> Built for US Common Core &mdash; curriculum alignment is a concern for non-US contexts.</p>
+        <p><strong>Question 2 (Data):</strong> Student data on US servers without GDPR documentation &mdash; a legal blocker before any use.</p>
+        <p><strong>Question 3 (Explainability):</strong> Percentage scores only &mdash; mastery claims that cannot be explained cannot be defended to parents.</p>
+        <p><strong>Question 4 (Stakes):</strong> High &mdash; auto-sent parent reports carry real consequences for student-parent-teacher relationships.</p>
+        <p><strong>Question 5 (Override):</strong> No teacher review step &mdash; accountability without control is impossible.</p>
+        <p class="mt-3 pt-3 border-t border-base-200 font-medium">Verdict: The quiz generator itself might be useful, but the automated parent reporting system cannot be used as designed. GDPR compliance must be resolved first. You are always the final judge.</p>
+      </div>
+    </div>
+
+    {% endif %}
+
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- CHALLENGE 3: THE OVERRIDE DECISION -->
+<!-- ============================================================ -->
+<div id="challenge3-section" class="card bg-base-200 border-2 {% if activity.challenge3_completed %}border-emerald-400{% elif activity.challenge2_completed %}border-teal-400{% else %}border-base-300 opacity-60{% endif %} mb-6">
+  <div class="card-body">
+
+    <div class="flex items-center gap-3 mb-2">
+      <div class="w-10 h-10 rounded-full {% if activity.challenge2_completed %}bg-teal-600{% else %}bg-gray-400{% endif %} text-white flex items-center justify-center font-bold text-lg flex-shrink-0">3</div>
+      <div>
+        <h3 class="card-title text-lg">The Override Decision</h3>
+        <p class="text-xs text-gray-500">Analyse &middot; Decide &middot; Justify &middot; ~15 minutes</p>
+      </div>
+      {% if activity.challenge3_completed %}
+      <span class="badge badge-success ml-auto">&#x2713; Complete</span>
+      {% endif %}
+    </div>
+
+    {% if not activity.challenge2_completed %}
+    <p class="text-sm text-gray-400 italic">Complete Challenge 2 to unlock this section.</p>
+    {% elif not activity.challenge3_completed %}
+
+    <p class="text-sm mb-4">This is the hardest challenge &mdash; because there is no wrong answer, and the stakes are real. A student you know is flagged by an AI system that does not know what you know. What do you do?</p>
+
+    <!-- Tool + AI output -->
+    <div class="card bg-white border border-teal-200 mb-5">
+      <div class="card-body py-4">
+        <div class="flex items-center gap-2 mb-3">
+          <span class="text-xs font-semibold text-teal-600 uppercase tracking-wide">&#x1F916; {{ override_scenario.tool }}</span>
+          <span class="badge badge-error badge-sm">{{ override_scenario.ai_output }}</span>
+        </div>
+        <p class="text-sm leading-relaxed">{{ override_scenario.text|linebreaksbr }}</p>
+      </div>
+    </div>
+
+    <!-- Analysis step -->
+    <div class="card bg-teal-50 border border-teal-200 p-4 mb-5">
+      <p class="text-sm font-semibold mb-3">Before you decide &mdash; work through these questions:</p>
+      <div class="space-y-2">
+        {% for prompt in override_analysis_prompts %}
+        <div class="flex items-start gap-2">
+          <span class="text-teal-600 font-bold text-sm mt-0.5">&#x2022;</span>
+          <p class="text-sm text-gray-700">{{ prompt }}</p>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <form id="challenge3-form" class="space-y-5">
+
+      <!-- Decision -->
+      <div>
+        <p class="text-sm font-semibold mb-2">What do you do?</p>
+        <div class="space-y-2">
+          {% for opt in override_options %}
+          <label class="flex items-start gap-3 cursor-pointer p-3 rounded-lg border border-base-300 hover:border-teal-300 hover:bg-teal-50 transition-colors">
+            <input type="radio" name="override_decision" value="{{ opt.value }}" class="radio radio-sm radio-success mt-0.5" />
+            <div>
+              <p class="text-sm font-medium">{{ opt.label }}</p>
+              <p class="text-xs text-gray-500 mt-0.5">{{ opt.note }}</p>
+            </div>
+          </label>
+          {% endfor %}
+        </div>
+        <p id="c3-decision-error" class="text-error text-xs mt-1 hidden">Please select what you would do.</p>
+      </div>
+
+      <!-- What the AI knows vs. what you know -->
+      <div class="grid md:grid-cols-2 gap-4">
+        <div>
+          <label class="text-sm font-semibold mb-1 block">What key information does the AI have that shapes its flag?</label>
+          <textarea id="c3-ai-knows" name="ai_knows" class="textarea textarea-bordered w-full text-sm" rows="2" placeholder="The AI sees..." maxlength="400"></textarea>
+          <p id="c3-ai-knows-error" class="text-error text-xs mt-1 hidden">Please answer this (at least 15 characters).</p>
+        </div>
+        <div>
+          <label class="text-sm font-semibold mb-1 block">What key information do you have that the AI does not?</label>
+          <textarea id="c3-you-know" name="you_know" class="textarea textarea-bordered w-full text-sm" rows="2" placeholder="I know that..." maxlength="400"></textarea>
+          <p id="c3-you-knows-error" class="text-error text-xs mt-1 hidden">Please answer this (at least 15 characters).</p>
+        </div>
+      </div>
+
+      <!-- Justification -->
+      <div>
+        <label class="text-sm font-semibold mb-1 block">In 2&ndash;3 sentences: justify your decision professionally</label>
+        <p class="text-xs text-gray-500 mb-2">Not what feels right &mdash; but the professional reasoning you would put in writing.</p>
+        <textarea id="c3-justification" name="justification" class="textarea textarea-bordered w-full text-sm" rows="3" placeholder="My decision is... because... The professional principle guiding this is..." maxlength="600"></textarea>
+        <div class="flex justify-between mt-1">
+          <p id="c3-justification-error" class="text-error text-xs hidden">Please justify your decision (at least 20 characters).</p>
+          <p class="text-xs text-gray-400 ml-auto"><span id="c3-char-count">0</span>/600</p>
+        </div>
+      </div>
+
+      <div class="flex justify-end">
+        <button type="button" id="submit-challenge3-btn" class="btn btn-success btn-sm">
+          Submit Decision &#x2192;
+        </button>
+      </div>
+
+    </form>
+
+    {% else %}
+
+    <!-- Completed state -->
+    <div class="alert alert-success py-3 mb-4">
+      <p class="text-sm">&#x2713; Completed. You exercised your professional judgment and justified your override decision.</p>
+    </div>
+
+    <div class="space-y-3 mt-2">
+      <p class="text-sm font-semibold">&#x1F4A1; What this challenge reveals:</p>
+
+      <div class="collapse collapse-arrow bg-white border border-base-300">
+        <input type="checkbox" />
+        <div class="collapse-title text-sm font-medium">Why "Adjust" is usually the right starting point</div>
+        <div class="collapse-content text-sm text-gray-700">
+          <p>Simply accepting the RED flag ignores information that materially changes the picture. Simply overriding it erases a legitimate data point. Adding context preserves both the data and your professional knowledge &mdash; and gives your Head of Year what they need to make a good decision. This is exactly what "human in the loop" should mean in practice.</p>
+        </div>
+      </div>
+
+      <div class="collapse collapse-arrow bg-white border border-base-300">
+        <input type="checkbox" />
+        <div class="collapse-title text-sm font-medium">Why the system design is also a concern</div>
+        <div class="collapse-content text-sm text-gray-700">
+          <p>An Early Warning System that cannot incorporate teacher knowledge is not a decision-support tool &mdash; it is a decision-making tool. The distinction matters. If this happens once, you manage it. If it happens for 30 students every Monday, individual case management becomes unsustainable, and the system's flaws compound. Raising this with leadership is a form of professional accountability, not just a personal concern.</p>
+        </div>
+      </div>
+
+      <div class="collapse collapse-arrow bg-white border border-base-300">
+        <input type="checkbox" />
+        <div class="collapse-title text-sm font-medium">The documentation habit</div>
+        <div class="collapse-content text-sm text-gray-700">
+          <p>Whenever you override an AI output in a high-stakes situation, a brief written note protects you. Not a formal report &mdash; two sentences: what the AI flagged, why you judged differently, what you did instead. If a question is raised later, you can demonstrate that you exercised professional judgment, not that you ignored the system or acted without thought.</p>
+        </div>
+      </div>
+
+      <!-- Completed data summary (from saved challenge_data) -->
+      {% if activity.challenge_data.challenge3_override_decision %}
+      <div class="card bg-teal-50 border border-teal-200 p-4 mt-2">
+        <p class="text-xs font-semibold text-teal-700 uppercase tracking-wide mb-2">Your saved decision</p>
+        <p class="text-sm"><strong>Decision:</strong> {{ activity.challenge_data.challenge3_override_decision }}</p>
+        {% if activity.challenge_data.challenge3_justification %}
+        <p class="text-sm mt-1"><strong>Your reasoning:</strong> {{ activity.challenge_data.challenge3_justification }}</p>
+        {% endif %}
+      </div>
+      {% endif %}
+
+    </div>
+
+    {% endif %}
+
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- COMPLETION CARD (shown after all 3 challenges done) -->
+<!-- ============================================================ -->
+{% if activity.challenge3_completed %}
+<div class="card bg-emerald-50 border-2 border-emerald-400 mb-6">
+  <div class="card-body text-center">
+    <div class="text-4xl mb-3">&#x2705;</div>
+    <h3 class="card-title justify-center text-emerald-800 text-xl mb-2">Activity Complete</h3>
+    <p class="text-sm text-emerald-700 mb-4">
+      You have audited vendor claims, applied the Critical AI Evaluation Card, and made a principled override decision.
+      These are the core skills of a teacher who holds AI accountable &mdash; not just a teacher who uses it.
+    </p>
+    <div class="alert bg-white border border-emerald-300 text-left">
+      <p class="text-sm font-medium text-emerald-900">
+        &#x1F4CC; Remember: You are always the final judge. No AI system, no vendor claim, and no automated flag replaces your professional knowledge of your students.
+      </p>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{% include "community/partials/tab_forum_trigger.html" with tab_name="activity" module_code=module.code trigger_style="post_completion" %}
+
+{% if not activity.activity_completed %}
+<div id="mark-complete-section" class="{% if not activity.challenge3_completed %}hidden{% endif %} text-center mt-4">
+  <button id="mark-activity-complete-btn" class="btn btn-success btn-lg">
+    &#x2713; Mark Activity Complete
+  </button>
+</div>
+{% endif %}
+
+
+<!-- ============================================================ -->
+<!-- JAVASCRIPT -->
+<!-- ============================================================ -->
+<script>
+// -- Character counters ------------------------------------------------
+const c1Reasoning = document.getElementById('c1-reasoning');
+const c1CharCount = document.getElementById('c1-char-count');
+if (c1Reasoning) {
+  c1Reasoning.addEventListener('input', () => {
+    c1CharCount.textContent = c1Reasoning.value.length;
+  });
+}
+const c3Justification = document.getElementById('c3-justification');
+const c3CharCount = document.getElementById('c3-char-count');
+if (c3Justification) {
+  c3Justification.addEventListener('input', () => {
+    c3CharCount.textContent = c3Justification.value.length;
+  });
+}
+
+// -- CHALLENGE 1 SUBMIT -----------------------------------------------
+document.getElementById('submit-challenge1-btn')?.addEventListener('click', () => {
+  const principles = Array.from(document.querySelectorAll('input[name="principles"]:checked')).map(el => el.value);
+  const tension = document.querySelector('input[name="tension"]:checked')?.value;
+  const decision = document.querySelector('input[name="decision"]:checked')?.value;
+  const reasoning = document.getElementById('c1-reasoning')?.value?.trim();
+
+  document.getElementById('c1-principles-error').classList.toggle('hidden', principles.length > 0);
+  document.getElementById('c1-tension-error').classList.toggle('hidden', !!tension);
+  document.getElementById('c1-decision-error').classList.toggle('hidden', !!decision);
+  document.getElementById('c1-reasoning-error').classList.toggle('hidden', !!(reasoning && reasoning.length >= 20));
+  if (!principles.length || !tension || !decision || !reasoning || reasoning.length < 20) return;
+
+  fetch(`/modules/modules/{{ module.code }}/tab3/challenge1/`, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}'},
+    body: JSON.stringify({ principles, tension, decision, reasoning })
+  })
+  .then(r => r.json())
+  .then(data => { if (data.success) location.reload(); });
+});
+
+// -- CHALLENGE 2 SUBMIT -----------------------------------------------
+document.getElementById('submit-challenge2-btn')?.addEventListener('click', () => {
+  const questionIds = ['q1', 'q2', 'q3', 'q4', 'q5'];
+  let valid = true;
+
+  questionIds.forEach(qid => {
+    const answered = !!document.querySelector(`input[name="${qid}"]:checked`);
+    const errEl = document.getElementById(`c2-error-${qid}`);
+    if (errEl) errEl.classList.toggle('hidden', answered);
+    if (!answered) valid = false;
+  });
+
+  const conclusion = document.querySelector('input[name="c2_conclusion"]:checked')?.value;
+  document.getElementById('c2-conclusion-error').classList.toggle('hidden', !!conclusion);
+  if (!conclusion) valid = false;
+
+  if (!valid) return;
+
+  const answers = {};
+  questionIds.forEach(qid => {
+    answers[qid] = document.querySelector(`input[name="${qid}"]:checked`)?.value;
+  });
+
+  fetch(`/modules/modules/{{ module.code }}/tab3/challenge2/`, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}'},
+    body: JSON.stringify({ answers, conclusion })
+  })
+  .then(r => r.json())
+  .then(data => { if (data.success) location.reload(); });
+});
+
+// -- CHALLENGE 3 SUBMIT -----------------------------------------------
+document.getElementById('submit-challenge3-btn')?.addEventListener('click', () => {
+  const decision = document.querySelector('input[name="override_decision"]:checked')?.value;
+  const aiKnows = document.getElementById('c3-ai-knows')?.value?.trim();
+  const youKnow = document.getElementById('c3-you-know')?.value?.trim();
+  const justification = document.getElementById('c3-justification')?.value?.trim();
+
+  document.getElementById('c3-decision-error').classList.toggle('hidden', !!decision);
+  document.getElementById('c3-ai-knows-error').classList.toggle('hidden', !!(aiKnows && aiKnows.length >= 15));
+  document.getElementById('c3-you-knows-error').classList.toggle('hidden', !!(youKnow && youKnow.length >= 15));
+  document.getElementById('c3-justification-error').classList.toggle('hidden', !!(justification && justification.length >= 20));
+
+  if (!decision || !aiKnows || aiKnows.length < 15 || !youKnow || youKnow.length < 15 || !justification || justification.length < 20) return;
+
+  fetch(`/modules/modules/{{ module.code }}/tab3/challenge3/`, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}'},
+    body: JSON.stringify({
+      override_decision: decision,
+      ai_knows: aiKnows,
+      you_know: youKnow,
+      justification
+    })
+  })
+  .then(r => r.json())
+  .then(data => { if (data.success) location.reload(); });
+});
+
+// -- MARK ACTIVITY COMPLETE -------------------------------------------
+document.getElementById('mark-activity-complete-btn')?.addEventListener('click', () => {
+  fetch(`/modules/modules/{{ module.code }}/tab3/reflection/`, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}'},
+    body: JSON.stringify({ tab: 'activity' })
+  })
+  .then(r => r.json())
+  .then(data => { if (data.success) location.reload(); });
+});
+</script>
+
+{% endif %}

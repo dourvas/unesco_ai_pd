@@ -1,0 +1,595 @@
+{% load static %}
+<!-- TAB 4: ASSESSMENT - Generic (reads questions from DB) -->
+
+<div class="space-y-8">
+    <!-- Quiz Header -->
+    <div class="bg-gradient-to-r from-indigo-50 to-purple-50 border-l-4 border-indigo-500 p-6 rounded-lg">
+        <div class="flex items-start justify-between">
+            <div class="flex-1">
+                <h2 class="text-2xl font-bold text-gray-900 mb-2">
+                    <i class="fas fa-clipboard-check text-indigo-600 mr-2"></i>
+                    {{ module.title }} — Knowledge Check
+                </h2>
+                <p class="text-gray-700 text-lg">
+                    Test your understanding of the key concepts covered in this module.
+                </p>
+            </div>
+            <!-- Attempts Counter -->
+            <div class="ml-6 text-center bg-white rounded-lg p-4 shadow-sm min-w-[120px]">
+                <div class="text-3xl font-bold text-indigo-600" id="attempts-remaining">3</div>
+                <div class="text-sm text-gray-600">Attempts Left</div>
+            </div>
+        </div>
+        <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="flex items-center text-gray-700">
+                <i class="fas fa-question-circle text-indigo-500 mr-2"></i>
+                <span><strong>15</strong> questions</span>
+            </div>
+            <div class="flex items-center text-gray-700">
+                <i class="fas fa-clock text-indigo-500 mr-2"></i>
+                <span><strong>20</strong> minutes suggested</span>
+            </div>
+            <div class="flex items-center text-gray-700">
+                <i class="fas fa-check-circle text-green-500 mr-2"></i>
+                <span><strong>80%</strong> (12/15) to pass</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Instructions -->
+    <div class="alert alert-info">
+        <i class="fas fa-info-circle text-xl"></i>
+        <div>
+            <h3 class="font-bold">Instructions</h3>
+            <p class="text-sm">You need 80% (12/15 correct) to pass. You may retake up to 3 times. Your highest score counts.</p>
+        </div>
+    </div>
+
+    <!-- Previous Attempts Display -->
+    <div id="previous-attempts" class="hidden">
+        <h3 class="text-lg font-bold text-gray-900 mb-3">
+            <i class="fas fa-history text-indigo-600 mr-2"></i>
+            Previous Attempts
+        </h3>
+        <div id="attempts-list" class="space-y-2"></div>
+    </div>
+
+    <!-- Quiz Container -->
+    <div id="quiz-container">
+
+        <!-- Start Screen -->
+        <div id="quiz-start-screen" class="text-center py-12">
+            <div class="max-w-2xl mx-auto">
+                <div class="w-24 h-24 bg-indigo-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <i class="fas fa-clipboard-check text-5xl text-indigo-600"></i>
+                </div>
+                <h3 class="text-2xl font-bold text-gray-900 mb-4">Ready to Test Your Knowledge?</h3>
+                <p class="text-gray-600 mb-8">This assessment covers the key concepts from this module.</p>
+                <button onclick="startQuiz()" class="btn btn-primary btn-lg">
+                    <i class="fas fa-play mr-2"></i>
+                    Start Quiz
+                </button>
+            </div>
+        </div>
+
+        <!-- Questions Screen -->
+        <div id="quiz-questions-screen" class="hidden">
+            <div id="questions-container" class="space-y-6"></div>
+            <div class="text-center py-8">
+                <button id="submit-quiz-btn" onclick="submitQuiz()" class="btn btn-primary btn-lg">
+                    <i class="fas fa-paper-plane mr-2"></i>
+                    Submit Quiz
+                </button>
+            </div>
+        </div>
+
+        <!-- Results Screen -->
+        <div id="quiz-results-screen" class="hidden">
+            <div class="max-w-3xl mx-auto">
+                <div id="results-header" class="text-center mb-8"></div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    <div class="stat bg-base-200 rounded-lg">
+                        <div class="stat-title">Your Score</div>
+                        <div id="final-score" class="stat-value text-primary">0/15</div>
+                        <div class="stat-desc">Total Questions</div>
+                    </div>
+                    <div class="stat bg-base-200 rounded-lg">
+                        <div class="stat-title">Percentage</div>
+                        <div id="final-percentage" class="stat-value text-secondary">0%</div>
+                        <div class="stat-desc">Passing: 80%</div>
+                    </div>
+                    <div class="stat bg-base-200 rounded-lg">
+                        <div class="stat-title">Attempts</div>
+                        <div id="attempts-used" class="stat-value">1/3</div>
+                        <div class="stat-desc">remaining</div>
+                    </div>
+                </div>
+                <div id="detailed-feedback" class="space-y-4 mb-8"></div>
+                <div class="flex gap-4 justify-center flex-wrap">
+                    <button onclick="reviewAnswers()" class="btn btn-outline btn-primary">
+                        <i class="fas fa-eye mr-2"></i>
+                        Review Answers
+                    </button>
+                    <button id="retake-btn" onclick="retakeQuiz()" class="btn btn-primary">
+                        <i class="fas fa-redo mr-2"></i>
+                        Retake Quiz
+                    </button>
+                    <button id="continue-btn" onclick="markTabComplete('{{ module.code }}', 'assessment')" class="btn btn-success hidden">
+                        <i class="fas fa-check mr-2"></i>
+                        Continue to Reflection
+                    </button>
+                </div>
+                {% include "community/partials/tab_forum_trigger.html" with tab_name="assessment" module_code=module.code trigger_style="post_completion" %}
+            </div>
+        </div>
+
+        {% if progress.assessment_completed %}
+        {% include "community/partials/tab_forum_trigger.html" with tab_name="assessment" module_code=module.code trigger_style="post_completion" %}
+        {% endif %}
+
+    </div>
+</div>
+
+<style>
+    .question-number {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 50%;
+        font-weight: bold;
+        font-size: 14px;
+        flex-shrink: 0;
+        margin-right: 16px;
+    }
+    .question-text {
+        font-size: 16px;
+        font-weight: 500;
+        color: #1f2937;
+        line-height: 1.6;
+    }
+    .option-label {
+        display: flex;
+        align-items: center;
+        padding: 12px 16px;
+        background: #f9fafb;
+        border: 2px solid #e5e7eb;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .option-label:hover {
+        background: #f3f4f6;
+        border-color: #9ca3af;
+    }
+    .option-label input[type="radio"] { margin-right: 12px; }
+    .option-label span {
+        flex: 1;
+        font-size: 15px;
+        color: #374151;
+    }
+    .option-label.correct {
+        background: #f0fdf4;
+        border-color: #22c55e;
+    }
+    .option-label.incorrect {
+        background: #fef2f2;
+        border-color: #ef4444;
+    }
+    .feedback-correct {
+        background: #f0fdf4;
+        border: 1px solid #86efac;
+        border-radius: 8px;
+        padding: 12px 16px;
+        color: #166534;
+    }
+    .feedback-incorrect {
+        background: #fef2f2;
+        border: 1px solid #fca5a5;
+        border-radius: 8px;
+        padding: 12px 16px;
+        color: #991b1b;
+    }
+    .xai-note {
+        background: #eff6ff;
+        border-left: 3px solid #3b82f6;
+        border-radius: 0 6px 6px 0;
+        padding: 10px 14px;
+        margin-top: 8px;
+        font-size: 13px;
+        color: #1e40af;
+        line-height: 1.5;
+    }
+</style>
+
+<script>
+    // Load questions from Django context (DB-driven)
+    const questionsData = {{ assessment_questions_json|safe }};
+
+    // Build quizData lookup from DB JSON
+    // DB format: { "id": N, "correct": "B", "options": {"A":..,"B":..}, "explanation": "..." }
+    // Map letter answers to 0-based index for backwards compatibility
+    const quizData = {};
+    const letterToIndex = { "A": 0, "B": 1, "C": 2, "D": 3 };
+
+    questionsData.forEach(q => {
+        quizData[q.id] = {
+            correct: q.correct,        // keep as letter "A"/"B"/"C"/"D" or "true"/"false"
+            explanation: q.explanation,
+            options: q.options
+        };
+    });
+
+    let currentAttempt = 1;
+    let attemptsRemaining = 3;
+    let quizStarted = false;
+    let previousResults = null;
+    let lastQuizResults = null;
+    let submissionInProgress = false;
+    let lastSubmittedAnswers = null;
+
+    // Build question HTML dynamically from DB data
+    function buildQuestions() {
+        const container = document.getElementById('questions-container');
+        const sectionColors = [
+            { bg: 'bg-indigo-50', border: 'border-indigo-500', label: 'Section A', desc: 'Questions 1–5' },
+            { bg: 'bg-purple-50', border: 'border-purple-500', label: 'Section B', desc: 'Questions 6–10' },
+            { bg: 'bg-green-50',  border: 'border-green-500',  label: 'Section C', desc: 'Questions 11–15' }
+        ];
+
+        let html = '';
+        questionsData.forEach((q, idx) => {
+            // Section header every 5 questions
+            if (idx % 5 === 0) {
+                const s = sectionColors[Math.floor(idx / 5)];
+                html += `
+                <div class="mb-4">
+                    <div class="${s.bg} border-l-4 ${s.border} p-4 mb-6">
+                        <h3 class="text-xl font-bold text-gray-900">${s.label}</h3>
+                        <p class="text-gray-700 text-sm">${s.desc}</p>
+                    </div>`;
+            }
+
+            // Build options
+            let optionsHtml = '';
+            const isBoolean = Object.keys(q.options).length === 2 && 'A' in q.options && 'B' in q.options;
+            Object.entries(q.options).forEach(([letter, text]) => {
+                const val = isBoolean ? text.toLowerCase() : letter;
+                optionsHtml += `
+                <label class="option-label">
+                    <input type="radio" name="q${q.id}" value="${val}" class="radio radio-primary">
+                    <span>${text}</span>
+                </label>`;
+            });
+
+            html += `
+            <div class="question-card mb-6 p-6 bg-white border border-gray-200 rounded-lg shadow-sm" data-question-id="${q.id}">
+                <div class="flex items-start mb-4">
+                    <span class="question-number">${q.id}</span>
+                    <div class="flex-1">
+                        <p class="question-text">${q.text}</p>
+                    </div>
+                </div>
+                <div class="options-container space-y-3">
+                    ${optionsHtml}
+                </div>
+                <div class="feedback hidden mt-4"></div>
+            </div>`;
+
+            // Close section div every 5
+            if ((idx + 1) % 5 === 0) {
+                html += '</div>';
+            }
+        });
+
+        container.innerHTML = html;
+    }
+
+    async function initializeQuiz() {
+        buildQuestions();
+        await loadPreviousAttempts();
+    }
+
+    async function loadPreviousAttempts() {
+        try {
+            const response = await fetch('/modules/modules/{{ module.code }}/get-assessment-attempts/', {
+                method: 'GET',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            if (!response.ok) return;
+
+            const result = await response.json();
+            if (result.success && result.attempts_used > 0) {
+                currentAttempt = result.attempts_used;
+                attemptsRemaining = result.attempts_remaining;
+                document.getElementById('attempts-remaining').textContent = attemptsRemaining;
+
+                const prevSection = document.getElementById('previous-attempts');
+                prevSection.classList.remove('hidden');
+                document.getElementById('attempts-list').innerHTML = `
+                    <div class="alert ${result.has_passed ? 'alert-success' : 'alert-warning'}">
+                        <div>
+                            <div class="font-bold">
+                                ${result.has_passed ? '✅ Passed' : '⚠️ Not Yet Passed'} — Best Score: ${result.highest_score}/15 (${result.highest_percentage}%)
+                            </div>
+                            <div class="text-sm">
+                                You have used ${result.attempts_used} of 3 attempts.
+                                ${attemptsRemaining > 0 ? `You can retake ${attemptsRemaining} more time${attemptsRemaining > 1 ? 's' : ''}.` : 'No attempts remaining.'}
+                            </div>
+                        </div>
+                    </div>`;
+
+                previousResults = result;
+
+                if (result.has_passed) {
+                    document.getElementById('quiz-start-screen').innerHTML = `
+                        <div class="max-w-2xl mx-auto text-center py-12">
+                            <div class="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                                <i class="fas fa-check-circle text-5xl text-green-600"></i>
+                            </div>
+                            <h3 class="text-2xl font-bold text-green-700 mb-2">You've Already Passed! 🎉</h3>
+                            <p class="text-gray-600 mb-1">Best Score: <strong>${result.highest_score}/15 (${result.highest_percentage}%)</strong></p>
+                            <p class="text-gray-500 text-sm mb-8">
+                                ${result.attempts_remaining > 0
+                                    ? 'You have ' + result.attempts_remaining + ' attempt(s) remaining if you want to improve your score.'
+                                    : 'You have used all 3 attempts.'}
+                            </p>
+                            <div class="flex gap-4 justify-center flex-wrap">
+                                <button onclick="markTabComplete('{{ module.code }}', 'assessment')" class="btn btn-success btn-lg">
+                                    <i class="fas fa-arrow-right mr-2"></i>
+                                    Continue to Reflection
+                                </button>
+                                ${result.attempts_remaining > 0 ? '<button onclick="startQuiz()" class="btn btn-outline btn-sm self-center"><i class="fas fa-redo mr-2"></i>Retake (optional)</button>' : ''}
+                            </div>
+                        </div>`;
+                }
+            }
+        } catch (error) {
+            console.error('Error loading previous attempts:', error);
+        }
+    }
+
+    function startQuiz() {
+        document.getElementById('quiz-start-screen').classList.add('hidden');
+        document.getElementById('quiz-questions-screen').classList.remove('hidden');
+        quizStarted = true;
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function submitQuiz() {
+        if (submissionInProgress) return;
+
+        const answers = {};
+        let unanswered = [];
+
+        questionsData.forEach(q => {
+            const selected = document.querySelector(`input[name="q${q.id}"]:checked`);
+            if (selected) {
+                answers[q.id] = selected.value;
+            } else {
+                unanswered.push(q.id);
+            }
+        });
+
+        if (unanswered.length > 0) {
+            alert(`Please answer all questions before submitting. Unanswered: Q${unanswered.join(', Q')}`);
+            return;
+        }
+
+        const answersStr = JSON.stringify(answers);
+        if (answersStr === lastSubmittedAnswers) return;
+
+        // Score
+        let score = 0;
+        questionsData.forEach(q => {
+            const userAnswer = answers[q.id];
+            const correct = quizData[q.id].correct;
+            // Normalise: DB stores "B", radio values for MCQ are letters; for T/F are "true"/"false"
+            const normCorrect = typeof correct === 'string' ? correct.toLowerCase() : String(correct);
+            const normUser = typeof userAnswer === 'string' ? userAnswer.toLowerCase() : String(userAnswer);
+            if (normUser === normCorrect) score++;
+        });
+
+        const percentage = Math.round((score / questionsData.length) * 100);
+        const passed = percentage >= 80;
+
+        lastSubmittedAnswers = answersStr;
+        saveAndShowResults(score, percentage, passed, answers);
+    }
+
+    async function saveAndShowResults(score, percentage, passed, answers) {
+        submissionInProgress = true;
+        const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]')?.value;
+        if (!csrftoken) {
+            alert('CSRF token missing. Please refresh the page.');
+            submissionInProgress = false;
+            return;
+        }
+
+        try {
+            const response = await fetch('/modules/modules/{{ module.code }}/submit-assessment/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrftoken },
+                body: JSON.stringify({
+                    score: score,
+                    percentage: percentage,
+                    passed: passed,
+                    answers: answers,
+                    attempt: currentAttempt + 1
+                })
+            });
+
+            if (!response.ok) throw new Error('Server error ' + response.status);
+            const result = await response.json();
+            if (!result.success) throw new Error(result.error);
+
+            attemptsRemaining = result.attempts_remaining;
+            lastQuizResults = { score, percentage, passed, answers, serverResult: result };
+            showResults(score, percentage, passed, answers, result);
+
+        } catch (error) {
+            console.error('Submission error:', error);
+            alert('Error saving quiz. Please try again.');
+        } finally {
+            submissionInProgress = false;
+        }
+    }
+
+    function showResults(score, percentage, passed, answers, serverResult) {
+        document.getElementById('quiz-questions-screen').classList.add('hidden');
+        document.getElementById('quiz-results-screen').classList.remove('hidden');
+
+        document.getElementById('final-score').textContent = `${score}/15`;
+        document.getElementById('final-percentage').textContent = `${percentage}%`;
+        document.getElementById('attempts-used').textContent = `${serverResult.attempts_used}/3`;
+
+        const header = document.getElementById('results-header');
+        if (passed) {
+            header.innerHTML = `
+                <div class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-trophy text-4xl text-green-600"></i>
+                </div>
+                <h3 class="text-2xl font-bold text-green-700 mb-2">Congratulations! You Passed! 🎉</h3>
+                <p class="text-gray-600">You scored ${percentage}% — well above the 80% threshold.</p>`;
+            document.getElementById('continue-btn').classList.remove('hidden');
+            document.getElementById('retake-btn').classList.add('hidden');
+        } else {
+            header.innerHTML = `
+                <div class="w-20 h-20 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-redo text-4xl text-orange-600"></i>
+                </div>
+                <h3 class="text-2xl font-bold text-orange-700 mb-2">Not Quite There Yet</h3>
+                <p class="text-gray-600">You scored ${percentage}%. You need 80% to pass.</p>`;
+            if (attemptsRemaining <= 0) {
+                document.getElementById('retake-btn').disabled = true;
+                document.getElementById('retake-btn').classList.add('btn-disabled');
+            }
+        }
+
+        // Per-question feedback
+        const feedbackContainer = document.getElementById('detailed-feedback');
+        let feedbackHtml = '';
+        questionsData.forEach(q => {
+            const userAnswer = answers[q.id];
+            const correct = quizData[q.id].correct;
+            const normCorrect = typeof correct === 'string' ? correct.toLowerCase() : String(correct);
+            const normUser = typeof userAnswer === 'string' ? userAnswer.toLowerCase() : String(userAnswer);
+            const isCorrect = normUser === normCorrect;
+
+            const icon = isCorrect ? '✅' : '❌';
+            const feedbackClass = isCorrect ? 'feedback-correct' : 'feedback-incorrect';
+            const label = isCorrect ? 'Correct' : 'Review this question';
+
+            feedbackHtml += `
+            <div class="${feedbackClass}">
+                <div class="font-semibold mb-1">${icon} Q${q.id}: ${label}</div>
+                <div class="text-sm mb-1">${q.text}</div>
+                ${!isCorrect ? `<div class="xai-note">💡 ${quizData[q.id].explanation}</div>` : ''}
+            </div>`;
+        });
+        feedbackContainer.innerHTML = feedbackHtml;
+
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function reviewAnswers() {
+        document.getElementById('quiz-results-screen').classList.add('hidden');
+        document.getElementById('quiz-questions-screen').classList.remove('hidden');
+
+        if (lastQuizResults) {
+            questionsData.forEach(q => {
+                const userAnswer = lastQuizResults.answers[q.id];
+                const correct = quizData[q.id].correct;
+                const normCorrect = typeof correct === 'string' ? correct.toLowerCase() : String(correct);
+                const normUser = typeof userAnswer === 'string' ? userAnswer.toLowerCase() : String(userAnswer);
+                const isCorrect = normUser === normCorrect;
+
+                const card = document.querySelector(`[data-question-id="${q.id}"]`);
+                if (!card) return;
+
+                const labels = card.querySelectorAll('.option-label');
+                labels.forEach(label => {
+                    const input = label.querySelector('input');
+                    if (input && input.value.toLowerCase() === normUser) {
+                        label.classList.add(isCorrect ? 'correct' : 'incorrect');
+                    }
+                    if (input && input.value.toLowerCase() === normCorrect && !isCorrect) {
+                        label.classList.add('correct');
+                    }
+                });
+
+                if (!isCorrect) {
+                    const feedbackDiv = card.querySelector('.feedback');
+                    feedbackDiv.classList.remove('hidden');
+                    feedbackDiv.innerHTML = `<div class="xai-note">💡 ${quizData[q.id].explanation}</div>`;
+                }
+            });
+        }
+
+        const submitBtn = document.getElementById('submit-quiz-btn');
+        if (submitBtn) {
+            submitBtn.innerHTML = '<i class="fas fa-arrow-left mr-2"></i>Back to Results';
+            submitBtn.onclick = backToResults;
+        }
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function retakeQuiz() {
+        if (attemptsRemaining <= 0) {
+            alert('You have used all 3 attempts.');
+            return;
+        }
+        lastSubmittedAnswers = null;
+        document.getElementById('quiz-results-screen').classList.add('hidden');
+
+        // Reset all radio buttons and feedback
+        document.querySelectorAll('.option-label').forEach(l => {
+            l.classList.remove('correct', 'incorrect');
+        });
+        document.querySelectorAll('input[type="radio"]').forEach(r => r.checked = false);
+        document.querySelectorAll('.feedback').forEach(f => {
+            f.classList.add('hidden');
+            f.innerHTML = '';
+        });
+
+        const submitBtn = document.getElementById('submit-quiz-btn');
+        submitBtn.innerHTML = '<i class="fas fa-paper-plane mr-2"></i>Submit Quiz';
+        submitBtn.onclick = submitQuiz;
+
+        document.getElementById('quiz-questions-screen').classList.remove('hidden');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function backToResults() {
+        document.getElementById('quiz-questions-screen').classList.add('hidden');
+        document.getElementById('quiz-results-screen').classList.remove('hidden');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    async function markTabComplete(moduleCode, tabName) {
+        const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]')?.value;
+        try {
+            const response = await fetch(`/modules/modules/${moduleCode}/complete/${tabName}/`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrftoken },
+                body: JSON.stringify({})
+            });
+            const result = await response.json();
+            if (result.success) {
+                location.reload();
+            } else {
+                alert('Error marking tab complete: ' + result.error);
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Network error marking tab complete');
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', async function() {
+        await initializeQuiz();
+    });
+</script>

@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}PROODOS Community{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto px-4 py-8">
+
+  <div class="mb-8">
+    <h1 class="text-3xl font-bold text-primary">👥 Educators' Community</h1>
+    <p class="text-base-content/70 mt-2">
+      Share experiences, ideas, and questions with colleagues from all over.
+    </p>
+    {% if user_post_count > 0 %}
+    <div class="badge badge-primary badge-outline mt-2">
+      You have contributed {{ user_post_count }} {{ user_post_count|pluralize:"post,posts" }}
+    </div>
+    {% endif %}
+  </div>
+
+  {% if trending %}
+  <div class="card bg-base-200 shadow mb-8">
+    <div class="card-body">
+      <h2 class="card-title text-lg">🔥 Active Discussions</h2>
+      <div class="space-y-2">
+        {% for thread in trending %}
+        <div class="flex items-center justify-between p-3 bg-base-100 rounded-lg hover:bg-base-300 transition-colors">
+          <div>
+            <span class="badge badge-primary badge-sm mr-2">{{ thread.module.code }}</span>
+            <a href="{% url 'community:thread_detail' thread.module.code %}" 
+               class="font-medium hover:text-primary">
+              {{ thread.title }}
+            </a>
+          </div>
+          <div class="text-sm text-base-content/60">
+            💬 {{ thread.post_count }}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <h2 class="text-xl font-bold mb-4">Discussions by Module</h2>
+  
+  <div class="space-y-3">
+    {% for thread in threads %}
+    <div class="card bg-base-100 shadow hover:shadow-md transition-shadow">
+      <div class="card-body p-4">
+        <div class="flex items-center justify-between">
+          
+          <div class="flex items-center gap-4">
+            <div class="text-center min-w-[60px]">
+              <span class="badge badge-primary badge-lg font-bold">{{ thread.module.code }}</span>
+              <div class="text-xs text-base-content/50 mt-1">{{ thread.module.proficiency_level }}</div>
+            </div>
+            <div>
+              <a href="{% url 'community:thread_detail' thread.module.code %}" 
+                 class="font-semibold hover:text-primary transition-colors">
+                {{ thread.title }}
+              </a>
+              {% if thread.seeded_question %}
+              <p class="text-sm text-base-content/60 mt-1 line-clamp-1">
+                {{ thread.seeded_question|truncatechars:80 }}
+              </p>
+              {% endif %}
+            </div>
+          </div>
+
+          <div class="flex items-center gap-6 text-sm text-base-content/60">
+            <div class="text-center hidden sm:block">
+              <div class="font-bold text-base-content">{{ thread.post_count }}</div>
+              <div class="text-xs">posts</div>
+            </div>
+            <div class="text-center hidden sm:block">
+              <div class="font-bold text-base-content">{{ thread.participant_count }}</div>
+              <div class="text-xs">participants</div>
+            </div>
+            {% if thread.is_locked %}
+            <span class="badge badge-ghost">🔒 Locked</span>
+            {% else %}
+            <a href="{% url 'community:thread_detail' thread.module.code %}" 
+               class="btn btn-primary btn-sm">
+              {% if thread.post_count > 0 %}Participate →{% else %}Start →{% endif %}
+            </a>
+            {% endif %}
+          </div>
+
+        </div>
+      </div>
+    </div>
+    {% empty %}
+    <div class="text-center py-12 text-base-content/50">
+      <p class="text-lg">There are no active discussions yet.</p>
+      <p class="text-sm mt-2">Complete a module to unlock its discussion!</p>
+    </div>
+    {% endfor %}
+  </div>
+
+</div>
+{% endblock %}

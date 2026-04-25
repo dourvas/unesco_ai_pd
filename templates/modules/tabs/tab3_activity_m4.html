@@ -1,0 +1,536 @@
+{% if current_tab == 'activity' %}
+
+<!-- ============================================================ -->
+<!-- M4 TAB3: ACTIVITY — AI TOOLS FOR TEACHING                   -->
+<!-- 3 Challenges: Pedagogical Fit Test · Human Voice Rule · Student-Facing Activity Design -->
+<!-- UNESCO Aspect 4: AI Pedagogy | Level: Acquire               -->
+<!-- ============================================================ -->
+
+<h2 class="card-title text-2xl mb-2">🎯 AI Tools in Your Classroom</h2>
+<p class="text-gray-600 mb-6">Three challenges that move from selecting the right tool, to shaping its output, to designing a responsible student-facing activity.</p>
+
+<!-- Progress tracker -->
+<div class="flex gap-2 mb-8">
+  <div id="progress-c1" class="flex-1 rounded-full h-2 {% if activity.challenge1_completed %}bg-emerald-500{% else %}bg-base-300{% endif %}"></div>
+  <div id="progress-c2" class="flex-1 rounded-full h-2 {% if activity.challenge2_completed %}bg-emerald-500{% else %}bg-base-300{% endif %}"></div>
+  <div id="progress-c3" class="flex-1 rounded-full h-2 {% if activity.challenge3_completed %}bg-emerald-500{% else %}bg-base-300{% endif %}"></div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- CHALLENGE 1: THE PEDAGOGICAL FIT TEST                       -->
+<!-- ============================================================ -->
+<div id="challenge1-section" class="card bg-base-200 border-2 {% if activity.challenge1_completed %}border-emerald-400{% else %}border-base-300{% endif %} mb-6">
+  <div class="card-body">
+
+    <div class="flex items-center gap-3 mb-2">
+      <div class="w-10 h-10 rounded-full bg-indigo-600 text-white flex items-center justify-center font-bold text-lg flex-shrink-0">1</div>
+      <div>
+        <h3 class="card-title text-lg">The Pedagogical Fit Test</h3>
+        <p class="text-xs text-gray-500">Read · Classify · Reflect · ~20 minutes</p>
+      </div>
+      {% if activity.challenge1_completed %}
+      <span class="badge badge-success ml-auto">✓ Complete</span>
+      {% endif %}
+    </div>
+
+    <p class="text-sm mb-3">You already have the M3 Reliability Framework. This challenge adds the second step: pedagogical fit. For each teaching task below, decide which category applies.</p>
+
+    <!-- Key reminder -->
+    <div class="card bg-indigo-50 border border-indigo-200 mb-5">
+      <div class="card-body py-3">
+        <p class="text-xs font-semibold text-indigo-700 uppercase tracking-wide mb-2">Two-step reminder</p>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+          <div class="flex gap-2 items-start">
+            <span class="text-indigo-500 font-bold mt-0.5">Step 1</span>
+            <span class="text-gray-700"><strong>Reliability check (M3):</strong> Is this tool accurate, appropriate, and trustworthy for this context?</span>
+          </div>
+          <div class="flex gap-2 items-start">
+            <span class="text-indigo-500 font-bold mt-0.5">Step 2</span>
+            <span class="text-gray-700"><strong>Pedagogical fit (M4):</strong> Does this reliable tool actually serve the learning goal I have in mind?</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {% if not activity.challenge1_completed %}
+
+    <form id="challenge1-form" class="space-y-4">
+
+      {% for task in m4_tasks %}
+      <div class="card bg-white border border-base-300 p-4">
+        <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">{{ task.label }}</p>
+        <p class="text-sm leading-relaxed mb-3">{{ task.text }}</p>
+        <div class="flex flex-col sm:flex-row gap-2">
+          {% for opt in m4_fit_options %}
+          <label class="flex items-center gap-2 cursor-pointer px-3 py-2 rounded-lg border border-base-300 hover:border-indigo-300 hover:bg-indigo-50 transition-colors flex-1">
+            <input type="radio" name="fit_{{ task.id }}" value="{{ opt.value }}" class="radio radio-sm radio-primary" />
+            <span class="text-sm">{{ opt.label }}</span>
+          </label>
+          {% endfor %}
+        </div>
+        <p id="c1-error-{{ task.id }}" class="text-error text-xs mt-1 hidden">Please select a classification for this task.</p>
+      </div>
+      {% endfor %}
+
+      <div>
+        <label class="text-sm font-semibold mb-1 block">Which task was hardest to classify — and why?</label>
+        <p class="text-xs text-gray-500 mb-2">This is where your professional judgment is doing real work. There is no single right answer.</p>
+        <textarea id="c1-reflection" name="reflection" class="textarea textarea-bordered w-full text-sm" rows="3"
+          placeholder="Task ___ was hardest because..." maxlength="500"></textarea>
+        <div class="flex justify-between mt-1">
+          <p id="c1-reflection-error" class="text-error text-xs hidden">Please share your reflection (at least 20 characters).</p>
+          <p class="text-xs text-gray-400 ml-auto"><span id="c1-char-count">0</span>/500</p>
+        </div>
+      </div>
+
+      <div class="flex justify-end">
+        <button type="button" id="submit-challenge1-btn" class="btn btn-primary btn-sm">
+          Submit & See Explanations →
+        </button>
+      </div>
+
+    </form>
+
+    {% else %}
+
+    <!-- Completed state -->
+    <div class="alert alert-success py-3 mb-4">
+      <p class="text-sm">✓ Completed. You applied the two-step selection process to five real teaching tasks.</p>
+    </div>
+
+    <p class="text-sm font-semibold mb-3">💡 The reasoning behind each classification:</p>
+    <div class="space-y-2">
+      {% for task in m4_tasks %}
+      <div class="collapse collapse-arrow bg-white border border-base-300">
+        <input type="checkbox" />
+        <div class="collapse-title text-sm font-medium">{{ task.label }}: {{ task.text|truncatechars:80 }}</div>
+        <div class="collapse-content text-sm text-gray-700">
+          <p class="mb-1"><strong>Classification:</strong>
+            {% if task.correct == 'pass_both' %}✓ Passes both steps — good use of AI
+            {% elif task.correct == 'fail_fit' %}⚠ Reliable tool, but wrong task for AI
+            {% else %}✗ AI is not the right tool here{% endif %}
+          </p>
+          <p>{{ task.explanation }}</p>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    {% endif %}
+
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- CHALLENGE 2: THE HUMAN VOICE RULE                           -->
+<!-- ============================================================ -->
+<div id="challenge2-section" class="card bg-base-200 border-2 {% if activity.challenge2_completed %}border-emerald-400{% elif activity.challenge1_completed %}border-amber-400{% else %}border-base-300 opacity-60{% endif %} mb-6">
+  <div class="card-body">
+
+    <div class="flex items-center gap-3 mb-2">
+      <div class="w-10 h-10 rounded-full bg-amber-600 text-white flex items-center justify-center font-bold text-lg flex-shrink-0">2</div>
+      <div>
+        <h3 class="card-title text-lg">The Human Voice Rule</h3>
+        <p class="text-xs text-gray-500">Read · Edit · Reflect · ~20 minutes</p>
+      </div>
+      {% if activity.challenge2_completed %}
+      <span class="badge badge-success ml-auto">✓ Complete</span>
+      {% endif %}
+    </div>
+
+    <p class="text-sm mb-3">AI can generate feedback quickly. But AI doesn't know your students. Below are three AI-generated feedback drafts. For each one, read the student context — then edit the feedback so it reflects your professional knowledge of that student.</p>
+
+    <div class="card bg-amber-50 border border-amber-200 mb-5">
+      <div class="card-body py-3">
+        <p class="text-sm text-amber-800"><strong>The Human Voice Rule:</strong> Before any AI-generated text reaches a student, it must pass through your professional judgment. Edit, personalise, and own it — or don't send it.</p>
+      </div>
+    </div>
+
+    {% if not activity.challenge2_completed %}
+
+    <form id="challenge2-form" class="space-y-6">
+
+      {% for sample in m4_feedback_samples %}
+      <div class="card bg-white border border-base-300">
+        <div class="card-body">
+
+          <p class="text-sm font-bold text-gray-700 mb-1">Student: {{ sample.student_name }}</p>
+
+          <!-- Student context -->
+          <div class="card bg-blue-50 border border-blue-200 mb-3">
+            <div class="card-body py-3">
+              <p class="text-xs font-semibold text-blue-700 uppercase tracking-wide mb-1">What you know about this student</p>
+              <p class="text-sm leading-relaxed">{{ sample.student_context }}</p>
+            </div>
+          </div>
+
+          <!-- AI draft -->
+          <div class="card bg-gray-50 border border-gray-200 mb-3">
+            <div class="card-body py-3">
+              <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">AI-generated draft feedback</p>
+              <p class="text-sm leading-relaxed text-gray-700 italic">{{ sample.ai_feedback }}</p>
+            </div>
+          </div>
+
+          <!-- Edit prompt -->
+          <label class="text-sm font-semibold mb-1 block text-amber-700">{{ sample.edit_prompt }}</label>
+          <textarea name="edited_{{ sample.id }}" id="c2-edit-{{ sample.id }}"
+            class="textarea textarea-bordered w-full text-sm" rows="4"
+            placeholder="Write your revised feedback here..." maxlength="800"></textarea>
+          <p id="c2-error-{{ sample.id }}" class="text-error text-xs mt-1 hidden">Please write a revised version (at least 30 characters).</p>
+
+        </div>
+      </div>
+      {% endfor %}
+
+      <!-- Self-assessment checklist -->
+      <div>
+        <p class="text-sm font-semibold mb-2">Before you submit: check your edits against the Human Voice Rule</p>
+        <div class="space-y-2">
+          {% for item in m4_voice_checklist %}
+          <label class="flex items-center gap-2 cursor-pointer p-2 rounded-lg border border-base-300 hover:border-amber-300 hover:bg-amber-50 transition-colors">
+            <input type="checkbox" name="voice_check" value="{{ item.value }}" class="checkbox checkbox-sm checkbox-warning" />
+            <span class="text-sm">{{ item.label }}</span>
+          </label>
+          {% endfor %}
+        </div>
+        <p id="c2-checklist-error" class="text-error text-xs mt-1 hidden">Please check at least two items before submitting.</p>
+      </div>
+
+      <div class="flex justify-end">
+        <button type="button" id="submit-challenge2-btn" class="btn btn-primary btn-sm">
+          Submit Feedback Edits →
+        </button>
+      </div>
+
+    </form>
+
+    {% else %}
+
+    <!-- Completed state -->
+    <div class="alert alert-success py-3 mb-3">
+      <p class="text-sm">✓ Completed. You applied the Human Voice Rule to three AI feedback drafts.</p>
+    </div>
+
+    <div class="card bg-amber-50 border border-amber-200">
+      <div class="card-body py-3">
+        <p class="text-sm text-amber-800">
+          <strong>The pattern to remember:</strong> AI output is a starting point, not a final product.
+          The time you save generating a draft should go into reviewing and personalising it —
+          not skipping review entirely.
+        </p>
+      </div>
+    </div>
+
+    {% endif %}
+
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- CHALLENGE 3: STUDENT-FACING ACTIVITY DESIGN                 -->
+<!-- ============================================================ -->
+<div id="challenge3-section" class="card bg-base-200 border-2 {% if activity.challenge3_completed %}border-emerald-400{% elif activity.challenge2_completed %}border-teal-400{% else %}border-base-300 opacity-60{% endif %} mb-6">
+  <div class="card-body">
+
+    <div class="flex items-center gap-3 mb-2">
+      <div class="w-10 h-10 rounded-full bg-teal-600 text-white flex items-center justify-center font-bold text-lg flex-shrink-0">3</div>
+      <div>
+        <h3 class="card-title text-lg">Student-Facing Activity Design</h3>
+        <p class="text-xs text-gray-500">Design · Plan · Reflect · ~20 minutes</p>
+      </div>
+      {% if activity.challenge3_completed %}
+      <span class="badge badge-success ml-auto">✓ Complete</span>
+      {% endif %}
+    </div>
+
+    <p class="text-sm mb-3">Design one teacher-controlled activity where students interact with AI — with you in full control of what the AI does. Use the four activity types from M4 Part 4 as your starting point.</p>
+
+    {% if not activity.challenge3_completed %}
+
+    <form id="challenge3-form" class="space-y-5">
+
+      <!-- Step 1: Activity type -->
+      <div>
+        <p class="text-sm font-semibold mb-2">Step 1 — Choose an activity type</p>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {% for atype in m4_activity_types %}
+          <label class="flex items-start gap-3 cursor-pointer p-3 rounded-lg border border-base-300 hover:border-teal-300 hover:bg-teal-50 transition-colors">
+            <input type="radio" name="activity_type" value="{{ atype.value }}" class="radio radio-sm radio-success mt-0.5" />
+            <div>
+              <p class="text-sm font-semibold">{{ atype.label }}</p>
+              <p class="text-xs text-gray-500 mt-0.5">{{ atype.description }}</p>
+            </div>
+          </label>
+          {% endfor %}
+        </div>
+        <p id="c3-type-error" class="text-error text-xs mt-1 hidden">Please choose an activity type.</p>
+      </div>
+
+      <!-- Step 2: Subject and learning goal -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label class="text-sm font-semibold mb-1 block">Your subject or topic</label>
+          <input type="text" id="c3-topic" name="topic"
+            class="input input-bordered w-full text-sm"
+            placeholder="e.g. Year 9 Biology — ecosystems" maxlength="120" />
+          <p id="c3-topic-error" class="text-error text-xs mt-1 hidden">Please enter a subject or topic.</p>
+        </div>
+        <div>
+          <label class="text-sm font-semibold mb-1 block">Learning goal</label>
+          <input type="text" id="c3-goal" name="goal"
+            class="input input-bordered w-full text-sm"
+            placeholder="What should students be able to do?" maxlength="200" />
+          <p id="c3-goal-error" class="text-error text-xs mt-1 hidden">Please describe the learning goal.</p>
+        </div>
+      </div>
+
+      <!-- Step 3: How you control AI inputs -->
+      <div>
+        <p class="text-sm font-semibold mb-2">Step 3 — How will you control the AI inputs?</p>
+        <div class="space-y-2">
+          {% for opt in m4_control_options %}
+          <label class="flex items-start gap-3 cursor-pointer p-3 rounded-lg border border-base-300 hover:border-teal-300 hover:bg-teal-50 transition-colors">
+            <input type="radio" name="control_method" value="{{ opt.value }}" class="radio radio-sm radio-success mt-0.5" />
+            <span class="text-sm">{{ opt.label }}</span>
+          </label>
+          {% endfor %}
+        </div>
+        <p id="c3-control-error" class="text-error text-xs mt-1 hidden">Please choose a control method.</p>
+        <textarea id="c3-control-other" name="control_other"
+          class="textarea textarea-bordered w-full text-sm mt-2 hidden"
+          rows="2" placeholder="Describe your control approach..." maxlength="300"></textarea>
+      </div>
+
+      <!-- Step 4: How you assess learning -->
+      <div>
+        <p class="text-sm font-semibold mb-2">Step 4 — How will you assess learning?</p>
+        <div class="space-y-2">
+          {% for opt in m4_assessment_options %}
+          <label class="flex items-start gap-3 cursor-pointer p-3 rounded-lg border border-base-300 hover:border-teal-300 hover:bg-teal-50 transition-colors">
+            <input type="radio" name="assessment_method" value="{{ opt.value }}" class="radio radio-sm radio-success mt-0.5" />
+            <span class="text-sm">{{ opt.label }}</span>
+          </label>
+          {% endfor %}
+        </div>
+        <p id="c3-assessment-error" class="text-error text-xs mt-1 hidden">Please choose an assessment method.</p>
+      </div>
+
+      <!-- Step 5: One thing that could go wrong -->
+      <div>
+        <label class="text-sm font-semibold mb-1 block">One thing that could go wrong — and how you would handle it</label>
+        <p class="text-xs text-gray-500 mb-2">Teacher-controlled doesn't mean risk-free. What's the one scenario you need to plan for?</p>
+        <textarea id="c3-risk" name="risk"
+          class="textarea textarea-bordered w-full text-sm" rows="3"
+          placeholder="If... then I would..." maxlength="400"></textarea>
+        <div class="flex justify-between mt-1">
+          <p id="c3-risk-error" class="text-error text-xs hidden">Please describe one risk and your response (at least 20 characters).</p>
+          <p class="text-xs text-gray-400 ml-auto"><span id="c3-char-count">0</span>/400</p>
+        </div>
+      </div>
+
+      <div class="flex justify-end">
+        <button type="button" id="submit-challenge3-btn" class="btn btn-primary btn-sm">
+          Submit Activity Design →
+        </button>
+      </div>
+
+    </form>
+
+    {% else %}
+
+    <!-- Completed state -->
+    <div class="alert alert-success py-3 mb-3">
+      <p class="text-sm">✓ Completed. You designed a teacher-controlled student-facing AI activity.</p>
+    </div>
+
+    <div class="card bg-teal-50 border border-teal-200">
+      <div class="card-body py-3">
+        <p class="text-sm text-teal-800">
+          <strong>Your activity design is saved.</strong>
+          When you reach the Reflection tab, you will be asked to revisit it —
+          thinking about what you would do differently after completing this module.
+        </p>
+      </div>
+    </div>
+
+    {% endif %}
+
+  </div>
+</div>
+
+
+<!-- All challenges complete -->
+{% if activity.challenge1_completed and activity.challenge2_completed and activity.challenge3_completed %}
+<div class="card bg-emerald-50 border border-emerald-300 mb-6">
+  <div class="card-body py-4">
+    <p class="text-sm font-semibold text-emerald-800">✓ All three challenges complete.</p>
+    <p class="text-xs text-gray-500">Ready to test your reasoning? Continue to the Assessment →</p>
+  </div>
+</div>
+{% endif %}
+
+{% include "community/partials/tab_forum_trigger.html" with tab_name="activity" module_code=module.code trigger_style="post_completion" %}
+
+{% endif %}
+
+{% if not activity.activity_completed %}
+<div id="mark-complete-section" class="{% if not activity.challenge3_completed %}hidden{% endif %} text-center mt-4">
+  <button id="mark-activity-complete-btn" class="btn btn-success btn-lg">
+    ✓ Mark Activity Complete
+  </button>
+</div>
+{% endif %}
+
+
+<!-- ============================================================ -->
+<!-- JAVASCRIPT                                                   -->
+<!-- ============================================================ -->
+<script>
+// ── Character counters ───────────────────────────────────────────
+const c1Reflection = document.getElementById('c1-reflection');
+const c1CharCount  = document.getElementById('c1-char-count');
+if (c1Reflection) {
+  c1Reflection.addEventListener('input', () => {
+    c1CharCount.textContent = c1Reflection.value.length;
+  });
+}
+
+const c3Risk      = document.getElementById('c3-risk');
+const c3CharCount = document.getElementById('c3-char-count');
+if (c3Risk) {
+  c3Risk.addEventListener('input', () => {
+    c3CharCount.textContent = c3Risk.value.length;
+  });
+}
+
+// ── Show/hide "other" control textarea ──────────────────────────
+document.querySelectorAll('input[name="control_method"]').forEach(radio => {
+  radio.addEventListener('change', () => {
+    const otherBox = document.getElementById('c3-control-other');
+    if (otherBox) {
+      otherBox.classList.toggle('hidden', radio.value !== 'other');
+    }
+  });
+});
+
+// ── CHALLENGE 1 SUBMIT ──────────────────────────────────────────
+document.getElementById('submit-challenge1-btn')?.addEventListener('click', () => {
+  const taskIds = ['task_a', 'task_b', 'task_c', 'task_d', 'task_e'];
+  let allValid = true;
+  const selections = {};
+
+  taskIds.forEach(id => {
+    const selected = document.querySelector(`input[name="fit_${id}"]:checked`);
+    const errEl = document.getElementById(`c1-error-${id}`);
+    if (!selected) {
+      if (errEl) errEl.classList.remove('hidden');
+      allValid = false;
+    } else {
+      if (errEl) errEl.classList.add('hidden');
+      selections[id] = selected.value;
+    }
+  });
+
+  const reflection = document.getElementById('c1-reflection')?.value?.trim();
+  const reflectionValid = !!(reflection && reflection.length >= 20);
+  document.getElementById('c1-reflection-error')?.classList.toggle('hidden', reflectionValid);
+  if (!reflectionValid) allValid = false;
+
+  if (!allValid) return;
+
+  fetch(`/modules/modules/{{ module.code }}/tab3/challenge1/`, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}'},
+    body: JSON.stringify({ ...selections, reflection })
+  })
+  .then(r => r.json())
+  .then(data => { if (data.success) location.reload(); });
+});
+
+// ── CHALLENGE 2 SUBMIT ──────────────────────────────────────────
+document.getElementById('submit-challenge2-btn')?.addEventListener('click', () => {
+  const sampleIds = ['student_1', 'student_2', 'student_3'];
+  let allValid = true;
+  const edits = {};
+
+  sampleIds.forEach(id => {
+    const val = document.getElementById(`c2-edit-${id}`)?.value?.trim();
+    const errEl = document.getElementById(`c2-error-${id}`);
+    if (!val || val.length < 30) {
+      if (errEl) errEl.classList.remove('hidden');
+      allValid = false;
+    } else {
+      if (errEl) errEl.classList.add('hidden');
+      edits[`edited_${id}`] = val;
+    }
+  });
+
+  const checkedItems = Array.from(document.querySelectorAll('input[name="voice_check"]:checked')).map(el => el.value);
+  const checklistValid = checkedItems.length >= 2;
+  document.getElementById('c2-checklist-error')?.classList.toggle('hidden', checklistValid);
+  if (!checklistValid) allValid = false;
+
+  if (!allValid) return;
+
+  fetch(`/modules/modules/{{ module.code }}/tab3/challenge2/`, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}'},
+    body: JSON.stringify({ ...edits, voice_checklist: checkedItems })
+  })
+  .then(r => r.json())
+  .then(data => { if (data.success) location.reload(); });
+});
+
+// ── CHALLENGE 3 SUBMIT ──────────────────────────────────────────
+document.getElementById('submit-challenge3-btn')?.addEventListener('click', () => {
+  const activityType   = document.querySelector('input[name="activity_type"]:checked')?.value;
+  const topic          = document.getElementById('c3-topic')?.value?.trim();
+  const goal           = document.getElementById('c3-goal')?.value?.trim();
+  const controlMethod  = document.querySelector('input[name="control_method"]:checked')?.value;
+  const controlOther   = document.getElementById('c3-control-other')?.value?.trim();
+  const assessMethod   = document.querySelector('input[name="assessment_method"]:checked')?.value;
+  const risk           = document.getElementById('c3-risk')?.value?.trim();
+
+  document.getElementById('c3-type-error')?.classList.toggle('hidden', !!activityType);
+  document.getElementById('c3-topic-error')?.classList.toggle('hidden', !!(topic && topic.length > 3));
+  document.getElementById('c3-goal-error')?.classList.toggle('hidden', !!(goal && goal.length > 5));
+  document.getElementById('c3-control-error')?.classList.toggle('hidden', !!controlMethod);
+  document.getElementById('c3-assessment-error')?.classList.toggle('hidden', !!assessMethod);
+  const riskValid = !!(risk && risk.length >= 20);
+  document.getElementById('c3-risk-error')?.classList.toggle('hidden', riskValid);
+
+  if (!activityType || !topic || topic.length <= 3 || !goal || goal.length <= 5 ||
+      !controlMethod || !assessMethod || !riskValid) return;
+
+  fetch(`/modules/modules/{{ module.code }}/tab3/challenge3/`, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}'},
+    body: JSON.stringify({
+      activity_type:     activityType,
+      topic,
+      goal,
+      control_method:    controlMethod,
+      control_other:     controlOther || '',
+      assessment_method: assessMethod,
+      risk
+    })
+  })
+  .then(r => r.json())
+  .then(data => { if (data.success) location.reload(); });
+});
+
+// ── MARK ACTIVITY COMPLETE ──────────────────────────────────────
+document.getElementById('mark-activity-complete-btn')?.addEventListener('click', () => {
+  fetch(`/modules/modules/{{ module.code }}/tab3/reflection/`, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}'},
+    body: JSON.stringify({ tab: 'activity' })
+  })
+  .then(r => r.json())
+  .then(data => { if (data.success) location.reload(); });
+});
+</script>

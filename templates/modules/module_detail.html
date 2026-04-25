@@ -1,0 +1,177 @@
+{% extends "base.html" %}
+{% load static module_tags %}
+
+{% block title %}{{ module.code }}: {{ module.title }}{% endblock %}
+
+{% block content %}
+{% csrf_token %} 
+<div class="container mx-auto px-4 py-8 max-w-5xl">
+    
+    <!-- Module Header -->
+    <div class="mb-6">
+        <div class="flex items-center gap-3 mb-2">
+            <span class="badge badge-primary badge-lg">{{ module.code }}</span>
+            <h1 class="text-3xl font-bold">{{ module.title }}</h1>
+        </div>
+        <p class="text-gray-600">{{ module.description }}</p>
+    </div>
+    
+    <!-- Progress Indicator -->
+    <div class="mb-6">
+        <div class="flex justify-between text-sm text-gray-600 mb-2">
+            <span>Progress</span>
+            <span>{{ progress.completion_percentage }}%</span>
+        </div>
+        <progress class="progress progress-primary w-full" 
+                  value="{{ progress.completion_percentage }}" 
+                  max="100"></progress>
+    </div>
+    
+    <!-- Tab Navigation -->
+<div class="tabs tabs-boxed mb-6 bg-base-200">
+    <a class="tab {% if current_tab == 'introduction' %}tab-active{% endif %} 
+              {% if not unlock_status.introduction %}tab-disabled opacity-50{% endif %}"
+       href="?tab=introduction">
+        1. Introduction
+        {% if progress.introduction_completed %}✓{% endif %}
+    </a>
+    
+    <a class="tab {% if current_tab == 'main_content' %}tab-active{% endif %}
+              {% if not unlock_status.main_content %}tab-disabled opacity-50{% endif %}"
+       href="{% if unlock_status.main_content %}?tab=main_content{% else %}#{% endif %}">
+        2. Main Content
+        {% if progress.main_content_completed %}✓{% endif %}
+        {% if not unlock_status.main_content %}🔒{% endif %}
+    </a>
+    
+    <a class="tab {% if current_tab == 'activity' %}tab-active{% endif %}
+              {% if not unlock_status.activity %}tab-disabled opacity-50{% endif %}"
+       href="{% if unlock_status.activity %}?tab=activity{% else %}#{% endif %}">
+        3. Activity
+        {% if progress.activity_completed %}✓{% endif %}
+        {% if not unlock_status.activity %}🔒{% endif %}
+    </a>
+    
+    <a class="tab {% if current_tab == 'assessment' %}tab-active{% endif %}
+              {% if not unlock_status.assessment %}tab-disabled opacity-50{% endif %}"
+       href="{% if unlock_status.assessment %}?tab=assessment{% else %}#{% endif %}">
+        4. Assessment
+        {% if progress.assessment_completed %}✓{% endif %}
+        {% if not unlock_status.assessment %}🔒{% endif %}
+    </a>
+    
+    <a class="tab {% if current_tab == 'reflection' %}tab-active{% endif %}
+              {% if not unlock_status.reflection %}tab-disabled opacity-50{% endif %}"
+       href="{% if unlock_status.reflection %}?tab=reflection{% else %}#{% endif %}">
+        5. Reflection
+        {% if progress.reflection_completed %}✓{% endif %}
+        {% if not unlock_status.reflection %}🔒{% endif %}
+    </a>
+</div>
+    
+    <!-- Tab Content Container -->
+    <div class="card bg-base-100 shadow-xl">
+        <div class="card-body">
+            
+{% if current_tab == 'introduction' %}
+    {% include 'modules/tabs/tab1_introduction.html' %}
+
+{% elif current_tab == 'main_content' %}
+    {% include 'modules/tabs/tab2_content.html' %}
+
+{% elif current_tab == 'activity' %}
+    {% include_tab3 module %}
+
+{% elif current_tab == 'assessment' %}
+    {% include_tab4 module content_html %}
+
+{% elif current_tab == 'reflection' %}
+    {% include_tab5 module saved_tensions=saved_tensions %}
+
+{% endif %}
+             
+        </div>
+    </div>
+    
+    <!-- Module Navigation -->
+    <div class="flex justify-between mt-6">
+        {% if prev_module %}
+        <a href="{% url 'modules:detail' code=prev_module.code %}" 
+           class="btn btn-outline">
+            ← {{ prev_module.code }}
+        </a>
+        {% else %}
+        <div></div>
+        {% endif %}
+        
+        {% if next_module %}
+        <a href="{% url 'modules:detail' code=next_module.code %}" 
+           class="btn btn-outline {% if not progress.completed_at %}btn-disabled{% endif %}">
+            {{ next_module.code }} →
+        </a>
+        {% endif %}
+    </div>
+    
+</div>
+
+<!-- JavaScript -->
+<script>
+// CSRF Token
+const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+// Mark tab complete (simple tabs)
+async function markTabComplete(moduleCode, tabName) {
+    const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    
+    // ✅ FIXED: Added /modules/ prefix
+    const response = await fetch(`/modules/modules/${moduleCode}/complete/${tabName}/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrftoken
+        },
+        body: JSON.stringify({})
+    });
+    
+    const result = await response.json();
+    
+    if (result.success) {
+        if (result.next_tab && result.next_tab !== 'completed') {
+            window.location.href = `?tab=${result.next_tab}`;
+        } else {
+            window.location.reload();
+        }
+    } else {
+        alert(result.message);
+    }
+}
+// Activity form submission
+const activityForm = document.getElementById('activity-form');
+if (activityForm) {
+    activityForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const submission = e.target.submission.value;
+        
+        const response = await fetch(`/modules/{{ module.code }}/complete/activity/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrftoken
+            },
+            body: JSON.stringify({ submission })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            window.location.href = `?tab=${result.next_tab}`;
+        } else {
+            alert(result.message);
+        }
+    });
+}
+
+// Note: Reflection form JavaScript is contained in tab5_reflection.html
+// to avoid conflicts and maintain clean separation
+</script>
+{% endblock %}

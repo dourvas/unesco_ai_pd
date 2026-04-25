@@ -1,0 +1,557 @@
+{% if current_tab == 'activity' %}
+
+<!-- ============================================================ -->
+<!-- M14 TAB3: ACTIVITY — GAMIFICATION & IMMERSIVE LEARNING       -->
+<!-- 3 Challenges: SAMR Audit → Five Roles Matcher → Unit Planner -->
+<!-- UNESCO Aspect 4: AI Pedagogy | Level: Create                 -->
+<!-- ============================================================ -->
+
+<h2 class="card-title text-2xl mb-2">🎮 Designing for Transformation</h2>
+<p class="text-gray-600 mb-6">Three challenges that move from auditing existing gamification, to matching the Five Roles to real classroom situations, to designing your own gamified learning unit.</p>
+
+<!-- Progress tracker -->
+<div class="flex gap-2 mb-8">
+  <div id="progress-c1" class="flex-1 rounded-full h-2 {% if activity.challenge1_completed %}bg-emerald-500{% else %}bg-base-300{% endif %}"></div>
+  <div id="progress-c2" class="flex-1 rounded-full h-2 {% if activity.challenge2_completed %}bg-emerald-500{% else %}bg-base-300{% endif %}"></div>
+  <div id="progress-c3" class="flex-1 rounded-full h-2 {% if activity.challenge3_completed %}bg-emerald-500{% else %}bg-base-300{% endif %}"></div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- CHALLENGE 1: SAMR AUDIT                                      -->
+<!-- ============================================================ -->
+<div id="challenge1-section" class="card bg-base-200 border-2 {% if activity.challenge1_completed %}border-emerald-400{% else %}border-base-300{% endif %} mb-6">
+  <div class="card-body">
+
+    <div class="flex items-center gap-3 mb-2">
+      <div class="w-10 h-10 rounded-full bg-indigo-600 text-white flex items-center justify-center font-bold text-lg flex-shrink-0">1</div>
+      <div>
+        <h3 class="card-title text-lg">SAMR Audit</h3>
+        <p class="text-xs text-gray-500">Read · Classify · Decide · ~15 minutes</p>
+      </div>
+      {% if activity.challenge1_completed %}
+      <span class="badge badge-success ml-auto">✓ Complete</span>
+      {% endif %}
+    </div>
+
+    <p class="text-sm mb-4">Read each scenario below. For each one, select the SAMR level it represents — and decide whether it is <strong>transformation</strong> or <strong>decoration</strong>.</p>
+
+    {% if not activity.challenge1_completed %}
+
+    <form id="challenge1-form" class="space-y-6">
+
+      {% for sc in c1_scenarios %}
+      <div class="card bg-white border border-indigo-100 p-4">
+        <p class="text-xs font-semibold text-indigo-600 uppercase tracking-wide mb-2">📋 {{ sc.label }}</p>
+        <p class="text-sm leading-relaxed mb-4">{{ sc.text }}</p>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+          <!-- SAMR level -->
+          <div>
+            <p class="text-xs font-semibold text-gray-600 mb-2">SAMR Level:</p>
+            <div class="space-y-1">
+              {% for opt in c1_samr_options %}
+              <label class="flex items-center gap-2 cursor-pointer p-2 rounded-lg border border-base-300 hover:border-indigo-300 hover:bg-indigo-50 transition-colors">
+                <input type="radio" name="samr_{{ sc.id }}" value="{{ opt.value }}" class="radio radio-sm radio-primary" />
+                <span class="text-xs">{{ opt.label }}</span>
+              </label>
+              {% endfor %}
+            </div>
+            <p id="c1-samr-{{ sc.id }}-error" class="text-error text-xs mt-1 hidden">Please select a SAMR level.</p>
+          </div>
+
+          <!-- Decoration or transformation -->
+          <div>
+            <p class="text-xs font-semibold text-gray-600 mb-2">Decoration or Transformation?</p>
+            <div class="space-y-1">
+              {% for opt in c1_decoration_options %}
+              <label class="flex items-start gap-2 cursor-pointer p-2 rounded-lg border border-base-300 hover:border-indigo-300 hover:bg-indigo-50 transition-colors">
+                <input type="radio" name="decoration_{{ sc.id }}" value="{{ opt.value }}" class="radio radio-sm radio-primary mt-0.5" />
+                <span class="text-xs">{{ opt.label }}</span>
+              </label>
+              {% endfor %}
+            </div>
+            <p id="c1-decoration-{{ sc.id }}-error" class="text-error text-xs mt-1 hidden">Please select one.</p>
+          </div>
+
+        </div>
+      </div>
+      {% endfor %}
+
+      <p id="c1-global-error" class="text-error text-xs hidden">Please complete all three scenarios before submitting.</p>
+
+      <div class="flex justify-end">
+        <button type="button" id="submit-challenge1-btn" class="btn btn-primary btn-sm">
+          Submit Audit →
+        </button>
+      </div>
+
+    </form>
+
+    {% else %}
+
+    <!-- Completed state -->
+    <div class="alert alert-success py-3 mb-4">
+      <p class="text-sm">✓ Completed. You classified three gamification scenarios by SAMR level and identified which represent genuine transformation.</p>
+    </div>
+
+    <div class="mt-2">
+      <p class="text-sm font-semibold mb-3">💡 How the scenarios map:</p>
+      <div class="space-y-2">
+        <div class="collapse collapse-arrow bg-white border border-base-300">
+          <input type="checkbox" />
+          <div class="collapse-title text-sm font-medium">Scenario A — Substitution / Decoration</div>
+          <div class="collapse-content text-sm text-gray-700">
+            <p>The quiz replaces a paper test (Substitution). The leaderboard adds a game mechanic — but if you remove it, the quiz still exists and has the same learning value. The mechanics are decoration. There is no transformation of what students are doing with their thinking.</p>
+          </div>
+        </div>
+        <div class="collapse collapse-arrow bg-white border border-base-300">
+          <input type="checkbox" />
+          <div class="collapse-title text-sm font-medium">Scenario B — Modification / Transformation</div>
+          <div class="collapse-content text-sm text-gray-700">
+            <p>The branching narrative redesigns the task around student agency (Modification). Remove the branching structure and you remove the learning activity itself — students can no longer make decisions and experience consequences. This is transformation: the task could not exist in this form without AI.</p>
+          </div>
+        </div>
+        <div class="collapse collapse-arrow bg-white border border-base-300">
+          <input type="checkbox" />
+          <div class="collapse-title text-sm font-medium">Scenario C — Redefinition / Transformation</div>
+          <div class="collapse-content text-sm text-gray-700">
+            <p>Students designing a game for a younger year group is the Redefinition level. The act of designing requires deep content understanding — students must know the material well enough to create meaningful choices around it. This task was not feasible for most teachers to assign before AI. And the peer teaching dimension produces some of the highest learning impact of any instructional strategy.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {% endif %}
+
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- CHALLENGE 2: FIVE ROLES MATCHER                              -->
+<!-- ============================================================ -->
+<div id="challenge2-section" class="card bg-base-200 border-2 {% if activity.challenge2_completed %}border-emerald-400{% elif activity.challenge1_completed %}border-amber-400{% else %}border-base-300 opacity-60{% endif %} mb-6">
+  <div class="card-body">
+
+    <div class="flex items-center gap-3 mb-2">
+      <div class="w-10 h-10 rounded-full bg-amber-500 text-white flex items-center justify-center font-bold text-lg flex-shrink-0">2</div>
+      <div>
+        <h3 class="card-title text-lg">Five Roles Matcher</h3>
+        <p class="text-xs text-gray-500">Read · Match · Reflect · ~15 minutes</p>
+      </div>
+      {% if activity.challenge2_completed %}
+      <span class="badge badge-success ml-auto">✓ Complete</span>
+      {% endif %}
+    </div>
+
+    <p class="text-sm mb-4">Each situation below describes a student using AI. Match each situation to the role the student is occupying — or decide they are not occupying any role at all. Then identify which role your own students need most right now.</p>
+
+    {% if not activity.challenge2_completed and activity.challenge1_completed %}
+
+    <form id="challenge2-form" class="space-y-5">
+
+      {% for sit in c2_situations %}
+      <div class="card bg-white border border-amber-100 p-4">
+        <p class="text-sm leading-relaxed mb-3">{{ sit.text }}</p>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-1">
+          {% for role in c2_roles %}
+          <label class="flex items-center gap-2 cursor-pointer p-2 rounded-lg border border-base-300 hover:border-amber-300 hover:bg-amber-50 transition-colors">
+            <input type="radio" name="role_{{ sit.id }}" value="{{ role.value }}" class="radio radio-sm radio-warning" />
+            <span class="text-xs">{{ role.label }}</span>
+          </label>
+          {% endfor %}
+        </div>
+        <p id="c2-role-{{ sit.id }}-error" class="text-error text-xs mt-1 hidden">Please select a role.</p>
+      </div>
+      {% endfor %}
+
+      <!-- Priority role question -->
+      <div class="card bg-amber-50 border border-amber-200 p-4">
+        <p class="text-sm font-semibold mb-1">Which role do your students need most right now?</p>
+        <p class="text-xs text-gray-500 mb-3">Think about the students in your current class. Which role would have the most impact if you designed an activity around it this week?</p>
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+          {% for role in c2_priority_roles %}
+          <label class="flex items-center gap-2 cursor-pointer p-2 rounded-lg border border-amber-300 hover:bg-amber-100 transition-colors">
+            <input type="radio" name="priority_role" value="{{ role.value }}" class="radio radio-sm radio-warning" />
+            <span class="text-sm font-medium">{{ role.label }}</span>
+          </label>
+          {% endfor %}
+        </div>
+        <p id="c2-priority-error" class="text-error text-xs mt-1 hidden">Please select a role.</p>
+      </div>
+
+      <p id="c2-global-error" class="text-error text-xs hidden">Please match all situations and select a priority role.</p>
+
+      <div class="flex justify-end">
+        <button type="button" id="submit-challenge2-btn" class="btn btn-warning btn-sm">
+          Submit Matches →
+        </button>
+      </div>
+
+    </form>
+
+    {% elif activity.challenge2_completed %}
+
+    <!-- Completed state -->
+    <div class="alert alert-success py-3 mb-4">
+      <p class="text-sm">✓ Completed. You matched six classroom situations to the Five Roles Framework and identified the priority role for your students.</p>
+    </div>
+
+    <div class="mt-2">
+      <p class="text-sm font-semibold mb-3">💡 The correct matches:</p>
+      <div class="overflow-x-auto">
+        <table class="table table-zebra w-full text-sm">
+          <thead>
+            <tr class="bg-base-300">
+              <th>Situation</th>
+              <th>Role</th>
+              <th>Key signal</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>A — copies AI summary</td><td class="text-error font-medium">None (outsourcing)</td><td>No intellectual ownership at any point</td></tr>
+            <tr><td>B — compares with own answer</td><td class="font-medium">🧠 Critic</td><td>Own work comes first; AI is evaluated against it</td></tr>
+            <tr><td>C — checks AI against textbook</td><td class="font-medium">🧠 Verifier</td><td>AI claims are tested against an external source</td></tr>
+            <tr><td>D — selective revision</td><td class="font-medium">🧠 Editor</td><td>Student decides which AI feedback to accept</td></tr>
+            <tr><td>E — dialogue to develop position</td><td class="font-medium">🧠 Interlocutor</td><td>Student maintains intellectual ownership throughout</td></tr>
+            <tr><td>F — writes brief, reviews output</td><td class="font-medium">🏗️ Architect</td><td>Student directs AI; output is evaluated against a spec</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    {% else %}
+
+    <div class="alert alert-info py-3">
+      <p class="text-sm">Complete Challenge 1 first to unlock this challenge.</p>
+    </div>
+
+    {% endif %}
+
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- CHALLENGE 3: GAMIFIED UNIT PLANNER                          -->
+<!-- ============================================================ -->
+<div id="challenge3-section" class="card bg-base-200 border-2 {% if activity.challenge3_completed %}border-emerald-400{% elif activity.challenge2_completed %}border-emerald-300{% else %}border-base-300 opacity-60{% endif %} mb-6">
+  <div class="card-body">
+
+    <div class="flex items-center gap-3 mb-2">
+      <div class="w-10 h-10 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-lg flex-shrink-0">3</div>
+      <div>
+        <h3 class="card-title text-lg">Gamified Unit Planner</h3>
+        <p class="text-xs text-gray-500">Design · Plan · Test · ~20 minutes</p>
+      </div>
+      {% if activity.challenge3_completed %}
+      <span class="badge badge-success ml-auto">✓ Complete</span>
+      {% endif %}
+    </div>
+
+    <p class="text-sm mb-4">Use the four design questions from the Teacher Toolbox to plan one gamified or immersive activity for your class. Answer each question by selecting from the options — then apply the decoration test to your own design.</p>
+
+    {% if not activity.challenge3_completed and activity.challenge2_completed %}
+
+    <form id="challenge3-form" class="space-y-6">
+
+      <!-- Subject selector -->
+      <div class="card bg-white border border-emerald-100 p-4">
+        <p class="text-sm font-semibold mb-2">Your subject area:</p>
+        <select name="c3_subject" id="c3-subject" class="select select-bordered select-sm w-full max-w-xs">
+          <option value="">— select —</option>
+          {% for opt in c3_subject_options %}
+          <option value="{{ opt.value }}">{{ opt.label }}</option>
+          {% endfor %}
+        </select>
+        <p id="c3-subject-error" class="text-error text-xs mt-1 hidden">Please select your subject.</p>
+      </div>
+
+      <!-- Q1: Learning goal -->
+      <div class="card bg-white border border-emerald-100 p-4">
+        <p class="text-sm font-semibold mb-1">Q1 — What is the learning goal?</p>
+        <p class="text-xs text-gray-500 mb-3">In one or two sentences: what should a student be able to do or understand that they could not before?</p>
+        <textarea name="c3_learning_goal" id="c3-learning-goal" class="textarea textarea-bordered w-full text-sm" rows="2" placeholder="After this activity, students will be able to..." maxlength="300"></textarea>
+        <div class="flex justify-between mt-1">
+          <p id="c3-goal-error" class="text-error text-xs hidden">Please describe the learning goal (at least 20 characters).</p>
+          <p class="text-xs text-gray-400 ml-auto"><span id="c3-goal-count">0</span>/300</p>
+        </div>
+      </div>
+
+      <!-- Q2: Student role -->
+      <div class="card bg-white border border-emerald-100 p-4">
+        <p class="text-sm font-semibold mb-2">Q2 — What role will students take toward AI?</p>
+        <div class="space-y-2">
+          {% for opt in c3_role_options %}
+          <label class="flex items-start gap-3 cursor-pointer p-3 rounded-lg border border-base-300 hover:border-emerald-300 hover:bg-emerald-50 transition-colors">
+            <input type="radio" name="c3_student_role" value="{{ opt.value }}" class="radio radio-sm radio-success mt-0.5" />
+            <span class="text-sm">{{ opt.label }}</span>
+          </label>
+          {% endfor %}
+        </div>
+        <p id="c3-role-error" class="text-error text-xs mt-1 hidden">Please select a student role.</p>
+      </div>
+
+      <!-- Gamification principle -->
+      <div class="card bg-white border border-emerald-100 p-4">
+        <p class="text-sm font-semibold mb-2">Which gamification principle does your activity use?</p>
+        <div class="space-y-2">
+          {% for opt in c3_gamification_principles %}
+          <label class="flex items-center gap-3 cursor-pointer p-3 rounded-lg border border-base-300 hover:border-emerald-300 hover:bg-emerald-50 transition-colors">
+            <input type="radio" name="c3_principle" value="{{ opt.value }}" class="radio radio-sm radio-success" />
+            <span class="text-sm">{{ opt.label }}</span>
+          </label>
+          {% endfor %}
+        </div>
+        <p id="c3-principle-error" class="text-error text-xs mt-1 hidden">Please select a gamification principle.</p>
+      </div>
+
+      <!-- Q3: Visible progression -->
+      <div class="card bg-white border border-emerald-100 p-4">
+        <p class="text-sm font-semibold mb-2">Q3 — How will progress be visible to students?</p>
+        <div class="space-y-2">
+          {% for opt in c3_progression_options %}
+          <label class="flex items-center gap-3 cursor-pointer p-3 rounded-lg border border-base-300 hover:border-emerald-300 hover:bg-emerald-50 transition-colors">
+            <input type="radio" name="c3_progression" value="{{ opt.value }}" class="radio radio-sm radio-success" />
+            <span class="text-sm">{{ opt.label }}</span>
+          </label>
+          {% endfor %}
+        </div>
+        <p id="c3-progression-error" class="text-error text-xs mt-1 hidden">Please select a progression mechanism.</p>
+      </div>
+
+      <!-- Q4: Assessment -->
+      <div class="card bg-white border border-emerald-100 p-4">
+        <p class="text-sm font-semibold mb-2">Q4 — How will you assess learning — not just engagement?</p>
+        <p class="text-xs text-gray-500 mb-3">Select all that apply.</p>
+        <div class="space-y-2">
+          {% for opt in c3_assessment_options %}
+          <label class="flex items-center gap-3 cursor-pointer p-3 rounded-lg border border-base-300 hover:border-emerald-300 hover:bg-emerald-50 transition-colors">
+            <input type="checkbox" name="c3_assessment" value="{{ opt.value }}" class="checkbox checkbox-sm checkbox-success" />
+            <span class="text-sm">{{ opt.label }}</span>
+          </label>
+          {% endfor %}
+        </div>
+        <p id="c3-assessment-error" class="text-error text-xs mt-1 hidden">Please select at least one assessment approach.</p>
+      </div>
+
+      <!-- Decoration test -->
+      <div class="card bg-amber-50 border border-amber-200 p-4">
+        <p class="text-sm font-semibold mb-1">The decoration test — applied to your own design</p>
+        <p class="text-xs text-gray-600 mb-3 italic">If you remove all the points, badges, and leaderboard mechanics from your activity, what remains?</p>
+        <div class="space-y-2">
+          {% for opt in c3_decoration_options %}
+          <label class="flex items-start gap-3 cursor-pointer p-3 rounded-lg border border-amber-300 hover:bg-amber-100 transition-colors">
+            <input type="radio" name="c3_decoration_test" value="{{ opt.value }}" class="radio radio-sm radio-warning mt-0.5" />
+            <span class="text-sm">{{ opt.label }}</span>
+          </label>
+          {% endfor %}
+        </div>
+        <p id="c3-decoration-error" class="text-error text-xs mt-1 hidden">Please apply the decoration test.</p>
+      </div>
+
+      <!-- SAMR self-assessment -->
+      <div class="card bg-white border border-emerald-100 p-4">
+        <p class="text-sm font-semibold mb-2">What SAMR level does your activity reach?</p>
+        <div class="grid grid-cols-2 gap-2">
+          {% for opt in c3_samr_options %}
+          <label class="flex items-center gap-2 cursor-pointer p-3 rounded-lg border border-base-300 hover:border-emerald-300 hover:bg-emerald-50 transition-colors">
+            <input type="radio" name="c3_samr" value="{{ opt.value }}" class="radio radio-sm radio-success" />
+            <span class="text-sm">{{ opt.label }}</span>
+          </label>
+          {% endfor %}
+        </div>
+        <p id="c3-samr-error" class="text-error text-xs mt-1 hidden">Please select a SAMR level.</p>
+      </div>
+
+      <p id="c3-global-error" class="text-error text-xs hidden">Please complete all fields before submitting.</p>
+
+      <div class="flex justify-end">
+        <button type="button" id="submit-challenge3-btn" class="btn btn-success btn-sm">
+          Submit My Design →
+        </button>
+      </div>
+
+    </form>
+
+    {% elif activity.challenge3_completed %}
+
+    <!-- Completed state -->
+    <div class="alert alert-success py-3 mb-4">
+      <p class="text-sm">✓ Completed. You designed a gamified learning unit using the four Toolbox questions — and applied the decoration test to your own work.</p>
+    </div>
+
+    <div class="card bg-white border border-emerald-200 p-4 mt-2">
+      <p class="text-sm font-semibold mb-3">📋 Your design summary:</p>
+      <div class="space-y-2 text-sm">
+        <p><strong>Subject:</strong> {{ activity.challenge_data.challenge3_subject|default:"—" }}</p>
+        <p><strong>Learning goal:</strong> {{ activity.challenge_data.challenge3_learning_goal|default:"—" }}</p>
+        <p><strong>Student role:</strong> {{ activity.challenge_data.challenge3_student_role|default:"—" }}</p>
+        <p><strong>Gamification principle:</strong> {{ activity.challenge_data.challenge3_principle|default:"—" }}</p>
+        <p><strong>Visible progression:</strong> {{ activity.challenge_data.challenge3_progression|default:"—" }}</p>
+        <p><strong>SAMR level:</strong> {{ activity.challenge_data.challenge3_samr|default:"—" }}</p>
+        <p><strong>Decoration test:</strong> {{ activity.challenge_data.challenge3_decoration_test|default:"—" }}</p>
+      </div>
+    </div>
+
+    {% else %}
+
+    <div class="alert alert-info py-3">
+      <p class="text-sm">Complete Challenge 2 first to unlock this challenge.</p>
+    </div>
+
+    {% endif %}
+
+  </div>
+</div>
+
+{% include "community/partials/tab_forum_trigger.html" with tab_name="activity" module_code=module.code trigger_style="post_completion" %}
+
+{% if not activity.activity_completed %}
+<div id="mark-complete-section" class="{% if not activity.challenge3_completed %}hidden{% endif %} text-center mt-4">
+  <button id="mark-activity-complete-btn" class="btn btn-success btn-lg">
+    ✓ Mark Activity Complete
+  </button>
+</div>
+{% endif %}
+
+
+<!-- ============================================================ -->
+<!-- JAVASCRIPT                                                   -->
+<!-- ============================================================ -->
+<script>
+
+// ── Character counter — C3 learning goal ───────────────────────
+const c3Goal = document.getElementById('c3-learning-goal');
+const c3GoalCount = document.getElementById('c3-goal-count');
+if (c3Goal) {
+  c3Goal.addEventListener('input', () => {
+    c3GoalCount.textContent = c3Goal.value.length;
+  });
+}
+
+// ── CHALLENGE 1 SUBMIT ─────────────────────────────────────────
+document.getElementById('submit-challenge1-btn')?.addEventListener('click', () => {
+  const scenarios = ['sc1', 'sc2', 'sc3'];
+  let valid = true;
+
+  const payload = {};
+  scenarios.forEach(scId => {
+    const samr = document.querySelector(`input[name="samr_${scId}"]:checked`)?.value;
+    const dec  = document.querySelector(`input[name="decoration_${scId}"]:checked`)?.value;
+
+    document.getElementById(`c1-samr-${scId}-error`).classList.toggle('hidden', !!samr);
+    document.getElementById(`c1-decoration-${scId}-error`).classList.toggle('hidden', !!dec);
+
+    if (!samr || !dec) { valid = false; }
+    payload[`samr_${scId}`]       = samr || '';
+    payload[`decoration_${scId}`] = dec  || '';
+  });
+
+  document.getElementById('c1-global-error').classList.toggle('hidden', valid);
+  if (!valid) return;
+
+  fetch(`/modules/modules/{{ module.code }}/tab3/challenge1/`, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}'},
+    body: JSON.stringify(payload)
+  })
+  .then(r => r.json())
+  .then(data => { if (data.success) location.reload(); });
+});
+
+// ── CHALLENGE 2 SUBMIT ─────────────────────────────────────────
+document.getElementById('submit-challenge2-btn')?.addEventListener('click', () => {
+  const situations = ['sit1', 'sit2', 'sit3', 'sit4', 'sit5', 'sit6'];
+  let valid = true;
+
+  const payload = {};
+  situations.forEach(sitId => {
+    const role = document.querySelector(`input[name="role_${sitId}"]:checked`)?.value;
+    document.getElementById(`c2-role-${sitId}-error`).classList.toggle('hidden', !!role);
+    if (!role) { valid = false; }
+    payload[`role_${sitId}`] = role || '';
+  });
+
+  const priority = document.querySelector('input[name="priority_role"]:checked')?.value;
+  document.getElementById('c2-priority-error').classList.toggle('hidden', !!priority);
+  if (!priority) { valid = false; }
+  payload['priority_role'] = priority || '';
+
+  document.getElementById('c2-global-error').classList.toggle('hidden', valid);
+  if (!valid) return;
+
+  fetch(`/modules/modules/{{ module.code }}/tab3/challenge2/`, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}'},
+    body: JSON.stringify(payload)
+  })
+  .then(r => r.json())
+  .then(data => { if (data.success) location.reload(); });
+});
+
+// ── CHALLENGE 3 SUBMIT ─────────────────────────────────────────
+document.getElementById('submit-challenge3-btn')?.addEventListener('click', () => {
+  let valid = true;
+
+  const subject    = document.getElementById('c3-subject')?.value;
+  const goal       = document.getElementById('c3-learning-goal')?.value?.trim();
+  const role       = document.querySelector('input[name="c3_student_role"]:checked')?.value;
+  const principle  = document.querySelector('input[name="c3_principle"]:checked')?.value;
+  const progression= document.querySelector('input[name="c3_progression"]:checked')?.value;
+  const assessment = Array.from(document.querySelectorAll('input[name="c3_assessment"]:checked')).map(el => el.value);
+  const decoration = document.querySelector('input[name="c3_decoration_test"]:checked')?.value;
+  const samr       = document.querySelector('input[name="c3_samr"]:checked')?.value;
+
+  const goalValid = !!(goal && goal.length >= 20);
+
+  document.getElementById('c3-subject-error').classList.toggle('hidden', !!subject);
+  document.getElementById('c3-goal-error').classList.toggle('hidden', goalValid);
+  document.getElementById('c3-role-error').classList.toggle('hidden', !!role);
+  document.getElementById('c3-principle-error').classList.toggle('hidden', !!principle);
+  document.getElementById('c3-progression-error').classList.toggle('hidden', !!progression);
+  document.getElementById('c3-assessment-error').classList.toggle('hidden', assessment.length > 0);
+  document.getElementById('c3-decoration-error').classList.toggle('hidden', !!decoration);
+  document.getElementById('c3-samr-error').classList.toggle('hidden', !!samr);
+
+  if (!subject || !goalValid || !role || !principle || !progression || assessment.length === 0 || !decoration || !samr) {
+    valid = false;
+  }
+
+  document.getElementById('c3-global-error').classList.toggle('hidden', valid);
+  if (!valid) return;
+
+  fetch(`/modules/modules/{{ module.code }}/tab3/challenge3/`, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}'},
+    body: JSON.stringify({
+      subject:        subject,
+      learning_goal:  goal,
+      student_role:   role,
+      principle:      principle,
+      progression:    progression,
+      assessment:     assessment,
+      decoration_test:decoration,
+      samr:           samr,
+    })
+  })
+  .then(r => r.json())
+  .then(data => { if (data.success) location.reload(); });
+});
+
+// ── MARK ACTIVITY COMPLETE ─────────────────────────────────────
+document.getElementById('mark-activity-complete-btn')?.addEventListener('click', () => {
+  fetch(`/modules/modules/{{ module.code }}/tab3/reflection/`, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}'},
+    body: JSON.stringify({ tab: 'activity' })
+  })
+  .then(r => r.json())
+  .then(data => { if (data.success) location.reload(); });
+});
+
+</script>
+
+{% endif %}

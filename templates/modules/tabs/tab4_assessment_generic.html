@@ -1,0 +1,481 @@
+{% load static %}
+<!-- TAB 4: ASSESSMENT - Generic (M2+) - Renders questions from DB JSON -->
+
+<div class="space-y-8">
+    <!-- Quiz Header -->
+    <div class="bg-gradient-to-r from-indigo-50 to-purple-50 border-l-4 border-indigo-500 p-6 rounded-lg">
+        <div class="flex items-start justify-between">
+            <div class="flex-1">
+                <h2 class="text-2xl font-bold text-gray-900 mb-2">
+                    <i class="fas fa-clipboard-check text-indigo-600 mr-2"></i>
+                    {{ module.code }} Knowledge Check: {{ module.title }}
+                </h2>
+                <p class="text-gray-700 text-lg">
+                    Test your understanding of the key concepts covered in this module.
+                </p>
+            </div>
+            <!-- Attempts Counter -->
+            <div class="ml-6 text-center bg-white rounded-lg p-4 shadow-sm min-w-[120px]">
+                <div class="text-3xl font-bold text-indigo-600" id="attempts-remaining">3</div>
+                <div class="text-sm text-gray-600">Attempts Left</div>
+            </div>
+        </div>
+        <!-- Quiz Metadata -->
+        <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="flex items-center text-gray-700">
+                <i class="fas fa-question-circle text-indigo-500 mr-2"></i>
+                <span><strong>15</strong> questions</span>
+            </div>
+            <div class="flex items-center text-gray-700">
+                <i class="fas fa-clock text-indigo-500 mr-2"></i>
+                <span><strong>20</strong> minutes suggested</span>
+            </div>
+            <div class="flex items-center text-gray-700">
+                <i class="fas fa-check-circle text-green-500 mr-2"></i>
+                <span><strong>80%</strong> (12/15) to pass</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Instructions -->
+    <div class="alert alert-info">
+        <i class="fas fa-info-circle text-xl"></i>
+        <div>
+            <h3 class="font-bold">Instructions</h3>
+            <p class="text-sm">
+                You need 80% (12/15 correct) to pass. You may retake up to 3 times. Your highest score counts.
+            </p>
+        </div>
+    </div>
+
+    <!-- Previous Attempts Display -->
+    <div id="previous-attempts" class="hidden">
+        <h3 class="text-lg font-bold text-gray-900 mb-3">
+            <i class="fas fa-history text-indigo-600 mr-2"></i>
+            Previous Attempts
+        </h3>
+        <div id="attempts-list" class="space-y-2"></div>
+    </div>
+
+    <!-- Quiz Container -->
+    <div id="quiz-container">
+        <!-- Start Screen -->
+        <div id="quiz-start-screen" class="text-center py-12">
+            <div class="max-w-2xl mx-auto">
+                <div class="w-24 h-24 bg-indigo-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <i class="fas fa-clipboard-check text-5xl text-indigo-600"></i>
+                </div>
+                <h3 class="text-2xl font-bold text-gray-900 mb-4">Ready to Test Your Knowledge?</h3>
+                <p class="text-gray-600 mb-8">
+                    This assessment will help you verify your understanding of the concepts covered in this module.
+                </p>
+                <button onclick="startQuiz()" class="btn btn-primary btn-lg">
+                    <i class="fas fa-play mr-2"></i>
+                    Start Quiz
+                </button>
+            </div>
+        </div>
+
+        <!-- Questions Screen (rendered dynamically) -->
+        <div id="quiz-questions-screen" class="hidden">
+            <!-- Section A: Q1-5 -->
+            <div class="mb-8">
+                <div class="bg-indigo-50 border-l-4 border-indigo-500 p-4 mb-6">
+                    <h3 class="text-xl font-bold text-gray-900">Section A</h3>
+                    <p class="text-gray-700 text-sm">Questions 1–5</p>
+                </div>
+                <div id="questions-section-a"></div>
+            </div>
+            <!-- Section B: Q6-10 -->
+            <div class="mb-8">
+                <div class="bg-indigo-50 border-l-4 border-indigo-500 p-4 mb-6">
+                    <h3 class="text-xl font-bold text-gray-900">Section B</h3>
+                    <p class="text-gray-700 text-sm">Questions 6–10</p>
+                </div>
+                <div id="questions-section-b"></div>
+            </div>
+            <!-- Section C: Q11-15 -->
+            <div class="mb-8">
+                <div class="bg-indigo-50 border-l-4 border-indigo-500 p-4 mb-6">
+                    <h3 class="text-xl font-bold text-gray-900">Section C</h3>
+                    <p class="text-gray-700 text-sm">Questions 11–15</p>
+                </div>
+                <div id="questions-section-c"></div>
+            </div>
+
+            <!-- Submit Button -->
+            <div class="text-center mt-8">
+                <button id="submit-quiz-btn" onclick="submitQuiz()" class="btn btn-primary btn-lg">
+                    <i class="fas fa-paper-plane mr-2"></i>
+                    Submit Quiz
+                </button>
+            </div>
+        </div>
+
+        <!-- Results Screen -->
+        <div id="quiz-results-screen" class="hidden">
+            <div class="text-center py-8">
+                <div id="results-icon" class="w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6"></div>
+                <h3 id="results-title" class="text-2xl font-bold mb-2"></h3>
+                <p id="results-score" class="text-xl mb-2"></p>
+                <p id="results-message" class="text-gray-600 mb-8"></p>
+                <div class="flex gap-4 justify-center flex-wrap">
+                    <button id="review-btn" onclick="reviewAnswers()" class="btn btn-outline btn-primary">
+                        <i class="fas fa-search mr-2"></i>Review Answers
+                    </button>
+                    <button id="retake-btn" onclick="retakeQuiz()" class="btn btn-outline btn-sm self-center hidden">
+                        <i class="fas fa-redo mr-2"></i>Retake Quiz
+                    </button>
+                    <button id="continue-btn" onclick="markTabComplete('{{ module.code }}', 'assessment')" class="btn btn-success btn-lg hidden">
+                        <i class="fas fa-arrow-right mr-2"></i>Continue to Reflection
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Forum trigger after completion -->
+    {% include "community/partials/tab_forum_trigger.html" with tab_name="assessment" module_code=module.code trigger_style="post_completion" %}
+</div>
+
+<style>
+    .question-number {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
+        background: #6366f1;
+        color: white;
+        border-radius: 50%;
+        font-weight: bold;
+        font-size: 14px;
+        margin-right: 12px;
+        flex-shrink: 0;
+    }
+    .question-text { font-size: 16px; font-weight: 600; color: #1f2937; line-height: 1.5; }
+    .option-label {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 16px;
+        border: 2px solid #e5e7eb;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .option-label:hover { border-color: #6366f1; background: #f5f3ff; }
+    .feedback { padding: 16px; border-radius: 8px; font-size: 14px; line-height: 1.6; }
+    .feedback.correct { background: #d1fae5; border: 2px solid #10b981; color: #065f46; }
+    .feedback.incorrect { background: #fee2e2; border: 2px solid #ef4444; color: #991b1b; }
+    .feedback-icon { font-size: 18px; margin-right: 8px; }
+</style>
+
+<!-- DEBUG: content_html={{ content_html|truncatechars:200 }} -->
+<script>
+// ── Quiz Data from DB ──────────────────────────────────────────────────────
+// content_data is a JSON array: [{id, text, options:{A,B,C,D}, correct:"B", explanation}]
+const rawQuestions = {{ assessment_questions_json|safe }};
+console.log('rawQuestions:', rawQuestions);
+console.log('length:', rawQuestions.length);
+
+// Convert to quizData format keyed by id, correct = option index (0=A,1=B,2=C,3=D)
+const optionKeys = ['A', 'B', 'C', 'D'];
+const quizData = {};
+rawQuestions.forEach(q => {
+    quizData[q.id] = {
+        text: q.text,
+        options: optionKeys.map(k => q.options[k]),
+        correct: optionKeys.indexOf(q.correct),
+        explanation: q.explanation
+    };
+});
+
+const MODULE_CODE = '{{ module.code }}';
+
+// ── Render Questions ───────────────────────────────────────────────────────
+function renderQuestions() {
+    const sections = {
+        'questions-section-a': [1, 2, 3, 4, 5],
+        'questions-section-b': [6, 7, 8, 9, 10],
+        'questions-section-c': [11, 12, 13, 14, 15],
+    };
+
+    for (const [sectionId, ids] of Object.entries(sections)) {
+        const container = document.getElementById(sectionId);
+        container.innerHTML = ids.map(i => {
+            const q = quizData[i];
+            if (!q) return '';
+            const optionsHtml = q.options.map((opt, idx) => `
+                <label class="option-label">
+                    <input type="radio" name="q${i}" value="${idx}" class="radio radio-primary">
+                    <span>${opt}</span>
+                </label>
+            `).join('');
+            return `
+                <div class="question-card mb-6 p-6 bg-white border border-gray-200 rounded-lg shadow-sm" data-question-id="${i}">
+                    <div class="flex items-start mb-4">
+                        <span class="question-number">${i}</span>
+                        <div class="flex-1">
+                            <p class="question-text">${q.text}</p>
+                        </div>
+                    </div>
+                    <div class="options-container space-y-3">${optionsHtml}</div>
+                    <div class="feedback hidden mt-4"></div>
+                </div>
+            `;
+        }).join('');
+    }
+}
+
+// ── State ──────────────────────────────────────────────────────────────────
+let attemptsRemaining = 3;
+let submissionInProgress = false;
+let lastSubmittedAnswers = null;
+
+// ── Initialize ─────────────────────────────────────────────────────────────
+async function initializeQuiz() {
+    renderQuestions();
+    await loadPreviousAttempts();
+}
+
+// ── Load Previous Attempts ─────────────────────────────────────────────────
+async function loadPreviousAttempts() {
+    try {
+        const response = await fetch(`/modules/modules/${MODULE_CODE}/get-assessment-attempts/`);
+        if (!response.ok) return;
+        const result = await response.json();
+
+        if (result.success && result.attempts_used > 0) {
+            attemptsRemaining = result.attempts_remaining;
+            document.getElementById('attempts-remaining').textContent = attemptsRemaining;
+
+            const prevSection = document.getElementById('previous-attempts');
+            prevSection.classList.remove('hidden');
+            document.getElementById('attempts-list').innerHTML = `
+                <div class="alert ${result.has_passed ? 'alert-success' : 'alert-warning'}">
+                    <div>
+                        <div class="font-bold">
+                            ${result.has_passed ? '✅ Passed' : '⚠️ Not Yet Passed'} — Best Score: ${result.highest_score}/15 (${result.highest_percentage}%)
+                        </div>
+                        <div class="text-sm">
+                            You have used ${result.attempts_used} of 3 attempts.
+                            ${attemptsRemaining > 0 ? `You can retake ${attemptsRemaining} more time${attemptsRemaining > 1 ? 's' : ''}.` : 'No attempts remaining.'}
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            if (result.has_passed) {
+                document.getElementById('quiz-start-screen').innerHTML = `
+                    <div class="max-w-2xl mx-auto text-center py-12">
+                        <div class="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                            <i class="fas fa-check-circle text-5xl text-green-600"></i>
+                        </div>
+                        <h3 class="text-2xl font-bold text-green-700 mb-2">You've Already Passed! 🎉</h3>
+                        <p class="text-gray-600 mb-1">Best Score: <strong>${result.highest_score}/15 (${result.highest_percentage}%)</strong></p>
+                        <p class="text-gray-500 text-sm mb-8">
+                            ${result.attempts_remaining > 0
+                                ? `You have ${result.attempts_remaining} attempt(s) remaining if you'd like to improve your score.`
+                                : 'You have used all 3 attempts.'}
+                        </p>
+                        <div class="flex gap-4 justify-center flex-wrap">
+                            <button onclick="markTabComplete('${MODULE_CODE}', 'assessment')" class="btn btn-success btn-lg">
+                                <i class="fas fa-arrow-right mr-2"></i>Continue to Reflection
+                            </button>
+                            ${result.attempts_remaining > 0 ? `
+                            <button onclick="startQuiz()" class="btn btn-outline btn-sm self-center">
+                                <i class="fas fa-redo mr-2"></i>Retake (optional)
+                            </button>` : ''}
+                        </div>
+                    </div>
+                `;
+            }
+        }
+    } catch (e) {
+        console.error('Error loading attempts:', e);
+    }
+}
+
+// ── Start Quiz ─────────────────────────────────────────────────────────────
+function startQuiz() {
+    document.getElementById('quiz-start-screen').classList.add('hidden');
+    document.getElementById('quiz-questions-screen').classList.remove('hidden');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ── Submit Quiz ────────────────────────────────────────────────────────────
+async function submitQuiz() {
+    if (submissionInProgress) return;
+
+    const unanswered = [];
+    for (let i = 1; i <= 15; i++) {
+        if (!document.querySelector(`input[name="q${i}"]:checked`)) unanswered.push(i);
+    }
+    if (unanswered.length > 0) {
+        alert(`Please answer all questions before submitting. Unanswered: ${unanswered.join(', ')}`);
+        return;
+    }
+
+    const answers = {};
+    for (let i = 1; i <= 15; i++) {
+        answers[i] = document.querySelector(`input[name="q${i}"]:checked`).value;
+    }
+
+    const answersString = JSON.stringify(answers);
+    if (lastSubmittedAnswers === answersString) {
+        alert('You have already submitted these answers. Please change your answers or use "Retake Quiz".');
+        return;
+    }
+
+    submissionInProgress = true;
+    lastSubmittedAnswers = answersString;
+
+    // Calculate score
+    let correct = 0;
+    const feedback = {};
+    for (let i = 1; i <= 15; i++) {
+        const userAnswer = parseInt(answers[i]);
+        const correctAnswer = quizData[i].correct;
+        const isCorrect = userAnswer === correctAnswer;
+        if (isCorrect) correct++;
+        feedback[i] = { correct: isCorrect, explanation: quizData[i].explanation };
+    }
+
+    const percentage = Math.round((correct / 15) * 100);
+    const passed = percentage >= 80;
+
+    // Save to server
+    try {
+        const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        const response = await fetch(`/modules/modules/${MODULE_CODE}/submit-assessment/`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrftoken },
+            body: JSON.stringify({ answers, score: correct, total: 15, percentage, passed })
+        });
+        const result = await response.json();
+        if (!result.success) {
+            alert('Error saving quiz: ' + result.error);
+            submissionInProgress = false;
+            return;
+        }
+        attemptsRemaining = result.attempts_remaining ?? (attemptsRemaining - 1);
+    } catch (e) {
+        alert('Network error saving quiz. Please try again.');
+        submissionInProgress = false;
+        return;
+    }
+
+    submissionInProgress = false;
+
+    // Show results
+    document.getElementById('quiz-questions-screen').classList.add('hidden');
+    const resultsScreen = document.getElementById('quiz-results-screen');
+    resultsScreen.classList.remove('hidden');
+
+    document.getElementById('results-icon').innerHTML = passed
+        ? '<i class="fas fa-check-circle text-5xl text-green-600"></i>'
+        : '<i class="fas fa-times-circle text-5xl text-red-500"></i>';
+    document.getElementById('results-icon').className =
+        `w-24 h-24 ${passed ? 'bg-green-100' : 'bg-red-100'} rounded-full flex items-center justify-center mx-auto mb-6`;
+    document.getElementById('results-title').textContent = passed ? '🎉 Congratulations! You Passed!' : 'Not Passed This Time';
+    document.getElementById('results-score').textContent = `Score: ${correct}/15 (${percentage}%)`;
+    document.getElementById('results-message').textContent = passed
+        ? 'You have demonstrated solid understanding of this module.'
+        : `You need 12/15 (80%) to pass. You have ${attemptsRemaining} attempt(s) remaining.`;
+
+    if (passed) {
+        document.getElementById('continue-btn').classList.remove('hidden');
+    }
+    if (attemptsRemaining > 0 && !passed) {
+        document.getElementById('retake-btn').classList.remove('hidden');
+    }
+
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ── Retake Quiz ────────────────────────────────────────────────────────────
+function retakeQuiz() {
+    if (attemptsRemaining <= 0) {
+        alert('You have used all 3 attempts.');
+        return;
+    }
+    lastSubmittedAnswers = null;
+    submissionInProgress = false;
+    document.querySelectorAll('input[type="radio"]').forEach(r => { r.checked = false; r.disabled = false; });
+    document.querySelectorAll('.feedback').forEach(fb => { fb.classList.add('hidden'); fb.classList.remove('correct', 'incorrect'); });
+    document.getElementById('submit-quiz-btn').style.display = 'block';
+    document.getElementById('quiz-results-screen').classList.add('hidden');
+    document.getElementById('quiz-questions-screen').classList.remove('hidden');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ── Review Answers ─────────────────────────────────────────────────────────
+function reviewAnswers() {
+    document.getElementById('quiz-results-screen').classList.add('hidden');
+    document.getElementById('quiz-questions-screen').classList.remove('hidden');
+    document.getElementById('submit-quiz-btn').style.display = 'none';
+
+    const submitBtnContainer = document.getElementById('submit-quiz-btn').parentElement;
+    let backBtn = document.getElementById('back-to-results-btn');
+    if (!backBtn) {
+        backBtn = document.createElement('button');
+        backBtn.id = 'back-to-results-btn';
+        backBtn.className = 'btn btn-outline btn-primary btn-lg';
+        backBtn.innerHTML = '<i class="fas fa-arrow-left mr-2"></i>Back to Results';
+        backBtn.onclick = backToResults;
+        submitBtnContainer.appendChild(backBtn);
+    } else {
+        backBtn.style.display = 'block';
+    }
+
+    document.querySelectorAll('input[type="radio"]').forEach(r => r.disabled = true);
+
+    for (let i = 1; i <= 15; i++) {
+        const selected = document.querySelector(`input[name="q${i}"]:checked`);
+        if (selected) {
+            const feedbackDiv = selected.closest('.question-card').querySelector('.feedback');
+            const isCorrect = parseInt(selected.value) === quizData[i].correct;
+            feedbackDiv.classList.remove('hidden');
+            feedbackDiv.classList.add(isCorrect ? 'correct' : 'incorrect');
+            feedbackDiv.innerHTML = `
+                <div class="flex items-start">
+                    <i class="fas ${isCorrect ? 'fa-check-circle' : 'fa-times-circle'} feedback-icon ${isCorrect ? 'text-green-600' : 'text-red-600'}"></i>
+                    <div>
+                        <div class="font-bold mb-1">${isCorrect ? 'Correct!' : 'Incorrect'}</div>
+                        <div>${quizData[i].explanation}</div>
+                    </div>
+                </div>
+            `;
+        }
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ── Back to Results ────────────────────────────────────────────────────────
+function backToResults() {
+    document.getElementById('quiz-questions-screen').classList.add('hidden');
+    document.getElementById('quiz-results-screen').classList.remove('hidden');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ── Mark Tab Complete ──────────────────────────────────────────────────────
+async function markTabComplete(moduleCode, tabName) {
+    const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    try {
+        const response = await fetch(`/modules/modules/${moduleCode}/complete/${tabName}/`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrftoken },
+            body: JSON.stringify({})
+        });
+        const result = await response.json();
+        if (result.success) { location.reload(); }
+        else { alert('Error marking tab complete: ' + result.error); }
+    } catch (e) { alert('Network error.'); }
+}
+
+// ── Init ───────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', async function() {
+    await initializeQuiz();
+});
+</script>

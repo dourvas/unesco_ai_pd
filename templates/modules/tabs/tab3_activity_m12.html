@@ -1,0 +1,402 @@
+{% if current_tab == 'activity' %}
+
+<div class="space-y-6">
+
+  <!-- Header -->
+  <div class="alert alert-warning shadow-lg">
+    <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+    </svg>
+    <div>
+      <h3 class="font-bold">Module 12 Activity — From Principles to Policy</h3>
+      <p class="text-sm mt-1">Three challenges that move you from analysing existing policy, to designing your own, to resolving the hardest institutional cases. By the end, you will have built something you can use.</p>
+    </div>
+  </div>
+
+  <!-- ================================================================ -->
+  <!-- CHALLENGE 1 — Policy Audit                                        -->
+  <!-- ================================================================ -->
+  <div class="card bg-base-100 shadow border-l-4 border-indigo-500">
+    <div class="card-body">
+
+      <div class="flex items-center gap-3 mb-2">
+        <div class="badge badge-lg bg-indigo-600 text-white border-0">Challenge 1</div>
+        <h2 class="card-title text-lg">Policy Audit — What Is Missing?</h2>
+        <span class="text-xs text-gray-400 ml-auto">~20 min</span>
+      </div>
+
+      <p class="text-sm text-gray-600 mb-4">Below is a real-looking draft school AI policy. Using the Seven Elements framework from Module 12, audit each clause: is the element <strong>strong</strong>, <strong>partial</strong>, or <strong>missing</strong>? Then write your top three improvement priorities.</p>
+
+      <!-- Sample policy -->
+      <div class="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-5">
+        <div class="flex items-center gap-2 mb-3">
+          <span class="text-lg">📄</span>
+          <div>
+            <p class="font-semibold text-sm">{{ sample_policy.title }}</p>
+            <p class="text-xs text-gray-400">{{ sample_policy.date }}</p>
+          </div>
+        </div>
+        <div class="space-y-3">
+          {% for clause in sample_policy.clauses %}
+          <div class="bg-white border border-gray-100 rounded p-3">
+            <p class="text-xs font-semibold text-indigo-700 mb-1">{{ clause.label }}</p>
+            <p class="text-sm text-gray-700">{{ clause.text }}</p>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- Audit grid -->
+      <div class="mb-5">
+        <h3 class="font-semibold text-sm mb-3">Rate each of the Seven Elements:</h3>
+        <div class="overflow-x-auto">
+          <table class="table table-sm w-full text-sm">
+            <thead>
+              <tr class="bg-base-200">
+                <th class="w-1/2">Element</th>
+                <th>Rating</th>
+                <th>Which clause? / What is missing?</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for element in seven_elements %}
+              <tr class="border-b border-base-200">
+                <td class="font-medium text-xs py-2">{{ forloop.counter }}. {{ element }}</td>
+                <td class="py-2">
+                  <select class="select select-xs select-bordered w-full" name="audit_rating_{{ forloop.counter }}" id="audit_rating_{{ forloop.counter }}">
+                    <option value="">—</option>
+                    {% for r in audit_ratings %}
+                    <option value="{{ r.value }}">{{ r.label }}</option>
+                    {% endfor %}
+                  </select>
+                </td>
+                <td class="py-2">
+                  <input type="text" class="input input-xs input-bordered w-full" name="audit_note_{{ forloop.counter }}" placeholder="Brief note..." />
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Priorities -->
+      <div class="mb-5">
+        <label class="label"><span class="label-text font-semibold">Your top 3 improvement priorities — and why:</span></label>
+        <textarea
+          id="challenge1_priorities"
+          class="textarea textarea-bordered w-full text-sm"
+          rows="5"
+          maxlength="800"
+          placeholder="Priority 1: The most urgent gap is... because...&#10;Priority 2: ...&#10;Priority 3: ..."
+        >{% if activity.challenge_data.challenge1_priorities %}{{ activity.challenge_data.challenge1_priorities }}{% endif %}</textarea>
+        <div class="text-right text-xs text-gray-400 mt-1"><span id="c1_chars">0</span>/800</div>
+      </div>
+
+      <!-- Completed state -->
+      {% if activity.challenge1_completed %}
+      <div class="alert alert-success py-2 mb-3">
+        <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-4 w-4" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+        <span class="text-sm">Challenge 1 saved.</span>
+      </div>
+      {% endif %}
+
+      <button onclick="submitChallenge1()" class="btn btn-primary btn-sm">Save Audit</button>
+
+      <!-- Model response (revealed after submit) -->
+      <div id="c1_model" class="{% if not activity.challenge1_completed %}hidden{% endif %} mt-5">
+        <div class="divider text-xs text-gray-400">What strong auditors typically find</div>
+        <div class="space-y-2 text-sm">
+          <div class="flex gap-2 items-start"><span class="text-red-500 font-bold shrink-0">C1</span><p><strong>Blanket prohibition</strong> — fails Elements 1, 2, and 3. Vague ("AI tools"), no contextual differentiation, no disclosure procedure.</p></div>
+          <div class="flex gap-2 items-start"><span class="text-amber-500 font-bold shrink-0">C2</span><p><strong>Teacher use clause</strong> — partial at best. No transparency requirement, no disclosure to students.</p></div>
+          <div class="flex gap-2 items-start"><span class="text-red-500 font-bold shrink-0">C3</span><p><strong>Detection as conclusive</strong> — directly violates Element 6 (due process). Module 12 is explicit: no detection score alone is sufficient.</p></div>
+          <div class="flex gap-2 items-start"><span class="text-red-500 font-bold shrink-0">C4</span><p><strong>Special needs</strong> — missing entirely. "Speak to your teacher" is not a policy provision.</p></div>
+          <div class="flex gap-2 items-start"><span class="text-red-500 font-bold shrink-0">C5</span><p><strong>Data clause</strong> — missing GDPR compliance review and tool approval process.</p></div>
+          <div class="flex gap-2 items-start"><span class="text-red-500 font-bold shrink-0">C6</span><p><strong>"As needed" review</strong> — fails Element 7. No scheduled date, no process, not a living document.</p></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ================================================================ -->
+  <!-- CHALLENGE 2 — Designer's Cycle                                    -->
+  <!-- ================================================================ -->
+  <div class="card bg-base-100 shadow border-l-4 border-emerald-500">
+    <div class="card-body">
+
+      <div class="flex items-center gap-3 mb-2">
+        <div class="badge badge-lg bg-emerald-600 text-white border-0">Challenge 2</div>
+        <h2 class="card-title text-lg">Your Subject Policy — Designer's Cycle</h2>
+        <span class="text-xs text-gray-400 ml-auto">~20 min</span>
+      </div>
+
+      <p class="text-sm text-gray-600 mb-5">Apply all five steps of the Designer's Cycle to <strong>your own subject</strong>. This is not a theoretical exercise — by Step 3, you will have a mini subject policy you can actually use.</p>
+
+      <!-- 5 steps -->
+      <div class="space-y-5">
+        {% for step in designers_cycle_steps %}
+        <div class="border border-base-200 rounded-lg overflow-hidden">
+          <div class="flex items-center gap-3 px-4 py-3 bg-base-200">
+            <div class="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold
+              {% if step.color == 'indigo' %}bg-indigo-600
+              {% elif step.color == 'amber' %}bg-amber-500
+              {% elif step.color == 'emerald' %}bg-emerald-600
+              {% elif step.color == 'teal' %}bg-teal-600
+              {% elif step.color == 'rose' %}bg-rose-500
+              {% endif %}">{{ step.number }}</div>
+            <div>
+              <p class="font-bold text-sm">{{ step.title }}</p>
+              <p class="text-xs text-gray-500 italic">{{ step.question }}</p>
+            </div>
+          </div>
+          <div class="px-4 py-3">
+            <p class="text-xs text-gray-500 mb-2">💡 {{ step.hint }}</p>
+            <textarea
+              id="challenge2_step{{ step.number }}"
+              class="textarea textarea-bordered w-full text-sm"
+              rows="3"
+              maxlength="600"
+              placeholder="{{ step.placeholder }}"
+            >{% if step.number == 1 and activity.challenge_data.challenge2_step1 %}{{ activity.challenge_data.challenge2_step1 }}{% elif step.number == 2 and activity.challenge_data.challenge2_step2 %}{{ activity.challenge_data.challenge2_step2 }}{% elif step.number == 3 and activity.challenge_data.challenge2_step3 %}{{ activity.challenge_data.challenge2_step3 }}{% elif step.number == 4 and activity.challenge_data.challenge2_step4 %}{{ activity.challenge_data.challenge2_step4 }}{% elif step.number == 5 and activity.challenge_data.challenge2_step5 %}{{ activity.challenge_data.challenge2_step5 }}{% endif %}</textarea>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+
+      <!-- Copy output -->
+      <div class="mt-5 bg-emerald-50 border border-emerald-200 rounded-lg p-4">
+        <p class="text-sm font-semibold text-emerald-800 mb-2">📋 Your Mini Subject Policy</p>
+        <p class="text-xs text-gray-600 mb-3">Once you save, your Step 3 rules become a ready-to-use policy you can share with students.</p>
+        <button onclick="copySubjectPolicy()" class="btn btn-sm btn-outline border-emerald-500 text-emerald-700">Copy Step 3 Rules to Clipboard</button>
+      </div>
+
+      {% if activity.challenge2_completed %}
+      <div class="alert alert-success py-2 mt-3">
+        <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-4 w-4" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+        <span class="text-sm">Challenge 2 saved.</span>
+      </div>
+      {% endif %}
+
+      <button onclick="submitChallenge2()" class="btn btn-primary btn-sm mt-3">Save My Subject Policy</button>
+
+    </div>
+  </div>
+
+  <!-- ================================================================ -->
+  <!-- CHALLENGE 3 — Edge Case Resolution                                -->
+  <!-- ================================================================ -->
+  <div class="card bg-base-100 shadow border-l-4 border-rose-500">
+    <div class="card-body">
+
+      <div class="flex items-center gap-3 mb-2">
+        <div class="badge badge-lg bg-rose-500 text-white border-0">Challenge 3</div>
+        <h2 class="card-title text-lg">Edge Case Resolution</h2>
+        <span class="text-xs text-gray-400 ml-auto">~15 min</span>
+      </div>
+
+      <p class="text-sm text-gray-600 mb-5">The two cases below are drawn from Module 12's Advanced FAQ. For each: read the scenario, write your policy-level response, then reveal the model approach.</p>
+
+      {% for ec in edge_cases %}
+      {% if forloop.counter0 in active_edge_cases %}
+      <div class="border border-base-200 rounded-lg mb-5 overflow-hidden">
+
+        <!-- Case header -->
+        <div class="flex items-center gap-3 bg-rose-50 border-b border-rose-100 px-4 py-3">
+          <span class="text-2xl">{{ ec.icon }}</span>
+          <div>
+            <p class="font-bold text-sm">Case {{ forloop.counter }}: {{ ec.title }}</p>
+          </div>
+        </div>
+
+        <!-- Scenario -->
+        <div class="px-4 py-4">
+          <div class="bg-gray-50 rounded p-3 mb-4">
+            <p class="text-sm text-gray-700 leading-relaxed">{{ ec.scenario }}</p>
+          </div>
+
+          <!-- Guiding questions -->
+          <div class="mb-4">
+            <p class="text-xs font-semibold text-gray-500 mb-2">Consider:</p>
+            <ul class="space-y-1">
+              {% for q in ec.guiding_questions %}
+              <li class="text-xs text-gray-600 flex gap-2"><span class="text-rose-400 shrink-0">→</span>{{ q }}</li>
+              {% endfor %}
+            </ul>
+          </div>
+
+          <!-- Response area -->
+          <textarea
+            id="challenge3_case{{ ec.id }}"
+            class="textarea textarea-bordered w-full text-sm mb-3"
+            rows="6"
+            maxlength="800"
+            placeholder="{{ ec.placeholder }}"
+          >{% if ec.id == 'ec1' and activity.challenge_data.challenge3_edge_case_responses.ec1 %}{{ activity.challenge_data.challenge3_edge_case_responses.ec1 }}{% elif ec.id == 'ec2' and activity.challenge_data.challenge3_edge_case_responses.ec2 %}{{ activity.challenge_data.challenge3_edge_case_responses.ec2 }}{% elif ec.id == 'ec3' and activity.challenge_data.challenge3_edge_case_responses.ec3 %}{{ activity.challenge_data.challenge3_edge_case_responses.ec3 }}{% elif ec.id == 'ec4' and activity.challenge_data.challenge3_edge_case_responses.ec4 %}{{ activity.challenge_data.challenge3_edge_case_responses.ec4 }}{% elif ec.id == 'ec5' and activity.challenge_data.challenge3_edge_case_responses.ec5 %}{{ activity.challenge_data.challenge3_edge_case_responses.ec5 }}{% endif %}</textarea>
+          <!-- Model response (collapsible) -->
+          <div class="collapse collapse-arrow border border-rose-200 bg-rose-50 rounded">
+            <input type="checkbox" {% if activity.challenge3_completed %}checked{% endif %} />
+            <div class="collapse-title text-sm font-semibold text-rose-700">
+              {{ ec.model_response.title }} — reveal after writing your response
+            </div>
+            <div class="collapse-content text-sm">
+              <ul class="space-y-2 mt-2">
+                {% for point in ec.model_response.points %}
+                <li class="flex gap-2 items-start text-gray-700">
+                  <span class="text-rose-500 shrink-0 mt-0.5">•</span>
+                  <span>{{ point }}</span>
+                </li>
+                {% endfor %}
+              </ul>
+            </div>
+          </div>
+
+        </div>
+      </div>
+      {% endif %}
+      {% endfor %}
+
+      {% if activity.challenge3_completed %}
+      <div class="alert alert-success py-2 mb-3">
+        <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-4 w-4" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+        <span class="text-sm">Challenge 3 saved.</span>
+      </div>
+      {% endif %}
+
+      <button onclick="submitChallenge3()" class="btn btn-primary btn-sm">Save Edge Case Responses</button>
+
+    </div>
+  </div>
+<!-- ============================================================ -->
+<!-- COMPLETION STATE -->
+<!-- ============================================================ -->
+{% if activity.challenge3_completed and not activity.activity_completed %}
+<div id="mark-complete-section" class="text-center mt-4">
+  <button id="mark-activity-complete-btn" class="btn btn-success btn-lg">
+    ✓ Mark Activity Complete
+  </button>
+</div>
+{% endif %}
+
+{% if activity.activity_completed %}
+<div class="card bg-emerald-50 border-2 border-emerald-400 mb-6">
+  <div class="card-body text-center">
+    <p class="text-2xl mb-2">📋</p>
+    <h3 class="card-title justify-center text-emerald-800">Activity Complete!</h3>
+    <p class="text-sm text-emerald-700 mt-2">You've audited an AI policy, designed your own subject policy, and resolved complex edge cases. You now have tools you can use immediately.</p>
+  </div>
+</div>
+{% include "community/partials/tab_forum_trigger.html" with tab_name="activity" module_code=module.code trigger_style="post_completion" %}
+{% endif %}
+</div>
+
+<!-- ================================================================ -->
+<!-- JAVASCRIPT                                                         -->
+<!-- ================================================================ -->
+<script>
+// Character counter for Challenge 1
+const c1Area = document.getElementById('challenge1_priorities');
+const c1Counter = document.getElementById('c1_chars');
+if (c1Area) {
+  c1Counter.textContent = c1Area.value.length;
+  c1Area.addEventListener('input', () => { c1Counter.textContent = c1Area.value.length; });
+}
+
+// ── Challenge 1 ──────────────────────────────────────────────────────
+async function submitChallenge1() {
+  const ratings = {};
+  const notes = {};
+  for (let i = 1; i <= 7; i++) {
+    const rEl = document.getElementById(`audit_rating_${i}`);
+    const nEl = document.querySelector(`[name="audit_note_${i}"]`);
+    if (rEl) ratings[`element_${i}`] = rEl.value;
+    if (nEl) notes[`element_${i}`] = nEl.value;
+  }
+  const priorities = document.getElementById('challenge1_priorities')?.value || '';
+
+  const res = await fetch(`/modules/modules/{{ module.code }}/tab3/challenge1/`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+    body: JSON.stringify({ audit_ratings: ratings, audit_notes: notes, priorities }),
+  });
+  const data = await res.json();
+  if (data.success) {
+    document.getElementById('c1_model').classList.remove('hidden');
+    showToast('Challenge 1 saved ✓');
+  }
+}
+
+// ── Challenge 2 ──────────────────────────────────────────────────────
+async function submitChallenge2() {
+  const steps = {};
+  for (let i = 1; i <= 5; i++) {
+    const el = document.getElementById(`challenge2_step${i}`);
+    if (el) steps[`step${i}`] = el.value;
+  }
+
+  const res = await fetch(`/modules/modules/{{ module.code }}/tab3/challenge2/`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+    body: JSON.stringify(steps),
+  });
+  const data = await res.json();
+  if (data.success) showToast('Challenge 2 saved ✓');
+}
+
+function copySubjectPolicy() {
+  const step3 = document.getElementById('challenge2_step3')?.value || '';
+  if (!step3.trim()) { showToast('Write your Step 3 rules first.'); return; }
+  navigator.clipboard.writeText(step3).then(() => showToast('Step 3 rules copied to clipboard ✓'));
+}
+
+// ── Challenge 3 ──────────────────────────────────────────────────────
+async function submitChallenge3() {
+  const responses = {};
+  {% for ec in edge_cases %}
+  {% if forloop.counter0 in active_edge_cases %}
+  const el_{{ ec.id }} = document.getElementById('challenge3_case{{ ec.id }}');
+  if (el_{{ ec.id }}) responses['{{ ec.id }}'] = el_{{ ec.id }}.value;
+  {% endif %}
+  {% endfor %}
+
+  const res = await fetch(`/modules/modules/{{ module.code }}/tab3/challenge3/`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+    body: JSON.stringify({ edge_case_responses: responses }),
+  });
+  const data = await res.json();
+  if (data.success) showToast('Challenge 3 saved ✓');
+}
+
+// ── Helpers ──────────────────────────────────────────────────────────
+function getCookie(name) {
+  let v = null;
+  document.cookie.split(';').forEach(c => {
+    c = c.trim();
+    if (c.startsWith(name + '=')) v = decodeURIComponent(c.slice(name.length + 1));
+  });
+  return v;
+}
+
+function showToast(msg) {
+  const t = document.createElement('div');
+  t.className = 'toast toast-top toast-center z-50';
+  t.innerHTML = `<div class="alert alert-success text-sm py-2 px-4">${msg}</div>`;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 2500);
+}
+
+// ── MARK ACTIVITY COMPLETE ──────────────────────────────────────
+document.getElementById('mark-activity-complete-btn')?.addEventListener('click', () => {
+  fetch(`/modules/modules/{{ module.code }}/tab3/reflection/`, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}'},
+    body: JSON.stringify({ tab: 'activity' })
+  })
+  .then(r => r.json())
+  .then(data => { if (data.success) location.reload(); });
+});
+
+</script>
+
+{% endif %}

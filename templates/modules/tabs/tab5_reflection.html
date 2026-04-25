@@ -1,0 +1,1670 @@
+<!-- TAB 5: Structured Reflection with Smart Prompts + Part 3 Automation -->
+{% if current_tab == 'reflection' %}
+<h2 class="card-title text-2xl mb-4">📝 Reflection & Action Plan</h2>
+
+<div class="space-y-6 w-full">
+{% if not progress.reflection_completed %}
+
+{# REFLECTION FORM - 4 Structured Sections #}
+<form id="reflection-form-structured" class="space-y-8">
+    
+    {# SECTION 1: Key Insights #}
+    <div class="card bg-blue-50 border-2 border-blue-200">
+        <div class="card-body">
+            <h3 class="card-title text-lg text-blue-800">
+                💡 Part 1: Key Insights
+                <span class="badge badge-info">~100 words</span>
+            </h3>
+            
+            <p class="text-sm text-gray-700 mb-4">
+                {% if reflection_meta.part1_question %}
+                    {{ reflection_meta.part1_question }}
+                {% else %}
+                    What was the most important thing you learned in this module?
+                {% endif %}
+            </p>
+            
+            <div class="collapse collapse-arrow bg-blue-100 mb-4">
+                <input type="checkbox" /> 
+                <div class="collapse-title text-sm font-medium">
+                    ✨ Click for reflection prompts
+                </div>
+                <div class="collapse-content text-sm">
+                    <ul class="list-disc list-inside space-y-1">
+                        {% if reflection_meta.part1_prompts %}
+                            {% for prompt in reflection_meta.part1_prompts %}
+                                <li>{{ prompt }}</li>
+                            {% endfor %}
+                        {% else %}
+                            <li>What surprised you most in this module?</li>
+                            <li>What concept do you now see differently?</li>
+                            <li>What was your biggest "aha moment"?</li>
+                        {% endif %}
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="form-control">
+                <textarea 
+                    name="part1_insights" 
+                    id="part1-textarea"
+                    class="textarea textarea-bordered h-32" 
+                    placeholder="Share your key learning moments and insights..."
+                    required></textarea>
+                <label class="label">
+                    <span class="label-text-alt" id="part1-count">0 words</span>
+                    <span class="label-text-alt text-gray-500">Target: 80-120 words</span>
+                </label>
+            </div>
+        </div>
+    </div>
+    
+    {# SECTION 2: Personal Application #}
+    <div class="card bg-green-50 border-2 border-green-200">
+        <div class="card-body">
+            <h3 class="card-title text-lg text-green-800">
+                🎯 Part 2: Application in Your Classroom
+                <span class="badge badge-success">~100 words</span>
+            </h3>
+            
+            <div class="mb-4">
+                {% if reflection_part2 %}
+                    {{ reflection_part2.content_data|safe }}
+                {% else %}
+                    <p class="text-sm text-gray-700 mb-4">
+                        How might AI tools support teaching and learning in your specific subject area?
+                    </p>
+                {% endif %}
+            </div>
+            
+                       
+            <div class="form-control">
+                <textarea 
+                    name="part2_application" 
+                    id="part2-textarea"
+                    class="textarea textarea-bordered h-32" 
+                    placeholder="Describe specific ways you could use AI in your teaching context..."
+                    required></textarea>
+                <label class="label">
+                    <span class="label-text-alt" id="part2-count">0 words</span>
+                    <span class="label-text-alt text-gray-500">Target: 80-120 words</span>
+                </label>
+            </div>
+        </div>
+    </div>
+    
+    {# SECTION 3: Concerns & Challenges - WITH SMART AUTOMATION #}
+    <div class="card bg-orange-50 border-2 border-orange-200">
+        <div class="card-body">
+            <h3 class="card-title text-lg text-orange-800">
+                ⚠️ Part 3: Concerns & How You'll Address Them
+                <span class="badge badge-warning">~100 words</span>
+            </h3>
+            
+            <p class="text-sm text-gray-700 mb-4">
+                {% if reflection_meta.part3_intro %}
+                    {{ reflection_meta.part3_intro|safe }}
+                {% else %}
+                    <strong>Select your main concerns</strong>, and we'll help you articulate them:
+                {% endif %}
+            </p>
+            
+            {# Checkboxes — dynamic from DB or M1 fallback #}
+            <div class="form-control mb-4 space-y-2">
+                {% if reflection_meta.part3_checkboxes %}
+                    {% for cb in reflection_meta.part3_checkboxes %}
+                    <label class="label cursor-pointer justify-start gap-2 hover:bg-orange-100 p-2 rounded transition-colors">
+                        <input type="checkbox" class="checkbox checkbox-sm concern-checkbox" data-concern="{{ cb.value }}" />
+                        <span class="label-text text-sm font-medium">{{ cb.label }}</span>
+                    </label>
+                    {% endfor %}
+                {% else %}
+                    <label class="label cursor-pointer justify-start gap-2 hover:bg-orange-100 p-2 rounded transition-colors">
+                        <input type="checkbox" class="checkbox checkbox-sm concern-checkbox" data-concern="over-reliance" />
+                        <span class="label-text text-sm font-medium">Student over-reliance on AI</span>
+                    </label>
+                    <label class="label cursor-pointer justify-start gap-2 hover:bg-orange-100 p-2 rounded transition-colors">
+                        <input type="checkbox" class="checkbox checkbox-sm concern-checkbox" data-concern="privacy" />
+                        <span class="label-text text-sm font-medium">Data privacy concerns</span>
+                    </label>
+                    <label class="label cursor-pointer justify-start gap-2 hover:bg-orange-100 p-2 rounded transition-colors">
+                        <input type="checkbox" class="checkbox checkbox-sm concern-checkbox" data-concern="accuracy" />
+                        <span class="label-text text-sm font-medium">Accuracy and hallucinations</span>
+                    </label>
+                    <label class="label cursor-pointer justify-start gap-2 hover:bg-orange-100 p-2 rounded transition-colors">
+                        <input type="checkbox" class="checkbox checkbox-sm concern-checkbox" data-concern="bias" />
+                        <span class="label-text text-sm font-medium">Algorithmic bias</span>
+                    </label>
+                    <label class="label cursor-pointer justify-start gap-2 hover:bg-orange-100 p-2 rounded transition-colors">
+                        <input type="checkbox" class="checkbox checkbox-sm concern-checkbox" data-concern="equity" />
+                        <span class="label-text text-sm font-medium">Equity and access issues</span>
+                    </label>
+                    <label class="label cursor-pointer justify-start gap-2 hover:bg-orange-100 p-2 rounded transition-colors">
+                        <input type="checkbox" class="checkbox checkbox-sm concern-checkbox" data-concern="assessment" />
+                        <span class="label-text text-sm font-medium">Academic integrity and assessment</span>
+                    </label>
+                {% endif %}
+            </div>
+            
+            {# Action Buttons #}
+            <div class="flex gap-2 mb-4">
+                <button type="button" 
+                        class="btn btn-sm btn-warning gap-2"
+                        onclick="generateConcernsText()"
+                        id="generate-concerns-btn">
+                    <span class="loading loading-spinner loading-xs hidden" id="generate-spinner"></span>
+                    <span id="generate-text">✨ Generate from selected</span>
+                </button>
+                <button type="button" 
+                        class="btn btn-sm btn-outline btn-warning"
+                        onclick="clearPart3()">
+                    🔄 Clear
+                </button>
+            </div>
+            
+            <div class="form-control">
+                <textarea 
+                    name="part3_concerns" 
+                    id="part3-textarea"
+                    class="textarea textarea-bordered h-40" 
+                    placeholder="Select concerns above and click 'Generate', or write your own response..."
+                    required></textarea>
+                <label class="label">
+                    <span class="label-text-alt" id="part3-count">0 words</span>
+                    <span class="label-text-alt text-gray-500">Target: 80-120 words</span>
+                </label>
+            </div>
+            
+            <div class="alert alert-info text-xs mt-2">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 w-4 h-4"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                <span>Generated text is a starting point - customize it to your specific context!</span>
+            </div>
+        </div>
+    </div>
+    
+    {# SECTION 4: Action Plan #}
+    <div class="card bg-purple-50 border-2 border-purple-200">
+        <div class="card-body">
+            <h3 class="card-title text-lg text-purple-800">
+                🚀 Part 4: Your Action Plan (Next Month)
+                <span class="badge badge-secondary">~100 words</span>
+            </h3>
+            
+            <p class="text-sm text-gray-700 mb-4">
+                {% if reflection_meta.part4_question %}
+                    {{ reflection_meta.part4_question }}
+                {% else %}
+                    What 2-3 specific actions will you take in the next month?
+                {% endif %}
+            </p>
+            
+            {% if reflection_meta.part4_template %}
+            <div class="collapse collapse-arrow bg-purple-100 mb-4">
+                <input type="checkbox" /> 
+                <div class="collapse-title text-sm font-medium">
+                    ✨ Click for action plan template
+                </div>
+                <div class="collapse-content text-sm">
+                    {{ reflection_meta.part4_template|safe }}
+                </div>
+            </div>
+            {% else %}
+            <div class="collapse collapse-arrow bg-purple-100 mb-4">
+                <input type="checkbox" /> 
+                <div class="collapse-title text-sm font-medium">
+                    ✨ Click for action plan template
+                </div>
+                <div class="collapse-content text-sm">
+                    <p class="font-semibold mb-2">Template structure:</p>
+                    <div class="bg-white p-3 rounded space-y-2 text-xs">
+                        <p><strong>Week 1:</strong> [Specific action] with [AI tool] for [purpose]</p>
+                        <p><strong>Week 2:</strong> [Specific action] with [AI tool] for [purpose]</p>
+                        <p><strong>Week 4:</strong> [Specific action] with [AI tool] for [purpose]</p>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            
+            <div class="form-control">
+                <textarea 
+                    name="part4_action" 
+                    id="part4-textarea"
+                    class="textarea textarea-bordered h-32" 
+                    placeholder="Outline your concrete action steps..."
+                    required></textarea>
+                <label class="label">
+                    <span class="label-text-alt" id="part4-count">0 words</span>
+                    <span class="label-text-alt text-gray-500">Target: 80-120 words</span>
+                </label>
+            </div>
+        </div>
+    </div>
+    
+    {# Total Word Count & Submit #}
+    <div class="card bg-base-200">
+        <div class="card-body">
+            <div class="flex justify-between items-center">
+                <div>
+                    <h4 class="font-semibold">Total Word Count:</h4>
+                    <p class="text-2xl font-bold">
+                        <span id="total-count">0</span> words
+                    </p>
+                </div>
+                <div>
+                    <span class="badge badge-lg" id="count-status">0/400 - Start writing</span>
+                </div>
+            </div>
+            
+            <div class="card-actions justify-end mt-4">
+                <button type="submit" 
+                        class="btn btn-primary btn-lg gap-2"
+                        id="submit-reflection-btn">
+                    📤 Submit Reflection
+                </button>
+            </div>
+        </div>
+    </div>
+    
+</form>
+
+{# FEEDBACK SECTION - After submission #}
+<div id="feedback-section" class="hidden space-y-6">
+    <div class="alert alert-success">
+        <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+        <span><strong>Reflection submitted!</strong> Here's your personalized feedback:</span>
+    </div>
+    
+    <div class="card bg-base-200 shadow-lg">
+        <div class="card-body">
+            <h3 class="card-title text-lg mb-4">🎯 Feedback on Your Reflection</h3>
+            <div id="feedback-content" class="prose max-w-none">
+                <!-- Feedback inserted here -->
+            </div>
+                    <div class="divider my-3"></div>
+            <!-- ============================================================ -->
+<!-- PARTIAL 1: RAG FEEDBACK — XAI + HITL                        -->
+<!-- Place after the RAG feedback card-body                       -->
+<!-- ============================================================ -->
+ 
+<div class="mt-2 mb-6" id="rag-xai-hitl">
+ 
+    <!-- XAI Panel -->
+    <details class="group mb-2">
+        <summary class="flex items-center gap-2 cursor-pointer list-none text-xs text-base-content/50 hover:text-base-content/70 transition-colors px-1">
+            <span class="group-open:hidden">▶</span>
+            <span class="hidden group-open:inline">▼</span>
+            <span>🔍 How this feedback was generated</span>
+        </summary>
+        <div class="mt-2 bg-base-100 border border-base-300 rounded-lg p-4 text-xs space-y-2">
+            <div class="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5">
+                <span class="font-semibold text-base-content/60">Model</span>
+                <span>Gemini 2.5 Flash</span>
+                <span class="font-semibold text-base-content/60">Input</span>
+                <span>Your reflection text + PROODOS knowledge base (curated research on AI in education)</span>
+                <span class="font-semibold text-base-content/60">Logic</span>
+                <span>Retrieval-Augmented Generation — your text was matched against the knowledge base to generate relevant, module-specific feedback</span>
+                <span class="font-semibold text-base-content/60">Intent</span>
+                <span>Provide feedback grounded in the module's learning objectives, personalised to what you wrote</span>
+            </div>
+            <div class="border-t border-base-300 pt-2 mt-2 space-y-1">
+                <p class="text-base-content/60">⚠️ This feedback responds to your specific reflection — it is not a generic template.</p>
+                <p class="text-base-content/50">🇪🇺 <strong>EU AI Act — Limited Risk:</strong> No automated decisions are made about you or your teaching.</p>
+            </div>
+        </div>
+    </details>
+ 
+    <!-- HITL Rating -->
+    <div class="flex items-center gap-3 px-1" id="rag-rating-container">
+        <span class="text-xs text-base-content/50">Was this feedback relevant to your context?</span>
+        <div class="flex gap-1">
+            <button onclick="submitDispute('rag', 'yes', this)"
+                    class="btn btn-xs btn-ghost gap-1 dispute-btn" data-feature="rag" data-rating="yes">
+                👍 Yes
+            </button>
+            <button onclick="submitDispute('rag', 'partial', this)"
+                    class="btn btn-xs btn-ghost gap-1 dispute-btn" data-feature="rag" data-rating="partial">
+                🤔 Partially
+            </button>
+            <button onclick="submitDispute('rag', 'no', this)"
+                    class="btn btn-xs btn-ghost gap-1 dispute-btn" data-feature="rag" data-rating="no">
+                👎 Not quite
+            </button>
+        </div>
+    </div>
+ 
+    <!-- Dispute comment (hidden until 👎 or partial) -->
+    <div id="rag-dispute-form" class="hidden mt-2 px-1">
+        <div class="bg-base-100 border border-base-300 rounded-lg p-3 space-y-2">
+            <select id="rag-reason" class="select select-xs select-bordered w-full max-w-sm">
+                <option value="">What was off? (optional)</option>
+                <option value="mismatch">Doesn't match my subject context</option>
+                <option value="misinterpretation">AI misunderstood my reflection</option>
+                <option value="generic">Too generic / low value</option>
+                <option value="pedagogical">Pedagogical disagreement</option>
+                <option value="other">Other</option>
+            </select>
+            <textarea id="rag-comment"
+                      class="textarea textarea-xs textarea-bordered w-full h-16 text-xs"
+                      maxlength="300"
+                      placeholder="Tell us more... (optional, max 300 characters)"></textarea>
+            <div class="flex gap-2">
+                <button onclick="submitDisputeWithComment('rag')"
+                        class="btn btn-xs btn-primary">Submit feedback</button>
+                <button onclick="cancelDispute('rag')"
+                        class="btn btn-xs btn-ghost">Cancel</button>
+            </div>
+        </div>
+    </div>
+ 
+    <!-- Acknowledgment (hidden until submitted) -->
+    <div id="rag-dispute-ack" class="hidden px-1 mt-1">
+        <p class="text-xs text-success">✓ Thank you — your feedback has been recorded and will help improve PROODOS. You are a co-designer of this system.</p>
+    </div>
+ 
+</div>
+
+        </div>
+    </div>
+
+    
+    
+    <!-- RTM CARD - Reflective Tension Mapper -->
+    <div id="rtm-card" class="card bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-300 shadow-lg hidden">
+        <div class="card-body">
+            <div class="flex items-center gap-2 mb-4">
+                <h3 class="card-title text-lg text-purple-900">🟣 Pedagogical Tensions in Your Reflection</h3>
+                <div class="badge badge-secondary">Epistemic Positioning</div>
+            </div>
+            <!-- XAI Panel — live state (id με -live suffix για αποφυγή duplicate) -->
+<details class="group mb-3">
+    <summary class="flex items-center gap-2 cursor-pointer list-none text-xs text-base-content/50 hover:text-base-content/70 transition-colors px-1">
+        <span class="group-open:hidden">▶</span>
+        <span class="hidden group-open:inline">▼</span>
+        <span>🔍 How these tensions were identified</span>
+    </summary>
+    <div class="mt-2 bg-base-100 border border-base-300 rounded-lg p-4 text-xs space-y-2" id="rtm-xai-live">
+        <div class="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5">
+            <span class="font-semibold text-base-content/60">Model</span>
+            <span>Gemini 2.5 Flash</span>
+            <span class="font-semibold text-base-content/60">Input</span>
+            <span>Your reflection text only — no external data</span>
+            <span class="font-semibold text-base-content/60">Logic</span>
+            <span>The model scanned your text for implicit contradictions between two valid pedagogical perspectives — not errors, but genuine professional complexity</span>
+            <span class="font-semibold text-base-content/60">Intent</span>
+            <span>Surface the productive tensions that drive professional growth</span>
+        </div>
+        <div class="border-t border-base-300 pt-2 mt-2 space-y-1">
+            <p class="text-base-content/60">⚠️ This is a mirror, not a judgment. Tensions reflect professional complexity — not weakness. <strong>You are always the final judge of their relevance.</strong></p>
+            <p class="text-base-content/50">🇪🇺 <strong>EU AI Act — Limited Risk:</strong> Tension mapping is descriptive, not evaluative.</p>
+        </div>
+    </div>
+</details>
+            <div class="alert alert-info text-sm mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 w-5 h-5">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <span>We identified <strong>2 pedagogical tensions</strong> in your reflection. Position yourself on each spectrum by moving the sliders:</span>
+            </div>
+            
+            <!-- Tension cards populated by JS -->
+            <div id="tensions-container"></div>
+            
+            <div class="card-actions justify-end mt-4">
+                <button id="save-tensions-btn" class="btn btn-primary gap-2">
+                    ✓ Confirm My Positions
+                </button>
+            </div>
+            
+        </div>
+    </div>
+
+    <!-- RTM Tension Template (hidden) -->
+    <template id="tension-template">
+        <div class="card bg-white border-2 border-purple-200 mb-4">
+            <div class="card-body p-4">
+                <h4 class="font-bold text-purple-900 mb-3 tension-label text-center"></h4>
+                
+                <div class="flex justify-between text-sm text-gray-700 mb-2 gap-4">
+                    <span class="flex-1 left-pole font-medium text-left"></span>
+                    <span class="flex-1 right-pole font-medium text-right"></span>
+                </div>
+                
+                <input type="range" min="1" max="5" value="3"
+                    class="range range-primary range-sm tension-slider mb-1"
+                    data-tension-index="0" />
+                
+                <div class="w-full flex justify-between text-xs px-2 text-gray-500 mb-3">
+                    <span>1</span><span>2</span><span>3</span><span>4</span><span>5</span>
+                </div>
+                
+                <div class="text-center text-sm text-purple-700 font-semibold mb-3 py-2 bg-purple-100 rounded">
+                    Your position: <span class="position-value">3</span> / 5
+                </div>
+                
+                <div class="collapse collapse-arrow bg-purple-50">
+                    <input type="checkbox" class="comment-toggle" />
+                    <div class="collapse-title text-xs font-medium">
+                        💭 Optional: Add a brief comment (max 150 characters)
+                    </div>
+                    <div class="collapse-content">
+                        <textarea maxlength="150" rows="2"
+                            class="textarea textarea-sm w-full tension-comment mt-2"
+                            placeholder="Why did you position yourself here?"></textarea>
+                        <div class="text-xs text-right text-gray-500 mt-1">
+                            <span class="char-count">0</span> / 150
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </template>
+    
+        <!-- PEER SYNTHESIS - On-Demand -->
+    <div id="peer-synthesis-wrapper" class="flex flex-col items-center mt-4">
+        <div id="peer-synthesis-btn-container">
+            <button 
+                id="peer-synthesis-btn"
+                class="btn btn-outline btn-sm btn-secondary gap-2"
+                onclick="triggerPeerSynthesis()">
+                🤝 View insights from colleagues in other subjects
+            </button>
+        </div>
+
+        <div id="peer-synthesis-card" class="card bg-gradient-to-br from-purple-50 to-indigo-50 border-2 border-purple-200 shadow-lg hidden w-full mt-2">
+            <div class="card-body">
+                <div class="flex items-center gap-2 mb-4">
+                    <h3 class="card-title text-lg text-purple-800">🤝 Insights from Colleagues in Other Subjects</h3>
+                    <div class="badge badge-secondary">Cross-Disciplinary</div>
+                </div>
+                <div class="alert alert-info text-sm mb-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    <span>We found teachers in <strong>different subject areas</strong> who had similar reflections to yours. Here's what they discovered:</span>
+                </div>
+                <div id="peer-synthesis-content" class="prose max-w-none prose-purple"></div>
+            </div>
+    </div>
+</div>
+
+<!-- DTP - shown after submit, before completing (M2+ only) -->
+{% if previous_reflection_exists %}
+<div id="dtp-wrapper" class="flex flex-col items-center mt-4 hidden">
+    <div id="dtp-btn-container">
+        <button
+            id="dtp-btn"
+            class="btn btn-outline btn-sm btn-success gap-2"
+            onclick="triggerDTP()">
+            📈 View your learning journey so far
+        </button>
+    </div>
+    <div id="dtp-card" class="card bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-300 shadow-lg hidden w-full mt-2">
+        <div class="card-body">
+            <div class="flex items-center gap-2 mb-4">
+                <h3 class="card-title text-lg text-green-900">📈 Reflective Development Signal</h3>
+                <div class="badge badge-success">Longitudinal Analysis</div>
+            </div>
+            <div class="text-sm text-gray-600 mb-3">
+                <strong>Comparison:</strong> <span id="dtp-comparison"></span>
+            </div>
+            <div class="alert alert-success text-sm mb-4">
+                <strong id="dtp-continuity-label"></strong>
+            </div>
+            <p class="text-gray-800 mb-4" id="dtp-narrative"></p>
+            <div id="dtp-themes-container"></div>
+            
+            <!-- HITL DTP — live state -->
+            <div id="dtp-xai-hitl-live" class="hidden mt-4 border-t border-base-300 pt-3">
+                <div class="flex items-center gap-3 px-1" id="dtp-rating-container-live">
+                    <span class="text-xs text-base-content/50">Did this signal accurately describe your development?</span>
+                    <div class="flex gap-1">
+                        <button onclick="submitDispute('dtp', 'yes', this, 'live')" class="btn btn-xs btn-ghost gap-1">👍 Yes</button>
+                        <button onclick="submitDispute('dtp', 'partial', this, 'live')" class="btn btn-xs btn-ghost gap-1">🤔 Partially</button>
+                        <button onclick="submitDispute('dtp', 'no', this, 'live')" class="btn btn-xs btn-ghost gap-1">👎 Not quite</button>
+                    </div>
+                </div>
+                <div id="dtp-dispute-form-live" class="hidden mt-2 px-1">
+                    <div class="bg-base-100 border border-base-300 rounded-lg p-3 space-y-2">
+                        <select id="dtp-reason-live" class="select select-xs select-bordered w-full max-w-sm">
+                            <option value="">What was off? (optional)</option>
+                            <option value="mismatch">Doesn't reflect my actual development</option>
+                            <option value="misinterpretation">The comparison felt inaccurate</option>
+                            <option value="generic">Too vague / not insightful</option>
+                            <option value="pedagogical">I see my development differently</option>
+                            <option value="other">Other</option>
+                        </select>
+                        <textarea id="dtp-comment-live" class="textarea textarea-xs textarea-bordered w-full h-16 text-xs" maxlength="300" placeholder="Tell us more... (optional, max 300 characters)"></textarea>
+                        <div class="flex gap-2">
+                            <button onclick="submitDisputeWithComment('dtp', 'live')" class="btn btn-xs btn-primary">Submit feedback</button>
+                            <button onclick="cancelDispute('dtp', 'live')" class="btn btn-xs btn-ghost">Cancel</button>
+                        </div>
+                    </div>
+                </div>
+                <div id="dtp-dispute-ack-live" class="hidden px-1 mt-1">
+                    <p class="text-xs text-success">✓ Thank you — your feedback has been recorded. You are a co-designer of this system.</p>
+                </div>
+            </div>
+                       
+        </div>    
+     </div>  
+</div>  
+{% endif %}
+
+    <div class="card-actions justify-center mt-6">
+        <button onclick="window.location.reload()" class="btn btn-success btn-lg">
+            ✓ Reflection Completed
+        </button>
+    </div>
+</div><!-- closes feedback-section -->
+
+{% else %}
+{# COMPLETED STATE #}
+<div class="alert alert-success mb-4">
+    <span>✓ Reflection completed on {{ progress.reflection_completed_at|date:"M d, Y" }}</span>
+</div>
+
+<!-- DTP - On-Demand (M2+ only) -->
+{% if previous_reflection_exists or reflection_dtp %}
+<div id="dtp-wrapper" class="flex flex-col items-center mt-4 {% if not reflection_dtp %}hidden{% endif %}">
+    <div id="dtp-btn-container" {% if reflection_dtp %}style="display:none"{% endif %}>
+        <button
+            id="dtp-btn"
+            class="btn btn-outline btn-sm btn-success gap-2"
+            onclick="triggerDTP()">
+            📈 View your learning journey so far
+        </button>
+    </div>
+    <div id="dtp-card" class="card bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-300 shadow-lg {% if not reflection_dtp %}hidden{% endif %} w-full mt-2">
+        <div class="card-body">
+            <div class="flex items-center gap-2 mb-4">
+                <h3 class="card-title text-lg text-green-900">📈 Reflective Development Signal</h3>
+                <div class="badge badge-success">Longitudinal Analysis</div>
+            </div>
+            <div class="text-sm text-gray-600 mb-3">
+                <strong>Comparison:</strong> 
+                <span id="dtp-comparison">{% if reflection_dtp %}{{ reflection_dtp.previous_module }} → {{ reflection_dtp.current_module }}{% endif %}</span>
+            </div>
+            <div class="alert alert-success text-sm mb-4">
+                <strong id="dtp-continuity-label">{% if reflection_dtp %}{{ reflection_dtp.continuity_label }} — {{ reflection_dtp.continuity_description }}{% endif %}</strong>
+            </div>
+            <p class="text-gray-800 mb-4" id="dtp-narrative">{% if reflection_dtp %}{{ reflection_dtp.narrative }}{% endif %}</p>
+            <div id="dtp-themes-container">
+                {% if reflection_dtp and reflection_dtp.themes %}
+                    {% if reflection_dtp.themes.increased_themes %}
+                    <div class="badge badge-success gap-1 mr-1">↑ {{ reflection_dtp.themes.increased_themes|join:", " }}</div>
+                    {% endif %}
+                    {% if reflection_dtp.themes.decreased_themes %}
+                    <div class="badge badge-warning gap-1 mr-1">↓ {{ reflection_dtp.themes.decreased_themes|join:", " }}</div>
+                    {% endif %}
+                    {% if reflection_dtp.themes.stable_themes %}
+                    <div class="badge badge-info gap-1 mr-1">= {{ reflection_dtp.themes.stable_themes|join:", " }}</div>
+                    {% endif %}
+                {% endif %}
+            </div>
+            <div class="divider my-3"></div>
+            <!-- ============================================================ -->
+<!-- PARTIAL 3: DTP — XAI + HITL                                 -->
+<!-- Place after the DTP card content, inside dtp-card div       -->
+<!-- ============================================================ -->
+ 
+<div class="mt-4 border-t border-base-300 pt-3" id="dtp-xai-hitl">
+ 
+    <!-- XAI Panel -->
+    <details class="group mb-2">
+        <summary class="flex items-center gap-2 cursor-pointer list-none text-xs text-base-content/50 hover:text-base-content/70 transition-colors px-1">
+            <span class="group-open:hidden">▶</span>
+            <span class="hidden group-open:inline">▼</span>
+            <span>🔍 How this signal was generated</span>
+        </summary>
+        <div class="mt-2 bg-base-100 border border-base-300 rounded-lg p-4 text-xs space-y-2">
+            <div class="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5">
+                <span class="font-semibold text-base-content/60">Model</span>
+                <span>Gemini 2.5 Flash</span>
+                <span class="font-semibold text-base-content/60">Input</span>
+                <span>Your current reflection + your previous module reflection</span>
+                <span class="font-semibold text-base-content/60">Logic</span>
+                <span>Longitudinal thematic mapping — the model compared concepts, concerns, and language across both reflections to describe change over time</span>
+                <span class="font-semibold text-base-content/60">Intent</span>
+                <span>Help you observe how your thinking about AI is evolving across modules</span>
+            </div>
+            <div class="border-t border-base-300 pt-2 mt-2 space-y-1">
+                <p class="text-base-content/60">⚠️ This signal describes what changed — it does not evaluate whether the change is positive or negative. Growth is not always linear.</p>
+                <p class="text-base-content/50">🇪🇺 <strong>EU AI Act — Limited Risk:</strong> Developmental signals are descriptive, not predictive. No conclusions are drawn about your future performance.</p>
+            </div>
+        </div>
+    </details>
+ 
+    <!-- HITL Rating -->
+     {% if dispute_dtp %}
+    <div class="px-1 mt-1">
+        <p class="text-xs text-success">✓ You rated this as <strong>{{ dispute_dtp.rating }}</strong>.{% if dispute_dtp.comment %} "{{ dispute_dtp.comment }}"{% endif %}</p>
+    </div>
+    {% else %}
+    <div class="flex items-center gap-3 px-1" id="dtp-rating-container">
+        <span class="text-xs text-base-content/50">Did this signal accurately describe your development?</span>
+        <div class="flex gap-1">
+            <button onclick="submitDispute('dtp', 'yes', this)"
+                    class="btn btn-xs btn-ghost gap-1 dispute-btn" data-feature="dtp" data-rating="yes">
+                👍 Yes
+            </button>
+            <button onclick="submitDispute('dtp', 'partial', this)"
+                    class="btn btn-xs btn-ghost gap-1 dispute-btn" data-feature="dtp" data-rating="partial">
+                🤔 Partially
+            </button>
+            <button onclick="submitDispute('dtp', 'no', this)"
+                    class="btn btn-xs btn-ghost gap-1 dispute-btn" data-feature="dtp" data-rating="no">
+                👎 Not quite
+            </button>
+        </div>
+    </div>
+    {% endif %}
+    <!-- Dispute comment -->
+    <div id="dtp-dispute-form" class="hidden mt-2 px-1">
+        <div class="bg-base-100 border border-base-300 rounded-lg p-3 space-y-2">
+            <select id="dtp-reason" class="select select-xs select-bordered w-full max-w-sm">
+                <option value="">What was off? (optional)</option>
+                <option value="mismatch">Doesn't reflect my actual development</option>
+                <option value="misinterpretation">The comparison felt inaccurate</option>
+                <option value="generic">Too vague / not insightful</option>
+                <option value="pedagogical">I see my development differently</option>
+                <option value="other">Other</option>
+            </select>
+            <textarea id="dtp-comment"
+                      class="textarea textarea-xs textarea-bordered w-full h-16 text-xs"
+                      maxlength="300"
+                      placeholder="Tell us more... (optional, max 300 characters)"></textarea>
+            <div class="flex gap-2">
+                <button onclick="submitDisputeWithComment('dtp')"
+                        class="btn btn-xs btn-primary">Submit feedback</button>
+                <button onclick="cancelDispute('dtp')"
+                        class="btn btn-xs btn-ghost">Cancel</button>
+            </div>
+        </div>
+    </div>
+ 
+    <!-- Acknowledgment -->
+    <div id="dtp-dispute-ack" class="hidden px-1 mt-1">
+        <p class="text-xs text-success">✓ Thank you — your feedback has been recorded and will help improve PROODOS. You are a co-designer of this system.</p>
+    </div>
+ 
+</div>
+ 
+        </div>
+    </div>
+</div>
+{% endif %}
+    <div class="card-actions justify-center mt-6">
+        <button onclick="window.location.reload()" class="btn btn-success btn-lg">
+            ✓ Reflection Completed
+        </button>
+    </div>
+</div><!-- closes feedback-section -->
+
+{% if progress.reflection_rag_feedback %}
+<div class="card bg-base-200 shadow-lg mb-6">
+    <div class="card-body">
+        <h3 class="card-title text-lg mb-4">🎯 Your Personalized Feedback</h3>
+        <div class="prose max-w-none">
+            {{ progress.reflection_rag_feedback|safe }}
+        </div>
+
+        <div class="divider my-3"></div>
+
+        <!-- ============================================================ -->
+<!-- PARTIAL 1: RAG FEEDBACK — XAI + HITL                        -->
+<!-- Place after the RAG feedback card-body                       -->
+<!-- ============================================================ -->
+ 
+<div class="mt-2 mb-6" id="rag-xai-hitl">
+ 
+    <!-- XAI Panel -->
+    <details class="group mb-2">
+        <summary class="flex items-center gap-2 cursor-pointer list-none text-xs text-base-content/50 hover:text-base-content/70 transition-colors px-1">
+            <span class="group-open:hidden">▶</span>
+            <span class="hidden group-open:inline">▼</span>
+            <span>🔍 How this feedback was generated</span>
+        </summary>
+        <div class="mt-2 bg-base-100 border border-base-300 rounded-lg p-4 text-xs space-y-2">
+            <div class="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5">
+                <span class="font-semibold text-base-content/60">Model</span>
+                <span>Gemini 2.5 Flash</span>
+                <span class="font-semibold text-base-content/60">Input</span>
+                <span>Your reflection text + PROODOS knowledge base (curated research on AI in education)</span>
+                <span class="font-semibold text-base-content/60">Logic</span>
+                <span>Retrieval-Augmented Generation — your text was matched against the knowledge base to generate relevant, module-specific feedback</span>
+                <span class="font-semibold text-base-content/60">Intent</span>
+                <span>Provide feedback grounded in the module's learning objectives, personalised to what you wrote</span>
+            </div>
+            <div class="border-t border-base-300 pt-2 mt-2 space-y-1">
+                <p class="text-base-content/60">⚠️ This feedback responds to your specific reflection — it is not a generic template.</p>
+                <p class="text-base-content/50">🇪🇺 <strong>EU AI Act — Limited Risk:</strong> No automated decisions are made about you or your teaching.</p>
+            </div>
+        </div>
+    </details>
+ 
+    <!-- HITL Rating -->
+    {% if dispute_rag %}
+<div class="px-1 mt-1">
+    <p class="text-xs text-success">✓ You rated this as <strong>{{ dispute_rag.rating }}</strong>.{% if dispute_rag.comment %} "{{ dispute_rag.comment }}"{% endif %}</p>
+</div>
+    {% else %}
+    <div class="flex items-center gap-3 px-1" id="rag-rating-container">
+        <span class="text-xs text-base-content/50">Was this feedback relevant to your context?</span>
+        <div class="flex gap-1">
+            <button onclick="submitDispute('rag', 'yes', this)"
+                    class="btn btn-xs btn-ghost gap-1 dispute-btn" data-feature="rag" data-rating="yes">
+                👍 Yes
+            </button>
+            <button onclick="submitDispute('rag', 'partial', this)"
+                    class="btn btn-xs btn-ghost gap-1 dispute-btn" data-feature="rag" data-rating="partial">
+                🤔 Partially
+            </button>
+            <button onclick="submitDispute('rag', 'no', this)"
+                    class="btn btn-xs btn-ghost gap-1 dispute-btn" data-feature="rag" data-rating="no">
+                👎 Not quite
+            </button>
+        </div>
+    </div>
+    {% endif %}
+    <!-- Dispute comment (hidden until 👎 or partial) -->
+    <div id="rag-dispute-form" class="hidden mt-2 px-1">
+        <div class="bg-base-100 border border-base-300 rounded-lg p-3 space-y-2">
+            <select id="rag-reason" class="select select-xs select-bordered w-full max-w-sm">
+                <option value="">What was off? (optional)</option>
+                <option value="mismatch">Doesn't match my subject context</option>
+                <option value="misinterpretation">AI misunderstood my reflection</option>
+                <option value="generic">Too generic / low value</option>
+                <option value="pedagogical">Pedagogical disagreement</option>
+                <option value="other">Other</option>
+            </select>
+            <textarea id="rag-comment"
+                      class="textarea textarea-xs textarea-bordered w-full h-16 text-xs"
+                      maxlength="300"
+                      placeholder="Tell us more... (optional, max 300 characters)"></textarea>
+            <div class="flex gap-2">
+                <button onclick="submitDisputeWithComment('rag')"
+                        class="btn btn-xs btn-primary">Submit feedback</button>
+                <button onclick="cancelDispute('rag')"
+                        class="btn btn-xs btn-ghost">Cancel</button>
+            </div>
+        </div>
+    </div>
+ 
+    <!-- Acknowledgment (hidden until submitted) -->
+    <div id="rag-dispute-ack" class="hidden px-1 mt-1">
+        <p class="text-xs text-success">✓ Thank you — your feedback has been recorded and will help improve PROODOS. You are a co-designer of this system.</p>
+    </div>
+ 
+</div>
+    </div>
+</div>
+
+
+{% endif %}
+
+{% if progress.reflection_peer_synthesis %}
+<div class="card bg-gradient-to-br from-purple-50 to-indigo-50 border-2 border-purple-200 shadow-lg mb-6">
+    <div class="card-body">
+        <div class="flex items-center gap-2 mb-4">
+            <h3 class="card-title text-lg text-purple-800">🤝 Insights from Colleagues in Other Subjects</h3>
+            <div class="badge badge-secondary">Cross-Disciplinary</div>
+        </div>
+        <div class="prose max-w-none prose-purple">
+            {{ progress.reflection_peer_synthesis|safe }}
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- TENSIONS ALWAYS SHOW TEST -->
+{% if saved_tensions %}
+
+<div class="card bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-300 shadow-lg mb-6">
+    <div class="card-body">
+        <div class="flex items-center gap-2 mb-4">
+            <h3 class="card-title text-lg text-purple-900">🟣 Your Pedagogical Tensions</h3>
+            <div class="badge badge-secondary">Epistemic Positioning</div>
+        </div>
+        {% for tension in saved_tensions %}
+        <div class="card bg-white border-2 border-purple-200 mb-4">
+            <div class="card-body p-4">
+                <h4 class="font-bold text-purple-900 text-center mb-3">{{ tension.tension_label }}</h4>
+                <div class="flex justify-between text-sm text-gray-700 mb-2 gap-4">
+                    <span class="flex-1 font-medium text-left">← {{ tension.left_pole }}</span>
+                    <span class="flex-1 font-medium text-right">{{ tension.right_pole }} →</span>
+                </div>
+                <div class="flex justify-between text-xs px-2 text-gray-500 mb-1">
+                    <span>1</span><span>2</span><span>3</span><span>4</span><span>5</span>
+                </div>
+                <div class="flex gap-1 mb-2">
+                    {% for i in "12345" %}
+                    <div class="flex-1 h-3 rounded {% if forloop.counter == tension.selected_position %}bg-purple-500{% else %}bg-purple-100{% endif %}"></div>
+                    {% endfor %}
+                </div>
+                <div class="text-center text-sm text-purple-700 font-semibold py-2 bg-purple-100 rounded">
+                    Your position: {{ tension.selected_position }} / 5
+                </div>
+                {% if tension.optional_comment %}
+                <div class="mt-2 text-sm text-gray-600 italic">
+                    "{{ tension.optional_comment }}"
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        {% endfor %}
+        <div class="divider my-3"></div>
+        <!-- ============================================================ -->
+<!-- PARTIAL 2: RTM — XAI + HITL                                 -->
+<!-- Place after the RTM card (after Save Positions button)       -->
+<!-- ============================================================ -->
+ 
+<div class="mt-2 mb-4" id="rtm-xai-hitl">
+ 
+    <!-- XAI Panel -->
+    <details class="group mb-2">
+        <summary class="flex items-center gap-2 cursor-pointer list-none text-xs text-base-content/50 hover:text-base-content/70 transition-colors px-1">
+            <span class="group-open:hidden">▶</span>
+            <span class="hidden group-open:inline">▼</span>
+            <span>🔍 How these tensions were identified</span>
+        </summary>
+        <div class="mt-2 bg-base-100 border border-base-300 rounded-lg p-4 text-xs space-y-2">
+            <div class="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5">
+                <span class="font-semibold text-base-content/60">Model</span>
+                <span>Gemini 2.5 Flash</span>
+                <span class="font-semibold text-base-content/60">Input</span>
+                <span>Your reflection text only — no external data</span>
+                <span class="font-semibold text-base-content/60">Logic</span>
+                <span>The model scanned your text for implicit contradictions between two valid pedagogical perspectives — not errors, but genuine professional complexity</span>
+                <span class="font-semibold text-base-content/60">Intent</span>
+                <span>Surface the productive tensions that drive professional growth</span>
+            </div>
+            <div class="border-t border-base-300 pt-2 mt-2 space-y-1">
+                <p class="text-base-content/60">⚠️ This is a mirror, not a judgment. Tensions reflect professional complexity — not weakness. <strong>You are always the final judge of their relevance.</strong></p>
+                <p class="text-base-content/50">🇪🇺 <strong>EU AI Act — Limited Risk:</strong> Tension mapping is descriptive, not evaluative. No conclusions are drawn about your professional competence.</p>
+            </div>
+        </div>
+    </details>
+ 
+    <!-- HITL Rating -->
+     {% if dispute_rtm %}
+    <div class="px-1 mt-1">
+        <p class="text-xs text-success">✓ You rated this as <strong>{{ dispute_rtm.rating }}</strong>.{% if dispute_rtm.comment %} "{{ dispute_rtm.comment }}"{% endif %}</p>
+    </div>
+    {% else %}
+    <div class="flex items-center gap-3 px-1" id="rtm-rating-container">
+        <span class="text-xs text-base-content/50">Did these tensions reflect your thinking?</span>
+        <div class="flex gap-1">
+            <button onclick="submitDispute('rtm', 'yes', this)"
+                    class="btn btn-xs btn-ghost gap-1 dispute-btn" data-feature="rtm" data-rating="yes">
+                👍 Yes
+            </button>
+            <button onclick="submitDispute('rtm', 'partial', this)"
+                    class="btn btn-xs btn-ghost gap-1 dispute-btn" data-feature="rtm" data-rating="partial">
+                🤔 Partially
+            </button>
+            <button onclick="submitDispute('rtm', 'no', this)"
+                    class="btn btn-xs btn-ghost gap-1 dispute-btn" data-feature="rtm" data-rating="no">
+                👎 Not quite
+            </button>
+        </div>
+    </div>
+    {% endif %}
+    <!-- Dispute comment -->
+    <div id="rtm-dispute-form" class="hidden mt-2 px-1">
+        <div class="bg-base-100 border border-base-300 rounded-lg p-3 space-y-2">
+            <select id="rtm-reason" class="select select-xs select-bordered w-full max-w-sm">
+                <option value="">What was off? (optional)</option>
+                <option value="mismatch">Doesn't reflect my actual thinking</option>
+                <option value="misinterpretation">AI misread my reflection</option>
+                <option value="generic">Too abstract / not specific enough</option>
+                <option value="pedagogical">I don't experience this as a tension</option>
+                <option value="other">Other</option>
+            </select>
+            <textarea id="rtm-comment"
+                      class="textarea textarea-xs textarea-bordered w-full h-16 text-xs"
+                      maxlength="300"
+                      placeholder="Tell us more... (optional, max 300 characters)"></textarea>
+            <div class="flex gap-2">
+                <button onclick="submitDisputeWithComment('rtm')"
+                        class="btn btn-xs btn-primary">Submit feedback</button>
+                <button onclick="cancelDispute('rtm')"
+                        class="btn btn-xs btn-ghost">Cancel</button>
+            </div>
+        </div>
+    </div>
+ 
+    <!-- Acknowledgment -->
+    <div id="rtm-dispute-ack" class="hidden px-1 mt-1">
+        <p class="text-xs text-success">✓ Thank you — your feedback has been recorded and will help improve PROODOS. You are a co-designer of this system.</p>
+    </div>
+ 
+</div>
+    </div>
+</div>
+
+{% endif %}
+{% if progress.completed_at %}
+<div class="alert alert-success">
+    <div>
+        <h3 class="font-bold text-lg">🎉 Module Complete!</h3>
+        <p>Congratulations on completing {{ module.code }}!</p>
+    </div>
+</div>
+{% endif %}
+{% endif %}
+</div>
+{% endif %}
+
+
+<script>
+// PART 3: SMART CONCERNS GENERATION
+(function() {
+    'use strict';
+    
+    const userSubject = '{{ teacher_profile.subject_area }}';
+    
+    // CONCERN TEMPLATES - Chemistry, Math, Generic
+    const concernTemplates = {
+        chemistry: {
+            'over-reliance': "I worry students might use AI for equation balancing without understanding stoichiometry. I'll require step-by-step explanations and manual verification of AI calculations.",
+            'accuracy': "AI can generate incorrect reactions or unsafe procedures. I will verify all AI chemistry content for accuracy and safety, teaching students to cross-check with databases like PubChem.",
+            'assessment': "With AI solving chemistry problems easily, I'm redesigning assessments to focus on experimental design, lab safety, and conceptual explanations rather than just calculations."
+        },
+        mathematics: {
+            'over-reliance': "Students might use AI without understanding concepts. I'll require detailed work-showing, proof explanations, and conceptual questions beyond computation.",
+            'accuracy': "AI sometimes provides incorrect mathematical reasoning. I'll teach students to identify logical errors and verify solutions through alternative methods.",
+            'assessment': "I'm shifting from computational assessments to those requiring reasoning, proof construction, and real-world modeling that emphasizes understanding over answers."
+        },
+        language_arts: {
+            'over-reliance': "Students might use AI to write essays without developing their own voice and writing skills. I'll require drafts showing revision process, in-class writing, and oral presentations to ensure authentic work.",
+            'accuracy': "While AI can help with grammar, it may miss nuanced language use or cultural context. I'll teach students to critically evaluate AI suggestions and maintain their authentic voice.",
+            'assessment': "AI can generate essays easily, so I'm incorporating process-based assessment, in-class writing, portfolio reflections, and oral defenses of written work to ensure genuine learning."
+        },
+        physics: {
+            'over-reliance': "Students might use AI without understanding physics concepts. I'll require conceptual explanations, real-world applications, and qualitative reasoning alongside quantitative solutions.",
+            'accuracy': "AI can make errors in physics calculations and apply incorrect formulas. I'll teach students to verify solutions using fundamental principles, dimensional analysis, and physical intuition.",
+            'assessment': "I'm designing assessments focusing on experimental design, conceptual understanding, and physical reasoning rather than just formula application and calculation."
+        },
+        generic: {
+            'over-reliance': "I'm concerned students might become over-dependent on AI rather than developing critical thinking. I'll implement 'AI-assisted' workflows, requiring students to verify outputs and explain reasoning.",
+            'privacy': "Data privacy is significant, especially with student information. I will use only GDPR-compliant tools, avoid sharing PII, and educate students about digital privacy.",
+            'accuracy': "AI hallucinations worry me, particularly in technical subjects. I'll train students to fact-check outputs, cross-reference sources, and use AI as a starting point, not final authority.",
+            'bias': "Algorithmic bias could perpetuate stereotypes. I'll discuss AI limitations with students, demonstrate bias examples, and encourage critical evaluation of AI content.",
+            'equity': "Not all students have equal access to AI tools. I will provide in-class access, offer training sessions, and ensure alternative pathways for those preferring traditional methods.",
+            'assessment': "Academic integrity becomes complex with AI. I'm designing assessments requiring documentation of AI use, focusing on process over product, with components not easily AI-generated."
+        }
+    };
+    
+    const concernTitles = {
+        'over-reliance': 'Over-reliance',
+        'privacy': 'Data Privacy',
+        'accuracy': 'Accuracy & Hallucinations',
+        'bias': 'Algorithmic Bias',
+        'equity': 'Equity & Access',
+        'assessment': 'Academic Integrity'
+    };
+    
+    window.generateConcernsText = function() {
+        const textarea = document.getElementById('part3-textarea');
+        const checkboxes = document.querySelectorAll('.concern-checkbox:checked');
+        
+        if (checkboxes.length === 0) {
+            alert('Please select at least one concern first!');
+            return;
+        }
+        
+        let text = "My main concerns about AI in education include:\n\n";
+        
+        checkboxes.forEach((cb, index) => {
+            const labelEl = cb.closest('label').querySelector('.label-text');
+            const label = labelEl ? labelEl.textContent.trim() : cb.dataset.concern;
+            text += `${index + 1}. ${label}\n\n`;
+        });
+        
+        text += "These tensions shape how I am approaching the integration of AI in my teaching practice.";
+        
+        textarea.value = text;
+        textarea.dispatchEvent(new Event('input'));
+        textarea.focus();
+    };
+    
+    window.clearPart3 = function() {
+        document.querySelectorAll('.concern-checkbox').forEach(cb => cb.checked = false);
+        const textarea = document.getElementById('part3-textarea');
+        textarea.value = '';
+        textarea.dispatchEvent(new Event('input'));
+    };
+})();
+
+// TEMPLATE INSERTION (Parts 2 & 4)
+const templates = {
+    chemistry: {
+        part2: `In my chemistry classroom, AI can support:\n\n1. **Equation Balancing**: Step-by-step explanations and practice problems at varying difficulty levels.\n\n2. **Lab Safety**: Custom safety checklists based on specific chemicals and procedures.\n\n3. **Molecular Visualization**: Explain 3D structures and bonding to complement textbook diagrams.\n\nI'll always verify AI chemistry content for accuracy before sharing with students.`
+    },
+    mathematics: {
+        part2: `AI tools can support my mathematics classroom through:\n\n1. **Differentiated Practice**: Generate problem sets at different difficulty levels.\n\n2. **Multiple Solution Methods**: Provide alternative approaches when students are stuck.\n\n3. **Visual Representations**: Create diagrams of abstract concepts like functions and transformations.\n\nI'll verify mathematical accuracy and ensure AI complements rather than replaces genuine problem-solving practice.`
+    },
+    language_arts: {
+        part2: `AI can support language arts teaching through:\n\n1. **Writing Development**: Generate essay outlines, suggest vocabulary improvements, provide grammar feedback while preserving student voice.\n\n2. **Literary Analysis**: Offer alternative text interpretations, explain historical context, create discussion prompts.\n\n3. **Reading Support**: Generate comprehension questions, create vocabulary exercises, summarize challenging passages.\n\nI'll emphasize AI as a writing coach, not a substitute for authentic student expression.`
+    },
+    physics: {
+        part2: `AI can support physics teaching through:\n\n1. **Problem-Solving**: Step-by-step solutions for mechanics, electromagnetism, and wave physics with clear explanations.\n\n2. **Concept Visualization**: Create force diagrams, field representations, and motion graphs to complement demonstrations.\n\n3. **Lab Support**: Generate hypothesis templates, data analysis frameworks, and error calculation guides.\n\nI'll verify all physics content for accuracy and ensure conceptual understanding precedes AI use.`
+    },
+    general: {
+        part2: `AI can support my classroom through:\n\n1. **Content Differentiation**: Adapt materials to different reading levels and learning needs.\n\n2. **Example Generation**: Create relevant, contextualized examples connecting to students' interests.\n\n3. **Formative Assessment**: Provide immediate feedback to help students self-monitor understanding.\n\nI'll ensure AI content aligns with curriculum standards and test all outputs before classroom use.`
+    },
+    action: {
+        part4: `My concrete action plan:\n\n**Week 1**: Use ChatGPT to create differentiated reading materials at 3 complexity levels. Review for accuracy before use.\n\n**Week 2**: Design a lesson comparing AI-generated content with human examples to build critical analysis skills.\n\n**Week 4**: Co-create "Classroom AI Guidelines" with students, establishing clear expectations for appropriate use.`
+    }
+};
+
+function insertTemplate(part, subject) {
+    const textarea = document.getElementById(`${part}-textarea`);
+    const template = part === 'part4' ? templates.action.part4 : templates[subject]?.part2 || templates.general.part2;
+    
+    if (textarea && template) {
+        textarea.value = template;
+        textarea.dispatchEvent(new Event('input'));
+    }
+}
+
+// WORD COUNT TRACKING
+function setupWordCountTracking() {
+    ['part1', 'part2', 'part3', 'part4'].forEach(section => {
+        const textarea = document.getElementById(`${section}-textarea`);
+        const counter = document.getElementById(`${section}-count`);
+        
+        if (textarea && counter) {
+            textarea.addEventListener('input', () => {
+                const text = textarea.value.trim();
+                const wordCount = text ? text.split(/\s+/).length : 0;
+                counter.textContent = `${wordCount} words`;
+                updateTotalCount();
+            });
+        }
+    });
+}
+
+function updateTotalCount() {
+    let total = 0;
+    
+    ['part1', 'part2', 'part3', 'part4'].forEach(section => {
+        const textarea = document.getElementById(`${section}-textarea`);
+        if (textarea) {
+            const text = textarea.value.trim();
+            total += text ? text.split(/\s+/).length : 0;
+        }
+    });
+    
+    const totalDisplay = document.getElementById('total-count');
+    const statusBadge = document.getElementById('count-status');
+    
+    if (totalDisplay) totalDisplay.textContent = total;
+    
+    if (statusBadge) {
+        if (total < 350) {
+            statusBadge.className = 'badge badge-lg badge-error';
+            statusBadge.textContent = `${total}/400 - Need ${350 - total} more`;
+        } else if (total <= 500) {
+            statusBadge.className = 'badge badge-lg badge-success';
+            statusBadge.textContent = `Perfect! (${total} words)`;
+        } else {
+            statusBadge.className = 'badge badge-lg badge-warning';
+            statusBadge.textContent = `${total}/500 - ${total - 500} over`;
+        }
+    }
+}
+
+// FORM SUBMISSION
+const reflectionForm = document.getElementById('reflection-form-structured');
+if (reflectionForm) {
+    setupWordCountTracking();
+    
+    reflectionForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const part1 = document.getElementById('part1-textarea').value;
+        const part2 = document.getElementById('part2-textarea').value;
+        const part3 = document.getElementById('part3-textarea').value;
+        const part4 = document.getElementById('part4-textarea').value;
+        
+        const reflection_text = `Part 1: Key Insights\n\n${part1}\n\nPart 2: Personal Application\n\n${part2}\n\nPart 3: Concerns & Challenges\n\n${part3}\n\nPart 4: Action Plan\n\n${part4}`;
+        
+        const submitBtn = document.getElementById('submit-reflection-btn');
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="loading loading-spinner"></span> Processing (10-15 seconds)...';
+        
+        try {
+            const response = await fetch(`/modules/modules/{{ module.code }}/complete/reflection/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrftoken
+                },
+                body: JSON.stringify({ reflection_text })
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                reflectionForm.classList.add('hidden');
+                
+                const feedbackSection = document.getElementById('feedback-section');
+                const feedbackContent = document.getElementById('feedback-content');
+
+                if (result.peer_synthesis) {
+                    const peerCard = document.getElementById('peer-synthesis-card');
+                    const peerContent = document.getElementById('peer-synthesis-content');
+                    peerContent.innerHTML = result.peer_synthesis;
+                    peerCard.classList.remove('hidden');
+                }
+                
+                if (result.feedback) {
+                    feedbackContent.innerHTML = result.feedback;
+                    feedbackSection.classList.remove('hidden');
+                    feedbackSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    
+                    // Async calls - run in parallel
+                    extractTensionsAsync(reflection_text);
+                    // Store reflection text for on-demand peer synthesis
+                    window._lastReflectionText = reflection_text;
+                    // 🆕 Show DTP button if it exists (M2+ users)
+                    const dtpWrapper = document.getElementById('dtp-wrapper');
+                    if (dtpWrapper) {
+                        dtpWrapper.classList.remove('hidden');
+                    }
+                } else {
+                    window.location.reload();
+                }
+            } else {
+                alert(result.message);
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '📤 Submit Reflection';
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('An error occurred. Please try again.');
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '📤 Submit Reflection';
+        }
+    });
+}
+// ============================================================
+// RTM - Reflective Tension Mapper
+// ============================================================
+(function() {
+    'use strict';
+    
+    let tensionsData = [];
+    let startTime = Date.now();
+    
+    window.renderRTMCard = function(tensions) {
+    if (!tensions || tensions.length < 1) return;
+    
+    tensionsData = tensions;
+    startTime = Date.now();
+    
+    const container = document.getElementById('tensions-container');
+    const template = document.getElementById('tension-template');
+    container.innerHTML = '';
+    
+    tensions.forEach((tension, index) => {
+        const clone = template.content.cloneNode(true);
+        clone.querySelector('.tension-label').textContent = tension.label;
+        clone.querySelector('.left-pole').textContent = '← ' + tension.left_pole;
+        clone.querySelector('.right-pole').textContent = tension.right_pole + ' →';
+        const slider = clone.querySelector('.tension-slider');
+        slider.dataset.tensionIndex = index;
+        container.appendChild(clone);
+    });
+    
+    document.getElementById('rtm-card').classList.remove('hidden');
+    setupRTMListeners();
+    
+    // AUTO-SAVE με default position=3, position_confirmed=false
+    autoSaveTensions(tensions);
+};
+
+async function autoSaveTensions(tensions) {
+    const moduleCode = window.location.pathname.split('/').find(p => p.match(/^M\d+$/));
+    const csrf = document.querySelector('[name=csrfmiddlewaretoken]')?.value
+        || document.cookie.split('; ').find(r => r.startsWith('csrftoken='))?.split('=')[1];
+
+    const payload = {
+        tensions: tensions.map((tension) => ({
+            tension_label: tension.label,
+            left_pole: tension.left_pole,
+            right_pole: tension.right_pole,
+            grounding_quote: tension.grounding_quote || '',
+            position: 3,
+            comment: null,
+            time_spent_ms: 0,
+            position_confirmed: false
+        }))
+    };
+
+    try {
+        const response = await fetch(`/modules/modules/${moduleCode}/save-tensions/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrf
+            },
+            body: JSON.stringify(payload)
+        });
+        const result = await response.json();
+        if (result.success) {
+            console.log('✅ RTM auto-saved (position_confirmed=false)');
+        }
+    } catch (error) {
+        console.error('RTM auto-save error:', error);
+    }
+}
+    
+    function setupRTMListeners() {
+    const slidersTouched = {};
+
+    document.querySelectorAll('.tension-slider').forEach(slider => {
+        const idx = slider.dataset.tensionIndex;
+        slidersTouched[idx] = false;
+
+        slider.addEventListener('input', (e) => {
+            slidersTouched[e.target.dataset.tensionIndex] = true;
+            const card = e.target.closest('.card');
+            card.querySelector('.position-value').textContent = e.target.value;
+        });
+    });
+
+    document.querySelectorAll('.tension-comment').forEach(textarea => {
+        textarea.addEventListener('input', (e) => {
+            const content = e.target.closest('.collapse-content');
+            content.querySelector('.char-count').textContent = e.target.value.length;
+        });
+    });
+
+    document.getElementById('save-tensions-btn').addEventListener('click', () => {
+        saveTensionPositions(slidersTouched);
+    });
+}
+    
+    async function saveTensionPositions(slidersTouched = {}) {
+        const saveBtn = document.getElementById('save-tensions-btn');
+        saveBtn.disabled = true;
+        saveBtn.innerHTML = '<span class="loading loading-spinner loading-xs"></span> Saving...';
+        
+        const sliders = document.querySelectorAll('.tension-slider');
+        const comments = document.querySelectorAll('.tension-comment');
+        
+        const payload = {
+            tensions: tensionsData.map((tension, index) => ({
+                tension_label: tension.label,
+                left_pole: tension.left_pole,
+                right_pole: tension.right_pole,
+                grounding_quote: tension.grounding_quote,
+                position: parseInt(sliders[index].value),
+                comment: comments[index] ? comments[index].value.trim() : null,
+                time_spent_ms: Date.now() - startTime,
+                position_confirmed: slidersTouched[index] === true
+            }))
+        };
+        console.log('Payload:', JSON.stringify(payload));
+        try {
+            const moduleCode = window.location.pathname.split('/').find(p => p.match(/^M\d+$/));
+            const response = await fetch(`/modules/modules/${moduleCode}/save-tensions/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrftoken
+                },
+                body: JSON.stringify(payload)
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                saveBtn.innerHTML = '✓ Positions Saved!';
+                saveBtn.classList.replace('btn-primary', 'btn-success');
+                sliders.forEach(s => s.disabled = true);
+                comments.forEach(c => c.disabled = true);
+                showRTMToast('Your positions have been saved!', 'success');
+            } else {
+                throw new Error(result.message || 'Save failed');
+            }
+        } catch (error) {
+            console.error('RTM save error:', error);
+            saveBtn.disabled = false;
+            saveBtn.innerHTML = '✓ Confirm My Positions';
+            showRTMToast('Failed to save. Please try again.', 'error');
+        }
+    }
+    
+    function showRTMToast(message, type) {
+        const alertClass = type === 'success' ? 'alert-success' : 'alert-error';
+        const toast = document.createElement('div');
+        toast.className = `alert ${alertClass} fixed bottom-4 right-4 w-auto max-w-sm z-50 shadow-lg`;
+        toast.innerHTML = `<span>${message}</span>`;
+        document.body.appendChild(toast);
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            toast.style.transition = 'opacity 0.3s';
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
+    }
+
+    window.triggerPeerSynthesis = async function() {
+    const btn = document.getElementById('peer-synthesis-btn-container');
+    const card = document.getElementById('peer-synthesis-card');
+
+    // Show loading state on button
+    btn.innerHTML = `
+        <div class="flex items-center justify-center gap-2 py-3 text-purple-600">
+            <span class="loading loading-spinner loading-sm"></span>
+            <span class="text-sm">Finding insights from colleagues...</span>
+        </div>
+    `;
+
+    await extractPeerSynthesisAsync(window._lastReflectionText);
+
+    // Hide button, show card
+    btn.classList.add('hidden');
+    card.classList.remove('hidden');
+};
+    window.extractTensionsAsync = async function(reflectionText) {
+        try {
+            const moduleCode = window.location.pathname.split('/').find(p => p.match(/^M\d+$/));
+            
+            // Show loading indicator on RTM card area
+            const rtmCard = document.getElementById('rtm-card');
+            rtmCard.classList.remove('hidden');
+            rtmCard.innerHTML = `
+                <div class="card-body text-center py-8">
+                    <span class="loading loading-spinner loading-md text-purple-500"></span>
+                    <p class="text-sm text-purple-700 mt-2">Analyzing pedagogical tensions...</p>
+                </div>
+            `;
+            
+            const response = await fetch(`/modules/modules/${moduleCode}/extract-tensions/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrftoken
+                },
+                body: JSON.stringify({ reflection_text: reflectionText })
+            });
+            
+            const result = await response.json();
+            
+            if (result.success && result.tensions) {
+                // Restore RTM card structure and render tensions
+                rtmCard.innerHTML = `
+    <div class="card-body">
+        <div class="flex items-center gap-2 mb-4">
+            <h3 class="card-title text-lg text-purple-900">🟣 Pedagogical Tensions in Your Reflection</h3>
+            <div class="badge badge-secondary">Epistemic Positioning</div>
+        </div>
+        <details class="group mb-3">
+            <summary class="flex items-center gap-2 cursor-pointer list-none text-xs text-base-content/50 hover:text-base-content/70 transition-colors px-1">
+                <span class="group-open:hidden">▶</span>
+                <span class="hidden group-open:inline">▼</span>
+                <span>🔍 How these tensions were identified</span>
+            </summary>
+            <div class="mt-2 bg-base-100 border border-base-300 rounded-lg p-4 text-xs space-y-2">
+                <div class="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5">
+                    <span class="font-semibold text-base-content/60">Model</span>
+                    <span>Gemini 2.5 Flash</span>
+                    <span class="font-semibold text-base-content/60">Input</span>
+                    <span>Your reflection text only — no external data</span>
+                    <span class="font-semibold text-base-content/60">Logic</span>
+                    <span>The model scanned your text for implicit contradictions between valid pedagogical perspectives — not errors, but genuine complexity</span>
+                    <span class="font-semibold text-base-content/60">Intent</span>
+                    <span>Surface the productive tensions that drive professional growth</span>
+                </div>
+                <div class="border-t border-base-300 pt-2 mt-2 space-y-1">
+                    <p class="text-base-content/60">⚠️ This is a mirror, not a judgment. <strong>You are always the final judge of its relevance.</strong></p>
+                    <p class="text-base-content/50">🇪🇺 <strong>EU AI Act — Limited Risk:</strong> Tension mapping is descriptive, not evaluative.</p>
+                </div>
+            </div>
+        </details>
+        <div class="alert alert-info text-sm mb-4">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 w-5 h-5">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            <span>We identified <strong>${result.tensions.length} pedagogical tension${result.tensions.length > 1 ? 's' : ''}</strong> in your reflection. Position yourself on each spectrum by moving the sliders:</span>
+        </div>
+        <div id="tensions-container"></div>
+        <div class="card-actions justify-end mt-4">
+            <button id="save-tensions-btn" class="btn btn-primary gap-2">
+                ✓ Confirm My Positions
+            </button>
+        </div>
+        <div class="divider my-3"></div>
+        <div class="flex items-center gap-3 px-1" id="rtm-rating-container-live">
+            <span class="text-xs text-base-content/50">Did these tensions reflect your thinking?</span>
+            <div class="flex gap-1">
+                <button onclick="submitDispute('rtm', 'yes', this, 'live')" class="btn btn-xs btn-ghost gap-1">👍 Yes</button>
+                <button onclick="submitDispute('rtm', 'partial', this, 'live')" class="btn btn-xs btn-ghost gap-1">🤔 Partially</button>
+                <button onclick="submitDispute('rtm', 'no', this, 'live')" class="btn btn-xs btn-ghost gap-1">👎 Not quite</button>
+            </div>
+        </div>
+        <div id="rtm-dispute-form-live" class="hidden mt-2 px-1">
+            <div class="bg-base-100 border border-base-300 rounded-lg p-3 space-y-2">
+                <select id="rtm-reason-live" class="select select-xs select-bordered w-full max-w-sm">
+                    <option value="">What was off? (optional)</option>
+                    <option value="mismatch">Doesn't reflect my actual thinking</option>
+                    <option value="misinterpretation">AI misread my reflection</option>
+                    <option value="generic">Too abstract / not specific enough</option>
+                    <option value="pedagogical">I don't experience this as a tension</option>
+                    <option value="other">Other</option>
+                </select>
+                <textarea id="rtm-comment-live" class="textarea textarea-xs textarea-bordered w-full h-16 text-xs" maxlength="300" placeholder="Tell us more... (optional, max 300 characters)"></textarea>
+                <div class="flex gap-2">
+                    <button onclick="submitDisputeWithComment('rtm', 'live')" class="btn btn-xs btn-primary">Submit feedback</button>
+                    <button onclick="cancelDispute('rtm', 'live')" class="btn btn-xs btn-ghost">Cancel</button>
+                </div>
+            </div>
+        </div>
+        <div id="rtm-dispute-ack-live" class="hidden px-1 mt-1">
+            <p class="text-xs text-success">✓ Thank you — your feedback has been recorded. You are a co-designer of this system.</p>
+        </div>
+    </div>
+`;
+                renderRTMCard(result.tensions);
+            } else {
+                // Hide RTM card if no tensions
+                rtmCard.classList.add('hidden');
+            }
+        } catch (error) {
+            console.error('Async RTM error:', error);
+            document.getElementById('rtm-card').classList.add('hidden');
+        }
+    };
+
+    window.extractPeerSynthesisAsync = async function(reflectionText) {
+        try {
+            const moduleCode = window.location.pathname.split('/').find(p => p.match(/^M\d+$/));
+            
+            const response = await fetch(`/modules/modules/${moduleCode}/extract-peer-synthesis/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrftoken
+                },
+                body: JSON.stringify({ reflection_text: reflectionText })
+            });
+            
+            const result = await response.json();
+            
+            if (result.success && result.peer_synthesis) {
+                const peerCard = document.getElementById('peer-synthesis-card');
+                const peerContent = document.getElementById('peer-synthesis-content');
+                peerContent.innerHTML = result.peer_synthesis;
+                peerCard.classList.remove('hidden');
+                console.log('✅ Peer synthesis loaded async');
+            }
+        } catch (error) {
+            console.error('Async peer synthesis error:', error);
+        }
+    };
+
+window.triggerDTP = async function() {
+    const btn = document.getElementById('dtp-btn-container');
+    const card = document.getElementById('dtp-card');
+
+    btn.innerHTML = `
+        <div class="flex items-center justify-center gap-2 py-3 text-green-600">
+            <span class="loading loading-spinner loading-sm"></span>
+            <span class="text-sm">Analyzing your learning journey...</span>
+        </div>
+    `;
+
+    await extractDTPAsync(window._lastReflectionText);
+
+    btn.classList.add('hidden');
+    card.classList.remove('hidden');
+};
+
+window.extractDTPAsync = async function(reflectionText) {
+    try {
+        const moduleCode = window.location.pathname.split('/').find(p => p.match(/^M\d+$/));
+        
+        const response = await fetch(`/modules/modules/${moduleCode}/extract-dtp/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrftoken
+            },
+            body: JSON.stringify({ reflection_text: reflectionText })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success && result.dtp) {
+            renderDTPCard(result.dtp);
+        } else {
+            document.getElementById('dtp-wrapper').classList.add('hidden');
+        }
+    } catch (error) {
+        console.error('DTP error:', error);
+        document.getElementById('dtp-wrapper')?.classList.add('hidden');
+    }
+};
+
+window.renderDTPCard = function(signal) {
+    document.getElementById('dtp-comparison').textContent = 
+        `${signal.previous_module} → ${signal.current_module}`;
+    document.getElementById('dtp-continuity-label').textContent = 
+        `Thematic Continuity: ${signal.continuity_label} — ${signal.continuity_description}`;
+    document.getElementById('dtp-narrative').textContent = signal.narrative;
+    renderDTPThemes(signal.themes);
+    
+    // Εμφάνιση HITL
+    const dtpHitl = document.getElementById('dtp-xai-hitl-live');
+    if (dtpHitl) dtpHitl.classList.remove('hidden');
+};
+
+function renderDTPThemes(themes) {
+    const container = document.getElementById('dtp-themes-container');
+    container.innerHTML = '';
+    
+    const sections = [
+        { key: 'increased_themes', label: '• Increased emphasis on:', color: 'text-green-800' },
+        { key: 'decreased_themes', label: '• Decreased focus on:', color: 'text-red-700' },
+        { key: 'stable_themes', label: '• Stable priorities:', color: 'text-gray-700' }
+    ];
+    
+    sections.forEach(({ key, label, color }) => {
+        const items = themes[key];
+        if (items && items.length > 0) {
+            const div = document.createElement('div');
+            div.className = 'mb-3';
+            div.innerHTML = `
+                <div class="font-semibold ${color} mb-1">${label}</div>
+                <ul class="list-disc list-inside ml-4 text-gray-600">
+                    ${items.map(t => `<li>${t}</li>`).join('')}
+                </ul>
+            `;
+            container.appendChild(div);
+        }
+    });
+}  
+// ============================================================
+// XAI + HITL DISPUTE SYSTEM
+// Insert this block BEFORE the closing })(); of the existing script
+// ============================================================
+
+// Track pending rating per feature
+const pendingRatings = {};
+
+window.submitDispute = function(feature, rating, btnEl, suffix = '') {
+    const key = suffix ? `${feature}-${suffix}` : feature;
+    pendingRatings[key] = { feature, rating };
+    
+    if (rating === 'yes') {
+        saveDispute(feature, rating, null, null, suffix);
+    } else {
+        const form = document.getElementById(`${feature}-dispute-form${suffix ? '-' + suffix : ''}`);
+        const container = document.getElementById(`${feature}-rating-container${suffix ? '-' + suffix : ''}`);
+        if (form) form.classList.remove('hidden');
+        if (container) container.classList.add('opacity-50', 'pointer-events-none');
+    }
+};
+
+window.submitDisputeWithComment = function(feature, suffix = '') {
+    const key = suffix ? `${feature}-${suffix}` : feature;
+    const rating = pendingRatings[key]?.rating;
+    const reason = document.getElementById(`${feature}-reason${suffix ? '-' + suffix : ''}`)?.value || null;
+    const comment = document.getElementById(`${feature}-comment${suffix ? '-' + suffix : ''}`)?.value?.trim() || null;
+    saveDispute(feature, rating, reason, comment, suffix);
+};
+
+window.cancelDispute = function(feature, suffix = '') {
+    const form = document.getElementById(`${feature}-dispute-form${suffix ? '-' + suffix : ''}`);
+    const container = document.getElementById(`${feature}-rating-container${suffix ? '-' + suffix : ''}`);
+    if (form) form.classList.add('hidden');
+    if (container) container.classList.remove('opacity-50', 'pointer-events-none');
+    const key = suffix ? `${feature}-${suffix}` : feature;
+    pendingRatings[key] = null;
+};
+
+async function saveDispute(feature, rating, reason, comment, suffix = '') {
+    const moduleCode = '{{ module.code }}';
+    const csrf = document.querySelector('[name=csrfmiddlewaretoken]')?.value
+        || document.cookie.split('; ').find(r => r.startsWith('csrftoken='))?.split('=')[1];
+
+    try {
+        const response = await fetch(`/modules/modules/${moduleCode}/dispute/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrf
+            },
+            body: JSON.stringify({
+                feature_type: feature,
+                rating: rating,
+                reason: reason || '',
+                comment: comment || ''
+            })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            const idSuffix = suffix ? '-' + suffix : '';
+            const container = document.getElementById(`${feature}-rating-container${idSuffix}`);
+            const form = document.getElementById(`${feature}-dispute-form${idSuffix}`);
+            const ack = document.getElementById(`${feature}-dispute-ack${idSuffix}`);
+            if (container) container.classList.add('hidden');
+            if (form) form.classList.add('hidden');
+            if (ack) ack.classList.remove('hidden');
+        } else {
+            console.error('Dispute save failed:', result.message);
+            window.cancelDispute(feature, suffix);
+        }
+    } catch (error) {
+        console.error('Dispute AJAX error:', error);
+        window.cancelDispute(feature, suffix);
+    }
+}
+
+
+})();
+</script>

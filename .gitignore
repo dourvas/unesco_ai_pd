@@ -1,0 +1,31 @@
+# --- Python ---
+__pycache__/
+*.pyc
+*.pyo
+
+# --- Virtualenv ---
+venv/
+
+# --- Secrets ---
+.env
+
+# --- Django runtime / build artifacts ---
+db.sqlite3
+media/
+staticfiles/
+*.log
+
+# --- Database backups (large, regenerable) ---
+proodos_backup_*.sql
+
+# --- Editors / IDE ---
+.idea/
+.vscode/
+*.swp
+
+# --- OS junk ---
+.DS_Store
+Thumbs.db
+
+# --- Claude Code session cache ---
+.claude/

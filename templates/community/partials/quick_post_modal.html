@@ -1,0 +1,252 @@
+<!--
+  community/partials/quick_post_modal.html
+  =========================================
+  Global Quick Post Modal — included once in base.html or module_detail.html.
+  Opens when user clicks "Share on Forum" from any tab trigger.
+  Posts to the module's forum thread via AJAX.
+
+  Usage:
+    include "community/partials/quick_post_modal.html"
+
+  Then trigger with JS:
+    openQuickPostModal('M1', 'activity')
+-->
+
+<dialog id="quick-post-modal" class="modal modal-bottom sm:modal-middle">
+  <div class="modal-box">
+    
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="font-bold text-lg">💬 Share on Forum</h3>
+      <button class="btn btn-ghost btn-sm btn-circle" onclick="document.getElementById('quick-post-modal').close()">✕</button>
+    </div>
+
+    <div id="modal-context-info" class="badge badge-primary badge-outline mb-4"></div>
+
+    <textarea 
+      id="modal-post-content"
+      class="textarea textarea-bordered w-full h-32"
+      placeholder="Share your thoughts, an experience, or a question... (10-2000 characters)"
+      maxlength="2000"
+    ></textarea>
+    
+    <div class="text-right text-xs text-base-content/50 mt-1">
+      <span id="modal-char-count">0</span> / 2000
+    </div>
+
+    <div id="modal-post-error" class="text-error text-sm mt-2 hidden"></div>
+
+    <div class="modal-action mt-4">
+      <button class="btn btn-ghost" onclick="document.getElementById('quick-post-modal').close()">
+        Cancel
+      </button>
+      <button id="modal-submit-btn" class="btn btn-primary" onclick="submitModalPost()">
+        Post →
+      </button>
+    </div>
+
+    <div id="modal-success" class="hidden text-center py-4">
+      <div class="text-4xl mb-2">✅</div>
+      <p class="font-semibold">Published!</p>
+      <p class="text-sm text-base-content/70 mt-1">Your thoughts are now visible to the community.</p>
+      <div class="mt-4 flex gap-2 justify-center">
+        <button class="btn btn-ghost btn-sm" onclick="document.getElementById('quick-post-modal').close()">Close</button>
+        <a id="modal-view-thread-link" href="#" class="btn btn-primary btn-sm">View discussion →</a>
+      </div>
+    </div>
+
+  </div>
+  <form method="dialog" class="modal-backdrop">
+    <button>close</button>
+  </form>
+</dialog>
+
+<script>
+// ── State ────────────────────────────────────────────────────────────────────
+let _currentModalModuleCode = null;
+let _currentModalSourceTab = null;
+const FORUM_CSRF = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
+
+// ── Open Quick Post Modal ────────────────────────────────────────────────────
+function openQuickPostModal(moduleCode, sourceTab = 'community_page') {
+  _currentModalModuleCode = moduleCode;
+  _currentModalSourceTab = sourceTab;
+  console.log('openQuickPostModal called:', moduleCode, sourceTab);  // ← ΝΕΟ
+
+  // Reset state
+  document.getElementById('modal-post-content').value = '';
+  const existingPrompt = document.getElementById('modal-seeded-question');
+  if (existingPrompt) existingPrompt.classList.add('hidden');
+
+  document.getElementById('modal-char-count').textContent = '0';
+  document.getElementById('modal-post-error').classList.add('hidden');
+  document.getElementById('modal-success').classList.add('hidden');
+  document.getElementById('modal-submit-btn').classList.remove('hidden');
+  document.querySelector('#quick-post-modal .modal-action').classList.remove('hidden');
+  document.getElementById('modal-view-thread-link').href = `/community/${moduleCode}/`;
+
+  // Context label
+  const tabLabels = {
+    'introduction': 'Tab 1 - Introduction',
+    'main_content': 'Tab 2 - Content',
+    'activity': 'Tab 3 - Activity',
+    'assessment': 'Tab 4 - Assessment',
+    'reflection': 'Tab 5 - Reflection',
+    'community_page': 'Community',
+  };
+  const contextEl = document.getElementById('modal-context-info');
+  contextEl.textContent = `${moduleCode} · ${tabLabels[sourceTab] || sourceTab}`;
+  // Show introduction hint for Tab 1
+const textarea = document.getElementById('modal-post-content');
+
+if (sourceTab === 'introduction') {
+  // Load module-specific seeded question from DB
+  fetch(`/community/${moduleCode}/thread-info/`)
+    .then(r => r.json())
+    .then(data => {
+      if (data.seeded_question) {
+        // Show seeded question as a prompt above the textarea
+        let promptEl = document.getElementById('modal-seeded-question');
+        if (!promptEl) {
+          promptEl = document.createElement('div');
+          promptEl.id = 'modal-seeded-question';
+          promptEl.className = 'bg-base-200 rounded-lg p-3 mb-3 text-sm text-base-content/80 border-l-4 border-primary';
+          textarea.parentNode.insertBefore(promptEl, textarea);
+        }
+        promptEl.innerHTML = `<p class="font-semibold text-xs text-primary mb-1">💬 Discussion prompt:</p><p>${data.seeded_question}</p>`;
+        promptEl.classList.remove('hidden');
+      }
+      textarea.placeholder = 'Share your thoughts here... (10-2000 characters)';
+    })
+    .catch(() => {
+      textarea.placeholder = 'Share your thoughts here... (10-2000 characters)';
+    });
+} else {
+  // Hide seeded question prompt if switching tabs
+  const promptEl = document.getElementById('modal-seeded-question');
+  if (promptEl) promptEl.classList.add('hidden');
+  textarea.placeholder = 'Share your thoughts, an experience, or a question... (10-2000 characters)';
+}
+
+  document.getElementById('quick-post-modal').showModal();
+  setTimeout(() => document.getElementById('modal-post-content').focus(), 100);
+}
+
+// ── Character count in modal ─────────────────────────────────────────────────
+document.getElementById('modal-post-content')?.addEventListener('input', function() {
+  document.getElementById('modal-char-count').textContent = this.value.length;
+});
+
+// ── Submit from modal ────────────────────────────────────────────────────────
+async function submitModalPost() {
+  const content = document.getElementById('modal-post-content').value.trim();
+  const errorDiv = document.getElementById('modal-post-error');
+  const btn = document.getElementById('modal-submit-btn');
+
+  errorDiv.classList.add('hidden');
+
+  if (content.length < 10) {
+    errorDiv.textContent = 'Please write at least 10 characters.';
+    errorDiv.classList.remove('hidden');
+    return;
+  }
+
+  btn.classList.add('loading');
+  btn.disabled = true;
+
+  try {
+    const response = await fetch(`/community/${_currentModalModuleCode}/post/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': FORUM_CSRF,
+      },
+      body: JSON.stringify({
+        content,
+        source_tab: _currentModalSourceTab,
+      }),
+    });
+
+    const data = await response.json();
+
+    if (data.success) {
+      // Show success state
+      document.getElementById('modal-success').classList.remove('hidden');
+      document.getElementById('modal-submit-btn').classList.add('hidden');
+      document.querySelector('#quick-post-modal .modal-action').classList.add('hidden');
+      document.getElementById('modal-post-content').closest('.modal-box').querySelector('textarea').classList.add('hidden');
+      
+      // Update any visible post counters on the page
+      updatePagePostCounters(data.post_count, _currentModalModuleCode);
+    } else {
+      errorDiv.textContent = data.error || 'Something went wrong.';
+      errorDiv.classList.remove('hidden');
+    }
+  } catch(e) {
+    errorDiv.textContent = 'Connection error. Please try again.';
+    errorDiv.classList.remove('hidden');
+  } finally {
+    btn.classList.remove('loading');
+    btn.disabled = false;
+  }
+}
+
+// ── Load forum preview for social proof trigger (Tab 1) ──────────────────────
+async function loadForumPreview(moduleCode, triggerEl) {
+  if (triggerEl.dataset.loaded === 'true') {
+    // Toggle visibility
+    const previewDivs = document.querySelectorAll(`[id^="forum-preview-${moduleCode}"]`);
+    previewDivs.forEach(div => div.classList.toggle('hidden'));
+    return;
+  }
+
+  triggerEl.innerHTML = `
+    <div class="flex items-center gap-2 text-sm">
+      <span class="loading loading-spinner loading-xs"></span>
+      <span class="text-base-content/70">Loading...</span>
+    </div>
+  `;
+
+  try {
+    const response = await fetch(`/community/${moduleCode}/preview/`);
+    const html = await response.text();
+
+    const previewDivs = document.querySelectorAll(`[id^="forum-preview-${moduleCode}"]`);
+    previewDivs.forEach(div => {
+      div.innerHTML = html;
+      div.classList.remove('hidden');
+    });
+
+    triggerEl.innerHTML = `
+      <div class="flex items-center gap-2 text-sm">
+        <span>💬</span>
+        <span class="text-base-content/70">Community discussion</span>
+      </div>
+      <span class="text-primary text-sm font-medium">Collapse ▴</span>
+    `;
+    triggerEl.dataset.loaded = 'true';
+  } catch(e) {
+    triggerEl.innerHTML = `<span class="text-error text-sm">Loading error</span>`;
+  }
+}
+
+// ── Show post-completion trigger (called by activity/assessment submit) ───────
+function showForumTriggerAfterSubmit(tabName, peerContext = null) {
+  const trigger = document.getElementById(`forum-trigger-after-submit-${tabName}`);
+  if (trigger) {
+    trigger.classList.remove('hidden');
+    if (peerContext) {
+      const contextEl = document.getElementById(`peer-context-${tabName}`);
+      if (contextEl) contextEl.textContent = peerContext;
+    }
+    // Smooth scroll to trigger
+    trigger.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+}
+
+// ── Update post count badges on page ─────────────────────────────────────────
+function updatePagePostCounters(newCount, moduleCode) {
+  document.querySelectorAll(`.forum-post-count-${moduleCode}`).forEach(el => {
+    el.textContent = newCount;
+  });
+}
+</script>

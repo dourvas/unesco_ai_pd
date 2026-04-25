@@ -1,0 +1,112 @@
+{% extends 'base.html' %}
+
+{% block title %}Step 2: AI Experience{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto">
+    
+    <!-- Progress Bar -->
+    <div class="mb-8">
+        <div class="flex justify-between items-center mb-2">
+            <span class="text-sm font-medium">Progress</span>
+            <span class="text-sm font-medium">{{ current_step }}/{{ total_steps }}</span>
+        </div>
+        <progress class="progress progress-primary w-full" value="{{ progress_percentage }}" max="100"></progress>
+    </div>
+
+    <!-- Step Header -->
+    <div class="text-center mb-8">
+        <div class="text-6xl mb-4">🤖</div>
+        <h1 class="text-3xl font-bold mb-2">Step 2: AI Experience</h1>
+        <p class="text-base-content/70">
+            Tell us about your familiarity with AI tools
+        </p>
+    </div>
+
+    <!-- Form Card -->
+    <div class="card bg-base-100 shadow-xl">
+        <div class="card-body">
+            <form method="post">
+                {% csrf_token %}
+                
+                <!-- AI Experience Level -->
+                <div class="form-control w-full mb-6">
+                    <label class="label">
+                        <span class="label-text font-medium">AI Familiarity Level *</span>
+                    </label>
+                    <div class="space-y-3">
+                        {% for radio in form.ai_experience %}
+                            <label class="label cursor-pointer justify-start gap-3 p-4 border-2 rounded-lg hover:border-primary transition-colors">
+                                {{ radio.tag }}
+                                <span class="label-text">{{ radio.choice_label }}</span>
+                            </label>
+                        {% endfor %}
+                    </div>
+                    {% if form.ai_experience.errors %}
+                        <label class="label">
+                            <span class="label-text-alt text-error">{{ form.ai_experience.errors.0 }}</span>
+                        </label>
+                    {% endif %}
+                </div>
+
+                <!-- AI Tools Used -->
+                <div class="form-control w-full mb-6">
+                    <label class="label">
+                        <span class="label-text font-medium">Which AI tools have you used?</span>
+                        <span class="label-text-alt">Optional - Select all that apply</span>
+                    </label>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {% for checkbox in form.ai_tools_checkboxes %}
+                            <label class="label cursor-pointer justify-start gap-3 p-3 border-2 rounded-lg hover:border-primary transition-colors">
+                                {{ checkbox.tag }}
+                                <span class="label-text">{{ checkbox.choice_label }}</span>
+                            </label>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- AI Teaching Integration -->
+                <div class="form-control w-full mb-6">
+                    <label class="label">
+                        <span class="label-text font-medium">How do you use (or plan to use) AI in your teaching?</span>
+                        <span class="label-text-alt">Optional - 100-200 words</span>
+                    </label>
+                    {{ form.ai_teaching_integration }}
+                    <label class="label">
+                        <span class="label-text-alt">e.g. "Creating exercises, providing feedback on assignments, personalized activities..."</span>
+                    </label>
+                    {% if form.ai_teaching_integration.errors %}
+                        <label class="label">
+                            <span class="label-text-alt text-error">{{ form.ai_teaching_integration.errors.0 }}</span>
+                        </label>
+                    {% endif %}
+                </div>
+
+                <!-- Info Alert -->
+                <div class="alert alert-info mb-6">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 w-6 h-6">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <span class="text-sm">
+                        There are no "right" or "wrong" answers! This information helps us tailor the content to your needs.
+                    </span>
+                </div>
+
+                <!-- Form Actions -->
+                <div class="card-actions justify-between mt-6">
+                    <a href="{% url 'users:onboarding_step1' %}" class="btn btn-ghost">
+                        ← Back
+                    </a>
+                    <button type="submit" class="btn btn-primary">
+                        Next Step
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                        </svg>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

@@ -1,0 +1,495 @@
+{% if current_tab == 'activity' %}
+
+<!-- ============================================================ -->
+<!-- M10 TAB3: ACTIVITY — CoP ARCHITECT -->
+<!-- 3 Challenges: Diagnose the Community → Annotate the Prompt → Spot the Failure Mode -->
+<!-- UNESCO Aspect 5: Professional Development | Level: Deepen -->
+<!-- ============================================================ -->
+
+<h2 class="card-title text-2xl mb-2">🏛️ CoP Architect</h2>
+<p class="text-gray-600 mb-6">Three challenges that move from recognising a genuine Community of Practice, to making AI reasoning visible through annotation, to facilitating a session when things go wrong.</p>
+
+<!-- Progress tracker -->
+<div class="flex gap-2 mb-8">
+  <div id="progress-c1" class="flex-1 rounded-full h-2 {% if activity.challenge1_completed %}bg-emerald-500{% else %}bg-base-300{% endif %}"></div>
+  <div id="progress-c2" class="flex-1 rounded-full h-2 {% if activity.challenge2_completed %}bg-emerald-500{% else %}bg-base-300{% endif %}"></div>
+  <div id="progress-c3" class="flex-1 rounded-full h-2 {% if activity.challenge3_completed %}bg-emerald-500{% else %}bg-base-300{% endif %}"></div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- CHALLENGE 1: DIAGNOSE THE COMMUNITY -->
+<!-- ============================================================ -->
+<div id="challenge1-section" class="card bg-base-200 border-2 {% if activity.challenge1_completed %}border-emerald-400{% else %}border-base-300{% endif %} mb-6">
+  <div class="card-body">
+
+    <div class="flex items-center gap-3 mb-2">
+      <div class="w-10 h-10 rounded-full bg-indigo-600 text-white flex items-center justify-center font-bold text-lg flex-shrink-0">1</div>
+      <div>
+        <h3 class="card-title text-lg">Diagnose the Community</h3>
+        <p class="text-xs text-gray-500">Read · Identify · Explain · ~15 minutes</p>
+      </div>
+      {% if activity.challenge1_completed %}
+      <span class="badge badge-success ml-auto">✓ Complete</span>
+      {% endif %}
+    </div>
+
+    <p class="text-sm mb-4">Four groups of teachers are described below. Only one is a genuine Community of Practice in Wenger's sense. Read each description carefully. Your task is to identify which group is a real CoP — and explain why the other three aren't.</p>
+
+    {% if not activity.challenge1_completed %}
+
+    <div class="space-y-3 mb-5">
+      {% for v in c1_vignettes %}
+      <div class="card bg-white border border-indigo-100 p-4">
+        <p class="text-xs font-semibold text-indigo-600 uppercase tracking-wide mb-2">{{ v.label }}</p>
+        <p class="text-sm leading-relaxed">{{ v.text }}</p>
+      </div>
+      {% endfor %}
+    </div>
+
+    <form id="challenge1-form" class="space-y-5">
+
+      <!-- Step 1: Which group is a CoP? -->
+      <div>
+        <p class="text-sm font-semibold mb-2">Step 1 — Which group is a genuine Community of Practice?</p>
+        <div class="space-y-2">
+          {% for v in c1_vignettes %}
+          <label class="flex items-center gap-3 cursor-pointer p-3 rounded-lg border border-base-300 hover:border-indigo-300 hover:bg-indigo-50 transition-colors">
+            <input type="radio" name="cop_choice" value="{{ v.id }}" class="radio radio-sm radio-primary" />
+            <span class="text-sm font-medium">{{ v.label }}</span>
+          </label>
+          {% endfor %}
+        </div>
+        <p id="c1-choice-error" class="text-error text-xs mt-1 hidden">Please select one group.</p>
+      </div>
+
+      <!-- Step 2: Which Wenger dimension is most visible? -->
+      <div>
+        <p class="text-sm font-semibold mb-2">Step 2 — Which Wenger dimension is most clearly present in the group you chose?</p>
+        <div class="space-y-2">
+          <label class="flex items-start gap-3 cursor-pointer p-3 rounded-lg border border-base-300 hover:border-indigo-300 hover:bg-indigo-50 transition-colors">
+            <input type="radio" name="wenger_dimension" value="mutual_engagement" class="radio radio-sm radio-primary mt-0.5" />
+            <div>
+              <p class="text-sm font-medium">Mutual Engagement</p>
+              <p class="text-xs text-gray-500">Members interact regularly and examine each other's practice genuinely.</p>
+            </div>
+          </label>
+          <label class="flex items-start gap-3 cursor-pointer p-3 rounded-lg border border-base-300 hover:border-indigo-300 hover:bg-indigo-50 transition-colors">
+            <input type="radio" name="wenger_dimension" value="joint_enterprise" class="radio radio-sm radio-primary mt-0.5" />
+            <div>
+              <p class="text-sm font-medium">Joint Enterprise</p>
+              <p class="text-xs text-gray-500">The group negotiates and sustains its own shared purpose over time.</p>
+            </div>
+          </label>
+          <label class="flex items-start gap-3 cursor-pointer p-3 rounded-lg border border-base-300 hover:border-indigo-300 hover:bg-indigo-50 transition-colors">
+            <input type="radio" name="wenger_dimension" value="shared_repertoire" class="radio radio-sm radio-primary mt-0.5" />
+            <div>
+              <p class="text-sm font-medium">Shared Repertoire</p>
+              <p class="text-xs text-gray-500">The group builds common artefacts and approaches that persist over time.</p>
+            </div>
+          </label>
+        </div>
+        <p id="c1-dimension-error" class="text-error text-xs mt-1 hidden">Please select a dimension.</p>
+      </div>
+
+      <!-- Step 3: Why isn't one of the others a CoP? -->
+      <div>
+        <p class="text-sm font-semibold mb-1">Step 3 — Pick one of the other three groups and explain in one sentence why it isn't a CoP.</p>
+        <p class="text-xs text-gray-500 mb-2">Name the group and identify the Wenger dimension it lacks.</p>
+        <textarea id="c1-reasoning" name="reasoning" class="textarea textarea-bordered w-full text-sm" rows="3" placeholder="Group [A/B/D] isn't a CoP because..." maxlength="400"></textarea>
+        <div class="flex justify-between mt-1">
+          <p id="c1-reasoning-error" class="text-error text-xs hidden">Please write your reasoning (at least 20 characters).</p>
+          <p class="text-xs text-gray-400 ml-auto"><span id="c1-char-count">0</span>/400</p>
+        </div>
+      </div>
+
+      <div class="flex justify-end">
+        <button type="button" id="submit-challenge1-btn" class="btn btn-primary btn-sm">
+          Submit & See Feedback →
+        </button>
+      </div>
+
+    </form>
+
+    {% else %}
+
+    <!-- Completed state -->
+    <div class="alert alert-success py-3 mb-4">
+      <p class="text-sm">✓ Completed. You identified the genuine CoP and diagnosed why the others fall short.</p>
+    </div>
+
+    <p class="text-sm font-semibold mb-3">💡 What each group reveals about CoP conditions:</p>
+    <div class="space-y-2">
+      {% for v in c1_vignettes %}
+      <div class="collapse collapse-arrow bg-white border border-base-300">
+        <input type="checkbox" />
+        <div class="collapse-title text-sm font-medium">
+          {{ v.label }}
+          {% if v.is_cop %}
+          <span class="badge badge-success badge-sm ml-2">Genuine CoP</span>
+          {% else %}
+          <span class="badge badge-error badge-sm ml-2">Not a CoP</span>
+          {% endif %}
+        </div>
+        <div class="collapse-content text-sm text-gray-700">
+          <p class="font-semibold mb-1">{{ v.verdict }}</p>
+          <p>{{ v.feedback }}</p>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    {% endif %}
+
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- CHALLENGE 2: ANNOTATE THE PROMPT -->
+<!-- ============================================================ -->
+<div id="challenge2-section" class="card bg-base-200 border-2 {% if activity.challenge2_completed %}border-emerald-400{% elif activity.challenge1_completed %}border-amber-400{% else %}border-base-300 opacity-60{% endif %} mb-6">
+  <div class="card-body">
+
+    <div class="flex items-center gap-3 mb-2">
+      <div class="w-10 h-10 rounded-full {% if activity.challenge1_completed %}bg-amber-500{% else %}bg-base-300{% endif %} text-white flex items-center justify-center font-bold text-lg flex-shrink-0">2</div>
+      <div>
+        <h3 class="card-title text-lg">Annotate the Prompt</h3>
+        <p class="text-xs text-gray-500">Read · Match · Identify · ~15 minutes</p>
+      </div>
+      {% if activity.challenge2_completed %}
+      <span class="badge badge-success ml-auto">✓ Complete</span>
+      {% endif %}
+    </div>
+
+    {% if not activity.challenge1_completed %}
+    <p class="text-sm text-gray-500 italic">Complete Challenge 1 to unlock this challenge.</p>
+
+    {% elif not activity.challenge2_completed %}
+
+    <p class="text-sm mb-2">Below is a geography prompt and six annotation fragments. Three fragments are genuine annotations — one belongs to Why, one to Surprise, one to Rejection. Three are distractors that sound plausible but don't reveal professional reasoning.</p>
+    <p class="text-sm mb-5">Match each genuine annotation to its slot. Leave the distractors unassigned.</p>
+
+    <!-- The prompt -->
+    <div class="card bg-white border border-amber-200 mb-5">
+      <div class="card-body py-4">
+        <p class="text-xs font-semibold text-amber-600 uppercase tracking-wide mb-2">📋 The Prompt</p>
+        <p class="text-sm leading-relaxed italic">{{ c2_prompt }}</p>
+      </div>
+    </div>
+
+    <form id="challenge2-form" class="space-y-5">
+
+      <!-- Three annotation slots -->
+      {% for slot_id, slot_label, slot_color in c2_slots %}
+      <div class="card bg-white border border-amber-100 p-4">
+        <p class="text-sm font-semibold text-amber-700 mb-3">{{ slot_label }}</p>
+        <div class="space-y-2">
+          <label class="flex items-center gap-2 cursor-pointer p-2 rounded-lg border border-base-300 hover:border-amber-300 hover:bg-amber-50 transition-colors">
+            <input type="radio" name="slot_{{ slot_id }}" value="none" class="radio radio-sm radio-warning" checked />
+            <span class="text-sm text-gray-400 italic">— no match —</span>
+          </label>
+          {% for frag in c2_fragments %}
+          <label class="flex items-start gap-2 cursor-pointer p-2 rounded-lg border border-base-300 hover:border-amber-300 hover:bg-amber-50 transition-colors">
+            <input type="radio" name="slot_{{ slot_id }}" value="{{ frag.id }}" class="radio radio-sm radio-warning mt-0.5" />
+            <span class="text-sm">{{ frag.text }}</span>
+          </label>
+          {% endfor %}
+        </div>
+      </div>
+      {% endfor %}
+
+      <p id="c2-match-error" class="text-error text-xs hidden">Please assign a different fragment to each slot — or leave a slot empty if none fits.</p>
+
+      <div class="flex justify-end">
+        <button type="button" id="submit-challenge2-btn" class="btn btn-warning btn-sm">
+          Submit & See Answers →
+        </button>
+      </div>
+
+    </form>
+
+    {% else %}
+
+    <!-- Completed state -->
+    <div class="alert alert-success py-3 mb-4">
+      <p class="text-sm">✓ Completed. You matched the annotation fragments and identified which ones reveal genuine professional reasoning.</p>
+    </div>
+
+    <p class="text-sm font-semibold mb-3">💡 The correct annotations — and why the distractors don't work:</p>
+
+    <div class="space-y-3">
+      <div class="card bg-white border border-base-300 p-4">
+        <p class="text-xs font-semibold text-indigo-600 uppercase mb-1">📌 Why</p>
+        <p class="text-sm mb-2 italic">"The methodology link — reading text before map annotation — was the key decision. A generic explanation can precede any task. A map annotation task requires named, locatable places."</p>
+        <p class="text-xs text-gray-600">This reveals a pedagogical decision — the delivery context determined the content constraint. That is professional reasoning, not just a description of what happened.</p>
+      </div>
+      <div class="card bg-white border border-base-300 p-4">
+        <p class="text-xs font-semibold text-amber-600 uppercase mb-1">💡 Surprise</p>
+        <p class="text-sm mb-2 italic">"The AI knew Athens and Thessaloniki well but produced generic statements about 'rural areas.' Specifying Epirus by name produced much richer geographical detail — place specificity unlocked AI knowledge I hadn't expected."</p>
+        <p class="text-xs text-gray-600">This surfaces an assumption the teacher didn't know they were making — and produces a transferable insight: named specificity unlocks AI knowledge. That is what makes a surprise annotation valuable.</p>
+      </div>
+      <div class="card bg-white border border-base-300 p-4">
+        <p class="text-xs font-semibold text-red-600 uppercase mb-1">✗ Rejection</p>
+        <p class="text-sm mb-2 italic">"I rejected an explanation attributing rural depopulation entirely to economic factors without mentioning terrain. Geographically incomplete — and it would have reinforced the idea that geography is just economics with maps."</p>
+        <p class="text-xs text-gray-600">This makes disciplinary judgment visible. The rejection isn't about quality — it's about what the subject requires. Only a geography teacher would know to make this call.</p>
+      </div>
+      <div class="card bg-white border border-base-300 p-4">
+        <p class="text-xs font-semibold text-gray-500 uppercase mb-1">The distractors — why they don't count</p>
+        <p class="text-xs text-gray-600">The three distractor fragments describe outcomes (length was right, language was appropriate, topic choice was convenient) rather than reasoning. They tell colleagues what happened — not how the teacher was thinking. A boundary object requires the reasoning, not the result.</p>
+      </div>
+    </div>
+
+    {% endif %}
+
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- CHALLENGE 3: SPOT THE FAILURE MODE -->
+<!-- ============================================================ -->
+<div id="challenge3-section" class="card bg-base-200 border-2 {% if activity.challenge3_completed %}border-emerald-400{% elif activity.challenge2_completed %}border-rose-400{% else %}border-base-300 opacity-60{% endif %} mb-6">
+  <div class="card-body">
+
+    <div class="flex items-center gap-3 mb-2">
+      <div class="w-10 h-10 rounded-full {% if activity.challenge2_completed %}bg-rose-600{% else %}bg-base-300{% endif %} text-white flex items-center justify-center font-bold text-lg flex-shrink-0">3</div>
+      <div>
+        <h3 class="card-title text-lg">Spot the Failure Mode</h3>
+        <p class="text-xs text-gray-500">Read · Identify · Respond · ~15 minutes</p>
+      </div>
+      {% if activity.challenge3_completed %}
+      <span class="badge badge-success ml-auto">✓ Complete</span>
+      {% endif %}
+    </div>
+
+    {% if not activity.challenge2_completed %}
+    <p class="text-sm text-gray-500 italic">Complete Challenge 2 to unlock this challenge.</p>
+
+    {% elif not activity.challenge3_completed %}
+
+    <p class="text-sm mb-4">Read this CoP session vignette carefully. Something has gone wrong — more than once. Your task is to identify which failure modes are present and select how a facilitator should respond to each.</p>
+
+    <!-- Vignette -->
+    <div class="card bg-white border border-rose-200 mb-5">
+      <div class="card-body py-4">
+        <p class="text-xs font-semibold text-rose-600 uppercase tracking-wide mb-2">📋 The Session</p>
+        <p class="text-sm leading-relaxed">{{ c3_vignette }}</p>
+      </div>
+    </div>
+
+    <form id="challenge3-form" class="space-y-4">
+
+      <p class="text-sm font-semibold mb-2">Which failure modes are present in this session? Select all that apply.</p>
+
+      {% for fm in c3_failure_modes %}
+      <label class="flex items-start gap-3 cursor-pointer p-3 rounded-lg border border-base-300 hover:border-rose-300 hover:bg-rose-50 transition-colors">
+        <input type="checkbox" name="failure_modes" value="{{ fm.id }}" class="checkbox checkbox-sm checkbox-error mt-0.5" />
+        <span class="text-sm">{{ fm.label }}</span>
+      </label>
+      {% endfor %}
+
+      <p id="c3-modes-error" class="text-error text-xs hidden">Please select at least one failure mode.</p>
+
+      <!-- Facilitator response -->
+      <div class="mt-4">
+        <p class="text-sm font-semibold mb-1">As the facilitator of this session, what is the single most important thing you would do differently?</p>
+        <p class="text-xs text-gray-500 mb-2">Focus on one moment in the session where a different intervention would have changed the outcome.</p>
+        <textarea id="c3-response" name="response" class="textarea textarea-bordered w-full text-sm" rows="3" placeholder="At the moment when... I would have..." maxlength="500"></textarea>
+        <div class="flex justify-between mt-1">
+          <p id="c3-response-error" class="text-error text-xs hidden">Please describe your intervention (at least 20 characters).</p>
+          <p class="text-xs text-gray-400 ml-auto"><span id="c3-char-count">0</span>/500</p>
+        </div>
+      </div>
+
+      <div class="flex justify-end">
+        <button type="button" id="submit-challenge3-btn" class="btn btn-error btn-sm">
+          Submit & See Analysis →
+        </button>
+      </div>
+
+    </form>
+
+    {% else %}
+
+    <!-- Completed state -->
+    <div class="alert alert-success py-3 mb-4">
+      <p class="text-sm">✓ Completed. You identified the failure modes and selected a facilitator intervention.</p>
+    </div>
+
+    <p class="text-sm font-semibold mb-3">💡 The three failure modes — and how a facilitator addresses each:</p>
+
+    <div class="space-y-2">
+      {% for fm in c3_failure_modes %}
+      {% if fm.present %}
+      <div class="collapse collapse-arrow bg-white border border-rose-200">
+        <input type="checkbox" />
+        <div class="collapse-title text-sm font-medium text-rose-700">
+          ✗ {{ fm.label }}
+        </div>
+        <div class="collapse-content text-sm text-gray-700 space-y-2">
+          <p>{{ fm.explanation }}</p>
+          <div class="bg-rose-50 rounded p-3 text-xs">
+            <p class="font-semibold mb-1">Facilitator response:</p>
+            <p class="italic">{{ fm.redirect }}</p>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+      {% endfor %}
+
+      <div class="card bg-base-100 border border-base-300 p-4 mt-3">
+        <p class="text-xs font-semibold text-gray-500 uppercase mb-2">The two options that weren't present</p>
+        {% for fm in c3_failure_modes %}
+        {% if not fm.present %}
+        <div class="mb-3">
+          <p class="text-sm font-medium mb-1">{{ fm.label }}</p>
+          <p class="text-xs text-gray-600">{{ fm.explanation }}</p>
+        </div>
+        {% endif %}
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="card bg-base-200 p-4 mt-4">
+      <p class="text-xs font-semibold text-gray-500 uppercase mb-2">Your facilitator intervention:</p>
+      <p class="text-sm leading-relaxed">{{ activity.challenge_data.challenge3_response }}</p>
+    </div>
+
+    {% endif %}
+
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- COMPLETION STATE -->
+<!-- ============================================================ -->
+{% if activity.activity_completed %}
+<div class="card bg-emerald-50 border-2 border-emerald-400 mb-6">
+  <div class="card-body text-center">
+    <p class="text-2xl mb-2">🏛️</p>
+    <h3 class="card-title justify-center text-emerald-800">Activity Complete!</h3>
+    <p class="text-sm text-emerald-700 mt-2">You've diagnosed what makes a genuine CoP, matched annotations that make reasoning visible, and identified the failure modes that undermine professional learning communities. These are the skills that turn a group of teachers into a community that actually learns together.</p>
+    <div class="mt-4">
+      <p class="text-xs text-gray-500">Ready to test your understanding? Continue to the Assessment →</p>
+    </div>
+  </div>
+</div>
+
+{% include "community/partials/tab_forum_trigger.html" with tab_name="activity" module_code=module.code trigger_style="post_completion" %}
+
+{% endif %}
+
+{% if not activity.activity_completed %}
+<div id="mark-complete-section" class="{% if not activity.challenge3_completed %}hidden{% endif %} text-center mt-4">
+  <button id="mark-activity-complete-btn" class="btn btn-success btn-lg">
+    ✓ Mark Activity Complete
+  </button>
+</div>
+{% endif %}
+
+
+<!-- ============================================================ -->
+<!-- JAVASCRIPT -->
+<!-- ============================================================ -->
+<script>
+
+// ── Character counters ───────────────────────────────────────────
+const c1Reasoning = document.getElementById('c1-reasoning');
+const c1CharCount = document.getElementById('c1-char-count');
+if (c1Reasoning) {
+  c1Reasoning.addEventListener('input', () => {
+    c1CharCount.textContent = c1Reasoning.value.length;
+  });
+}
+
+const c3Response = document.getElementById('c3-response');
+const c3CharCount = document.getElementById('c3-char-count');
+if (c3Response) {
+  c3Response.addEventListener('input', () => {
+    c3CharCount.textContent = c3Response.value.length;
+  });
+}
+
+// ── CHALLENGE 1 SUBMIT ──────────────────────────────────────────
+document.getElementById('submit-challenge1-btn')?.addEventListener('click', () => {
+  const copChoice = document.querySelector('input[name="cop_choice"]:checked')?.value;
+  const dimension = document.querySelector('input[name="wenger_dimension"]:checked')?.value;
+  const reasoning = document.getElementById('c1-reasoning')?.value?.trim();
+
+  document.getElementById('c1-choice-error').classList.toggle('hidden', !!copChoice);
+  document.getElementById('c1-dimension-error').classList.toggle('hidden', !!dimension);
+  document.getElementById('c1-reasoning-error').classList.toggle('hidden', !!(reasoning && reasoning.length >= 20));
+
+  if (!copChoice || !dimension || !reasoning || reasoning.length < 20) return;
+
+  fetch(`/modules/modules/{{ module.code }}/tab3/challenge1/`, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}'},
+    body: JSON.stringify({ cop_choice: copChoice, wenger_dimension: dimension, reasoning })
+  })
+  .then(r => r.json())
+  .then(data => { if (data.success) location.reload(); });
+});
+
+// ── CHALLENGE 2 SUBMIT ──────────────────────────────────────────
+document.getElementById('submit-challenge2-btn')?.addEventListener('click', () => {
+  const whyChoice   = document.querySelector('input[name="slot_why"]:checked')?.value;
+  const surprChoice = document.querySelector('input[name="slot_surprise"]:checked')?.value;
+  const rejChoice   = document.querySelector('input[name="slot_rejection"]:checked')?.value;
+
+  // Check no two slots have the same non-none fragment assigned
+  const chosen = [whyChoice, surprChoice, rejChoice].filter(v => v && v !== 'none');
+  const unique = new Set(chosen);
+  const hasDuplicate = chosen.length !== unique.size;
+
+  document.getElementById('c2-match-error').classList.toggle('hidden', !hasDuplicate);
+  if (hasDuplicate) return;
+
+  fetch(`/modules/modules/{{ module.code }}/tab3/challenge2/`, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}'},
+    body: JSON.stringify({
+      slot_why: whyChoice,
+      slot_surprise: surprChoice,
+      slot_rejection: rejChoice
+    })
+  })
+  .then(r => r.json())
+  .then(data => { if (data.success) location.reload(); });
+});
+
+// ── CHALLENGE 3 SUBMIT ──────────────────────────────────────────
+document.getElementById('submit-challenge3-btn')?.addEventListener('click', () => {
+  const modes = Array.from(document.querySelectorAll('input[name="failure_modes"]:checked')).map(el => el.value);
+  const response = document.getElementById('c3-response')?.value?.trim();
+
+  document.getElementById('c3-modes-error').classList.toggle('hidden', modes.length > 0);
+  document.getElementById('c3-response-error').classList.toggle('hidden', !!(response && response.length >= 20));
+
+  if (!modes.length || !response || response.length < 20) return;
+
+  fetch(`/modules/modules/{{ module.code }}/tab3/challenge3/`, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}'},
+    body: JSON.stringify({ failure_modes: modes, response })
+  })
+  .then(r => r.json())
+  .then(data => { if (data.success) location.reload(); });
+});
+
+// ── MARK ACTIVITY COMPLETE ──────────────────────────────────────
+document.getElementById('mark-activity-complete-btn')?.addEventListener('click', () => {
+  fetch(`/modules/modules/{{ module.code }}/tab3/reflection/`, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}'},
+    body: JSON.stringify({ tab: 'activity' })
+  })
+  .then(r => r.json())
+  .then(data => { if (data.success) location.reload(); });
+});
+
+</script>
+
+{% endif %}

@@ -1,0 +1,472 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ module.code }}: {{ module.title }}{% endblock %}
+
+{% block content %}
+{% csrf_token %} 
+<div class="container mx-auto px-4 py-8 max-w-5xl">
+    
+    <!-- Module Header -->
+    <div class="mb-6">
+        <div class="flex items-center gap-3 mb-2">
+            <span class="badge badge-primary badge-lg">{{ module.code }}</span>
+            <h1 class="text-3xl font-bold">{{ module.title }}</h1>
+        </div>
+        <p class="text-gray-600">{{ module.description }}</p>
+    </div>
+    
+    <!-- Progress Indicator -->
+    <div class="mb-6">
+        <div class="flex justify-between text-sm text-gray-600 mb-2">
+            <span>Progress</span>
+            <span>{{ progress.completion_percentage }}%</span>
+        </div>
+        <progress class="progress progress-primary w-full" 
+                  value="{{ progress.completion_percentage }}" 
+                  max="100"></progress>
+    </div>
+    
+    <!-- Tab Navigation -->
+<div class="tabs tabs-boxed mb-6 bg-base-200">
+    <a class="tab {% if current_tab == 'introduction' %}tab-active{% endif %} 
+              {% if not unlock_status.introduction %}tab-disabled opacity-50{% endif %}"
+       href="?tab=introduction">
+        1. Introduction
+        {% if progress.introduction_completed %}✓{% endif %}
+    </a>
+    
+    <a class="tab {% if current_tab == 'main_content' %}tab-active{% endif %}
+              {% if not unlock_status.main_content %}tab-disabled opacity-50{% endif %}"
+       href="{% if unlock_status.main_content %}?tab=main_content{% else %}#{% endif %}">
+        2. Main Content
+        {% if progress.main_content_completed %}✓{% endif %}
+        {% if not unlock_status.main_content %}🔒{% endif %}
+    </a>
+    
+    <a class="tab {% if current_tab == 'activity' %}tab-active{% endif %}
+              {% if not unlock_status.activity %}tab-disabled opacity-50{% endif %}"
+       href="{% if unlock_status.activity %}?tab=activity{% else %}#{% endif %}">
+        3. Activity
+        {% if progress.activity_completed %}✓{% endif %}
+        {% if not unlock_status.activity %}🔒{% endif %}
+    </a>
+    
+    <a class="tab {% if current_tab == 'assessment' %}tab-active{% endif %}
+              {% if not unlock_status.assessment %}tab-disabled opacity-50{% endif %}"
+       href="{% if unlock_status.assessment %}?tab=assessment{% else %}#{% endif %}">
+        4. Assessment
+        {% if progress.assessment_completed %}✓{% endif %}
+        {% if not unlock_status.assessment %}🔒{% endif %}
+    </a>
+    
+    <a class="tab {% if current_tab == 'reflection' %}tab-active{% endif %}
+              {% if not unlock_status.reflection %}tab-disabled opacity-50{% endif %}"
+       href="{% if unlock_status.reflection %}?tab=reflection{% else %}#{% endif %}">
+        5. Reflection
+        {% if progress.reflection_completed %}✓{% endif %}
+        {% if not unlock_status.reflection %}🔒{% endif %}
+    </a>
+</div>
+    
+    <!-- Tab Content -->
+    <div class="card bg-base-100 shadow-xl">
+        <div class="card-body">
+            
+            {% if current_tab == 'introduction' %}
+            <!-- TAB 1: Introduction -->
+            <h2 class="card-title text-2xl mb-4">{{ module_title }}</h2>
+            
+            {% if learning_objectives %}
+            <div class="mb-6">
+                <h3 class="text-lg font-semibold mb-2">Learning Objectives:</h3>
+                <ul class="list-disc list-inside space-y-1">
+                    {% for objective in learning_objectives %}
+                    <li>{{ objective }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+            
+            {% if module_overview %}
+            <div class="prose max-w-none mb-6">
+                {{ module_overview }}
+            </div>
+            {% endif %}
+            
+            <div class="alert alert-info mb-6">
+                <span>⏱️ Estimated time: {{ estimated_hours }} hours</span>
+            </div>
+            
+            {% if not progress.introduction_completed %}
+            <div class="card-actions justify-end">
+                <button onclick="markTabComplete('{{ module.code }}', 'introduction')" 
+                        class="btn btn-primary">
+                    Mark as Complete & Continue →
+                </button>
+            </div>
+            {% else %}
+            <div class="alert alert-success">
+                <span>✓ Tab completed on {{ progress.introduction_completed_at|date:"M d, Y" }}</span>
+            </div>
+            {% endif %}
+            
+            {% elif current_tab == 'main_content' %}
+            <!-- TAB 2: Main Content -->
+            <h2 class="card-title text-2xl mb-4">Main Content</h2>
+
+            
+            {% if content %}
+            <div class="prose max-w-none mb-6">
+                 {{ content_html|safe }}
+            </div>
+            
+            {# ============================================================ #}
+            {# SUBJECT-SPECIFIC BOXES - Personalized content for teacher    #}
+            {# ============================================================ #}
+            
+            {# Box Part 2: GenAI Capabilities for your subject #}
+            {% if subject_box_part2 %}
+                {{ subject_box_part2.content_data|safe }}
+            {% endif %}
+            
+            {# Box Part 4: AI Tools for your subject #}
+            {% if subject_box_part4 %}
+                {{ subject_box_part4.content_data|safe }}
+            {% endif %}
+            
+            {# ============================================================ #}
+            
+            {% if personalized_example %}
+            <div class="alert alert-warning mb-6">
+                <div>
+                    <h4 class="font-bold">For {{ teacher_profile.subject_area }} Teachers:</h4>
+                    <p>{{ personalized_example }}</p>
+                </div>
+            </div>
+            {% endif %}
+            
+            {% if not progress.main_content_completed %}
+            <div class="card-actions justify-end">
+                <button onclick="markTabComplete('{{ module.code }}', 'main_content')" 
+                        class="btn btn-primary">
+                    Mark as Complete & Continue →
+                </button>
+            </div>
+            {% else %}
+            <div class="alert alert-success">
+                <span>✓ Tab completed</span>
+            </div>
+            {% endif %}
+            
+            {% else %}
+            <div class="alert alert-error">
+                <span>Content not found. Please contact administrator.</span>
+            </div>
+            {% endif %}
+            
+            {% elif current_tab == 'activity' %}
+            <!-- TAB 3: Activity -->
+            <h2 class="card-title text-2xl mb-4">Activity</h2>
+            
+            {% if content %}
+            <div class="prose max-w-none mb-6">
+                {{ content.content_data|safe }}
+            </div>
+            
+            {% if not progress.activity_completed %}
+            <form id="activity-form" class="space-y-4">
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text">Your Submission (min 100 characters)</span>
+                    </label>
+                    <textarea name="submission" 
+                              class="textarea textarea-bordered h-32" 
+                              placeholder="Write your response here..."
+                              required></textarea>
+                </div>
+                
+                <div class="card-actions justify-end">
+                    <button type="submit" class="btn btn-primary">
+                        Submit Activity →
+                    </button>
+                </div>
+            </form>
+            {% else %}
+            <div class="alert alert-success">
+                <span>✓ Activity completed</span>
+            </div>
+            {% endif %}
+            
+            {% endif %}
+            
+            {% elif current_tab == 'assessment' %}
+            <!-- TAB 4: Assessment -->
+            <h2 class="card-title text-2xl mb-4">Assessment</h2>
+            <p class="mb-4">Quiz content will be here. (Passing score: 80%)</p>
+            
+            {% if not progress.assessment_completed %}
+            <div class="alert alert-warning mb-4">
+                <span>Assessment functionality coming soon.</span>
+            </div>
+            <!-- Quiz form will go here -->
+            {% else %}
+            <div class="alert alert-success">
+                <span>✓ Assessment passed</span>
+            </div>
+            {% endif %}
+            
+            {% elif current_tab == 'reflection' %}
+            <!-- TAB 5: Reflection -->
+            <h2 class="card-title text-2xl mb-4">Reflection</h2>
+            
+            {% if content %}
+            <div class="prose max-w-none mb-6">
+                {{ content.content_data|safe }}
+            </div>
+            
+            {% if not progress.reflection_completed %}
+            {# ============================================================ #}
+            {# REFLECTION FORM - User submits their reflection              #}
+            {# ============================================================ #}
+            <form id="reflection-form" class="space-y-4">
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text">Your Reflection (600-800 words)</span>
+                        <span class="label-text-alt" id="word-count">0 words</span>
+                    </label>
+                    <textarea name="reflection_text" 
+                              id="reflection-textarea"
+                              class="textarea textarea-bordered h-48" 
+                              placeholder="Write your thoughtful reflection..."
+                              required></textarea>
+                </div>
+                
+                <div class="card-actions justify-end">
+                    <button type="submit" class="btn btn-primary" id="submit-reflection-btn">
+                        Submit Reflection
+                    </button>
+                </div>
+            </form>
+            
+            {# ============================================================ #}
+            {# FEEDBACK DISPLAY - Shows RAG-generated feedback              #}
+            {# ============================================================ #}
+            <div id="feedback-section" class="hidden mt-8">
+                <div class="divider">Your Personalized Feedback</div>
+                
+                <div class="alert alert-info mb-4">
+                    <div>
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        <span>This feedback is generated by AI based on the UNESCO AI Competency Framework and tailored to your teaching context.</span>
+                    </div>
+                </div>
+                
+                <div class="card bg-base-200 shadow-lg">
+                    <div class="card-body">
+                        <h3 class="card-title text-lg mb-4">🎯 Feedback on Your Reflection</h3>
+                        <div id="feedback-content" class="prose max-w-none">
+                            <!-- Feedback will be inserted here by JavaScript -->
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card-actions justify-center mt-6">
+                    <button onclick="window.location.reload()" class="btn btn-success btn-lg">
+                        ✓ Reflection Completed
+                    </button>
+                </div>
+            </div>
+            
+            {% else %}
+            {# ============================================================ #}
+            {# COMPLETED STATE - Shows after reflection is submitted        #}
+            {# ============================================================ #}
+            <div class="alert alert-success mb-4">
+                <span>✓ Reflection completed</span>
+            </div>
+            
+            {# Display the stored feedback if available #}
+            {% if progress.reflection_rag_feedback %}
+            <div class="card bg-base-200 shadow-lg mb-6">
+                <div class="card-body">
+                    <h3 class="card-title text-lg mb-4">🎯 Your Personalized Feedback</h3>
+                    <div class="prose max-w-none">
+                        {{ progress.reflection_rag_feedback|linebreaks }}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            
+            {% if progress.completed_at %}
+            <div class="alert alert-success">
+                <div>
+                    <h3 class="font-bold text-lg">🎉 Module Complete!</h3>
+                    <p>Congratulations on completing {{ module.code }}!</p>
+                </div>
+            </div>
+            {% endif %}
+            {% endif %}
+            
+            {% endif %}
+            
+            {% endif %}
+            
+        </div>
+    </div>
+    
+    <!-- Module Navigation -->
+    <div class="flex justify-between mt-6">
+        {% if prev_module %}
+        <a href="{% url 'modules:detail' code=prev_module.code %}" 
+           class="btn btn-outline">
+            ← {{ prev_module.code }}
+        </a>
+        {% else %}
+        <div></div>
+        {% endif %}
+        
+        {% if next_module %}
+        <a href="{% url 'modules:detail' code=next_module.code %}" 
+           class="btn btn-outline {% if not progress.completed_at %}btn-disabled{% endif %}">
+            {{ next_module.code }} →
+        </a>
+        {% endif %}
+    </div>
+    
+</div>
+
+<!-- JavaScript -->
+<script>
+// CSRF Token
+const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+// Mark tab complete (simple tabs)
+async function markTabComplete(moduleCode, tabName) {
+    const response = await fetch(`/modules/${moduleCode}/complete/${tabName}/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrftoken
+        },
+        body: JSON.stringify({})
+    });
+    
+    const result = await response.json();
+    
+    if (result.success) {
+        if (result.next_tab && result.next_tab !== 'completed') {
+            window.location.href = `?tab=${result.next_tab}`;
+        } else {
+            window.location.reload();
+        }
+    } else {
+        alert(result.message);
+    }
+}
+
+// Activity form submission
+const activityForm = document.getElementById('activity-form');
+if (activityForm) {
+    activityForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const submission = e.target.submission.value;
+        
+        const response = await fetch(`/modules/{{ module.code }}/complete/activity/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrftoken
+            },
+            body: JSON.stringify({ submission })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            window.location.href = `?tab=${result.next_tab}`;
+        } else {
+            alert(result.message);
+        }
+    });
+}
+
+// Reflection form with word count
+const reflectionTextarea = document.getElementById('reflection-textarea');
+const wordCountSpan = document.getElementById('word-count');
+
+if (reflectionTextarea) {
+    reflectionTextarea.addEventListener('input', (e) => {
+        const text = e.target.value.trim();
+        const wordCount = text ? text.split(/\s+/).length : 0;
+        wordCountSpan.textContent = `${wordCount} words`;
+        
+        // Color coding
+        if (wordCount >= 600 && wordCount <= 800) {
+            wordCountSpan.classList.add('text-success');
+            wordCountSpan.classList.remove('text-error');
+        } else {
+            wordCountSpan.classList.add('text-error');
+            wordCountSpan.classList.remove('text-success');
+        }
+    });
+}
+
+// Reflection form submission with feedback display
+const reflectionForm = document.getElementById('reflection-form');
+if (reflectionForm) {
+    reflectionForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const reflection_text = e.target.reflection_text.value;
+        const submitBtn = document.getElementById('submit-reflection-btn');
+        
+        // Show loading state
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="loading loading-spinner"></span> Processing...';
+        
+        try {
+            const response = await fetch(`/modules/{{ module.code }}/complete/reflection/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrftoken
+                },
+                body: JSON.stringify({ reflection_text })
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                // Hide the form
+                reflectionForm.classList.add('hidden');
+                
+                // Show feedback section
+                const feedbackSection = document.getElementById('feedback-section');
+                const feedbackContent = document.getElementById('feedback-content');
+                
+                if (result.feedback) {
+                    // Display the RAG feedback
+                    feedbackContent.innerHTML = result.feedback.replace(/\n/g, '<br>');
+                    feedbackSection.classList.remove('hidden');
+                    
+                    // Scroll to feedback
+                    feedbackSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                } else {
+                    // No feedback generated (fallback)
+                    window.location.reload();
+                }
+            } else {
+                alert(result.message);
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = 'Submit Reflection';
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('An error occurred. Please try again.');
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = 'Submit Reflection';
+        }
+    });
+}
+</script>
+{% endblock %}

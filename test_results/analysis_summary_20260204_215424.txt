@@ -1,0 +1,9 @@
+Phase 2D Test Results Analysis
+Generated: 2026-02-04 21:54:24
+Source: test_results\rag_test_results_20260204_215105.csv
+
+Total Tests: 10
+Success Rate: 100.0%
+Avg Response Time: 11.43s
+Avg Cost: €0.000000
+Subjects Tested: 9
