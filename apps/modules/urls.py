@@ -42,4 +42,7 @@ urlpatterns = [
     path('modules/<str:code>/extract-peer-synthesis/', views.extract_peer_synthesis_view, name='extract_peer_synthesis'),
     path('modules/<str:code>/extract-dtp/', views.extract_dtp_view, name='extract_dtp'),
     path('modules/<str:code>/dispute/', views.save_ai_dispute, name='save_ai_dispute'),
+
+    # TAB 1: Subject Intro Hooks (AJAX)
+    path('modules/<str:code>/subject-intro/', views.subject_intro_view, name='subject_intro'),
 ]

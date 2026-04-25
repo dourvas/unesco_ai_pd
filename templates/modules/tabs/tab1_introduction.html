@@ -106,6 +106,9 @@
 <!-- END FRAMEWORK ALIGNMENT BLOCK                               -->
 <!-- ============================================================ -->
 
+<!-- Subject Intro Hook: discipline-specific resistance reduction (AJAX) -->
+{% include "modules/partials/subject_intro_card.html" %}
+
 <!-- Forum Trigger: Introduce Yourself -->
 {% include "community/partials/tab_forum_trigger.html" with tab_name="introduction" module_code=module.code trigger_style="social_proof" %}
 {% if not progress.introduction_completed %}

@@ -1,0 +1,37 @@
+{% comment %}
+  Subject-specific intro card for TAB1.
+  Loaded via AJAX based on the user's subject_area (TeacherProfile).
+  Pattern mirrors community/partials/tab_forum_trigger.html (thread_info AJAX).
+  Falls back to subject_area='Universal' if no subject-specific record exists,
+  and silently hides itself if no record is found at all.
+  Spec: SUBJECT_INTRO_HOOKS_PATCH_APR2026.md
+{% endcomment %}
+
+<div id="subject-intro-card" class="my-6" data-module-code="{{ module.code }}">
+  <div class="text-center text-sm text-base-content/50 py-4">
+    <span class="loading loading-dots loading-sm"></span>
+  </div>
+</div>
+
+<script>
+(function() {
+  const card = document.getElementById('subject-intro-card');
+  if (!card) return;
+
+  const moduleCode = card.dataset.moduleCode;
+  const url = `/modules/modules/${moduleCode}/subject-intro/`;
+
+  fetch(url, { credentials: 'same-origin' })
+    .then(r => r.json())
+    .then(data => {
+      if (data.success && data.html) {
+        card.innerHTML = data.html;
+      } else {
+        card.style.display = 'none';
+      }
+    })
+    .catch(() => {
+      card.style.display = 'none';
+    });
+})();
+</script>

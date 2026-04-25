@@ -3,7 +3,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.generic import ListView, DetailView
 from django.http import JsonResponse
-from django.views.decorators.http import require_POST, require_http_methods
+from django.views.decorators.http import require_POST, require_http_methods, require_GET
 from django.db.models import Q, Case, When, IntegerField
 from django.utils import timezone
 from datetime import datetime
@@ -1817,4 +1817,54 @@ def save_ai_dispute(request, code):
             'message': 'An error occurred. Please try again.'
         }, status=500)
 
+
+# ============================================================
+# Subject Intro Hooks (TAB1) — Phase 2
+# Spec: SUBJECT_INTRO_HOOKS_PATCH_APR2026.md
+# Pattern mirrors apps/community/views.py::thread_info
+# ============================================================
+
+@login_required
+@require_GET
+def subject_intro_view(request, code):
+    """
+    Returns the subject-specific intro hook for TAB1.
+    Falls back to subject_area='Universal' if no subject-specific record exists.
+    """
+    try:
+        module = Module.objects.get(code=code)
+    except Module.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Module not found'}, status=404)
+
+    try:
+        teacher_profile = TeacherProfile.objects.get(user=request.user)
+        subject = teacher_profile.subject_area
+    except TeacherProfile.DoesNotExist:
+        subject = None
+
+    intro = None
+    if subject:
+        intro = ModuleContent.objects.filter(
+            module=module,
+            content_type='subject_intro',
+            subject_area=subject,
+            grade_level='all'
+        ).first()
+
+    if not intro:
+        intro = ModuleContent.objects.filter(
+            module=module,
+            content_type='subject_intro',
+            subject_area='Universal',
+            grade_level='all'
+        ).first()
+
+    if not intro:
+        return JsonResponse({'success': False, 'error': 'No intro found'})
+
+    return JsonResponse({
+        'success': True,
+        'html': intro.content_data,
+        'subject': subject or 'Universal'
+    })
 
