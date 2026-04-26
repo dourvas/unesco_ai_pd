@@ -1,126 +1,304 @@
-<!-- TAB 1: Introduction -->
-<h2 class="card-title text-2xl mb-4">{{ module_title }}</h2>
+{% load module_design %}
+{% module_aspect_colour module as aspect_colour %}
+{% module_aspect_name module as aspect_name %}
 
-<!-- Subject Intro Hook: discipline-specific resistance reduction (AJAX) -->
-{% include "modules/partials/subject_intro_card.html" %}
+<!-- TAB 1: Introduction (magazine-style layout) -->
+<div class="tab1-redesign"
+     style="--aspect-main: {{ aspect_colour.main }};
+            --aspect-bg: {{ aspect_colour.bg }};
+            --aspect-text: {{ aspect_colour.text }};">
 
-{% if learning_objectives %}
-<div class="mb-6">
-    <h3 class="text-lg font-semibold mb-2">Learning Objectives:</h3>
-    <ul class="list-disc list-inside space-y-1">
+  <!-- HERO -->
+  <section class="hero-block">
+    <div class="hero-number">{% module_number_padded module %}</div>
+    <div class="hero-divider"></div>
+    <div class="hero-content">
+      <h1 class="module-title">{{ module.title }}</h1>
+      <span class="aspect-badge">{{ aspect_name }} · {{ module.get_proficiency_level_display }}</span>
+    </div>
+    <div class="hero-icon {% if module.code == 'M15' %}hero-icon--inverse{% endif %}">
+      {% module_icon_svg module %}
+    </div>
+  </section>
+
+  <!-- SUBJECT INTRO CARD (AJAX, border colour overridden via CSS below) -->
+  <div class="subject-intro-wrap">
+    {% include "modules/partials/subject_intro_card.html" %}
+  </div>
+
+  <!-- INFO BAR -->
+  <section class="info-bar">
+    <div class="info-card">
+      <p class="info-label">Estimated time</p>
+      <p class="info-value">{{ estimated_hours }} hours</p>
+    </div>
+    <div class="info-card">
+      <p class="info-label">Framework</p>
+      <p class="info-value-small">UNESCO · {{ module.get_proficiency_level_display }}</p>
+    </div>
+    <div class="info-card info-card--evidence">
+      <p class="info-label">✓ Evidence-informed</p>
+      <p class="info-value-small">IHU PD + peer-reviewed research</p>
+    </div>
+  </section>
+
+  <!-- PAIRED CONTENT: Objectives + About -->
+  <section class="paired-content">
+    {% if learning_objectives %}
+    <div class="content-card content-card--objectives">
+      <p class="content-label">Learning Objectives</p>
+      <ul class="objectives-list">
         {% for objective in learning_objectives %}
-        <li>{{ objective }}</li>
+          <li>{{ objective }}</li>
         {% endfor %}
-    </ul>
-</div>
-{% endif %}
-{% if module_overview %}
-<div class="prose max-w-none mb-6">
-    {{ module_overview }}
-</div>
-{% endif %}
-<div class="alert alert-info mb-6">
-    <span>⏱️ Estimated time: {{ estimated_hours }} hours</span>
-</div>
-
-<!-- ============================================================ -->
-<!-- FRAMEWORK ALIGNMENT BLOCK                                    -->
-<!-- Shared across all M1–M15. No per-module changes needed.     -->
-<!-- ============================================================ -->
-<div class="mt-2 mb-6 border border-base-300 rounded-xl overflow-hidden">
-
-    <!-- Header bar -->
-    <div class="bg-base-200 px-5 py-3 flex items-center gap-2 border-b border-base-300">
-        <span class="text-base">📋</span>
-        <span class="font-semibold text-sm text-base-content">About this module</span>
+      </ul>
     </div>
-
-    <div class="p-5 space-y-4">
-
-        <!-- UNESCO Alignment -->
-        <div class="flex flex-col sm:flex-row sm:items-center gap-3">
-            <span class="text-sm text-base-content/60 font-medium min-w-fit">Framework</span>
-            <div class="flex flex-wrap gap-2">
-                <span class="badge badge-primary badge-outline px-3 py-3 text-xs font-medium">
-                    UNESCO AI Competency Framework
-                </span>
-                <span class="badge badge-secondary px-3 py-3 text-xs font-medium">
-                    {{ module.get_unesco_aspect_display }}
-                </span>
-                <span class="badge badge-accent px-3 py-3 text-xs font-medium">
-                    {{ module.get_proficiency_level_display }} Level
-                </span>
-            </div>
-        </div>
-
-        <div class="divider my-1"></div>
-
-        <!-- Evidence-Informed Content -->
-        <div class="flex items-start gap-3">
-            <div class="mt-0.5 w-8 h-8 rounded-full bg-success/10 flex items-center justify-center flex-shrink-0">
-                <span class="text-success text-base">✓</span>
-            </div>
-            <div>
-                <p class="text-sm font-semibold text-base-content mb-0.5">Evidence-informed content</p>
-                <p class="text-xs text-base-content/70 leading-relaxed">
-                    This module draws on professional development programmes delivered at the
-                    International Hellenic University, where participant evaluations were consistently positive.
-                    Content is further grounded in peer-reviewed research on AI in education.
-                </p>
-            </div>
-        </div>
-
-        <div class="divider my-1"></div>
-
-        <!-- Why this module — expandable -->
-        <details class="group">
-            <summary class="flex items-center gap-2 cursor-pointer list-none text-sm text-base-content/70 hover:text-base-content transition-colors">
-                <span class="group-open:hidden">▶</span>
-                <span class="hidden group-open:inline">▼</span>
-                <span>Why is this module part of your learning path?</span>
-            </summary>
-            <div class="mt-3 pl-5 text-xs text-base-content/70 leading-relaxed space-y-2 border-l-2 border-base-300">
-                <p>
-                    The content in each module was selected through a three-step process:
-                    alignment with UNESCO AI competency indicators, grounding in current research
-                    on digital pedagogy, and informed by prior professional development programmes
-                    at IHU where similar content was positively evaluated by participants.
-                </p>
-                <p>
-                    This module addresses <strong>{{ module.get_unesco_aspect_display }}</strong> at the
-                    <strong>{{ module.get_proficiency_level_display }}</strong> level — meaning the focus is on
-                    {% if module.proficiency_level == 'acquire' %}
-                        building foundational awareness and understanding.
-                    {% elif module.proficiency_level == 'deepen' %}
-                        applying and deepening knowledge through practice.
-                    {% else %}
-                        creating, leading, and sharing expertise with others.
-                    {% endif %}
-                </p>
-                <p class="text-base-content/50 italic">
-                    Content selection rationale is documented in the PROODOS Research Framework
-                    (IHU Doctoral Research Programme).
-                </p>
-            </div>
-        </details>
-
+    {% endif %}
+    {% if module_overview %}
+    <div class="content-card content-card--about">
+      <p class="content-label">About this module</p>
+      <div class="about-body prose prose-sm max-w-none">
+        {{ module_overview|unwrap_overview|linebreaks }}
+      </div>
     </div>
-</div>
-<!-- ============================================================ -->
-<!-- END FRAMEWORK ALIGNMENT BLOCK                               -->
-<!-- ============================================================ -->
+    {% endif %}
+  </section>
 
-<!-- Forum Trigger: Introduce Yourself -->
-{% include "community/partials/tab_forum_trigger.html" with tab_name="introduction" module_code=module.code trigger_style="social_proof" %}
-{% if not progress.introduction_completed %}
-<div class="card-actions justify-end mt-4">
-    <button onclick="markTabComplete('{{ module.code }}', 'introduction')" 
+  <!-- FRAMEWORK RATIONALE (collapsible) -->
+  <details class="framework-details">
+    <summary>
+      <span class="summary-icon-closed">▶</span>
+      <span class="summary-icon-open">▼</span>
+      Why is this module part of your learning path?
+    </summary>
+    <div class="framework-content">
+      <p>
+        Content was selected through a three-step process: alignment with UNESCO AI
+        competency indicators, grounding in current research on digital pedagogy, and
+        prior IHU professional development programmes where similar content was
+        positively evaluated by participants.
+      </p>
+      <p>
+        This module addresses <strong>{{ aspect_name }}</strong> at the
+        <strong>{{ module.get_proficiency_level_display }}</strong> level — meaning the focus is on
+        {% if module.proficiency_level|lower == 'acquire' %}
+          building foundational awareness and understanding.
+        {% elif module.proficiency_level|lower == 'deepen' %}
+          applying and deepening knowledge through practice.
+        {% else %}
+          creating, leading, and sharing expertise with others.
+        {% endif %}
+      </p>
+      <p class="framework-citation">
+        Content selection rationale is documented in the PROODOS Research Framework
+        (IHU Doctoral Research Programme).
+      </p>
+    </div>
+  </details>
+
+  <!-- FORUM TRIGGER -->
+  {% include "community/partials/tab_forum_trigger.html" with tab_name="introduction" module_code=module.code trigger_style="social_proof" %}
+
+  <!-- COMPLETION CTA -->
+  {% if not progress.introduction_completed %}
+  <div class="card-actions justify-end mt-4">
+    <button onclick="markTabComplete('{{ module.code }}', 'introduction')"
             class="btn btn-primary">
-        Mark as Complete & Continue →
+      Mark as Complete & Continue →
     </button>
-</div>
-{% else %}
-<div class="alert alert-success mt-4">
+  </div>
+  {% else %}
+  <div class="alert alert-success mt-4">
     <span>✓ Tab completed on {{ progress.introduction_completed_at|date:"M d, Y" }}</span>
+  </div>
+  {% endif %}
+
 </div>
-{% endif %}
+
+<style>
+  .tab1-redesign { color: oklch(var(--bc)); }
+
+  /* HERO */
+  .tab1-redesign .hero-block {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    padding: 1.5rem;
+    background: oklch(var(--b1));
+    border: 1px solid oklch(var(--b3));
+    border-radius: 0.75rem;
+    margin-bottom: 1.5rem;
+  }
+  .tab1-redesign .hero-number {
+    font-size: 4rem;
+    font-weight: 500;
+    line-height: 1;
+    color: var(--aspect-main);
+    letter-spacing: -0.04em;
+    flex-shrink: 0;
+  }
+  .tab1-redesign .hero-divider {
+    width: 1px;
+    background: oklch(var(--b3));
+    align-self: stretch;
+  }
+  .tab1-redesign .hero-content { flex: 1; min-width: 0; }
+  .tab1-redesign .module-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    line-height: 1.25;
+    margin: 0 0 0.5rem;
+  }
+  .tab1-redesign .aspect-badge {
+    display: inline-block;
+    font-size: 0.75rem;
+    font-weight: 500;
+    padding: 0.25rem 0.625rem;
+    background: var(--aspect-bg);
+    color: var(--aspect-text);
+    border-radius: 0.375rem;
+  }
+  .tab1-redesign .hero-icon {
+    flex-shrink: 0;
+    width: 3.5rem;
+    height: 3.5rem;
+    background: var(--aspect-bg);
+    border-radius: 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--aspect-main);
+  }
+  .tab1-redesign .hero-icon--inverse {
+    background: var(--aspect-main);
+    color: #fff;
+  }
+
+  /* SUBJECT INTRO — recolour the AJAX-loaded card to match the aspect.
+     The injected HTML uses DaisyUI border-info / badge-info classes;
+     we override them only inside this wrapper. */
+  .tab1-redesign .subject-intro-wrap #subject-intro-card .border-info {
+    border-color: var(--aspect-main) !important;
+  }
+  .tab1-redesign .subject-intro-wrap #subject-intro-card .badge-info {
+    background-color: var(--aspect-main) !important;
+    border-color: var(--aspect-main) !important;
+    color: #fff !important;
+  }
+
+  /* INFO BAR */
+  .tab1-redesign .info-bar {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+  }
+  .tab1-redesign .info-card {
+    background: oklch(var(--b2));
+    border-radius: 0.5rem;
+    padding: 0.75rem 1rem;
+  }
+  .tab1-redesign .info-card--evidence {
+    background: #EAF3DE;
+    color: #173404;
+  }
+  .tab1-redesign .info-label {
+    font-size: 0.7rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    opacity: 0.7;
+    margin: 0 0 0.25rem;
+  }
+  .tab1-redesign .info-card--evidence .info-label { opacity: 1; }
+  .tab1-redesign .info-value {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin: 0;
+  }
+  .tab1-redesign .info-value-small {
+    font-size: 0.875rem;
+    font-weight: 500;
+    margin: 0;
+  }
+
+  /* PAIRED CONTENT — heights balanced via grid auto-stretch */
+  .tab1-redesign .paired-content {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    align-items: stretch;
+    margin-bottom: 1rem;
+  }
+  .tab1-redesign .content-card {
+    background: oklch(var(--b1));
+    border: 1px solid oklch(var(--b3));
+    border-radius: 0.5rem;
+    padding: 1rem 1.25rem;
+    display: flex;
+    flex-direction: column;
+  }
+  .tab1-redesign .content-label {
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    opacity: 0.65;
+    margin: 0 0 0.625rem;
+  }
+  .tab1-redesign .objectives-list {
+    list-style: disc;
+    padding-left: 1.25rem;
+    margin: 0;
+    font-size: 0.9rem;
+    line-height: 1.55;
+  }
+  .tab1-redesign .objectives-list li { margin-bottom: 0.35rem; }
+  .tab1-redesign .about-body { font-size: 0.9rem; line-height: 1.55; }
+  .tab1-redesign .about-body p { margin: 0 0 0.5rem; }
+
+  /* FRAMEWORK DETAILS */
+  .tab1-redesign .framework-details {
+    background: oklch(var(--b2));
+    border-radius: 0.5rem;
+    padding: 0.75rem 1rem;
+    margin-bottom: 1rem;
+  }
+  .tab1-redesign .framework-details summary {
+    cursor: pointer;
+    font-size: 0.8rem;
+    font-weight: 500;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    opacity: 0.85;
+  }
+  .tab1-redesign .framework-details summary::-webkit-details-marker { display: none; }
+  .tab1-redesign .framework-details summary .summary-icon-open { display: none; }
+  .tab1-redesign .framework-details[open] summary .summary-icon-open { display: inline; }
+  .tab1-redesign .framework-details[open] summary .summary-icon-closed { display: none; }
+  .tab1-redesign .framework-content {
+    margin-top: 0.75rem;
+    padding-left: 1rem;
+    font-size: 0.8rem;
+    line-height: 1.55;
+    border-left: 2px solid oklch(var(--b3));
+    opacity: 0.85;
+  }
+  .tab1-redesign .framework-content p { margin: 0 0 0.5rem; }
+  .tab1-redesign .framework-citation { font-style: italic; opacity: 0.7; }
+
+  /* MOBILE */
+  @media (max-width: 640px) {
+    .tab1-redesign .hero-block {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 1rem;
+    }
+    .tab1-redesign .hero-divider { display: none; }
+    .tab1-redesign .hero-number { font-size: 3rem; }
+    .tab1-redesign .info-bar { grid-template-columns: 1fr; }
+    .tab1-redesign .paired-content { grid-template-columns: 1fr; }
+  }
+</style>
