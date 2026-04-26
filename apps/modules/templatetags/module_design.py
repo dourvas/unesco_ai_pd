@@ -6,38 +6,16 @@ Provides:
   - module_icon_svg:      maps module code -> inline lucide SVG
   - module_number_padded: zero-padded 2-digit module number (e.g. "01", "15")
 
-Aspect mapping is canonical per the design handoff and is intentionally
-keyed by module code rather than the modules.unesco_aspect DB field, which
-contains inconsistent values across rows.
+Aspect mapping is keyed by module code (canonical per the dissertation
+documentation). The database's modules_module.unesco_aspect column now
+agrees with this mapping after the April 2026 normalisation migration,
+but keying by code keeps the colour assignment stable even if the DB
+column is later edited.
 """
-import json
-
 from django.utils.safestring import mark_safe
 from django import template
 
 register = template.Library()
-
-
-@register.filter
-def unwrap_overview(value):
-    """
-    Some module_overview rows are stored as a JSON blob like
-    {"overview": "..."} instead of plain text (data inconsistency).
-    Return the inner overview text when that's the case; otherwise return
-    the value unchanged.
-    """
-    if not isinstance(value, str):
-        return value
-    stripped = value.strip()
-    if not stripped.startswith("{"):
-        return value
-    try:
-        data = json.loads(stripped)
-    except (ValueError, TypeError):
-        return value
-    if isinstance(data, dict) and isinstance(data.get("overview"), str):
-        return data["overview"]
-    return value
 
 
 # UNESCO Aspect -> colour palette (50 / 600 / 800-900 stops).
