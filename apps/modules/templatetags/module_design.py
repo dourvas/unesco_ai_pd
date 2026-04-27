@@ -12,6 +12,9 @@ agrees with this mapping after the April 2026 normalisation migration,
 but keying by code keeps the colour assignment stable even if the DB
 column is later edited.
 """
+import html
+import re
+
 from django.utils.safestring import mark_safe
 from django import template
 
@@ -219,3 +222,80 @@ def module_number_padded(module):
         except ValueError:
             return code
     return code
+
+
+# ----------------------------------------------------------------------------
+# TAB2 magazine layout — split_into_parts
+# ----------------------------------------------------------------------------
+# Tolerant H2 matcher for the three heading patterns currently in production:
+#   A: text-3xl font-bold text-{color} mb-6 + emoji (M1, M3-M11, M14, M15)
+#   B: text-2xl font-bold mt-8 mb-4         + emoji (M2, M7, M12)
+#   C: text-2xl font-bold text-gray-800 mb-3 + NO emoji (M13)
+# The icon group also captures compound emoji (variation selectors, ZWJ) and
+# may be empty for M13. Numbers may carry a single-letter suffix (M1 "Part 1B").
+PART_HEADING_RE = re.compile(
+    r'<h2\b[^>]*?>'                        # any h2 with any attrs
+    r'\s*([^A-Za-z0-9<]*?)'                # optional emoji block (may be empty)
+    r'\s*Part\s+(\d+[A-Za-z]?)\s*:\s*'     # number with optional letter suffix
+    r'(.+?)\s*</h2>',                      # title up to closing tag
+    re.IGNORECASE | re.DOTALL,
+)
+
+
+@register.filter
+def split_into_parts(html_string):
+    """
+    Split TAB2 main_content HTML into a list of Part dicts by H2 anchor.
+
+    Returns a list of dicts with keys:
+      - number    : str  (Part number, may include letter suffix, e.g. "1", "1B")
+      - icon      : str  (emoji prefix; empty string when the H2 has no emoji)
+      - title     : str  (text after "Part N:" up to </h2>)
+      - body_html : str  (HTML between this H2 and the next, exclusive of both)
+      - is_intro  : bool (True for the optional pre-first-Part stripe)
+
+    Defensive behaviour:
+      - Empty/None input -> [].
+      - No H2 anchors found -> single fallback dict with everything in
+        body_html and is_intro=True. Rendering never crashes.
+    """
+    if not html_string:
+        return []
+
+    matches = list(PART_HEADING_RE.finditer(html_string))
+
+    if not matches:
+        return [{
+            'number': '',
+            'icon': '',
+            'title': '',
+            'body_html': html_string,
+            'is_intro': True,
+        }]
+
+    parts = []
+
+    # Anything before the first Part heading is the intro stripe.
+    intro = html_string[:matches[0].start()].strip()
+    if intro:
+        parts.append({
+            'number': '',
+            'icon': '',
+            'title': '',
+            'body_html': intro,
+            'is_intro': True,
+        })
+
+    # Each Part = body between this H2 (excluded) and the next H2 (excluded).
+    for i, m in enumerate(matches):
+        body_start = m.end()
+        body_end = matches[i + 1].start() if i + 1 < len(matches) else len(html_string)
+        parts.append({
+            'number': m.group(2),
+            'icon': m.group(1).strip(),
+            'title': html.unescape(m.group(3).strip()),
+            'body_html': html_string[body_start:body_end].strip(),
+            'is_intro': False,
+        })
+
+    return parts

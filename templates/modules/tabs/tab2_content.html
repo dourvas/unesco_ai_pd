@@ -1,51 +1,428 @@
-<!-- TAB 2: Main Content -->
-<h2 class="card-title text-2xl mb-4">Main Content</h2>
+{% load module_design %}
+
+{# ============================================================ #}
+{# TAB 2 — Main Content (magazine layout)                       #}
+{# Approach: B' + reading toggle. Spec: TAB2_MAGAZINE_SPEC      #}
+{# + reconciliation patch deltas 1-13 (Apr 2026).               #}
+{# ============================================================ #}
 
 {% if content %}
-<div class="prose max-w-none mb-6">
-     {{ content_html|safe }}
-</div>
 
-{# ============================================================ #}
-{# SUBJECT-SPECIFIC BOXES - Personalized content for teacher    #}
-{# ============================================================ #}
+  {% module_aspect_colour module as aspect_colour %}
 
-{# Box Part 2: GenAI Capabilities for your subject #}
-{% if subject_box_part2 %}
-    {{ subject_box_part2.content_data|safe }}
-{% endif %}
+  <div class="tab2-redesign"
+       style="--aspect-main: {{ aspect_colour.main }};
+              --aspect-bg: {{ aspect_colour.bg }};
+              --aspect-text: {{ aspect_colour.text }};">
 
-{# Box Part 4: AI Tools for your subject #}
-{% if subject_box_part4 %}
-    {{ subject_box_part4.content_data|safe }}
-{% endif %}
+    {# Magazine header #}
+    <header class="magazine-header">
+      <p class="part-eyebrow">
+        Module {{ module.code }} · {{ aspect_colour.name }} · {{ module.get_proficiency_level_display }}
+      </p>
+      <h1 class="magazine-title">Main content</h1>
+      <p class="magazine-blurb">
+        {{ content_metadata.intro_blurb|default:"Each Part below builds on the one before. Subject-specific examples appear inline where relevant for your discipline." }}
+      </p>
+    </header>
 
-{# ============================================================ #}
+    {% with parts=content_html|split_into_parts %}
 
-{% if personalized_example %}
-<div class="alert alert-warning mb-6">
-    <div>
-        <h4 class="font-bold">For {{ teacher_profile.subject_area }} Teachers:</h4>
-        <p>{{ personalized_example }}</p>
-    </div>
-</div>
-{% endif %}
+    {# Overview block (intro stripe — content before first Part heading). Delta 13. #}
+    {% for p in parts %}
+      {% if p.is_intro %}
+        <section class="overview-block">
+          <p class="part-eyebrow">Overview</p>
+          <div class="prose max-w-none">
+            {{ p.body_html|safe }}
+          </div>
+        </section>
+      {% endif %}
+    {% endfor %}
 
-{% if not progress.main_content_completed %}
-<div class="card-actions justify-end">
-    <button onclick="markTabComplete('{{ module.code }}', 'main_content')" 
-            class="btn btn-primary">
-        Mark as Complete & Continue →
-    </button>
-</div>
+    {# Sticky Part navigator — only when more than one Part exists #}
+    {% if parts|length > 1 %}
+    <nav id="tab2-part-nav" class="part-nav">
+      <div class="part-nav-row">
+        <span class="part-nav-label">Parts</span>
+        <div class="part-nav-pills">
+          {% for p in parts %}
+            {% if not p.is_intro %}
+              <a href="#tab2-part-{{ p.number }}"
+                 class="nav-pill {% if forloop.first or forloop.counter == 2 and parts.0.is_intro %}active{% endif %}"
+                 data-target="tab2-part-{{ p.number }}">
+                <span class="nav-pill-num">{{ p.number }}</span>
+                <span class="nav-pill-sep"> · </span>
+                <span class="nav-pill-title">{{ p.title|truncatechars:32 }}</span>
+              </a>
+            {% endif %}
+          {% endfor %}
+        </div>
+        <button id="tab2-reading-toggle" type="button" class="reading-toggle" aria-pressed="false">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+          <span class="toggle-label">Compact</span>
+        </button>
+      </div>
+      <div class="progress-track">
+        <div id="tab2-progress" class="progress-fill"></div>
+      </div>
+    </nav>
+    {% endif %}
+
+    {# Compute total Part count (excluding intro) for "Part X of N" eyebrow #}
+    {% with total=parts|length %}
+    {% if parts.0.is_intro %}{% with total_parts=total|add:"-1" %}{# inner block uses total_parts #}
+      {% for p in parts %}
+        {% if not p.is_intro %}
+          <article id="tab2-part-{{ p.number }}" class="part-block" data-part-number="{{ p.number }}">
+            <div class="part-header">
+              <div class="part-numeral">{{ p.number }}</div>
+              <div class="part-heading">
+                <p class="part-eyebrow">Part {{ p.number }} of {{ total_parts }}</p>
+                <h2 class="part-title">{{ p.title }}</h2>
+              </div>
+            </div>
+            <div class="part-body prose max-w-none">
+              {{ p.body_html|safe }}
+            </div>
+          </article>
+        {% endif %}
+      {% endfor %}
+    {% endwith %}{% else %}{% with total_parts=total %}
+      {% for p in parts %}
+        {% if not p.is_intro %}
+          <article id="tab2-part-{{ p.number }}" class="part-block" data-part-number="{{ p.number }}">
+            <div class="part-header">
+              <div class="part-numeral">{{ p.number }}</div>
+              <div class="part-heading">
+                <p class="part-eyebrow">Part {{ p.number }} of {{ total_parts }}</p>
+                <h2 class="part-title">{{ p.title }}</h2>
+              </div>
+            </div>
+            <div class="part-body prose max-w-none">
+              {{ p.body_html|safe }}
+            </div>
+          </article>
+        {% endif %}
+      {% endfor %}
+    {% endwith %}{% endif %}
+    {% endwith %}
+
+    {% endwith %} {# end with parts #}
+
+  </div> {# end .tab2-redesign #}
+
+  {# Personalized example — preserved from old template #}
+  {% if personalized_example %}
+  <div class="alert alert-warning mb-6">
+      <div>
+          <h4 class="font-bold">For {{ teacher_profile.subject_area }} Teachers:</h4>
+          <p>{{ personalized_example }}</p>
+      </div>
+  </div>
+  {% endif %}
+
+  {# Mark complete — preserved from old template, contract unchanged #}
+  {% if not progress.main_content_completed %}
+  <div class="card-actions justify-end mt-8 pt-6 border-t border-base-300">
+      <button onclick="markTabComplete('{{ module.code }}', 'main_content')" class="btn btn-primary">
+          Mark as Complete &amp; Continue →
+      </button>
+  </div>
+  {% else %}
+  <div class="alert alert-success mt-8">
+      <span>✓ Tab completed</span>
+  </div>
+  {% endif %}
+
 {% else %}
-<div class="alert alert-success">
-    <span>✓ Tab completed</span>
-</div>
+  <div class="alert alert-error">
+      <span>Content not found. Please contact administrator.</span>
+  </div>
 {% endif %}
 
-{% else %}
-<div class="alert alert-error">
-    <span>Content not found. Please contact administrator.</span>
-</div>
-{% endif %}
+<style>
+  /* ============================================================
+     TAB 2 — magazine layout (scoped under .tab2-redesign)
+     CSS variables --aspect-main / --aspect-bg / --aspect-text
+     are injected on the wrapper. Same convention as TAB1.
+     ============================================================ */
+
+  .tab2-redesign { color: oklch(var(--bc)); }
+
+  /* Magazine header */
+  .tab2-redesign .magazine-header { margin-bottom: 2rem; }
+  .tab2-redesign .magazine-title {
+    font-family: ui-serif, Georgia, "Times New Roman", serif;
+    font-size: 2rem;
+    font-weight: 700;
+    line-height: 1.15;
+    margin: 0.25rem 0 0.5rem;
+    color: oklch(var(--bc));
+  }
+  @media (min-width: 768px) {
+    .tab2-redesign .magazine-title { font-size: 2.25rem; }
+  }
+  .tab2-redesign .magazine-blurb {
+    color: oklch(var(--bc) / 0.7);
+    max-width: 42rem;
+    margin: 0;
+  }
+
+  /* Eyebrow — used in header, overview and Part blocks */
+  .tab2-redesign .part-eyebrow {
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--aspect-main);
+    margin: 0 0 0.5rem;
+  }
+
+  /* Overview (intro stripe) — Delta 13. No numeral, no left border.
+     Subtle aspect-tinted card to lift it off the page. */
+  .tab2-redesign .overview-block {
+    background: var(--aspect-bg);
+    border-radius: 0.75rem;
+    padding: 1.5rem 1.75rem;
+    margin-bottom: 2.5rem;
+  }
+  .tab2-redesign .overview-block .part-eyebrow {
+    color: var(--aspect-text);
+    margin-bottom: 0.75rem;
+  }
+  /* Tighten the prose inside overview so it doesn't double-pad */
+  .tab2-redesign .overview-block .prose > :first-child { margin-top: 0; }
+  .tab2-redesign .overview-block .prose > :last-child { margin-bottom: 0; }
+
+  /* Sticky Part navigator */
+  .tab2-redesign .part-nav {
+    position: sticky;
+    top: 5rem;
+    z-index: 30;
+    background: oklch(var(--b1) / 0.95);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border-bottom: 1px solid oklch(var(--b3));
+    margin: 2rem -0.5rem 2.5rem;
+    padding: 0.75rem 0.5rem 0.5rem;
+  }
+  .tab2-redesign .part-nav-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  .tab2-redesign .part-nav-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: oklch(var(--bc) / 0.6);
+    flex-shrink: 0;
+  }
+  /* Pills strip — only this part scrolls horizontally;
+     PARTS label (left) and Compact button (right) stay anchored. */
+  .tab2-redesign .part-nav-pills {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    /* Soft fade at edges to hint that pills can scroll */
+    -webkit-mask-image: linear-gradient(to right, transparent 0, #000 12px, #000 calc(100% - 12px), transparent 100%);
+            mask-image: linear-gradient(to right, transparent 0, #000 12px, #000 calc(100% - 12px), transparent 100%);
+  }
+  .tab2-redesign .part-nav-pills::-webkit-scrollbar { display: none; }
+  .tab2-redesign .nav-pill {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.125rem;
+    padding: 0.375rem 0.75rem;
+    border: 1px solid oklch(var(--b3));
+    border-radius: 9999px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: oklch(var(--bc));
+    background: oklch(var(--b1));
+    text-decoration: none;
+    transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  }
+  .tab2-redesign .nav-pill .nav-pill-num { font-weight: 600; }
+  .tab2-redesign .nav-pill:hover {
+    background: var(--aspect-bg);
+    color: var(--aspect-text);
+  }
+  .tab2-redesign .nav-pill.active {
+    background: var(--aspect-main);
+    color: #fff;
+    border-color: var(--aspect-main);
+  }
+  .tab2-redesign .reading-toggle {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.25rem 0.625rem;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 0.375rem;
+    font-size: 0.75rem;
+    color: oklch(var(--bc) / 0.7);
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease;
+  }
+  .tab2-redesign .reading-toggle:hover {
+    background: oklch(var(--b2));
+    color: oklch(var(--bc));
+  }
+  .tab2-redesign .progress-track {
+    height: 0.25rem;
+    background: oklch(var(--b2));
+    border-radius: 9999px;
+    margin-top: 0.5rem;
+    overflow: hidden;
+  }
+  .tab2-redesign .progress-fill {
+    height: 100%;
+    width: 0%;
+    background: var(--aspect-main);
+    transition: width 0.2s ease;
+  }
+
+  /* Part block */
+  .tab2-redesign .part-block {
+    border-left: 4px solid var(--aspect-main);
+    padding-left: 1.5rem;
+    margin-bottom: 3rem;
+    scroll-margin-top: 9rem;  /* clears the sticky nav (top:5rem + nav height) */
+  }
+  .tab2-redesign .part-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }
+  .tab2-redesign .part-numeral {
+    font-family: ui-serif, Georgia, "Times New Roman", serif;
+    font-size: 4rem;
+    font-weight: 600;
+    line-height: 1;
+    letter-spacing: -0.02em;
+    color: var(--aspect-main);
+    flex-shrink: 0;
+  }
+  .tab2-redesign .part-heading { flex: 1; min-width: 0; }
+  .tab2-redesign .part-title {
+    font-family: ui-serif, Georgia, "Times New Roman", serif;
+    font-size: 1.75rem;
+    font-weight: 600;
+    line-height: 1.2;
+    color: oklch(var(--bc));
+    margin: 0.25rem 0 0;
+  }
+  @media (min-width: 768px) {
+    .tab2-redesign .part-title { font-size: 2rem; }
+  }
+
+  /* Compact mode — collapses non-current Parts on demand */
+  .tab2-redesign .part-block.part-collapsed .part-body { display: none; }
+
+  /* Print: always expand, hide navigator */
+  @media print {
+    .tab2-redesign .part-block.part-collapsed .part-body { display: block !important; }
+    .tab2-redesign .part-nav { display: none !important; }
+  }
+
+  /* Mobile: tighten Part header */
+  @media (max-width: 640px) {
+    .tab2-redesign .part-numeral { font-size: 3rem; }
+    .tab2-redesign .part-title { font-size: 1.375rem; }
+    .tab2-redesign .part-block { padding-left: 1rem; }
+  }
+</style>
+
+<script>
+(function() {
+  const root = document.querySelector('.tab2-redesign');
+  if (!root) return;
+  const parts = Array.from(root.querySelectorAll('article.part-block'));
+  const pills = Array.from(root.querySelectorAll('#tab2-part-nav .nav-pill'));
+  const progressBar = document.getElementById('tab2-progress');
+  const toggle = document.getElementById('tab2-reading-toggle');
+  const toggleLabel = toggle ? toggle.querySelector('.toggle-label') : null;
+  let compact = false;
+
+  // Keep the active pill within the horizontally scrollable pills strip.
+  // Adjusts only the strip's scrollLeft — never triggers page scroll.
+  function ensurePillVisible(pill) {
+    const strip = pill && pill.closest('.part-nav-pills');
+    if (!strip) return;
+    const stripRect = strip.getBoundingClientRect();
+    const pillRect = pill.getBoundingClientRect();
+    const pad = 16;
+    if (pillRect.left < stripRect.left + pad) {
+      strip.scrollLeft -= (stripRect.left + pad - pillRect.left);
+    } else if (pillRect.right > stripRect.right - pad) {
+      strip.scrollLeft += (pillRect.right - stripRect.right + pad);
+    }
+  }
+
+  let lastActiveIdx = -1;
+  function syncNavOnScroll() {
+    if (parts.length === 0) return;
+    let activeIdx = 0;
+    parts.forEach((p, i) => {
+      const rect = p.getBoundingClientRect();
+      if (rect.top < 200) activeIdx = i;
+    });
+    pills.forEach((pill, i) => pill.classList.toggle('active', i === activeIdx));
+
+    if (activeIdx !== lastActiveIdx && pills[activeIdx]) {
+      ensurePillVisible(pills[activeIdx]);
+      lastActiveIdx = activeIdx;
+    }
+
+    if (progressBar) {
+      const max = document.body.scrollHeight - window.innerHeight;
+      const pct = max > 0 ? Math.min(100, Math.max(0, (window.scrollY / max) * 100)) : 0;
+      progressBar.style.width = pct + '%';
+    }
+  }
+  window.addEventListener('scroll', syncNavOnScroll, { passive: true });
+
+  pills.forEach(pill => {
+    pill.addEventListener('click', (e) => {
+      e.preventDefault();
+      const target = document.getElementById(pill.dataset.target);
+      if (!target) return;
+      if (compact) {
+        parts.forEach(p => p.classList.add('part-collapsed'));
+        target.classList.remove('part-collapsed');
+      }
+      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
+
+  if (toggle) {
+    toggle.addEventListener('click', () => {
+      compact = !compact;
+      toggle.setAttribute('aria-pressed', String(compact));
+      if (compact) {
+        parts.forEach(p => p.classList.add('part-collapsed'));
+        const visible = parts.find(p => p.getBoundingClientRect().top > -100);
+        if (visible) visible.classList.remove('part-collapsed');
+        if (toggleLabel) toggleLabel.textContent = 'Expanded';
+      } else {
+        parts.forEach(p => p.classList.remove('part-collapsed'));
+        if (toggleLabel) toggleLabel.textContent = 'Compact';
+      }
+    });
+  }
+
+  syncNavOnScroll();
+})();
+</script>
