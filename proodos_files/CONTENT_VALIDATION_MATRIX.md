@@ -23,7 +23,7 @@
 | M4 | AI Tools for Teaching | Aspect 4 — CG4.1.1, CG4.1.3, CG4.1.4 (partial) | Acquire | UNESCO/Miao & Holmes (2023); Steiss et al. (2024); Mishra et al. (2023) TPACK; Letourneau et al. (2025) ITS | ⬜ | Apply / Evaluate | ✅ |
 | M5 | Prompt Engineering as Reflective Practice | Aspect 5 — CG5.1.1, LO5.1.2 | Acquire | Dourvas et al. (2025) RPE Framework; Polanyi (1966); Schön (1983); Zhou et al. (2026); Li et al. (2026) | ⬜ | Apply / Analyse | ✅ |
 | M6 | Human Accountability in AI | Aspect 1 — CG1.2.1, CG1.2.2, CG1.2.3, CG1.2.4 (📋 Tier 3 audit-corrected) | Deepen | Khosravi et al. (2022) XAI-ED; Shneiderman (2022); EU AI Act (2024); GDPR; Selwyn (2022) | ⬜ | Analyse / Evaluate | ✅ |
-| M7 | Navigating Ethical Dilemmas in Practice | Aspect 2 — CG2.2.1, CG2.2.2, CG2.2.3 (all partial) | Deepen | Cotton et al. (2024); Bittle & El-Gayar (2025); Liang et al. (2023); Mezirow (1991); Isma'il & Ibrahim (2025) | ⬜ | Analyse / Evaluate | ✅ |
+| M7 | Navigating Ethical Dilemmas in Practice | Aspect 2 — CG2.2.1 (📌 Cluster D defendable — taxonomy ορολογία out of M7 dilemma framing), CG2.2.2 (🎯 Tier 4 A4 CLOSED — Scenario 8 Anonymous Class Group Chat + LO2.2.4 verbatim + EU AI Act Art. 5(1)(b)), CG2.2.3 STRONG | Deepen | Cotton et al. (2024); Bittle & El-Gayar (2025); Liang et al. (2023); Mezirow (1991); Isma'il & Ibrahim (2025) | ⬜ | Analyse / Evaluate | ✅ |
 | M8 | Advanced Prompt Engineering with EduPrompt Studio | Aspect 3 — CG3.2.1 (🎯 Tier 3 CLOSED), CG3.2.4 (🎯 Tier 3 CLOSED), LO3.2.1 | Deepen | Dourvas et al. (2025) RPE; Mishra et al. (2023) TPACK GenAI; Celik (2023); Crosthwaite et al. (2025); Zhou et al. (2026) | ⬜ | Apply / Create | ✅ |
 | M9 | AI-Enhanced Lesson Design | Aspect 4 — CG4.2.4, LO4.2.1, LO4.2.2 (all strongly) | Deepen | Wiggins & McTighe (2005); Meyer et al. (2014) UDL; CAST (2018); Tomlinson (2014); Hattie & Donoghue (2016); Bjork & Bjork (2011) | ⬜ | Apply / Analyse / Create | ✅ |
 | M10 | AI Collaboration and Communities of Practice | Aspect 5 — CG5.2.1 (partial), LO5.2.1 (partial) | Deepen | Wenger (1998); Star & Griesemer (1989); Lave & Wenger (1991); Dourvas et al. (2025) RPE Strategy 7; Edmondson (1999) | ⬜ | Apply / Analyse / Evaluate / Create | ✅ |
@@ -201,8 +201,8 @@ TAB4 (15 questions) → CG1.1.1–CG1.1.4: foundational knowledge check
 
 ### M4 — AI Tools for Teaching
 **UNESCO:** Aspect 4: AI Pedagogy | Acquire | Competency 4.1 (AI-assisted teaching)
-**Indicators covered:** CG4.1.1 (TAB2 partial + TAB3 substantial via 5 case scenarios), CG4.1.3, CG4.1.4 (partial); LO4.1.1, LO4.1.2, LO4.1.3 (partial), LO4.1.4
-**Indicators with partial/no coverage (βλ. CONTENT_GAPS_LOG.md):** CG4.1.2 (scholarly research base), ρητή κάλυψη instructional design methods και special needs
+**Indicators covered:** CG4.1.1 (TAB2 partial + TAB3 substantial via 5 case scenarios), CG4.1.3, CG4.1.4 (partial); LO4.1.1, LO4.1.2, LO4.1.3 (partial), LO4.1.4; **CG4.1.2** 🎯 Tier 4 A1 v2 CLOSED (Tool 3 "Evidence Check Before You Adopt" σε M4 Part 5 + Létourneau et al. 2025 evidence-base footer; doc 94/chunk 1622; sim 0.7520 #1 unfiltered+mod-scoped)
+**Indicators with partial/no coverage (βλ. CONTENT_GAPS_LOG.md):** ρητή κάλυψη instructional design methods και special needs (sub-clause notes; CG4.1.1 videos sub-clause defendable per audit-resolution 8 Μαΐου 2026)
 
 #### Γιατί αυτό το περιεχόμενο
 
@@ -776,8 +776,8 @@ Practical CoP session pattern. Documentation = institutional memory growth.
 
 ### M11 — Your Voice in the AI School (Leadership for Human-Centred AI)
 **UNESCO:** Aspect 1: Human-Centred Mindset | Create | Competency 1.3 (Social responsibility)
-**Indicators covered:** LO1.3.2 (strongly — institutional policy contribution); CG1.3.3 (partial — civic responsibility implicit); LO1.3.1, LO1.3.3 (partial)
-**Indicators with partial/no coverage (βλ. CONTENT_GAPS_LOG.md):** CG1.3.1 (commercial AI manipulation, profit motives, social-emotional well-being threat), citizenship rights/obligations ρητά (CG1.3.3, LO1.3.3)
+**Indicators covered:** LO1.3.2 (strongly — institutional policy contribution); CG1.3.1 (🎯 Tier 1 T1.5 CLOSED — commercial_apr2026 "When AI Becomes a Product" + AI Sycophancy Part 1); CG1.3.3 / LO1.3.3 (🎯 Tier 1 citizenship_apr2026 CLOSED — 3 Rights + 3 Obligations Part 4); LO1.3.1 STRONG cumulatively (5 Teaching Moves Part 3 + cross-aspect environment dimension via M12 climate patch)
+**Indicators with partial/no coverage (βλ. CONTENT_GAPS_LOG.md):** (none — Tier 1 + Tier 4 A3 closures resolved all M11 partial flags; per audit-resolution 8 Μαΐου 2026)
 **Indicators closed via Tier 1 + Tier 4 audit + distributed cumulative:** CG1.3.2 (T1.1 Global Frameworks UNESCO 2021 + OECD + EU AI Act; T1.5 Commercial AI sycophancy economy = threats sub-clause; Accessibility Bridge equity SVG = inclusive sub-clause; M12 Environmental Impact + Cognitive and Ecological Efficiency = climate sub-clause sim 0.8284; M2 Sustainability as 6th UNESCO principle; M13 Q8 Environmental footprint dim — Tier 4 A3 audit decomposed CG1.3.2 into 7 sub-clauses, 6/7 STRONG cumulatively + 1/7 MODERATE-STRONG, 4 May 2026)
 
 #### Γιατί αυτό το περιεχόμενο
@@ -866,8 +866,8 @@ Try yourself → Share informally → Document outcome → Propose pilot → Rep
 
 ### M12 — Ethics Integration Across Curriculum (School AI Policy Co-Creation)
 **UNESCO:** Aspect 2: Ethics of AI | Create | Competency 2.3 (Co-creating ethical rules)
-**Indicators covered:** LO2.3.2 (strongly), LO2.3.3 (strongly); CG2.3.1 (partial), CG2.3.2 (partial), CG2.3.3 (partial), LO2.3.1 (partial)
-**Indicators with partial/no coverage (βλ. CONTENT_GAPS_LOG.md):** Climate change / planetary well-being ρητά (CG2.3.1, LO2.3.1), EU AI Act / multi-stakeholder regulatory negotiations ρητά (CG2.3.3), commercial AI manipulation / profit motives ρητά (συνδέεται με M5 #2 + M11 #1), linguistic/cultural diversity threats ρητά, master teachers ως ethics advocates, co-designing ethical AI prototypes
+**Indicators covered:** LO2.3.2 (strongly), LO2.3.3 (strongly); CG2.3.1 / LO2.3.1 (🎯 Day 2 Patch 2.1+2.2 + Tier 1 climate_apr2026 CLOSED — Part 2 Environmental Impact + Cognitive and Ecological Efficiency; linguistic/cultural diversity covered cumulatively via Foreign Languages row + 3 Special Circumstances IEPs/504 + 7 Subject Areas table; social equity covered via 7 Elements Element 4); CG2.3.2 STRONG (AI Tool Evaluation Checklist + Designer's Cycle); **CG2.3.3** 📌 Cluster D defendable (multi-stakeholder simulation — M12 5-step participatory process στέκεται ως institutional analogue; UNESCO Section 2.5 + dialectical pedagogy rationale)
+**Indicators with partial/no coverage (βλ. CONTENT_GAPS_LOG.md):** **CG2.3.3** indicator-level Cluster D defendable design choice (only PARTIAL after Day 2/Tier 1/Tier 4 closures; per audit-resolution 8 Μαΐου 2026). Master teachers ως ethics advocates 🎯 Tier 1 master_teachers_advocates CLOSED (Part 4). Co-designing ethical AI prototypes covered cumulatively via Designer's Cycle Part 8 + Step 4 Pilot.
 **Cross-aspect sub-clause hosted in M12:** **LO5.3.1 sub-clause (d)** — "new iterations of ethical rules" — substantively addressed by M12 Part 8 #6 **The Designer's Cycle** (5-step iterative cycle: Identify → Map → Define → Communicate → Review → cycle, with explicit "*A policy that works today may need revision in six months. The Designer's Cycle is designed to be returned to — not completed once and filed away*" framing) + Part 3 Five-Step Participatory Process. M12 is the operational anchor for this sub-clause; M15 (LO5.3.1 home, Aspect 5 Create) credits it via Tier 4 A9 audit-correction. See M15 entry below + CONTENT_GAPS_LOG.md.
 
 #### Γιατί αυτό το περιεχόμενο

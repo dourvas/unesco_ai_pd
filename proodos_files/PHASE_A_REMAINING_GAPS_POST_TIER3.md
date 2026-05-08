@@ -1,7 +1,9 @@
 # Phase A Remaining Gaps — Post-Tier-3 Inventory
 
-**Date:** 3 Μαΐου 2026 (Tier 4 Sprint 1 status update appended 4 Μαΐου 2026)
-**Coverage:** 142/170 STRONG (~83.5%) · **28/170 PARTIAL** (~16.5%) · 0 ABSENT *(pre-Tier-4)*
+**Date:** 3 Μαΐου 2026 (Tier 4 Sprint 1 status update appended 4 Μαΐου 2026; Sprint 2 + audit-resolution updates appended 6 + 8 Μαΐου 2026)
+**Coverage (pre-Tier-4):** 142/170 STRONG (~83.5%) · 28/170 PARTIAL (~16.5%) · 0 ABSENT
+**Coverage (post-A16, 6 Μαΐου 2026):** **163/170 STRONG (~95.9%)** · **7/170 PARTIAL (~4.1%)** (3 Cluster C + 4 Cluster D) · 0 ABSENT
+**Coverage (post-audit-resolution, 8 Μαΐου 2026):** Cluster D enumeration cleaned up (was 7 mixed entries → 4 indicator-level + 3 sub-clause-only categories); CG2.1.3 stale entry removed. See `audits/UNESCO_INDICATOR_AUDIT_RESOLUTION.md`.
 **Source:** `CONTENT_GAPS_LOG.md` + `CONTENT_VALIDATION_MATRIX.md` (post-Tier-3 merged state)
 **Σκοπός:** καταγραφή των 28 PARTIAL indicators με feasibility analysis και Tier 4 scoping
 
@@ -16,7 +18,7 @@
 | **Closeable με Tier-4-style text patches** | ~10 indicators (30 min – 2 h each) — Cluster A pending |
 | **Closeable μέσω cross-module subsections** | ~6 indicators (2 – 6 h each) — Cluster B pending |
 | **Require platform-feature work** (sprint-scale) | ~5 indicators — Cluster C deferred until post-pilot |
-| **Defendable design choices** (no closure recommended) | ~7 indicators — Cluster D |
+| **Defendable design choices** (no closure recommended) | **4 indicator-level** (Cluster D) + **3 sub-clause-only categories** (within otherwise-STRONG indicators) — see audit-resolution 8 May 2026 |
 | **Audit-correction candidates** | ✅ **Cluster E fully resolved Sprint 1** (CG2.1.3, CG4.3.4, CG5.3.4 → STRONG) |
 | **Realistic ceiling** if Tier 4 continues | ~155 / 170 = **~91.2% STRONG** (Sprint 1 already delivered +3; Cluster A pending = +~10 more) |
 | **Genuinely closeable με reasonable effort** | ~13 of 25 PARTIAL items remaining (was 16 of 28; Cluster E delivered Sprint 1) |
@@ -161,17 +163,24 @@ All 5 patterns available as defendability tools για remaining audits και d
 
 ### Cluster D — Defendable design choices (no closure recommended)
 
-7 indicators που είναι deliberate PROODOS scoping choices, defendable in viva:
+> **Audit-resolution update (8 Μαΐου 2026):** Cluster D enumeration cleaned up. Previous "7 entries" was a hybrid of indicator-level PARTIAL (4) + sub-clause-only defendable notes (3 categories) + 1 stale already-closed entry (CG2.1.3, Sprint 1). Math identity recovered: **163 STRONG + 4 Cluster D + 3 Cluster C = 170**. See `audits/UNESCO_INDICATOR_AUDIT_RESOLUTION.md` §3.
 
-1. **CG1.2.2** local/national regulatory frameworks (PROODOS διεθνώς)
-2. **CG2.2.1** AI safety taxonomy ορολογία (M7 dilemma framing pedagogically stronger)
-3. **CG2.3.3** multi-stakeholder simulation (M12 institutional analogue)
-4. **LO3.2.3a** data/algorithms/coding hands-on (UNESCO Section 2.5 K-12 scoping)
-5. **CG3.3.1 / LO3.3.2** programming/fine-tuning ρητά (same UNESCO Section 2.5)
-6. **CG4.1.1, CG4.2.1, CG4.3.1** exemplar videos (text-first delivery, accessibility, cost)
-7. **CG2.1.3** disabled/marginalized + linguistic-cultural in M2 (cumulatively distributed across M7/M11/M12)
+**4 indicators που είναι deliberate PROODOS scoping choices, defendable in viva (indicator-level PARTIAL):**
+
+1. **CG1.2.2** local/national regulatory frameworks (M6 covers EU AI Act + GDPR; PROODOS διεθνώς, national = user extension territory)
+2. **CG2.2.1** AI safety taxonomy ορολογία (M7 dilemma framing pedagogically stronger για K-12 teacher Deepen audience than formal safety-by-design vs use taxonomy)
+3. **CG2.3.3** multi-stakeholder regulatory simulation (M12 5-step participatory process στέκεται ως institutional co-creation analogue; simulation = optional pedagogical mode)
+4. **CG3.3.1** programming/data/algorithms/AI models hands-on customisation (M13 chose no-code interpretation; UNESCO Section 2.5 K-12 scoping rationale)
 
 These should be **explicitly defended** in the dissertation rather than "closed". Pattern matches Tier 3 audit-correction approach for CG1.2.4.
+
+**Sub-clause-only defendable notes (parent indicators STRONG cumulatively, sub-clauses defended explicitly but NOT counted in the 4):**
+
+A. **LO3.2.3 sub-clause "a"** — data/algorithms/coding hands-on (parent STRONG via Tier 3 ethics-by-design + A6 RLHF; same Section 2.5 logic as CG3.3.1)
+B. **LO3.3.2 sub-clause "fine-tune"** — fine-tune open-source AI ρητά (parent STRONG via Customisation Continuum no-code interpretation; same K-12 scoping)
+C. **CG4.1.1, CG4.2.1, CG4.3.1 videos sub-clause** — exemplar videos in M4/M9/M14 (each parent STRONG cumulatively: CG4.1.1 via TAB3 5 case scenarios; CG4.2.1 via Sprint 2 A11 SEL closure; CG4.3.1 via M14 SAMR text-based exemplar analyses; videos defendable via text-first / accessibility / cost trade-offs)
+
+**Removed from previous enumeration:** CG2.1.3 (Sprint 1 closed Cluster E; was stale entry).
 
 ### Cluster E — Audit-correction candidates ✅ FULLY RESOLVED Sprint 1 (4 May 2026)
 
