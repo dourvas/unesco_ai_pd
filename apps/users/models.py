@@ -305,7 +305,22 @@ class TeacherProfile(models.Model):
         verbose_name="Notes",
         help_text="Admin notes - internal use only"
     )
-    
+
+    # === PHASE A TIER 3 — Practice Workshop ===
+    BLOG_FILTER_CHOICES = [
+        ('my_subject', 'My subject only'),
+        ('adjacent', 'Adjacent subjects'),
+        ('all', 'All subjects'),
+    ]
+
+    blog_subject_filter_preference = models.CharField(
+        max_length=20,
+        choices=BLOG_FILTER_CHOICES,
+        default='adjacent',
+        verbose_name="Practice Workshop subject filter",
+        help_text="User's preferred Workshop feed filter mode (persisted across sessions).",
+    )
+
     # === COMPUTED PROPERTIES ===
     
     @property
@@ -344,11 +359,22 @@ class TeacherProfile(models.Model):
         """Human-readable profile summary"""
         if not self.personalization_ready:
             return "Profile incomplete"
-        
+
         subject = dict(self.SUBJECT_CHOICES).get(self.subject_area, self.subject_area)
         grade = dict(self.GRADE_LEVEL_CHOICES).get(self.grade_level, self.grade_level)
-        
+
         return f"{subject} - {grade}"
+
+    @property
+    def pseudonym(self):
+        """
+        GDPR-friendly display name for community / Practice Workshop posts.
+        Returns display_name if set, otherwise f"Educator_{user.id}".
+        Tier 3 — Blocker 1 Option B (no DB column, computed only).
+        """
+        if self.display_name:
+            return self.display_name
+        return f"Educator_{self.user_id}"
     
     def __str__(self):
         return f"{self.user.username} - {self.profile_summary}"
