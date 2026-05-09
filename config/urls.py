@@ -20,6 +20,9 @@ urlpatterns = [
     path('modules/', include('apps.modules.urls')),
     path('', include('apps.community.urls')),
 
+    # 4. Practice Workshop (peer_blog) — Phase A Tier 3
+    path('blog/', include('apps.peer_blog.urls', namespace='peer_blog')),
+
 ]
 
 # Serve media and static files in development

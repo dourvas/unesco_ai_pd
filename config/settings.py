@@ -28,6 +28,7 @@ INSTALLED_APPS = [
     'apps.modules',
     'apps.core',
     'apps.community',
+    'apps.peer_blog',
 ]
 
 MIDDLEWARE = [
@@ -53,6 +54,8 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                # Phase A Tier 3 Step 3.5
+                'apps.peer_blog.context_processors.workshop_modules',
             ],
         },
     },
@@ -112,4 +115,15 @@ LOGIN_REDIRECT_URL = 'users:dashboard'
 
 # Where to redirect after logout
 LOGOUT_REDIRECT_URL = 'users:landing'
+
+# ============================================================
+# Phase A Tier 2 Step 4 — M13 Repository Submission CTA
+# ============================================================
+# External URL to the open community-maintained workflows repo.
+# Override via env var GITHUB_WORKFLOWS_URL if needed.
+import os as _os
+GITHUB_WORKFLOWS_URL = _os.environ.get(
+    'GITHUB_WORKFLOWS_URL',
+    'https://github.com/dourvas/proodos-eduai-teacher-workflows',
+)
 
