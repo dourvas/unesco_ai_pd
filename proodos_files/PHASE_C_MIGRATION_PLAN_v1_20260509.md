@@ -121,7 +121,7 @@ Detailed design per migration in §6.
 
 ### 6.1 Migration 1 — `apps/compliance/migrations/0001_initial.py`
 
-**Status:** APPLIED 2026-05-09 12:47:45 UTC, commit pending. `django_migrations.id = 43`. Backup at repo root: `pre_migration_backup_phaseC_M1_20260509.sql` (50.6 MB, 24067 lines).
+**Status:** APPLIED 2026-05-09 12:47:45 UTC, commit `06357f2`. **OBSOLETED** by Γ.1 on 2026-05-09 14:17:48 UTC: extended a CHECK constraint on `consent_records`, which was dropped along with the entire dead schema. The 0001_initial.py file is preserved on disk as an empty no-op placeholder (Django migration graph requires importable nodes for any migration in `dependencies`); the original RunSQL forward + reverse blocks remain in commit `06357f2` for forensic reference. Its `django_migrations.id=43` row is left in place. Backup at repo root: `pre_migration_backup_phaseC_M1_20260509.sql` (50.6 MB, 24067 lines).
 
 **Type:** `migrations.RunSQL` (because `consent_records` is raw-SQL only).
 
@@ -169,6 +169,8 @@ Expected: only the 4 existing values. If any row has a different value, halt and
 ```
 
 ### 6.2 Migration 2 — `apps/users/migrations/0007_*.py`
+
+**Status:** APPLIED 2026-05-09 13:34 UTC. Filename `0007_teacherprofile_ai_disclosure_acknowledged_at_and_more.py`. 4 AddField operations completed in single transaction. All 6 existing `teacher_profiles` rows extended with NULL for the 3 nullable columns and `[]` for `student_population_special_needs`. `pre_phase_c_user` flag NOT added (CP 11 Option B). Pre-apply backup at repo root: `pre_migration_backup_phaseC_M2_20260509.sql` (50.6 MB).
 
 **Type:** `AlterField`-style (Django model changes).
 
@@ -405,3 +407,6 @@ This plan is a living document for the duration of Phase C migrations. Updates:
 
 - **2026-05-09 — v1**: Initial plan, written from chat-session decisions and read-only sprint findings.
 - **2026-05-09 — M1 applied**: Migration 1 (compliance/0001_initial) applied. CP 1 resolved: `consent_records` had 0 rows pre-apply, no constraint conflict possible. Constraint now accepts `ai_disclosure` plus the original 4 values. Negative test (`garbage_type`) confirmed rejected. No residual test data.
+- **2026-05-09 — M2 applied**: Migration 2 (users/0007) added 4 Phase C personalization fields to `teacher_profiles`. `pre_phase_c_user` flag NOT added (CP 11 Option B). 6 existing rows extended with NULL/`[]` defaults. Pre-apply backup: `pre_migration_backup_phaseC_M2_20260509.sql`.
+- **2026-05-09 — Γ.0 audit + pivot**: Attempted post-M2 reset script crashed on FK violation: `consent_records.user_id` references a separate raw-SQL `users` table, not Django `auth_user`. Investigation revealed an entire abandoned pre-Django architectural layer (22 tables + 2 SQL functions). Decision: drop the dead schema (Option Γ) but only after a documented read-only audit. See `audits/DEAD_SCHEMA_AUDIT_20260509.md` for verdict A CONFIRMED.
+- **2026-05-09 — Γ.1 applied**: Migration `compliance/0002_drop_dead_schema` applied at 14:17:48 UTC. 22 dead tables and 2 SQL functions dropped. M1 placeholder rewritten as no-op. Reset script `phaseC_M2_reset_test_users.py` deleted. All 21 verified Django live-table row counts unchanged. `update_updated_at_column()` preserved. RAG triggers on `documents` and `rag_queries` preserved. Pre-Γ.1 backup: `pre_migration_backup_phaseC_GAMMA1_20260509.sql` (50.6 MB).

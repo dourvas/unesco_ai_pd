@@ -1,0 +1,341 @@
+29 objects imported automatically (use -v 2 for details).
+
+=== ALL_PUBLIC_TABLES ===
+  analytics_events                                               0 rows
+  anonymized_profiles                                            0 rows
+  assessments                                                   21 rows
+  auth_group                                                     0 rows
+  auth_group_permissions                                         0 rows
+  auth_permission                                               92 rows
+  auth_user                                                      6 rows
+  auth_user_groups                                               0 rows
+  auth_user_user_permissions                                     0 rows
+  badges                                                         0 rows
+  community_forumhelpfulvote                                     0 rows
+  community_forumpost                                            3 rows
+  community_forumthread                                         14 rows
+  consent_records                                                0 rows
+  django_admin_log                                               2 rows
+  django_content_type                                           23 rows
+  django_migrations                                             43 rows
+  django_session                                                33 rows
+  document_chunks                                              948 rows
+  documents                                                     71 rows
+  feature_flags                                                  3 rows
+  forum_helpful_votes                                            0 rows
+  forum_posts                                                    0 rows
+  forum_threads                                                  0 rows
+  leaderboard_entries                                            0 rows
+  m12_main_content_backup_apr2026                                1 rows
+  m1_tab2_backup                                                 1 rows
+  module_content                                                 1 rows
+  modules                                                       15 rows
+  modules_aioutputdispute                                       13 rows
+  modules_module                                                15 rows
+  modules_modulecontent                                       1258 rows
+  modules_modulecontent_backup_citizenship_apr2026            1258 rows
+  modules_modulecontent_backup_climate_apr2026                1258 rows
+  modules_modulecontent_backup_commercial_apr2026             1258 rows
+  modules_modulecontent_backup_disabilities_apr2026           1258 rows
+  modules_modulecontent_backup_m7_layout_apr2026              1258 rows
+  modules_modulecontent_backup_phase_a_tier2_may2026          1258 rows
+  modules_modulecontent_backup_phase_a_tier3_may2026          1258 rows
+  modules_modulecontent_backup_phase_a_tier4_may2026          1258 rows
+  modules_modulecontent_backup_phasea_tier1_cycle1            1258 rows
+  modules_modulecontent_backup_phasea_tier1_cycle2            1258 rows
+  modules_modulecontent_backup_programming_apr2026            1258 rows
+  modules_modulecontent_backup_subjectboxes_apr2026            720 rows
+  modules_tab3repositorysubmission                               1 rows
+  modules_usermoduleprogress                                    41 rows
+  peer_blog_blogcomment                                          0 rows
+  peer_blog_blogpost                                             1 rows
+  peer_blog_blogthumbsup                                         0 rows
+  peer_reflections                                              95 rows
+  rag_documents                                                  0 rows
+  rag_queries                                                   23 rows
+  reflection_tensions                                           32 rows
+  schema_versions                                                1 rows
+  shared_prompt_ratings                                          0 rows
+  shared_prompt_usage                                            0 rows
+  shared_prompts                                                 0 rows
+  survey_responses                                               0 rows
+  surveys                                                        0 rows
+  system_settings                                                4 rows
+  tab3_prompt_library                                           75 rows
+  tab3_user_activity                                            28 rows
+  tab3_user_activity_m1_backup                                   5 rows
+  tab3_user_toolkit                                              4 rows
+  teacher_profiles                                               6 rows
+  user_badges                                                    0 rows
+  user_module_progress                                           2 rows
+  user_submissions                                               0 rows
+  users                                                          2 rows
+
+=== ALL_FOREIGN_KEYS ===
+  analytics_events                                   analytics_events_module_id_fkey                         FOREIGN KEY (module_id) REFERENCES modules(id) ON DELETE SET NULL
+  analytics_events                                   analytics_events_user_id_fkey                           FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+  assessments                                        assessments_module_id_599df45e_fk_modules_module_id     FOREIGN KEY (module_id) REFERENCES modules_module(id) DEFERRABLE INITIALLY DEFERRED
+  assessments                                        assessments_teacher_id_b006aa4d_fk_auth_user_id         FOREIGN KEY (teacher_id) REFERENCES auth_user(id) DEFERRABLE INITIALLY DEFERRED
+  auth_group_permissions                             auth_group_permissio_permission_id_84c5c92e_fk_auth_perm FOREIGN KEY (permission_id) REFERENCES auth_permission(id) DEFERRABLE INITIALLY DEFERRED
+  auth_group_permissions                             auth_group_permissions_group_id_b120cbf9_fk_auth_group_id FOREIGN KEY (group_id) REFERENCES auth_group(id) DEFERRABLE INITIALLY DEFERRED
+  auth_permission                                    auth_permission_content_type_id_2f476e4b_fk_django_co   FOREIGN KEY (content_type_id) REFERENCES django_content_type(id) DEFERRABLE INITIALLY DEFERRED
+  auth_user_groups                                   auth_user_groups_group_id_97559544_fk_auth_group_id     FOREIGN KEY (group_id) REFERENCES auth_group(id) DEFERRABLE INITIALLY DEFERRED
+  auth_user_groups                                   auth_user_groups_user_id_6a12ed8b_fk_auth_user_id       FOREIGN KEY (user_id) REFERENCES auth_user(id) DEFERRABLE INITIALLY DEFERRED
+  auth_user_user_permissions                         auth_user_user_permi_permission_id_1fbb5f2c_fk_auth_perm FOREIGN KEY (permission_id) REFERENCES auth_permission(id) DEFERRABLE INITIALLY DEFERRED
+  auth_user_user_permissions                         auth_user_user_permissions_user_id_a95ead1b_fk_auth_user_id FOREIGN KEY (user_id) REFERENCES auth_user(id) DEFERRABLE INITIALLY DEFERRED
+  community_forumhelpfulvote                         community_forumhelpf_post_id_9f49c7ca_fk_community      FOREIGN KEY (post_id) REFERENCES community_forumpost(id) DEFERRABLE INITIALLY DEFERRED
+  community_forumhelpfulvote                         community_forumhelpfulvote_user_id_f2034658_fk_auth_user_id FOREIGN KEY (user_id) REFERENCES auth_user(id) DEFERRABLE INITIALLY DEFERRED
+  community_forumpost                                community_forumpost_author_id_26754b49_fk_auth_user_id  FOREIGN KEY (author_id) REFERENCES auth_user(id) DEFERRABLE INITIALLY DEFERRED
+  community_forumpost                                community_forumpost_parent_post_id_7f364436_fk_community FOREIGN KEY (parent_post_id) REFERENCES community_forumpost(id) DEFERRABLE INITIALLY DEFERRED
+  community_forumpost                                community_forumpost_thread_id_9ad1a06a_fk_community     FOREIGN KEY (thread_id) REFERENCES community_forumthread(id) DEFERRABLE INITIALLY DEFERRED
+  community_forumthread                              community_forumthread_module_id_e1bc1d6d_fk_modules_module_id FOREIGN KEY (module_id) REFERENCES modules_module(id) DEFERRABLE INITIALLY DEFERRED
+  consent_records                                    consent_records_user_id_fkey                            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+  django_admin_log                                   django_admin_log_content_type_id_c4bce8eb_fk_django_co  FOREIGN KEY (content_type_id) REFERENCES django_content_type(id) DEFERRABLE INITIALLY DEFERRED
+  django_admin_log                                   django_admin_log_user_id_c564eba6_fk_auth_user_id       FOREIGN KEY (user_id) REFERENCES auth_user(id) DEFERRABLE INITIALLY DEFERRED
+  document_chunks                                    document_chunks_document_id_fkey                        FOREIGN KEY (document_id) REFERENCES documents(id) ON DELETE CASCADE
+  forum_helpful_votes                                forum_helpful_votes_post_id_fkey                        FOREIGN KEY (post_id) REFERENCES forum_posts(id) ON DELETE CASCADE
+  forum_helpful_votes                                forum_helpful_votes_user_id_fkey                        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+  forum_posts                                        forum_posts_author_id_fkey                              FOREIGN KEY (author_id) REFERENCES users(id) ON DELETE CASCADE
+  forum_posts                                        forum_posts_flagged_by_user_id_fkey                     FOREIGN KEY (flagged_by_user_id) REFERENCES users(id) ON DELETE SET NULL
+  forum_posts                                        forum_posts_parent_post_id_fkey                         FOREIGN KEY (parent_post_id) REFERENCES forum_posts(id) ON DELETE CASCADE
+  forum_posts                                        forum_posts_thread_id_fkey                              FOREIGN KEY (thread_id) REFERENCES forum_threads(id) ON DELETE CASCADE
+  forum_threads                                      forum_threads_creator_id_fkey                           FOREIGN KEY (creator_id) REFERENCES users(id) ON DELETE CASCADE
+  forum_threads                                      forum_threads_module_id_fkey                            FOREIGN KEY (module_id) REFERENCES modules(id) ON DELETE CASCADE
+  leaderboard_entries                                leaderboard_entries_user_id_fkey                        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+  module_content                                     module_content_module_id_fkey                           FOREIGN KEY (module_id) REFERENCES modules(id) ON DELETE CASCADE
+  modules_aioutputdispute                            modules_aioutputdispute_module_id_d5c6ebd4_fk_modules_module_id FOREIGN KEY (module_id) REFERENCES modules_module(id) DEFERRABLE INITIALLY DEFERRED
+  modules_aioutputdispute                            modules_aioutputdispute_user_id_9de80484_fk_auth_user_id FOREIGN KEY (user_id) REFERENCES auth_user(id) DEFERRABLE INITIALLY DEFERRED
+  modules_modulecontent                              modules_modulecontent_module_id_638a2077_fk_modules_module_id FOREIGN KEY (module_id) REFERENCES modules_module(id) DEFERRABLE INITIALLY DEFERRED
+  modules_tab3repositorysubmission                   modules_tab3reposito_module_id_2d754772_fk_modules_m    FOREIGN KEY (module_id) REFERENCES modules_module(id) DEFERRABLE INITIALLY DEFERRED
+  modules_tab3repositorysubmission                   modules_tab3reposito_reviewed_by_id_396aaf0c_fk_auth_user FOREIGN KEY (reviewed_by_id) REFERENCES auth_user(id) DEFERRABLE INITIALLY DEFERRED
+  modules_tab3repositorysubmission                   modules_tab3reposito_user_id_d58cb106_fk_auth_user      FOREIGN KEY (user_id) REFERENCES auth_user(id) DEFERRABLE INITIALLY DEFERRED
+  modules_usermoduleprogress                         modules_usermodulepr_module_id_ed107cba_fk_modules_m    FOREIGN KEY (module_id) REFERENCES modules_module(id) DEFERRABLE INITIALLY DEFERRED
+  modules_usermoduleprogress                         modules_usermoduleprogress_user_id_b7003a53_fk_auth_user_id FOREIGN KEY (user_id) REFERENCES auth_user(id) DEFERRABLE INITIALLY DEFERRED
+  peer_blog_blogcomment                              peer_blog_blogcomment_post_id_655434ae_fk_peer_blog_blogpost_id FOREIGN KEY (post_id) REFERENCES peer_blog_blogpost(id) DEFERRABLE INITIALLY DEFERRED
+  peer_blog_blogcomment                              peer_blog_blogcomment_user_id_9c997d0b_fk_auth_user_id  FOREIGN KEY (user_id) REFERENCES auth_user(id) DEFERRABLE INITIALLY DEFERRED
+  peer_blog_blogpost                                 peer_blog_blogpost_module_id_1a410aa5_fk_modules_module_id FOREIGN KEY (module_id) REFERENCES modules_module(id) DEFERRABLE INITIALLY DEFERRED
+  peer_blog_blogpost                                 peer_blog_blogpost_user_id_a765252b_fk_auth_user_id     FOREIGN KEY (user_id) REFERENCES auth_user(id) DEFERRABLE INITIALLY DEFERRED
+  peer_blog_blogthumbsup                             peer_blog_blogthumbs_comment_id_cc91ff63_fk_peer_blog   FOREIGN KEY (comment_id) REFERENCES peer_blog_blogcomment(id) DEFERRABLE INITIALLY DEFERRED
+  peer_blog_blogthumbsup                             peer_blog_blogthumbs_post_id_9f736b60_fk_peer_blog      FOREIGN KEY (post_id) REFERENCES peer_blog_blogpost(id) DEFERRABLE INITIALLY DEFERRED
+  peer_blog_blogthumbsup                             peer_blog_blogthumbsup_user_id_e20430da_fk_auth_user_id FOREIGN KEY (user_id) REFERENCES auth_user(id) DEFERRABLE INITIALLY DEFERRED
+  reflection_tensions                                reflection_tensions_module_id_bfa93bff_fk_modules_module_id FOREIGN KEY (module_id) REFERENCES modules_module(id) DEFERRABLE INITIALLY DEFERRED
+  reflection_tensions                                reflection_tensions_user_id_994c2017_fk_auth_user_id    FOREIGN KEY (user_id) REFERENCES auth_user(id) DEFERRABLE INITIALLY DEFERRED
+  shared_prompt_ratings                              shared_prompt_ratings_prompt_id_fkey                    FOREIGN KEY (prompt_id) REFERENCES shared_prompts(id) ON DELETE CASCADE
+  shared_prompt_ratings                              shared_prompt_ratings_rater_id_fkey                     FOREIGN KEY (rater_id) REFERENCES users(id) ON DELETE CASCADE
+  shared_prompts                                     shared_prompts_author_id_fkey                           FOREIGN KEY (author_id) REFERENCES users(id) ON DELETE CASCADE
+  shared_prompts                                     shared_prompts_module_id_fkey                           FOREIGN KEY (module_id) REFERENCES modules(id) ON DELETE CASCADE
+  shared_prompt_usage                                shared_prompt_usage_prompt_id_fkey                      FOREIGN KEY (prompt_id) REFERENCES shared_prompts(id) ON DELETE CASCADE
+  shared_prompt_usage                                shared_prompt_usage_user_id_fkey                        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+  survey_responses                                   survey_responses_module_id_fkey                         FOREIGN KEY (module_id) REFERENCES modules(id) ON DELETE SET NULL
+  survey_responses                                   survey_responses_survey_id_fkey                         FOREIGN KEY (survey_id) REFERENCES surveys(id) ON DELETE CASCADE
+  survey_responses                                   survey_responses_user_id_fkey                           FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+  tab3_user_activity_m1_backup                       tab3_user_activity_user_id_fkey                         FOREIGN KEY (user_id) REFERENCES auth_user(id) ON DELETE CASCADE
+  tab3_user_toolkit                                  tab3_user_toolkit_user_id_fkey                          FOREIGN KEY (user_id) REFERENCES auth_user(id) ON DELETE CASCADE
+  teacher_profiles                                   teacher_profiles_user_id_fkey                           FOREIGN KEY (user_id) REFERENCES auth_user(id) ON DELETE CASCADE
+  user_badges                                        user_badges_badge_id_fkey                               FOREIGN KEY (badge_id) REFERENCES badges(id) ON DELETE CASCADE
+  user_badges                                        user_badges_user_id_fkey                                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+  user_module_progress                               user_module_progress_module_id_fkey                     FOREIGN KEY (module_id) REFERENCES modules(id) ON DELETE CASCADE
+  user_module_progress                               user_module_progress_user_id_fkey                       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+  user_submissions                                   user_submissions_module_id_fkey                         FOREIGN KEY (module_id) REFERENCES modules(id) ON DELETE CASCADE
+  user_submissions                                   user_submissions_user_id_fkey                           FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+
+=== ALL_TRIGGERS ===
+  documents                                          trigger_documents_updated_at                            BEFORE UPDATE
+  forum_posts                                        update_forum_posts_updated_at                           BEFORE UPDATE
+  forum_threads                                      update_forum_threads_updated_at                         BEFORE UPDATE
+  module_content                                     update_module_content_updated_at                        BEFORE UPDATE
+  modules                                            update_modules_updated_at                               BEFORE UPDATE
+  rag_queries                                        trigger_rag_queries_updated_at                          BEFORE UPDATE
+  tab3_user_activity_m1_backup                       tab3_activity_update_timestamp                          BEFORE UPDATE
+  tab3_user_activity_m1_backup                       tab3_check_completion                                   BEFORE UPDATE
+  user_submissions                                   update_submissions_updated_at                           BEFORE UPDATE
+
+=== ALL_VIEWS ===
+  tab3_completion_stats
+  tab3_prompt_preferences
+  tab3_tool_usage
+
+=== ALL_FUNCTIONS ===
+  anonymize_user(p_user_id integer)
+    comment: GDPR compliance: Anonymize user while preserving research data
+  array_to_halfvec(integer[], integer, boolean)
+  array_to_halfvec(numeric[], integer, boolean)
+  array_to_halfvec(double precision[], integer, boolean)
+  array_to_halfvec(real[], integer, boolean)
+  array_to_sparsevec(double precision[], integer, boolean)
+  array_to_sparsevec(real[], integer, boolean)
+  array_to_sparsevec(numeric[], integer, boolean)
+  array_to_sparsevec(integer[], integer, boolean)
+  array_to_vector(real[], integer, boolean)
+  array_to_vector(numeric[], integer, boolean)
+  array_to_vector(double precision[], integer, boolean)
+  array_to_vector(integer[], integer, boolean)
+  avg(vector)
+  avg(halfvec)
+  binary_quantize(halfvec)
+  binary_quantize(vector)
+  check_tab3_completion()
+  cleanup_old_analytics()
+    comment: Automated data retention policy execution
+  cosine_distance(halfvec, halfvec)
+  cosine_distance(vector, vector)
+  cosine_distance(sparsevec, sparsevec)
+  gin_extract_query_trgm(text, internal, smallint, internal, internal, internal, internal)
+  gin_extract_value_trgm(text, internal)
+  gin_trgm_consistent(internal, smallint, text, integer, internal, internal, internal, internal)
+  gin_trgm_triconsistent(internal, smallint, text, integer, internal, internal, internal)
+  gtrgm_compress(internal)
+  gtrgm_consistent(internal, text, smallint, oid, internal)
+  gtrgm_decompress(internal)
+  gtrgm_distance(internal, text, smallint, oid, internal)
+  gtrgm_in(cstring)
+  gtrgm_options(internal)
+  gtrgm_out(gtrgm)
+  gtrgm_penalty(internal, internal, internal)
+  gtrgm_picksplit(internal, internal)
+  gtrgm_same(gtrgm, gtrgm, internal)
+  gtrgm_union(internal, internal)
+  halfvec(halfvec, integer, boolean)
+  halfvec_accum(double precision[], halfvec)
+  halfvec_add(halfvec, halfvec)
+  halfvec_avg(double precision[])
+  halfvec_cmp(halfvec, halfvec)
+  halfvec_combine(double precision[], double precision[])
+  halfvec_concat(halfvec, halfvec)
+  halfvec_eq(halfvec, halfvec)
+  halfvec_ge(halfvec, halfvec)
+  halfvec_gt(halfvec, halfvec)
+  halfvec_in(cstring, oid, integer)
+  halfvec_l2_squared_distance(halfvec, halfvec)
+  halfvec_le(halfvec, halfvec)
+  halfvec_lt(halfvec, halfvec)
+  halfvec_mul(halfvec, halfvec)
+  halfvec_ne(halfvec, halfvec)
+  halfvec_negative_inner_product(halfvec, halfvec)
+  halfvec_out(halfvec)
+  halfvec_recv(internal, oid, integer)
+  halfvec_send(halfvec)
+  halfvec_spherical_distance(halfvec, halfvec)
+  halfvec_sub(halfvec, halfvec)
+  halfvec_to_float4(halfvec, integer, boolean)
+  halfvec_to_sparsevec(halfvec, integer, boolean)
+  halfvec_to_vector(halfvec, integer, boolean)
+  halfvec_typmod_in(cstring[])
+  hamming_distance(bit, bit)
+  hnsw_bit_support(internal)
+  hnsw_halfvec_support(internal)
+  hnsw_sparsevec_support(internal)
+  hnswhandler(internal)
+  inner_product(halfvec, halfvec)
+  inner_product(vector, vector)
+  inner_product(sparsevec, sparsevec)
+  ivfflat_bit_support(internal)
+  ivfflat_halfvec_support(internal)
+  ivfflathandler(internal)
+  jaccard_distance(bit, bit)
+  l1_distance(sparsevec, sparsevec)
+  l1_distance(vector, vector)
+  l1_distance(halfvec, halfvec)
+  l2_distance(halfvec, halfvec)
+  l2_distance(vector, vector)
+  l2_distance(sparsevec, sparsevec)
+  l2_norm(halfvec)
+  l2_norm(sparsevec)
+  l2_normalize(vector)
+  l2_normalize(halfvec)
+  l2_normalize(sparsevec)
+  set_limit(real)
+  show_limit()
+  show_trgm(text)
+  similarity(text, text)
+  similarity_dist(text, text)
+  similarity_op(text, text)
+  sparsevec(sparsevec, integer, boolean)
+  sparsevec_cmp(sparsevec, sparsevec)
+  sparsevec_eq(sparsevec, sparsevec)
+  sparsevec_ge(sparsevec, sparsevec)
+  sparsevec_gt(sparsevec, sparsevec)
+  sparsevec_in(cstring, oid, integer)
+  sparsevec_l2_squared_distance(sparsevec, sparsevec)
+  sparsevec_le(sparsevec, sparsevec)
+  sparsevec_lt(sparsevec, sparsevec)
+  sparsevec_ne(sparsevec, sparsevec)
+  sparsevec_negative_inner_product(sparsevec, sparsevec)
+  sparsevec_out(sparsevec)
+  sparsevec_recv(internal, oid, integer)
+  sparsevec_send(sparsevec)
+  sparsevec_to_halfvec(sparsevec, integer, boolean)
+  sparsevec_to_vector(sparsevec, integer, boolean)
+  sparsevec_typmod_in(cstring[])
+  strict_word_similarity(text, text)
+  strict_word_similarity_commutator_op(text, text)
+  strict_word_similarity_dist_commutator_op(text, text)
+  strict_word_similarity_dist_op(text, text)
+  strict_word_similarity_op(text, text)
+  subvector(halfvec, integer, integer)
+  subvector(vector, integer, integer)
+  sum(halfvec)
+  sum(vector)
+  update_tab3_activity_timestamp()
+  update_updated_at_column()
+  uuid_generate_v1()
+  uuid_generate_v1mc()
+  uuid_generate_v3(namespace uuid, name text)
+  uuid_generate_v4()
+  uuid_generate_v5(namespace uuid, name text)
+  uuid_nil()
+  uuid_ns_dns()
+  uuid_ns_oid()
+  uuid_ns_url()
+  uuid_ns_x500()
+  vector(vector, integer, boolean)
+  vector_accum(double precision[], vector)
+  vector_add(vector, vector)
+  vector_avg(double precision[])
+  vector_cmp(vector, vector)
+  vector_combine(double precision[], double precision[])
+  vector_concat(vector, vector)
+  vector_dims(halfvec)
+  vector_dims(vector)
+  vector_eq(vector, vector)
+  vector_ge(vector, vector)
+  vector_gt(vector, vector)
+  vector_in(cstring, oid, integer)
+  vector_l2_squared_distance(vector, vector)
+  vector_le(vector, vector)
+  vector_lt(vector, vector)
+  vector_mul(vector, vector)
+  vector_ne(vector, vector)
+  vector_negative_inner_product(vector, vector)
+  vector_norm(vector)
+  vector_out(vector)
+  vector_recv(internal, oid, integer)
+  vector_send(vector)
+  vector_spherical_distance(vector, vector)
+  vector_sub(vector, vector)
+  vector_to_float4(vector, integer, boolean)
+  vector_to_halfvec(vector, integer, boolean)
+  vector_to_sparsevec(vector, integer, boolean)
+  vector_typmod_in(cstring[])
+  word_similarity(text, text)
+  word_similarity_commutator_op(text, text)
+  word_similarity_dist_commutator_op(text, text)
+  word_similarity_dist_op(text, text)
+  word_similarity_op(text, text)
+
+=== EXTENSIONS ===
+  pg_trgm v1.6
+  plpgsql v1.0
+  uuid-ossp v1.1
+  vector v0.8.1
+
+=== DJANGO_MIGRATIONS_APP_LIST ===
+  admin
+  auth
+  community
+  compliance
+  contenttypes
+  modules
+  peer_blog
+  sessions
+  users

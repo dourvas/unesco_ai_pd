@@ -1,48 +1,23 @@
 """
-Phase C — Migration 1
-Extends the consent_records.valid_consent_type CHECK constraint to include
-'ai_disclosure', enabling EU AI Act Article 50(1) acknowledgment records.
+Phase C M1 — OBSOLETE (no-op placeholder).
 
-Notes:
-    - consent_records is a raw-SQL artefact created outside Django migrations.
-      It exists in the live DB (proodos_backup_m15_complete_20260417_1152.sql,
-      line 740). Therefore this migration uses RunSQL rather than AlterField.
-    - Reverse SQL restores the prior 4-value constraint exactly.
+Originally extended the consent_records.valid_consent_type CHECK constraint
+to include 'ai_disclosure'. Both the constraint and the consent_records
+table were dropped in Γ.1 (apps/compliance/migrations/0002_drop_dead_schema.py)
+on 2026-05-09 after a read-only audit (audits/DEAD_SCHEMA_AUDIT_20260509.md)
+established that consent_records was an abandoned pre-Django artefact.
+
+This file is retained as a placeholder rather than deleted because Django's
+migration graph requires every applied migration to remain importable.
+0002 depends on 0001 to satisfy graph-leaf-node rules. The operations list
+is empty; re-applying or fresh-applying this migration is a guaranteed
+no-op.
+
+The original RunSQL forward + reverse blocks are preserved in git history
+under commit 06357f2 if ever needed for forensic reference.
 """
 
 from django.db import migrations
-
-
-SQL_FORWARD = """
-ALTER TABLE consent_records DROP CONSTRAINT valid_consent_type;
-ALTER TABLE consent_records
-    ADD CONSTRAINT valid_consent_type CHECK (
-        consent_type::text = ANY (
-            ARRAY[
-                'platform_use'::varchar,
-                'research_participation'::varchar,
-                'data_sharing'::varchar,
-                'video_recording'::varchar,
-                'ai_disclosure'::varchar
-            ]::text[]
-        )
-    );
-"""
-
-SQL_REVERSE = """
-ALTER TABLE consent_records DROP CONSTRAINT valid_consent_type;
-ALTER TABLE consent_records
-    ADD CONSTRAINT valid_consent_type CHECK (
-        consent_type::text = ANY (
-            ARRAY[
-                'platform_use'::varchar,
-                'research_participation'::varchar,
-                'data_sharing'::varchar,
-                'video_recording'::varchar
-            ]::text[]
-        )
-    );
-"""
 
 
 class Migration(migrations.Migration):
@@ -51,9 +26,4 @@ class Migration(migrations.Migration):
 
     dependencies = []
 
-    operations = [
-        migrations.RunSQL(
-            sql=SQL_FORWARD,
-            reverse_sql=SQL_REVERSE,
-        ),
-    ]
+    operations = []
