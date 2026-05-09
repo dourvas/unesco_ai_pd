@@ -4,6 +4,8 @@ UNESCO AI Teacher PD Platform - v2.2.0
 Updated: January 2026 - International English version
 """
 
+import uuid
+
 from django.db import models
 from django.contrib.auth.models import User
 from django.core.validators import MinValueValidator, MaxValueValidator
@@ -437,3 +439,79 @@ class TeacherProfile(models.Model):
         verbose_name_plural = "Teacher Profiles"
         ordering = ['-created_at']
         db_table = 'teacher_profiles'
+
+
+class TeacherProfileHistory(models.Model):
+    """
+    Audit log of changes to selected TeacherProfile fields.
+
+    Populated by the pre_save / post_save signals in apps/users/signals.py.
+    A single save() that mutates N tracked fields creates N rows that
+    share the same `change_event_id` UUID, so per-event reconstruction
+    and per-field analytics are both efficient.
+
+    `old_value` and `new_value` are always valid JSON (the literal
+    string `'null'` represents Python None). NULL is intentionally not
+    used at the SQL level to keep querying uniform.
+    """
+
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='profile_history',
+        verbose_name='User',
+    )
+    field_name = models.CharField(
+        max_length=50,
+        verbose_name='Field Name',
+        help_text='Snake-case name of the TeacherProfile field that changed.',
+    )
+    old_value = models.TextField(
+        verbose_name='Old Value (JSON)',
+        help_text="JSON-serialized previous value. The literal string 'null' indicates Python None.",
+    )
+    new_value = models.TextField(
+        verbose_name='New Value (JSON)',
+        help_text="JSON-serialized new value. The literal string 'null' indicates Python None.",
+    )
+    changed_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name='Changed At',
+    )
+    change_event_id = models.UUIDField(
+        default=uuid.uuid4,
+        editable=False,
+        db_index=True,
+        verbose_name='Change Event UUID',
+        help_text='UUID grouping all field changes from a single save() event.',
+    )
+    change_source = models.CharField(
+        max_length=50,
+        blank=True,
+        default='',
+        verbose_name='Change Source',
+        help_text=(
+            "Optional. Set by the call site (view/script/admin) to identify "
+            "what triggered the change. Examples: 'profile_edit', "
+            "'admin_action', 'phaseC_reset', 'data_migration'."
+        ),
+    )
+
+    class Meta:
+        verbose_name = 'Teacher Profile Change'
+        verbose_name_plural = 'Teacher Profile Changes'
+        db_table = 'teacher_profile_history'
+        ordering = ['-changed_at']
+        indexes = [
+            models.Index(
+                fields=['user', '-changed_at'],
+                name='idx_profile_history_user_time',
+            ),
+            models.Index(
+                fields=['field_name'],
+                name='idx_profile_history_field',
+            ),
+        ]
+
+    def __str__(self):
+        return f'{self.user.username} | {self.field_name} | {self.changed_at:%Y-%m-%d %H:%M}'

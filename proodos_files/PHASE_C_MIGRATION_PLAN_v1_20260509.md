@@ -105,13 +105,17 @@ Both new apps should appear with no migrations yet.
 
 ## 5. Migration sequence — overview
 
-| # | App | Type | Purpose | Reversible? |
-|---|-----|------|---------|-------------|
-| M1 | compliance | RunSQL | Extend `consent_records.valid_consent_type` to include `'ai_disclosure'`. | Yes (reverse SQL drops + re-adds old constraint) |
-| M2 | users | AlterField + AddField | Add 4 new columns to `teacher_profiles`. | Yes (DROP COLUMN) |
-| M3 | users | CreateModel + signal | Create `teacher_profile_history` + Django signal in `apps/users/signals.py`. | Yes (DROP TABLE) |
-| M4 | ailst | CreateModel + RunPython | Create `ailst_items` + seed EN-only data from paper Appendix. | Yes (DROP TABLE) |
-| M5 | ailst | CreateModel | Create `ailst_responses`. | Yes (DROP TABLE) |
+Updated 2026-05-09 post-Γ.1: M1 obsoleted; new M6 added for `ConsentRecord` Django model after pre-Phase-C dead schema was dropped.
+
+| # | App | Type | Purpose | Status |
+|---|-----|------|---------|--------|
+| M1 | compliance | RunSQL | Extend `consent_records.valid_consent_type` to include `'ai_disclosure'`. | **OBSOLETE** — no-op placeholder. Dead schema dropped in Γ.1 |
+| M2 | users | AddField | Add 4 new columns to `teacher_profiles`. | **APPLIED** 2026-05-09 |
+| Γ.1 | compliance | RunSQL | Drop pre-Phase-C dead schema (22 tables + 2 functions). | **APPLIED** 2026-05-09 |
+| M3 | users | CreateModel + signal | Create `teacher_profile_history` + Django signal in `apps/users/signals.py`. | **APPLIED** 2026-05-09 |
+| M4 | ailst | CreateModel + RunPython | Create `ailst_items` + seed EN-only data from paper Appendix. | Pending |
+| M5 | ailst | CreateModel | Create `ailst_responses`. | Pending |
+| M6 (NEW) | compliance | CreateModel | Create `ConsentRecord` Django model with FK to `auth_user`. Replaces the dropped raw-SQL `consent_records`. Slot AFTER M5, BEFORE C.2 implementation, so the AI Disclosure middleware (Step 0) writes to it on first deployment. | Pending |
 
 Detailed design per migration in §6.
 
@@ -235,6 +239,24 @@ This script runs **after** Migration 2 (so the column exists) and **before** any
 🛑 **Decision needed before this step:** hard DELETE or `anonymize_user()`? Hard delete is cleaner since these are throwaway test accounts. Default proposal: hard DELETE.
 
 ### 6.3 Migration 3 — `apps/users/migrations/0008_*.py` + `apps/users/signals.py`
+
+**Status:** APPLIED 2026-05-09. Filename `0008_teacherprofilehistory.py`. CreateModel for `TeacherProfileHistory` + 4 indexes (PK, user FK, change_event_id, idx_profile_history_user_time, idx_profile_history_field) executed in single transaction. Pre-apply backup: `pre_migration_backup_phaseC_M3_20260509.sql` (50.6 MB).
+
+**TRACKED_FIELDS finalized as 11 fields** (CP 3 resolved 2026-05-09): subject_area, grade_level, teaching_years, school_location, average_class_size, ai_experience, ai_tools_used, primary_goals, current_curriculum_pressure, student_population_special_needs, institutional_ai_policy. Excluded: timestamps, admin bools, free-text, demographics, name, UI preferences, ai_disclosure_acknowledged_at (set once).
+
+**Schema decisions (locked):**
+- old_value/new_value: TEXT NOT NULL with JSON-serialized values; literal `'null'` string for Python None (no SQL NULL).
+- change_event_id: UUID, indexed, generated fresh per save event in pre_save.
+- change_source: optional CharField default `''`, set by call sites that want to label the change (e.g. `instance._change_source = 'profile_edit'`).
+- 2 indexes beyond auto-generated FK/PK: `idx_profile_history_user_time` (user, -changed_at) and `idx_profile_history_field` (field_name).
+
+**Signal mechanism (locked):** pre_save captures diffs to `instance._pending_history` + fresh `_change_event_id`; post_save bulk_creates rows on success then clears all transients (`_pending_history`, `_change_event_id`, `_change_source`). created=True path skips. Comparison is plain `==`.
+
+**Verification (all 4 tests passed):**
+1. Single field change → 1 history row, valid UUID, change_source propagated ✓
+2. Multi-field save (3 fields) → 3 rows sharing one change_event_id, change_source uniform ✓
+3. No-change save → 0 rows ✓
+4. New profile (created=True) → 0 rows; temp user not committed (rollback clean) ✓
 
 **Model:**
 ```python
@@ -410,3 +432,4 @@ This plan is a living document for the duration of Phase C migrations. Updates:
 - **2026-05-09 — M2 applied**: Migration 2 (users/0007) added 4 Phase C personalization fields to `teacher_profiles`. `pre_phase_c_user` flag NOT added (CP 11 Option B). 6 existing rows extended with NULL/`[]` defaults. Pre-apply backup: `pre_migration_backup_phaseC_M2_20260509.sql`.
 - **2026-05-09 — Γ.0 audit + pivot**: Attempted post-M2 reset script crashed on FK violation: `consent_records.user_id` references a separate raw-SQL `users` table, not Django `auth_user`. Investigation revealed an entire abandoned pre-Django architectural layer (22 tables + 2 SQL functions). Decision: drop the dead schema (Option Γ) but only after a documented read-only audit. See `audits/DEAD_SCHEMA_AUDIT_20260509.md` for verdict A CONFIRMED.
 - **2026-05-09 — Γ.1 applied**: Migration `compliance/0002_drop_dead_schema` applied at 14:17:48 UTC. 22 dead tables and 2 SQL functions dropped. M1 placeholder rewritten as no-op. Reset script `phaseC_M2_reset_test_users.py` deleted. All 21 verified Django live-table row counts unchanged. `update_updated_at_column()` preserved. RAG triggers on `documents` and `rag_queries` preserved. Pre-Γ.1 backup: `pre_migration_backup_phaseC_GAMMA1_20260509.sql` (50.6 MB).
+- **2026-05-09 — M3 applied**: Migration `users/0008_teacherprofilehistory` applied. New `teacher_profile_history` table + signal-based change tracker in `apps/users/signals.py`. CP 3 resolved: 11 fields tracked (10 originally proposed + `ai_tools_used`). 4 standalone tests passed (single change, multi-field save with shared UUID, no-change save, created=True path). Pre-M3 backup: `pre_migration_backup_phaseC_M3_20260509.sql`.
