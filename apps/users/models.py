@@ -321,6 +321,59 @@ class TeacherProfile(models.Model):
         help_text="User's preferred Workshop feed filter mode (persisted across sessions).",
     )
 
+    # === PHASE C — EU AI Act + Personalization (May 2026) ===
+
+    ai_disclosure_acknowledged_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name="AI Disclosure Acknowledged At",
+        help_text="Timestamp of acknowledgment of the EU AI Act Article 50 disclosure modal."
+    )
+
+    CURRICULUM_PRESSURE_CHOICES = [
+        ('low', 'Low - flexible curriculum'),
+        ('medium', 'Medium - standard pacing'),
+        ('high', 'High - strict curriculum coverage demands'),
+        ('variable', 'Variable - depends on term / class'),
+    ]
+
+    current_curriculum_pressure = models.CharField(
+        max_length=20,
+        choices=CURRICULUM_PRESSURE_CHOICES,
+        null=True,
+        blank=True,
+        verbose_name="Current Curriculum Pressure",
+        help_text="Workload context for personalised, workload-aware AI feedback."
+    )
+
+    student_population_special_needs = models.JSONField(
+        default=list,
+        blank=True,
+        verbose_name="Student Population Special Needs",
+        help_text=(
+            "Multi-select. Allowed values: learning_disability, behavioural_support, "
+            "physical_disability, language_minority, gifted, socioeconomic_disadvantage, none. "
+            "'none' is exclusive (cannot be combined with other values)."
+        )
+    )
+
+    INSTITUTIONAL_AI_POLICY_CHOICES = [
+        ('none', 'No policy'),
+        ('restrictive', 'Restrictive - AI use discouraged'),
+        ('permissive', 'Permissive - AI use allowed'),
+        ('explicit_supportive', 'Explicit and supportive - AI use encouraged'),
+        ('unknown', 'I do not know'),
+    ]
+
+    institutional_ai_policy = models.CharField(
+        max_length=30,
+        choices=INSTITUTIONAL_AI_POLICY_CHOICES,
+        null=True,
+        blank=True,
+        verbose_name="Institutional AI Policy",
+        help_text="School/institutional stance on AI use; informs M11/M12 contextual prompts."
+    )
+
     # === COMPUTED PROPERTIES ===
     
     @property
