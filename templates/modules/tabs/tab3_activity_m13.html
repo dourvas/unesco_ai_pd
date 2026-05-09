@@ -329,6 +329,116 @@
       </div>
     </div>
 
+    <!-- ======================================================== -->
+    <!-- M13_CHALLENGE2_PRACTICE_WORKSHOP_CTA                      -->
+    <!-- Phase A Tier 3 (D5+D6+D8+D12): blog-based, no curation    -->
+    <!-- ======================================================== -->
+    <div class="card bg-base-200 border-l-4 border-info p-6 my-6"
+         role="region"
+         aria-label="Share your workflow to the M13 Practice Workshop">
+      <h4 class="font-bold text-info mb-3">Share your workflow to the Practice Workshop</h4>
+      <p class="text-sm mb-4">
+        The M13 Practice Workshop is a space for sharing work-in-progress with peers — colleagues across disciplines can offer formative feedback through comments and thumbs-up endorsements. Choose how you want to share: download for your own records, share to the M13 Practice Workshop, or contribute to the open community-maintained GitHub collection.
+      </p>
+
+      <div class="flex flex-col sm:flex-row gap-3">
+        <button type="button"
+                id="m13-export-pdf-btn"
+                class="btn btn-outline btn-info btn-sm">
+          📄 Export Canvas as PDF
+        </button>
+        <button type="button"
+                id="m13-submit-repo-btn"
+                class="btn btn-info btn-sm text-white">
+          🛠️ Share to Practice Workshop
+        </button>
+        <a href="{{ github_workflows_url|default:'https://github.com/dourvas/proodos-eduai-teacher-workflows' }}"
+           target="_blank" rel="noopener"
+           class="btn btn-outline btn-info btn-sm">
+          🌐 Share to GitHub Education AI Workflows
+        </a>
+      </div>
+
+      <p class="text-xs text-gray-500 mt-3">
+        Your workflow goes straight to the M13 Practice Workshop, where colleagues across disciplines can offer formative feedback through comments and thumbs-up. There is no approval gate — community dialogue is the value. Share work-in-progress freely; the Workshop is a space for reflection, not a polished gallery.
+      </p>
+
+      <p class="text-xs mt-3">
+        <a href="{% url 'peer_blog:index' 'M13' %}" class="link link-info">
+          → View Practice Workshop posts for this module
+        </a>
+        <span class="text-gray-400">— see what colleagues are exploring before you share</span>
+      </p>
+    </div>
+
+    <!-- Submission modal -->
+    <dialog id="m13-repo-submit-modal" class="modal">
+      <div class="modal-box max-w-2xl">
+        <h3 class="font-bold text-lg mb-3">🛠️ Share Workflow to Practice Workshop</h3>
+        <p class="text-xs text-gray-500 mb-4">
+          Your workflow appears immediately in the M13 Practice Workshop for peer feedback. No approval gate — share work-in-progress freely.
+        </p>
+
+        {% if m13_share_canvas_ready %}
+        <div class="mb-3">
+          <p class="text-sm font-semibold mb-1">What peers will see:</p>
+          <div class="card bg-base-100 border border-base-300 rounded p-4 max-h-64 overflow-y-auto whitespace-pre-line text-sm leading-relaxed">{{ m13_share_canvas_body }}</div>
+          <p class="text-xs text-gray-500 mt-1">
+            Same content peers can also download as a PDF from your post. Pulled from your Challenge 2 canvas.
+          </p>
+        </div>
+        {% else %}
+        <div class="alert alert-warning text-sm mb-3">
+          Your workflow canvas is empty. Complete Challenge 2 before sharing.
+        </div>
+        {% endif %}
+
+        <form id="m13-repo-submit-form" class="space-y-3">
+          <div>
+            <label class="text-sm font-semibold block mb-1" for="m13-repo-title">Post title</label>
+            <input type="text" id="m13-repo-title" name="title" maxlength="200"
+                   value="{{ m13_share_default_title|default:'' }}"
+                   class="input input-bordered input-sm w-full" placeholder="Defaults to your learning goal — edit if you want a more catchy title" />
+            <p class="text-xs text-gray-500 mt-1">Defaults to your learning goal. Override if you want.</p>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="text-sm font-semibold block mb-1" for="m13-repo-subject">Subject area</label>
+              <input type="text" id="m13-repo-subject" name="subject_area" maxlength="50"
+                     value="{{ subject|default:'' }}"
+                     class="input input-bordered input-sm w-full" placeholder="e.g. Mathematics" />
+            </div>
+            <div>
+              <label class="text-sm font-semibold block mb-1" for="m13-repo-grade">Grade level</label>
+              <input type="text" id="m13-repo-grade" name="grade_level" maxlength="20"
+                     value="{{ grade_level|default:'' }}"
+                     class="input input-bordered input-sm w-full" placeholder="e.g. G6-8" />
+            </div>
+          </div>
+
+          <div>
+            <label class="text-sm font-semibold block mb-1" for="m13-repo-email">
+              Contact email <span class="text-xs text-gray-500">(optional)</span>
+            </label>
+            <input type="email" id="m13-repo-email" name="contact_email" maxlength="254"
+                   class="input input-bordered input-sm w-full" placeholder="for review notifications" />
+          </div>
+
+          <div id="m13-repo-msg" class="text-sm hidden"></div>
+        </form>
+
+        {% include "peer_blog/_share_disclosure.html" %}
+
+        <div class="modal-action">
+          <button type="button" id="m13-repo-cancel-btn" class="btn btn-ghost btn-sm">Cancel</button>
+          <button type="button" id="m13-repo-submit-confirm-btn" class="btn btn-info btn-sm text-white">Share to Practice Workshop</button>
+        </div>
+      </div>
+      <form method="dialog" class="modal-backdrop"><button>close</button></form>
+    </dialog>
+    <!-- /M13_CHALLENGE2_REPOSITORY_CTA -->
+
     {% endif %}
 
   </div>
@@ -723,6 +833,91 @@ document.getElementById('mark-activity-complete-btn')?.addEventListener('click',
   .then(r => r.json())
   .then(data => { if (data.success) location.reload(); });
 });
+
+
+// ── M13 CHALLENGE 2 REPOSITORY CTA (Phase A Tier 2 Step 4) ─────
+(function () {
+  const exportBtn   = document.getElementById('m13-export-pdf-btn');
+  const submitBtn   = document.getElementById('m13-submit-repo-btn');
+  const modal       = document.getElementById('m13-repo-submit-modal');
+  if (!exportBtn || !submitBtn || !modal) return;  // not on the M13 completed view
+
+  const cancelBtn   = document.getElementById('m13-repo-cancel-btn');
+  const confirmBtn  = document.getElementById('m13-repo-submit-confirm-btn');
+  const titleInput  = document.getElementById('m13-repo-title');
+  const subjectInput= document.getElementById('m13-repo-subject');
+  const gradeInput  = document.getElementById('m13-repo-grade');
+  const emailInput  = document.getElementById('m13-repo-email');
+  const msgEl       = document.getElementById('m13-repo-msg');
+
+  function setMsg(text, kind) {
+    msgEl.textContent = text;
+    msgEl.classList.remove('hidden', 'text-error', 'text-success', 'text-info');
+    msgEl.classList.add(kind === 'err' ? 'text-error' : (kind === 'ok' ? 'text-success' : 'text-info'));
+  }
+  function clearMsg() {
+    msgEl.classList.add('hidden');
+    msgEl.textContent = '';
+  }
+
+  // ── PDF export ────────────────────────────────────────────────
+  exportBtn.addEventListener('click', () => {
+    window.location.href = `/modules/modules/{{ module.code }}/tab3/export-canvas-pdf/`;
+  });
+
+  // ── Open submit modal ─────────────────────────────────────────
+  submitBtn.addEventListener('click', () => {
+    clearMsg();
+    if (typeof modal.showModal === 'function') {
+      modal.showModal();
+    } else {
+      modal.setAttribute('open', '');
+    }
+  });
+
+  // ── Cancel ────────────────────────────────────────────────────
+  cancelBtn.addEventListener('click', () => {
+    if (typeof modal.close === 'function') modal.close();
+    else modal.removeAttribute('open');
+  });
+
+  // ── Submit to Practice Workshop ───────────────────────────────
+  // Tier 3 redesign: body is the rendered canvas (server-side), so we
+  // only POST the optional title override + subject/grade metadata.
+  confirmBtn.addEventListener('click', () => {
+    const title = (titleInput.value || '').trim();
+
+    confirmBtn.disabled = true;
+    confirmBtn.textContent = 'Sharing…';
+
+    fetch(`/modules/modules/{{ module.code }}/tab3/submit-to-repository/`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}'},
+      body: JSON.stringify({
+        title,
+        subject_area: (subjectInput.value || '').trim(),
+        grade_level: (gradeInput.value || '').trim(),
+        contact_email: (emailInput.value || '').trim(),
+      })
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data.success && data.redirect_url) {
+        setMsg('✅ Shared. Taking you to the post…', 'ok');
+        window.location.href = data.redirect_url;
+      } else {
+        setMsg('❌ ' + (data.message || 'Sharing failed.'), 'err');
+        confirmBtn.disabled = false;
+        confirmBtn.textContent = 'Share to Practice Workshop';
+      }
+    })
+    .catch(e => {
+      setMsg('❌ Network error: ' + e.message, 'err');
+      confirmBtn.disabled = false;
+      confirmBtn.textContent = 'Share to Practice Workshop';
+    });
+  });
+})();
 
 </script>
 

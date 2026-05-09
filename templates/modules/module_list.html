@@ -21,9 +21,18 @@
             <div class="card-body">
                 
                 <!-- Module Code Badge -->
-                <div class="flex justify-between items-start mb-2">
-                    <span class="badge badge-primary badge-lg">{{ module.code }}</span>
-                    
+                <div class="flex flex-wrap justify-between items-start gap-1 mb-2">
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <span class="badge badge-primary badge-lg">{{ module.code }}</span>
+                        {% if module.code in workshop_active_module_codes %}
+                        <a href="{% url 'peer_blog:index' module.code %}"
+                           class="badge badge-info badge-sm gap-1"
+                           title="This module has an active Practice Workshop. Click to browse posts.">
+                            💬 Workshop active
+                        </a>
+                        {% endif %}
+                    </div>
+
                     {% if user_progress|get_item:module.code|get_item:'completed' %}
                     <span class="badge badge-success">✓ Completed</span>
                     {% elif user_progress|get_item:module.code|get_item:'started' %}

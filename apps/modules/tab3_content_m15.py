@@ -263,6 +263,58 @@ def get_context():
             'prompt_library': 'Prompt Library',
             'reflections': 'Annotated Reflections',
             'lesson_cycle': 'Lesson Cycle',
+            'training_module': 'Training Module',
             'contribution': 'Community Contribution',
         },
+
+        # ============================================================
+        # PHASE A TIER 2 STEP 5 — Tier 5 Training Module (CA5.3.2)
+        # JSONB approach (Decision 5) — no migration; optional 5th column
+        # gated by yes/no question. Soft-mandatory textarea (200 chars)
+        # for teachers who design PD training for colleagues.
+        # ============================================================
+        'tier5_training_module': {
+            'key': 'training_module',
+            'icon': '🎓',
+            'title': 'Training Module',
+            'colour': 'amber',
+            'description': (
+                'For teachers who want to design PD training for colleagues. '
+                'Include: training programme outline (5+ sessions), scaffolded '
+                'activities, accessibility considerations, evaluation rubric. '
+                'Validated by your school PD lead or a master trainer in your network.'
+            ),
+            'selection_criterion': (
+                'Have you designed (or do you plan to design) PD training for '
+                'other teachers in AI integration?'
+            ),
+            'input_label': (
+                'Briefly describe the audience and goals of your training programme '
+                '(200 characters)'
+            ),
+            'input_placeholder': 'Who will attend, and what should they be able to do after?',
+            'input_max_length': 200,
+            'soft_mandatory_message': (
+                'Your training tier is strongest when you can articulate audience '
+                'and goals. Continue without describing them?'
+            ),
+            # 2 dedicated cards added below in portfolio_cards extension
+            'card_values': ['card_i', 'card_j'],
+        },
+
+        # 2 NEW training-related cards (extend portfolio_cards via the
+        # tier5_training_module-specific column rendering, kept here for
+        # discoverability)
+        'tier5_training_cards': [
+            {
+                'value': 'card_i',
+                'text': 'A training session outline I designed for colleagues — sequence, activities, reflection moments — with a note on what I would adjust after one round.',
+                'hint': 'Shows PD design intent + iteration awareness.',
+            },
+            {
+                'value': 'card_j',
+                'text': 'A 5-session AI integration programme outline I delivered (or plan to deliver) — with accessibility considerations and an evaluation rubric.',
+                'hint': 'Shows training-programme-level design and validation thinking.',
+            },
+        ],
     }

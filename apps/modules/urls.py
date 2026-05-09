@@ -25,6 +25,13 @@ urlpatterns = [
     path('modules/<str:module_code>/tab3/execute-prompt/', views.execute_prompt, name='execute_prompt'),
     path('modules/<str:module_code>/tab3/rpe-feedback/', views.get_rpe_feedback, name='get_rpe_feedback'),
     path('modules/<str:module_code>/tab3/save-rpe-feedback/', views.save_rpe_feedback, name='save_rpe_feedback'),
+
+    # Phase A Tier 2 Step 4 — M13 Repository Submission CTA
+    path('modules/<str:module_code>/tab3/submit-to-repository/', views.submit_to_repository, name='submit_to_repository'),
+    path('modules/<str:module_code>/tab3/export-canvas-pdf/', views.export_canvas_pdf, name='export_canvas_pdf'),
+
+    # Phase A Tier 3 Step 4 — M9 / Step 5 — M14 generic Practice Workshop share
+    path('modules/<str:module_code>/tab3/share-to-workshop/', views.share_to_workshop, name='share_to_workshop'),
     
     # TAB 4: Assessment (FIXED - using 'code' instead of 'module_code')
     path('modules/<str:code>/submit-assessment/', 

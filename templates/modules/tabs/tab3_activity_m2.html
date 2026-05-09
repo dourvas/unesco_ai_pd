@@ -388,7 +388,7 @@
       <p class="text-xs font-semibold text-emerald-700 uppercase tracking-wide mb-3">🔍 Your Audit Results — {{ activity.challenge_data.challenge3_tool }}</p>
       <div class="flex items-center gap-4">
         <div class="radial-progress text-emerald-500 font-bold" style="--value:{{ activity.challenge_data.challenge3_score_pct }}; --size:4rem;" role="progressbar">
-          {{ activity.challenge_data.challenge3_score }}/5
+          {{ activity.challenge_data.challenge3_score }}/{{ activity.challenge_data.challenge3_audit_max|default:5 }}
         </div>
         <div>
           <p class="font-semibold text-sm">{{ activity.challenge_data.challenge3_score_label }}</p>
@@ -486,7 +486,7 @@ function copyStatement() {
 // ── Ethical score calculator ───────────────────────────────────
 function calculateScore() {
   let score = 0;
-  for (let i = 1; i <= 5; i++) {
+  for (let i = 1; i <= 6; i++) {
     const val = document.querySelector(`input[name="q${i}"]:checked`)?.value;
     if (val === 'yes') score++;
     else if (val === 'unsure') score += 0.5;
@@ -550,7 +550,7 @@ document.getElementById('submit-challenge3-btn')?.addEventListener('click', () =
 
   const answers = {};
   let allAnswered = true;
-  for (let i = 1; i <= 5; i++) {
+  for (let i = 1; i <= 6; i++) {
     const val = document.querySelector(`input[name="q${i}"]:checked`)?.value;
     if (!val) { allAnswered = false; break; }
     answers[`q${i}`] = val;
@@ -564,8 +564,8 @@ document.getElementById('submit-challenge3-btn')?.addEventListener('click', () =
   if (!allAnswered || !decision) return;
 
   const score = calculateScore();
-  const scorePct = score * 20;
-  const scoreLabels = { 0: 'Serious concerns', 1: 'Significant concerns', 2: 'Moderate concerns', 3: 'Acceptable with conditions', 4: 'Generally sound', 5: 'Strong ethical profile' };
+  const scorePct = Math.round(score * 100 / 6);
+  const scoreLabels = { 0: 'Serious concerns', 1: 'Significant concerns', 2: 'Moderate concerns', 3: 'Acceptable with conditions', 4: 'Generally sound', 5: 'Strong ethical profile', 6: 'Exemplary ethical profile' };
   const decisionLabels = { use: 'Will use', use_conditions: 'Will use with conditions', investigate: 'Needs further investigation', avoid: 'Will avoid' };
 
   fetch(`/modules/modules/{{ module.code }}/tab3/challenge3/`, {
@@ -575,7 +575,9 @@ document.getElementById('submit-challenge3-btn')?.addEventListener('click', () =
       tool, answers, decision, improvement,
       score, score_pct: scorePct,
       score_label: scoreLabels[score],
-      decision_label: decisionLabels[decision]
+      decision_label: decisionLabels[decision],
+      audit_version: 2,
+      audit_max: 6
     })
   })
   .then(r => r.json())

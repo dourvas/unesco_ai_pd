@@ -720,3 +720,65 @@ class AIOutputDispute(models.Model):
 
     def __str__(self):
         return f"{self.user.username} — {self.get_feature_type_display()} — {self.module.code} — {self.rating}"
+
+
+# ============================================================
+# Tab3RepositorySubmission — Phase A Tier 2 Step 4 (M13 patch)
+# Stores user submissions to the curated PROODOS Verified Repository
+# from M13 Challenge 2 (Hybrid Workflow Canvas).
+# ============================================================
+class Tab3RepositorySubmission(models.Model):
+    """
+    Submissions from M13 Challenge 2 (Hybrid Workflow Canvas) to the
+    curated PROODOS Verified Repository. Reviewed by master teachers
+    via Django admin. UNESCO indicators: LO3.3.4, CA3.3.3.
+    """
+
+    REVIEW_STATUS_CHOICES = [
+        # Phase A Tier 3: 'community_shared' is the active state for new submissions.
+        # Workflow no longer gates by curated approval — content visible immediately
+        # in the M13 Practice Workshop. See REACTIVE_MODERATION_POLICY.md.
+        ('community_shared', 'Community Shared (Practice Workshop)'),
+        # Legacy curation states retained for historical submissions.
+        ('pending', 'Pending Peer Review (legacy)'),
+        ('approved', 'Approved (legacy)'),
+        ('rejected', 'Rejected (legacy)'),
+        ('needs_revision', 'Needs Revision (legacy)'),
+    ]
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    module = models.ForeignKey(Module, on_delete=models.CASCADE)
+    challenge_id = models.IntegerField(default=2)
+    title = models.CharField(max_length=200)
+    summary = models.CharField(max_length=200)
+    subject_area = models.CharField(max_length=50)
+    grade_level = models.CharField(max_length=20)
+    contact_email = models.EmailField(blank=True)
+    canvas_data = models.JSONField(default=dict, blank=True)
+    review_status = models.CharField(
+        max_length=20,
+        choices=REVIEW_STATUS_CHOICES,
+        default='pending',
+    )
+    reviewer_notes = models.TextField(blank=True)
+    submitted_at = models.DateTimeField(auto_now_add=True)
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+    reviewed_by = models.ForeignKey(
+        User,
+        related_name='reviewed_submissions',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+    )
+
+    class Meta:
+        ordering = ['-submitted_at']
+        verbose_name = 'TAB3 Repository Submission'
+        verbose_name_plural = 'TAB3 Repository Submissions'
+        indexes = [
+            models.Index(fields=['review_status', '-submitted_at']),
+            models.Index(fields=['module', 'review_status']),
+        ]
+
+    def __str__(self):
+        return f"{self.title} — {self.user.username} — {self.module.code} ({self.review_status})"

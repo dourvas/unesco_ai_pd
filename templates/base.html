@@ -58,6 +58,23 @@
                 <ul class="menu menu-horizontal px-1">
                     <li><a href="{% url 'users:dashboard' %}">Dashboard</a></li>
                     <li><a href="{% url 'modules:list' %}">Modules</a></li>
+                    {% if workshop_active_modules %}
+                    <li>
+                        <details>
+                            <summary>Practice Workshop</summary>
+                            <ul class="bg-base-100 rounded-t-none p-2 z-[60] min-w-[16rem] shadow-lg">
+                                {% for m in workshop_active_modules %}
+                                <li>
+                                    <a href="{% url 'peer_blog:index' m.code %}" class="flex flex-col items-start">
+                                        <span class="font-semibold">{{ m.code }}</span>
+                                        <span class="text-xs text-base-content/60">{{ m.title|truncatechars:42 }}</span>
+                                    </a>
+                                </li>
+                                {% endfor %}
+                            </ul>
+                        </details>
+                    </li>
+                    {% endif %}
                 </ul>
             {% endif %}
         </div>

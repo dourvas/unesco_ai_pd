@@ -288,6 +288,90 @@
 </div>
 
 
+<!-- ============================================================ -->
+<!-- M9 — Phase A Tier 3 Step 4: Share to Practice Workshop CTA   -->
+<!-- ============================================================ -->
+{% if activity.challenge3_completed %}
+<div class="card bg-base-200 border-l-4 border-info p-6 my-6"
+     role="region"
+     aria-label="Share your lesson approach to the M9 Practice Workshop">
+  <h4 class="font-bold text-info mb-3">🛠️ Share this lesson to the Practice Workshop</h4>
+
+  {% if activity.challenge_data.shared_to_blog and activity.challenge_data.blog_post_id %}
+    <p class="text-sm">
+      ✅ You've shared this lesson approach.
+      <a href="{% url 'peer_blog:post_detail' activity.challenge_data.blog_post_id %}"
+         class="link link-info ml-1">View your post →</a>
+    </p>
+  {% else %}
+    <p class="text-sm mb-4">
+      Tell colleagues across disciplines about the lesson approach you've designed.
+      Comments and thumbs-up are formative feedback — there's no approval gate.
+    </p>
+
+    <label class="label cursor-pointer justify-start gap-3 mb-2">
+      <input type="checkbox" id="m9-share-toggle" class="checkbox checkbox-info" />
+      <span class="label-text">Yes, share my lesson approach to the M9 Practice Workshop.</span>
+    </label>
+
+    <div id="m9-share-form" class="space-y-3 hidden ml-2 pl-3 border-l-2 border-info/30">
+
+      <!-- Live preview — what peers will see -->
+      <div class="bg-base-100 border border-info/30 rounded p-3">
+        <p class="text-sm font-semibold mb-2">📄 Preview — what peers will see:</p>
+        <div class="bg-base-200 rounded p-3 max-h-96 overflow-y-auto text-sm">
+          <p id="m9-preview-title" class="font-bold text-lg mb-2 leading-tight">{{ m9_share_default_title|default:'(your title)' }}</p>
+          <p id="m9-preview-summary" class="whitespace-pre-line mb-3 text-sm">{{ m9_share_default_summary|default:'(your description)' }}</p>
+          <hr class="my-2 border-base-300">
+          <div class="whitespace-pre-line text-xs text-base-content/80 leading-relaxed">{{ m9_share_static_body }}</div>
+        </div>
+        <p class="text-xs text-gray-500 mt-2">The preview updates as you edit the title and description below. The auto-generated portion (subject, scenario, decisions, scores) is pulled from your Challenge 1–3 results.</p>
+      </div>
+
+      <div>
+        <label class="text-sm font-semibold block mb-1" for="m9-share-title">
+          Title for your lesson
+          <span class="text-xs text-gray-500">(<span id="m9-share-title-count">0</span>/100)</span>
+        </label>
+        <input type="text" id="m9-share-title" maxlength="100"
+               value="{{ m9_share_default_title|default:'' }}"
+               class="input input-bordered input-sm w-full"
+               placeholder="e.g. Introducing simultaneous equations to a mixed-ability Year 9" />
+        <p class="text-xs text-gray-500 mt-1">Pre-filled from your scenario — edit if you'd prefer.</p>
+      </div>
+
+      <div>
+        <label class="text-sm font-semibold block mb-1" for="m9-share-summary">
+          Brief description
+          <span class="text-xs text-gray-500">(<span id="m9-share-summary-count">0</span>/500)</span>
+        </label>
+        <textarea id="m9-share-summary" maxlength="500" rows="4"
+                  class="textarea textarea-bordered textarea-sm w-full"
+                  placeholder="What's the lesson about, what AI integration are you trying? Who are the learners?">{{ m9_share_default_summary|default:'' }}</textarea>
+        <p class="text-xs text-gray-500 mt-1">A starter is suggested — replace with your own voice or add to it.</p>
+      </div>
+
+      <p id="m9-share-msg" class="hidden text-sm"></p>
+
+      {% include "peer_blog/_share_disclosure.html" %}
+
+      <button type="button" id="m9-share-submit-btn"
+              class="btn btn-info btn-sm text-white">
+        Share to Practice Workshop
+      </button>
+    </div>
+  {% endif %}
+
+  <p class="text-xs mt-3">
+    <a href="{% url 'peer_blog:index' 'M9' %}" class="link link-info">
+      → View Practice Workshop posts for this module
+    </a>
+    <span class="text-gray-400">— see what colleagues are exploring</span>
+  </p>
+</div>
+{% endif %}
+
+
 <!-- Mark complete -->
 {% if activity.challenge3_completed and not progress.activity_completed %}
 <div class="card bg-success text-success-content p-5 mb-6">
@@ -454,6 +538,96 @@ document.getElementById('mark-activity-complete-btn')?.addEventListener('click',
   .then(r => r.json())
   .then(data => { if (data.success) location.reload(); });
 });
+
+
+// ── M9 SHARE TO PRACTICE WORKSHOP (Phase A Tier 3 Step 4) ──────────────────
+(function () {
+  const toggle    = document.getElementById('m9-share-toggle');
+  const form      = document.getElementById('m9-share-form');
+  if (!toggle || !form) return;  // only present when challenge3 completed + not yet shared
+
+  const titleInput   = document.getElementById('m9-share-title');
+  const summaryInput = document.getElementById('m9-share-summary');
+  const titleCnt     = document.getElementById('m9-share-title-count');
+  const summaryCnt   = document.getElementById('m9-share-summary-count');
+  const submitBtn    = document.getElementById('m9-share-submit-btn');
+  const msgEl        = document.getElementById('m9-share-msg');
+
+  function setMsg(text, kind) {
+    msgEl.textContent = text;
+    msgEl.classList.remove('hidden', 'text-error', 'text-success', 'text-info');
+    msgEl.classList.add(kind === 'err' ? 'text-error' : (kind === 'ok' ? 'text-success' : 'text-info'));
+  }
+  function clearMsg() {
+    msgEl.classList.add('hidden');
+    msgEl.textContent = '';
+  }
+
+  // Live preview elements
+  const previewTitleEl   = document.getElementById('m9-preview-title');
+  const previewSummaryEl = document.getElementById('m9-preview-summary');
+
+  function updatePreview() {
+    if (previewTitleEl) {
+      previewTitleEl.textContent = (titleInput.value || '').trim() || '(your title)';
+    }
+    if (previewSummaryEl) {
+      previewSummaryEl.textContent = (summaryInput.value || '').trim() || '(your description)';
+    }
+  }
+
+  toggle.addEventListener('change', () => {
+    form.classList.toggle('hidden', !toggle.checked);
+    if (!toggle.checked) clearMsg();
+    if (toggle.checked) {
+      // Sync counters + preview to whatever defaults are currently in the fields
+      titleCnt.textContent = titleInput.value.length;
+      summaryCnt.textContent = summaryInput.value.length;
+      updatePreview();
+    }
+  });
+
+  titleInput.addEventListener('input', () => {
+    titleCnt.textContent = titleInput.value.length;
+    updatePreview();
+  });
+  summaryInput.addEventListener('input', () => {
+    summaryCnt.textContent = summaryInput.value.length;
+    updatePreview();
+  });
+
+  submitBtn.addEventListener('click', () => {
+    const title = (titleInput.value || '').trim();
+    const summary = (summaryInput.value || '').trim();
+    if (!title) { setMsg('Title required.', 'err'); return; }
+    if (!summary) { setMsg('Description required.', 'err'); return; }
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Sharing…';
+
+    fetch(`/modules/modules/{{ module.code }}/tab3/share-to-workshop/`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}'},
+      body: JSON.stringify({ title, summary })
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data.success && data.redirect_url) {
+        setMsg('✅ Shared. Taking you to the post…', 'ok');
+        window.location.href = data.redirect_url;
+      } else {
+        setMsg('❌ ' + (data.message || 'Sharing failed.'), 'err');
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Share to Practice Workshop';
+      }
+    })
+    .catch(e => {
+      setMsg('❌ Network error: ' + e.message, 'err');
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Share to Practice Workshop';
+    });
+  });
+})();
 </script>
 
 {% endif %}

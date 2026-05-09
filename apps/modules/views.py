@@ -14,13 +14,14 @@ import markdown
 import importlib
 
 from .models import (
-    Module, 
-    ModuleContent, 
+    Module,
+    ModuleContent,
     UserModuleProgress,
     Tab3UserActivity,
     Tab3PromptLibrary,
     Assessment,
-    Tab3UserToolkit
+    Tab3UserToolkit,
+    Tab3RepositorySubmission,  # Phase A Tier 2 Step 4 (M13 patch)
 )
 from apps.users.models import TeacherProfile
 from .models import ReflectionTension
@@ -203,6 +204,7 @@ class ModuleDetailView(LoginRequiredMixin, DetailView):
                 'ai_tools': ai_tools,
             })
 
+            extra_context = {}
             try:
                 mod_name = f"apps.modules.tab3_content_{module.code.lower()}"
                 tab3_mod = importlib.import_module(mod_name)
@@ -213,6 +215,164 @@ class ModuleDetailView(LoginRequiredMixin, DetailView):
                 pass  # M1 or module with no extra context — no problem
             except Exception as e:
                 print(f"⚠️ TAB3 context error for {module.code}: {e}")
+
+            # ============================================================
+            # Phase A Tier 3 Step 4 — M9 share defaults + live preview
+            # Pre-fill title + summary with sensible scenario-grounded
+            # starters (user edits if they want), and pre-render the
+            # static auto-generated body so the template can show a
+            # live preview block ABOVE the form. Avoids the "blind share"
+            # UX where teacher writes from scratch with no idea what's
+            # being included alongside their description.
+            # ============================================================
+            if module.code == 'M9' and activity and activity.challenge3_completed:
+                from apps.peer_blog.sharing import _render_m9_lesson_body
+                cd = activity.challenge_data or {}
+                m9_subject_value = cd.get('challenge3_subject', '') or ''
+                m9_subject_label = (
+                    m9_subject_value.replace('_', ' ').title() if m9_subject_value else ''
+                )
+
+                try:
+                    from apps.modules.tab3_content_m9 import LESSON_SCENARIOS as _M9_SCENARIOS
+                    m9_scenario = _M9_SCENARIOS.get(m9_subject_value, {}) or {}
+                except Exception:
+                    m9_scenario = {}
+
+                m9_topic = (m9_scenario.get('topic') or '').strip()
+
+                if m9_topic and m9_subject_label:
+                    m9_default_title = f"{m9_topic} ({m9_subject_label})"
+                elif m9_topic:
+                    m9_default_title = m9_topic
+                else:
+                    m9_default_title = 'My M9 lesson approach'
+                m9_default_title = m9_default_title[:100]
+
+                if m9_subject_label and m9_topic:
+                    # Strip year/grade noise (everything after first '—' or '(')
+                    import re as _re
+                    topic_clean = _re.split(r'\s*[—(]', m9_topic, maxsplit=1)[0].strip()
+                    if topic_clean:
+                        m9_default_summary = (
+                            f"A {m9_subject_label} lesson on {topic_clean.lower()}. "
+                            f"Designing AI-supported differentiation for a mixed-ability class — "
+                            f"open to peer thoughts on the tradeoffs I'm making."
+                        )
+                    else:
+                        m9_default_summary = (
+                            f"A {m9_subject_label} lesson approach — open to peer thoughts on the tradeoffs I'm making."
+                        )
+                else:
+                    m9_default_summary = ''
+
+                # Static body: render with NO user summary so preview can
+                # compose live: (live title) + (live summary) + '---' + (static).
+                static_cd = dict(cd)
+                static_cd.pop('shared_lesson_summary', None)
+                m9_static_body = _render_m9_lesson_body(static_cd)
+
+                context.update({
+                    'm9_share_default_title': m9_default_title,
+                    'm9_share_default_summary': m9_default_summary,
+                    'm9_share_static_body': m9_static_body,
+                })
+
+            # ============================================================
+            # Phase A Tier 3 Step 5 — M14 share defaults + live preview
+            # Pattern mirrors M9: pre-fill title + summary with sensible
+            # defaults from the user's Challenge 3 (Gamified Unit Planner)
+            # data, plus a static-body preview of the auto-generated unit
+            # design choices. SAMR Audit (C1) and Five Roles Matcher (C2)
+            # do NOT trigger sharing — only the substantive C3 unit plan.
+            # ============================================================
+            if module.code == 'M14' and activity and activity.challenge3_completed:
+                from apps.peer_blog.sharing import _render_m14_unit_body
+                cd = activity.challenge_data or {}
+                m14_subject_value = cd.get('challenge3_subject', '') or ''
+                m14_learning_goal = (cd.get('challenge3_learning_goal') or '').strip()
+
+                # Subject label from c3_subject_options (Title Case-ish)
+                m14_subject_label = ''
+                for opt in extra_context.get('c3_subject_options', []) or []:
+                    if opt.get('value') == m14_subject_value:
+                        m14_subject_label = opt.get('label') or ''
+                        break
+                if not m14_subject_label:
+                    m14_subject_label = (
+                        m14_subject_value.replace('_', ' ').title() if m14_subject_value else ''
+                    )
+
+                # Default title: prefer the user's typed learning goal IF substantive
+                # (≥3 distinct lowercase tokens — guards against placeholder noise
+                # like "bla bla bla blabla bla bla bla"), else fall back to subject.
+                _goal_tokens = {t for t in m14_learning_goal.lower().split() if t}
+                if m14_learning_goal and len(_goal_tokens) >= 3:
+                    m14_default_title = m14_learning_goal[:100]
+                elif m14_subject_label:
+                    m14_default_title = f"{m14_subject_label}: Gamified Unit"
+                else:
+                    m14_default_title = 'My M14 gamified unit'
+                m14_default_title = m14_default_title[:100]
+
+                # Default summary: concrete starter, generic across choices to avoid
+                # asserting what the teacher chose. Open invitation for peer input.
+                if m14_subject_label:
+                    m14_default_summary = (
+                        f"A {m14_subject_label} gamified unit. Designing engagement "
+                        f"mechanics that serve the learning, not decorate it — "
+                        f"open to peer thoughts on the design tradeoffs."
+                    )
+                else:
+                    m14_default_summary = (
+                        "A gamified unit design — open to peer thoughts on the design tradeoffs."
+                    )
+
+                # Static body for preview: render with no user summary
+                static_cd = dict(cd)
+                static_cd.pop('shared_lesson_summary', None)
+                m14_static_body = _render_m14_unit_body(static_cd)
+
+                context.update({
+                    'm14_share_default_title': m14_default_title,
+                    'm14_share_default_summary': m14_default_summary,
+                    'm14_share_static_body': m14_static_body,
+                })
+
+            # ============================================================
+            # Phase A Tier 3 — M13 Practice Workshop share-modal defaults
+            # Pre-populate from existing Challenge 2 canvas so user can
+            # one-click share if they accept the synthesised defaults.
+            # Synthesis logic:
+            #   title  := label of challenge2_learning_goal radio choice
+            #             (e.g. 'historical_immersion' → 'Create historical
+            #             or cultural immersion'). Empty if not set.
+            #   summary := concatenation of challenge2_canvas_step_1..3 with
+            #             '. ' separator, truncated to 200 chars (with '…'
+            #             ellipsis on truncation). Empty if no steps filled.
+            # Both editable in the modal; user can override before sharing.
+            # ============================================================
+            if module.code == 'M13':
+                cd = (activity.challenge_data or {})
+                goal_value = cd.get('challenge2_learning_goal') or ''
+                goal_label = next(
+                    (
+                        opt.get('label') or ''
+                        for opt in extra_context.get('c2_learning_goal_options', [])
+                        if opt.get('value') == goal_value
+                    ),
+                    '',
+                )
+                # Render the full canvas as the body that will appear in the
+                # M13 Practice Workshop. This is what peers will read; identical
+                # content to the PDF download.
+                m13_share_canvas_body = _render_m13_canvas_body(cd)
+
+                context.update({
+                    'm13_share_default_title': goal_label[:200],
+                    'm13_share_canvas_body': m13_share_canvas_body,
+                    'm13_share_canvas_ready': bool(m13_share_canvas_body),
+                })
         
         # ============================================================
         # TABS 2, 4, 5: STANDARD CONTENT WITH PERSONALIZATION
@@ -281,6 +441,7 @@ class ModuleDetailView(LoginRequiredMixin, DetailView):
                 subject_box_part2 = None
                 subject_box_part3 = None
                 subject_box_part4 = None
+                subject_box_orchestration = None
                 content_html = content.content_data if content else ''
                 
                 if current_tab == 'main_content':
@@ -308,6 +469,14 @@ class ModuleDetailView(LoginRequiredMixin, DetailView):
                         grade_level='all'
                     ).first()
 
+                    # Box for Part 5: Subject-specific orchestration move (M5)
+                    subject_box_orchestration = ModuleContent.objects.filter(
+                        module=module,
+                        content_type='subject_box_orchestration',
+                        subject_area=teacher_profile.subject_area,
+                        grade_level='all'
+                    ).first()
+
                     # Box for Part 4: AI Tools for your subject
                     subject_box_part4 = ModuleContent.objects.filter(
                         module=module,
@@ -315,7 +484,7 @@ class ModuleDetailView(LoginRequiredMixin, DetailView):
                         subject_area=teacher_profile.subject_area,
                         grade_level='all'
                     ).first()
-                    
+
                     # ============================================================
                     # INSERT BOXES AT PLACEHOLDERS
                     # Replace <!-- SUBJECT_BOX_PARTX --> with actual content
@@ -332,8 +501,13 @@ class ModuleDetailView(LoginRequiredMixin, DetailView):
                         )
                     if subject_box_part4 and '<!-- SUBJECT_BOX_PART4 -->' in content_html:
                         content_html = content_html.replace(
-                            '<!-- SUBJECT_BOX_PART4 -->', 
+                            '<!-- SUBJECT_BOX_PART4 -->',
                             subject_box_part4.content_data
+                        )
+                    if subject_box_orchestration and '<!-- SUBJECT_BOX_ORCHESTRATION -->' in content_html:
+                        content_html = content_html.replace(
+                            '<!-- SUBJECT_BOX_ORCHESTRATION -->',
+                            subject_box_orchestration.content_data
                         )
                     # Reflection Part 2 subject-specific question (M2+)
                 elif current_tab == 'reflection':
@@ -732,12 +906,12 @@ def tab3_activity(request, module_code):
         activity = None
     
     # Get user's subject from onboarding
+    # Tier 3 incidental fix: was 'teacherprofile' (no underscore) + '.subject'
+    # — both wrong, AttributeError fell through to fallback for all users.
     try:
-        user_profile = request.user.teacherprofile
-        subject = user_profile.subject
-        grade_level = user_profile.grade_level
-        # print(f"DEBUG: User subject = '{subject}'")
-        # print(f"DEBUG: User grade = '{grade_level}'")
+        user_profile = request.user.teacher_profile
+        subject = user_profile.subject_area or "Mathematics"
+        grade_level = user_profile.grade_level or "Grade 10"
     except Exception as e:
         print(f"DEBUG ERROR: Profile error: {e}")
         subject = "Mathematics"
@@ -934,6 +1108,404 @@ def submit_challenge3(request, module_code):
         return JsonResponse({'success': False, 'message': str(e)}, status=400)
 
 
+# ============================================================
+# Phase A Tier 2 Step 4 (M13 patch) + Tier 3 redesign
+# Handlers for the M13 Practice Workshop share flow:
+#   - submit_to_repository: persists a Tab3RepositorySubmission row
+#                           AND auto-creates a BlogPost whose body is
+#                           the rendered canvas (Tier 3 redesign)
+#   - export_canvas_pdf: generates a canvas PDF via xhtml2pdf, can read
+#                        from either the live Tab3UserActivity (author flow)
+#                        or a Tab3RepositorySubmission snapshot (peer flow)
+# ============================================================
+
+
+def _strip_label_extras(label: str) -> str:
+    """Trim option-label decorations after '—' or '(' for compact display."""
+    import re
+    if not label:
+        return ''
+    return re.split(r'\s*[—(]', label, maxsplit=1)[0].strip()
+
+
+def _m13_label_lookup(options_list, value, fallback=''):
+    """Map an option value to its trimmed label; fall back to title-cased value."""
+    for opt in options_list or []:
+        if opt.get('value') == value:
+            return _strip_label_extras(opt.get('label') or value or '') or (value or '')
+    if value is None:
+        return fallback
+    return (value or '').replace('_', ' ').strip().title() or fallback
+
+
+def _render_m13_canvas_body(canvas_data: dict) -> str:
+    """
+    Render a M13 Challenge 2 canvas as a plain-text body for BlogPost.body.
+
+    Reads the same fields as the PDF export, formatted with blank-line
+    section separators so Django's |linebreaks filter renders cleanly.
+    Returns an empty string if no canvas content is available.
+
+    Tier 3 redesign — peer dialogue post body == rendered canvas (not summary).
+    """
+    cd = canvas_data or {}
+
+    try:
+        from .tab3_content_m13 import get_context as _m13_get_ctx
+        m13_ctx = _m13_get_ctx()
+    except Exception:
+        m13_ctx = {}
+
+    lines = []
+
+    goal = _m13_label_lookup(
+        m13_ctx.get('c2_learning_goal_options', []),
+        cd.get('challenge2_learning_goal'),
+    )
+    if goal:
+        lines.append(f'Learning goal: {goal}')
+        lines.append('')
+
+    modalities = cd.get('challenge2_modalities') or []
+    if not isinstance(modalities, list):
+        modalities = [modalities]
+    modality_str = ', '.join(
+        _m13_label_lookup(m13_ctx.get('c2_modality_options', []), m)
+        for m in modalities if m
+    )
+
+    tools = cd.get('challenge2_tool_categories') or []
+    if not isinstance(tools, list):
+        tools = [tools]
+    tool_str = ', '.join(
+        _m13_label_lookup(m13_ctx.get('c2_tool_category_options', []), t)
+        for t in tools if t
+    )
+
+    prep_time = (cd.get('challenge2_prep_time') or '').strip()
+
+    if modality_str:
+        lines.append(f'Modalities: {modality_str}')
+    if tool_str:
+        lines.append(f'Tool categories: {tool_str}')
+    if prep_time:
+        lines.append(f'Estimated prep time: {prep_time}')
+    if modality_str or tool_str or prep_time:
+        lines.append('')
+
+    steps = []
+    for i in range(1, 8):  # support up to 7 steps for forward-compat
+        s = (cd.get(f'challenge2_canvas_step_{i}') or '').strip()
+        if s:
+            steps.append(s)
+    if steps:
+        lines.append('Workflow steps:')
+        for i, s in enumerate(steps, start=1):
+            lines.append(f'{i}. {s}')
+
+    return '\n'.join(lines).strip()
+
+
+def _build_m13_pdf_context(canvas_data: dict, module_code: str, author_user) -> dict:
+    """
+    Build the context dict consumed by templates/pdf/m13_canvas_export.html.
+    Used by both the live-export flow (author) and the peer-download flow
+    (any logged-in user on a shared post).
+    """
+    cd = canvas_data or {}
+
+    try:
+        profile = author_user.teacher_profile
+        author_name = author_user.get_full_name() or author_user.username
+        subject_area = cd.get('challenge2_subject_area') or profile.subject_area or '—'
+        grade_level = cd.get('challenge2_grade_level') or profile.grade_level or '—'
+    except Exception:
+        author_name = author_user.username if author_user else '—'
+        subject_area = cd.get('challenge2_subject_area') or '—'
+        grade_level = cd.get('challenge2_grade_level') or '—'
+
+    steps_raw = []
+    for i in range(1, 8):
+        text = cd.get(f'challenge2_canvas_step_{i}')
+        if text:
+            steps_raw.append({'title': f'Step {i}', 'description': text})
+
+    modalities = cd.get('challenge2_modalities') or []
+    if isinstance(modalities, list):
+        modality_str = ', '.join(modalities)
+    else:
+        modality_str = str(modalities)
+
+    tool_cats = cd.get('challenge2_tool_categories') or []
+    if isinstance(tool_cats, list):
+        tool_cats_str = ', '.join(tool_cats)
+    else:
+        tool_cats_str = str(tool_cats)
+
+    return {
+        'title': cd.get('challenge2_workflow_title', 'My Hybrid Workflow'),
+        'summary': cd.get('challenge2_workflow_summary', ''),
+        'module_code': module_code,
+        'author': author_name,
+        'subject_area': subject_area,
+        'grade_level': grade_level,
+        'learning_goal': cd.get('challenge2_learning_goal', ''),
+        'modality': modality_str,
+        'prep_time': cd.get('challenge2_prep_time', ''),
+        'tool_categories': tool_cats_str,
+        'steps': steps_raw,
+        'exported_at': timezone.now().strftime('%Y-%m-%d %H:%M UTC'),
+    }
+
+
+@login_required
+@require_http_methods(["POST"])
+def share_to_workshop(request, module_code):
+    """
+    Generic opt-in share endpoint for module wiring (M9 — Step 4; M14 — Step 5).
+
+    Body: JSON {title, summary}. Server reads existing Tab3UserActivity
+    snapshot, validates module-specific completion gate, persists the
+    title+summary into challenge_data, renders the artefact body via
+    the module's registered renderer, and creates a BlogPost. Returns
+    {success, post_id, redirect_url} on success.
+
+    Distinct from M13's submit_to_repository because M9/M14 don't carry
+    a Tab3RepositorySubmission row — they live in Tab3UserActivity.
+    """
+    from django.urls import reverse
+    from apps.peer_blog.sharing import (
+        MODULE_SHARE_CONFIG,
+        share_artefact_to_workshop,
+    )
+
+    if module_code not in MODULE_SHARE_CONFIG:
+        return JsonResponse(
+            {'success': False, 'message': 'Practice Workshop sharing not enabled for this module.'},
+            status=400,
+        )
+
+    try:
+        data = json.loads(request.body)
+        module = get_object_or_404(Module, code=module_code)
+        config = MODULE_SHARE_CONFIG[module_code]
+
+        title = (data.get('title') or '').strip()
+        summary = (data.get('summary') or '').strip()
+
+        if not title:
+            return JsonResponse({'success': False, 'message': 'Title required.'}, status=400)
+        if len(title) > 100:
+            return JsonResponse({'success': False, 'message': 'Title must be ≤ 100 characters.'}, status=400)
+        if not summary:
+            return JsonResponse({'success': False, 'message': 'Summary required.'}, status=400)
+        if len(summary) > 500:
+            return JsonResponse({'success': False, 'message': 'Summary must be ≤ 500 characters.'}, status=400)
+
+        try:
+            activity = Tab3UserActivity.objects.get(user=request.user, module_id=module.id)
+        except Tab3UserActivity.DoesNotExist:
+            return JsonResponse(
+                {'success': False, 'message': 'No activity recorded yet.'},
+                status=400,
+            )
+
+        gate_attr = config.get('gate_attr')
+        if gate_attr and not getattr(activity, gate_attr, False):
+            return JsonResponse(
+                {'success': False, 'message': config.get('gate_message') or 'Completion gate not met.'},
+                status=400,
+            )
+
+        post = share_artefact_to_workshop(
+            module_code=module_code,
+            user=request.user,
+            activity=activity,
+            title=title,
+            summary=summary,
+        )
+
+        return JsonResponse({
+            'success': True,
+            'message': '✅ Shared to the Practice Workshop.',
+            'post_id': post.id,
+            'redirect_url': reverse('peer_blog:post_detail', kwargs={'post_id': post.id}),
+        })
+
+    except ValueError as e:
+        return JsonResponse({'success': False, 'message': str(e)}, status=400)
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)}, status=400)
+
+
+@login_required
+@require_http_methods(["POST"])
+def submit_to_repository(request, module_code):
+    """
+    Phase A Tier 3 (D5+D6+D8) redesign: M13 Challenge 2 submissions go straight
+    to the Practice Workshop (apps.peer_blog) — no admin curation gate. The
+    BlogPost.body is a rendered representation of the workflow canvas (the
+    same artefact that downloads as PDF), not a hand-written summary.
+
+    Body: JSON with keys: title (optional override; falls back to learning-goal
+    label), subject_area, grade_level, contact_email (optional). The canvas
+    snapshot is read server-side from Tab3UserActivity.challenge_data.
+
+    Returns: {success, submission_id, post_id, redirect_url}.
+    """
+    from django.urls import reverse
+    from django.db import transaction
+    from apps.peer_blog.services import create_blog_post
+
+    try:
+        data = json.loads(request.body)
+        module = get_object_or_404(Module, code=module_code)
+
+        title_override = (data.get('title') or '').strip()
+        subject_area = (data.get('subject_area') or '').strip()
+        grade_level = (data.get('grade_level') or '').strip()
+        contact_email = (data.get('contact_email') or '').strip()
+
+        # Snapshot canvas_data from Tab3UserActivity.challenge_data (the
+        # immutable record of what the author shared; PDF will render from
+        # this same blob for any peer who downloads).
+        try:
+            activity = Tab3UserActivity.objects.get(user=request.user, module_id=module.id)
+            full_cd = activity.challenge_data or {}
+            canvas_data = {k: v for k, v in full_cd.items() if k.startswith('challenge2_')}
+        except Tab3UserActivity.DoesNotExist:
+            canvas_data = {}
+
+        # Render BlogPost body from the canvas (same content as the PDF)
+        rendered_body = _render_m13_canvas_body(canvas_data)
+        if not rendered_body:
+            return JsonResponse({
+                'success': False,
+                'message': 'Your workflow canvas is empty. Complete Challenge 2 before sharing.',
+            }, status=400)
+
+        # Title: user override → else fall back to learning-goal label
+        try:
+            from .tab3_content_m13 import get_context as _m13_get_ctx
+            m13_ctx = _m13_get_ctx()
+        except Exception:
+            m13_ctx = {}
+        goal_label = _m13_label_lookup(
+            m13_ctx.get('c2_learning_goal_options', []),
+            canvas_data.get('challenge2_learning_goal'),
+        )
+        title = title_override or goal_label or 'M13 Hybrid Workflow'
+        if len(title) > 200:
+            title = title[:200]
+
+        # Tab3RepositorySubmission.summary (legacy CharField, NOT NULL): a short
+        # subtitle for admin observation — first line of the rendered body.
+        first_line = rendered_body.splitlines()[0] if rendered_body else ''
+        legacy_summary = (first_line[:200]).strip() or title
+
+        with transaction.atomic():
+            sub = Tab3RepositorySubmission.objects.create(
+                user=request.user,
+                module=module,
+                challenge_id=2,
+                title=title,
+                summary=legacy_summary,
+                subject_area=subject_area,
+                grade_level=grade_level,
+                contact_email=contact_email,
+                canvas_data=canvas_data,
+                review_status='community_shared',
+            )
+
+            post = create_blog_post(
+                artefact_type='m13_workflow',
+                artefact_id=sub.id,
+                title=title,
+                body=rendered_body,
+                author_user=request.user,
+            )
+
+        return JsonResponse({
+            'success': True,
+            'message': '✅ Shared to the M13 Practice Workshop.',
+            'submission_id': sub.id,
+            'post_id': post.id,
+            'redirect_url': reverse('peer_blog:post_detail', kwargs={'post_id': post.id}),
+            'review_status': sub.review_status,
+        })
+
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)}, status=400)
+
+
+@login_required
+@require_http_methods(["GET"])
+def export_canvas_pdf(request, module_code):
+    """
+    Render a M13 Challenge 2 canvas as a PDF (xhtml2pdf backend).
+
+    Two flows (Tier 3):
+      • Author flow (no query params): reads the live canvas from the
+        requesting user's Tab3UserActivity.challenge_data.
+      • Peer flow (?submission_id=N): reads from the immutable
+        Tab3RepositorySubmission.canvas_data snapshot. Available to any
+        logged-in user (community sharing intent — see post_detail page).
+
+    Returns: application/pdf attachment.
+    """
+    from django.http import HttpResponse
+    from django.template.loader import render_to_string
+    import io
+
+    try:
+        from xhtml2pdf import pisa
+    except ImportError:
+        return JsonResponse({
+            'success': False,
+            'message': 'PDF backend (xhtml2pdf) not available on this server.',
+        }, status=500)
+
+    module = get_object_or_404(Module, code=module_code)
+
+    submission_id = request.GET.get('submission_id')
+    if submission_id:
+        # Peer-flow: render from the Tab3RepositorySubmission snapshot.
+        try:
+            submission = Tab3RepositorySubmission.objects.select_related('user', 'module').get(
+                pk=submission_id,
+                module=module,
+            )
+        except (Tab3RepositorySubmission.DoesNotExist, ValueError):
+            return JsonResponse({'success': False, 'message': 'Workflow not found.'}, status=404)
+        cd = submission.canvas_data or {}
+        author_user = submission.user
+        filename_user = (author_user.username if author_user else 'anonymous')
+    else:
+        # Author-flow: render from live Tab3UserActivity.
+        try:
+            activity = Tab3UserActivity.objects.get(user=request.user, module_id=module.id)
+        except Tab3UserActivity.DoesNotExist:
+            return JsonResponse({'success': False, 'message': 'No activity recorded yet.'}, status=404)
+        cd = activity.challenge_data or {}
+        author_user = request.user
+        filename_user = request.user.username
+
+    ctx = _build_m13_pdf_context(cd, module.code, author_user)
+
+    html = render_to_string('pdf/m13_canvas_export.html', ctx)
+    buf = io.BytesIO()
+    result = pisa.CreatePDF(html, dest=buf, encoding='utf-8')
+    if result.err:
+        return JsonResponse({
+            'success': False,
+            'message': f'PDF generation error: {result.err}',
+        }, status=500)
+
+    response = HttpResponse(buf.getvalue(), content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="{module.code}_canvas_{filename_user}.pdf"'
+    return response
+
+
 @login_required
 @require_http_methods(["POST"])
 def submit_reflection(request, module_code):
@@ -988,11 +1560,17 @@ def get_custom_prompt(request):
     prompt_type = request.GET.get('type')  # 'lesson_plan', 'quiz', 'differentiation'
     topic = request.GET.get('topic')
     grade = request.GET.get('grade')
-    subject = request.user.teacherprofile.subject
-    
+    # Tier 3 incidental fix: was 'teacherprofile.subject' (both wrong attribute names).
+    # Use __iexact to handle case mismatch between profile.subject_area
+    # (lowercase) and Tab3PromptLibrary.SUBJECTS (Title Case).
+    try:
+        subject = request.user.teacher_profile.subject_area or ''
+    except Exception:
+        subject = ''
+
     # Get template
     template = Tab3PromptLibrary.objects.filter(
-        subject=subject,
+        subject__iexact=subject,
         prompt_type=prompt_type
     ).first()
     

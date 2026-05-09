@@ -7,8 +7,19 @@
 #   3. The Disclosure Decision (3 grey-zone scenarios)
 # ============================================================
 
+from django.conf import settings
+
+
 def get_context():
     return {
+        # ============================================================
+        # PHASE A TIER 2 STEP 4 — Repository Submission CTA (Challenge 2)
+        # ============================================================
+        'github_workflows_url': getattr(
+            settings,
+            'GITHUB_WORKFLOWS_URL',
+            'https://github.com/dourvas/proodos-eduai-teacher-workflows',
+        ),
 
         # ============================================================
         # CHALLENGE 1: PROMPT THE PERFECT IMAGE

@@ -110,6 +110,10 @@ M2_AUDIT_QUESTIONS = [
         "text": "Do you feel confident that the tool's outputs are accurate enough to use in your teaching without systematic verification?",
         "hint": "AI tools can produce plausible but incorrect information. If you're not confident in verifying outputs, this is a concern."
     },
+    {
+        "text": "Have you considered the environmental footprint of using this AI tool — frequency of use, scale, and whether simpler tools could serve the same purpose?",
+        "hint": "AI tools, especially large language models, have measurable energy and water consumption. Choosing the right tool size for the task — and avoiding gratuitous AI use — is part of responsible adoption. M12 introduces this as 'Cognitive and Ecological Efficiency'."
+    },
 ]
 
 
