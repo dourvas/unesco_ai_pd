@@ -1,0 +1,125 @@
+{% extends 'base.html' %}
+{% block title %}{{ module.code }} Practice Workshop — PROODOS EduAI{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+  <h1 class="text-3xl font-bold mb-2">{{ module.code }} — Practice Workshop</h1>
+  <p class="text-base-content/70 mb-6">
+    A space to share work-in-progress and reflect with peers. Post your workflow,
+    lesson, or unit; comment on what colleagues are exploring; mark what you find useful.
+  </p>
+
+  <!-- Filter mode toggle -->
+  <div class="mb-4 flex flex-col sm:flex-row gap-2 sm:items-center">
+    <span class="text-sm font-semibold">Show posts from:</span>
+    <div class="join" role="tablist" aria-label="Subject filter mode">
+      <button class="btn btn-sm join-item {% if mode == 'my_subject' %}btn-primary{% endif %}"
+              data-mode="my_subject">My subject</button>
+      <button class="btn btn-sm join-item {% if mode == 'adjacent' %}btn-primary{% endif %}"
+              data-mode="adjacent">Adjacent subjects</button>
+      <button class="btn btn-sm join-item {% if mode == 'all' %}btn-primary{% endif %}"
+              data-mode="all">All subjects</button>
+    </div>
+
+    {% if mode == 'adjacent' and rationales %}
+      <button class="btn btn-sm btn-ghost text-info" type="button"
+              onclick="document.getElementById('why-these-modal').showModal()">
+        Why these subjects?
+      </button>
+    {% endif %}
+  </div>
+
+  <!-- Sort -->
+  <div class="mb-6 flex gap-3 text-sm">
+    <a href="?sort=recent" class="{% if sort == 'recent' %}font-bold text-primary{% endif %}">Most recent</a>
+    <span class="text-base-content/40">|</span>
+    <a href="?sort=thumbs_up" class="{% if sort == 'thumbs_up' %}font-bold text-primary{% endif %}">Most thumbs-up</a>
+  </div>
+
+  <!-- Posts list -->
+  <div class="space-y-4">
+    {% for post in posts %}
+      <article class="card bg-base-100 shadow-sm border border-base-300 p-5"
+               aria-labelledby="post-{{ post.id }}-title">
+        <h2 id="post-{{ post.id }}-title" class="text-xl font-semibold mb-1">
+          <a href="{% url 'peer_blog:post_detail' post.id %}" class="hover:underline">
+            {{ post.title }}
+          </a>
+        </h2>
+        <p class="text-sm text-base-content/70 mb-3">
+          {{ post.author_pseudonym }}
+          {% if post.subject_area %} — {{ post.subject_area|title }}{% endif %}
+          {% if post.grade_level %}, {{ post.grade_level }}{% endif %}
+          · {{ post.created_at|timesince }} ago
+        </p>
+        <p class="text-base mb-3">{{ post.body|truncatewords:40 }}</p>
+        <div class="flex gap-4 text-sm">
+          <span>👍 {{ post.thumbs_up_count }}</span>
+          <span>💬 {{ post.comments_count }}</span>
+        </div>
+      </article>
+    {% empty %}
+      <p class="text-center text-base-content/60 py-8">
+        No posts yet in this filter. Try a wider filter mode or check back later.
+      </p>
+    {% endfor %}
+  </div>
+
+  {# Step 12: feed footer — moderation policy link #}
+  <footer class="mt-12 pt-6 border-t border-base-300 text-sm text-base-content/60 text-center">
+    <p>
+      The PROODOS Practice Workshop operates under reactive moderation.
+      <a href="{% url 'peer_blog:moderation_policy' %}" class="link link-info">
+        Read our policy
+      </a>.
+    </p>
+  </footer>
+</div>
+
+{% if mode == 'adjacent' and rationales %}
+  <dialog id="why-these-modal" class="modal">
+    <div class="modal-box">
+      <h3 class="font-bold text-lg mb-3">Why these subjects?</h3>
+      <p class="mb-3">
+        You're seeing posts from your subject ({{ user_subject|title }}) plus subjects
+        that share pedagogical patterns. Cross-specialty perspectives often reveal
+        new angles on AI integration.
+      </p>
+      <ul class="space-y-2">
+        {% for subject, rationale in rationales.items %}
+          <li class="bg-base-200 p-3 rounded">
+            <strong>{{ subject|title }}:</strong> {{ rationale }}
+          </li>
+        {% endfor %}
+      </ul>
+      <div class="modal-action">
+        <form method="dialog">
+          <button class="btn">Close</button>
+        </form>
+      </div>
+    </div>
+    <form method="dialog" class="modal-backdrop">
+      <button>close</button>
+    </form>
+  </dialog>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.querySelectorAll('[data-mode]').forEach(btn => {
+  btn.addEventListener('click', async () => {
+    const mode = btn.dataset.mode;
+    const response = await fetch("{% url 'peer_blog:update_filter_mode' %}", {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'X-CSRFToken': '{{ csrf_token }}',
+      },
+      body: 'mode=' + encodeURIComponent(mode),
+    });
+    if (response.ok) location.reload();
+  });
+});
+</script>
+{% endblock %}

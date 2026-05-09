@@ -1,0 +1,16 @@
+{% comment %}
+Reusable Practice Workshop share disclosure block.
+Step 12 (post-Tier-3): visible at every share confirmation point.
+Position: above the share/submit button, after form fields.
+{% endcomment %}
+<div class="card bg-base-200 border-l-4 border-info p-3 mt-3 text-sm" role="region"
+     aria-label="Reactive moderation policy disclosure">
+  <p class="mb-0 text-base-content">
+    <span class="text-info font-bold mr-1" aria-hidden="true">ℹ️</span>
+    Posts are visible immediately. The researcher reviews content weekly and may hide posts only for 4 specific reasons (real student PII, off-topic spam, copyright, platform safety).
+    <a href="{% url 'peer_blog:moderation_policy' %}"
+       target="_blank" rel="noopener" class="link link-info font-semibold">
+      Read the full Moderation Policy →
+    </a>
+  </p>
+</div>

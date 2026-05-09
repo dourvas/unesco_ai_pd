@@ -1,0 +1,152 @@
+{% extends 'base.html' %}
+{% block title %}Moderation Policy — PROODOS Practice Workshop{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto">
+
+  {# ── Page header ────────────────────────────────────────────── #}
+  <header class="mb-8">
+    <h1 class="text-3xl font-bold mb-2">PROODOS Practice Workshop — Moderation Policy</h1>
+    <p class="text-base-content/70">
+      How content visibility, hiding, and author control work in the Practice Workshop.
+    </p>
+  </header>
+
+  {# ── TL;DR card ────────────────────────────────────────────── #}
+  <section aria-labelledby="tldr-heading"
+           class="card bg-base-200 border-l-4 border-info p-5 mb-8">
+    <h2 id="tldr-heading" class="font-bold text-lg mb-2">TL;DR</h2>
+    <ul class="space-y-1 list-disc list-inside text-sm">
+      <li><strong>Posts are visible immediately</strong> when you share them. No approval gate.</li>
+      <li>The researcher reviews content <strong>weekly</strong> (~30 min/week).</li>
+      <li>Posts may be hidden <strong>only for 4 specific reasons</strong> (listed below).</li>
+      <li>Posts are <strong>never</strong> hidden for pedagogical disagreement, quality, theory, or aesthetics.</li>
+      <li>You retain full control of your own posts and comments — edit, withdraw, delete at any time.</li>
+    </ul>
+  </section>
+
+  {# ── How moderation works ──────────────────────────────────── #}
+  <section aria-labelledby="philosophy-heading" class="mb-10">
+    <h2 id="philosophy-heading" class="text-2xl font-bold mb-3">How moderation works</h2>
+    <p class="mb-3">
+      Your post is visible to the community the moment you share it — there is no approval gate. We trust teachers to engage critically through comments rather than pre-approving each other's work.
+    </p>
+    <p class="mb-3">
+      A researcher can hide content <em>after the fact</em>, but only for the four specific reasons listed below. Hide actions are documented and reversible.
+    </p>
+  </section>
+
+  {# ── 4 hide-trigger criteria ───────────────────────────────── #}
+  <section aria-labelledby="hide-triggers-heading" class="mb-10">
+    <h2 id="hide-triggers-heading" class="text-2xl font-bold mb-3">Posts may be hidden for these 4 reasons only</h2>
+    <p class="text-sm mb-4">
+      If a researcher hides your post, it stops appearing in the public feed. You still see your own post (with a "currently hidden" notice) and can revise it; ask a researcher to restore it once revised.
+    </p>
+
+    <div class="grid md:grid-cols-2 gap-4">
+      <article class="card bg-base-200 border-l-4 border-error p-4">
+        <h3 class="font-bold text-error mb-1">1. Platform safety violation</h3>
+        <p class="text-sm">
+          Content that promotes harm to students, ignores child safeguarding, recommends illegal AI use cases, or proposes AI-only decisions on consequential outcomes (final grading, admission, special-needs placement) without human oversight.
+        </p>
+      </article>
+
+      <article class="card bg-base-200 border-l-4 border-error p-4">
+        <h3 class="font-bold text-error mb-1">2. Off-topic spam</h3>
+        <p class="text-sm">
+          Content not related to AI in education, promotional content for unrelated products/services, or duplicate/automated submissions.
+        </p>
+      </article>
+
+      <article class="card bg-base-200 border-l-4 border-error p-4">
+        <h3 class="font-bold text-error mb-1">3. Real student PII</h3>
+        <p class="text-sm">
+          Content that includes identifying student information (real names, photos, identifying anecdotes) that should be anonymised before sharing.
+        </p>
+      </article>
+
+      <article class="card bg-base-200 border-l-4 border-error p-4">
+        <h3 class="font-bold text-error mb-1">4. Copyright violation</h3>
+        <p class="text-sm">
+          Explicit infringement of third-party content (lyrics, full articles, copyrighted curricula, trademarked imagery).
+        </p>
+      </article>
+    </div>
+  </section>
+
+  {# ── 7 hide-NEVER criteria ────────────────────────────────── #}
+  <section aria-labelledby="hide-never-heading" class="mb-10">
+    <h2 id="hide-never-heading" class="text-2xl font-bold mb-3">Posts will <em>never</em> be hidden for these reasons</h2>
+    <p class="text-sm mb-4">
+      The following reflect community variance, not policy violations. If a hide action would be triggered by any of these rather than by the four trigger criteria above, the researcher does not hide. We trust the community to engage critically through comments instead.
+    </p>
+    <div class="card bg-base-100 border border-base-300 p-5">
+      <ul class="space-y-2 list-disc list-inside text-sm">
+        <li>Pedagogical disagreement</li>
+        <li>Quality concerns ("not good enough")</li>
+        <li>Different theoretical orientations</li>
+        <li>Beginner-level work</li>
+        <li>Subject-area unfamiliarity</li>
+        <li>Personal aesthetic preferences</li>
+        <li>Disagreement with the author's framing</li>
+      </ul>
+    </div>
+  </section>
+
+  {# ── Author self-service ──────────────────────────────────── #}
+  <section aria-labelledby="self-service-heading" class="mb-10">
+    <h2 id="self-service-heading" class="text-2xl font-bold mb-3">You retain full control of your own content</h2>
+    <p class="text-sm mb-4">
+      Researcher moderation is separate from author self-service. You can take any of these actions at any time, without researcher involvement:
+    </p>
+
+    <div class="overflow-x-auto">
+      <table class="table table-sm">
+        <thead>
+          <tr>
+            <th>Action</th>
+            <th>What happens</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Edit own post title</td>
+            <td>Title updates instantly. Body (the canvas/lesson/unit content) stays the same — it was generated from your work.</td>
+          </tr>
+          <tr>
+            <td>Withdraw own post</td>
+            <td>Post stops appearing in the feed. You still see it (with a "withdrawn" notice). You can ask a researcher to restore it.</td>
+          </tr>
+          <tr>
+            <td>Edit own comment</td>
+            <td>Comment text updates. An "(edited)" marker appears for transparency.</td>
+          </tr>
+          <tr>
+            <td>Delete own comment</td>
+            <td>Comment stops appearing on the post. The comment count decrements.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  {# ── When the researcher reviews ──────────────────────────── #}
+  <section aria-labelledby="cadence-heading" class="mb-10">
+    <h2 id="cadence-heading" class="text-2xl font-bold mb-3">When the researcher reviews</h2>
+    <p class="text-sm mb-3">
+      The researcher reviews the Workshop <strong>weekly</strong>. If something needs to be hidden under one of the four criteria above, it usually happens within a week of being posted.
+    </p>
+  </section>
+
+  {# ── Footer / back-link ──────────────────────────────────── #}
+  <footer class="mt-12 pt-6 border-t border-base-300 text-center">
+    <p class="text-sm text-base-content/60 mb-2">
+      This policy applies to the Practice Workshop (M13 / M9 / M14). Forum discussions follow the platform's general community guidelines.
+    </p>
+    <p class="text-sm">
+      <a href="{% url 'modules:list' %}" class="link link-primary">← Back to Modules</a>
+    </p>
+  </footer>
+
+</div>
+{% endblock %}

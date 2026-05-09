@@ -1,0 +1,322 @@
+{% extends 'base.html' %}
+{% block title %}{{ post.title }} — {{ post.module.code }} Practice Workshop{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto">
+  <a href="{% url 'peer_blog:index' post.module.code %}" class="text-sm link link-hover">
+    ← Back to {{ post.module.code }} Practice Workshop
+  </a>
+
+  {% if is_author and post.is_hidden %}
+  <div class="alert alert-warning mt-4 text-sm">
+    <span>This post is currently withdrawn — only you and researchers can see it.</span>
+  </div>
+  {% endif %}
+
+  <article class="mt-4 mb-8">
+    <div id="post-title-view" class="flex items-start gap-3 mb-2">
+      <h1 class="text-3xl font-bold flex-1">{{ post.title }}</h1>
+      {% if is_author %}
+      <button class="btn btn-ghost btn-sm" type="button" id="edit-title-btn"
+              aria-label="Edit post title" title="Edit title">
+        ✏️
+      </button>
+      {% endif %}
+    </div>
+
+    {% if is_author %}
+    <form id="edit-title-form" class="hidden mb-2">
+      {% csrf_token %}
+      <input type="text" name="title" maxlength="200" required
+             value="{{ post.title }}"
+             class="input input-bordered input-sm w-full mb-2" />
+      <div class="flex gap-2">
+        <button type="submit" class="btn btn-primary btn-sm">Save title</button>
+        <button type="button" id="edit-title-cancel" class="btn btn-ghost btn-sm">Cancel</button>
+      </div>
+    </form>
+    {% endif %}
+
+    <p class="text-sm text-base-content/70 mb-4">
+      {{ post.author_pseudonym }}
+      {% if post.subject_area %} — {{ post.subject_area|title }}{% endif %}
+      {% if post.grade_level %}, {{ post.grade_level }}{% endif %}
+      · {{ post.created_at|date:"M j, Y" }}
+    </p>
+
+    <div class="prose max-w-none mb-6 whitespace-pre-line">{{ post.body }}</div>
+
+    <div class="flex flex-wrap items-center gap-3">
+      <button class="btn btn-sm {% if user_thumbed %}btn-primary{% else %}btn-outline{% endif %}"
+              id="post-thumbs-up-btn" data-post-id="{{ post.id }}" type="button">
+        👍 <span id="post-thumbs-count">{{ post.thumbs_up_count }}</span>
+      </button>
+
+      {% if post.artefact_type == 'm13_workflow' %}
+        <a href="{% url 'modules:export_canvas_pdf' post.module.code %}?submission_id={{ post.artefact_id }}"
+           class="btn btn-sm btn-outline btn-info"
+           rel="noopener">
+          📄 Download as PDF
+        </a>
+      {% endif %}
+
+      {% if is_author and not post.is_hidden %}
+      <button class="btn btn-sm btn-outline btn-error ml-auto" type="button"
+              onclick="document.getElementById('withdraw-modal').showModal()">
+        Withdraw post
+      </button>
+      {% endif %}
+    </div>
+  </article>
+
+  {% if is_author and not post.is_hidden %}
+  <dialog id="withdraw-modal" class="modal">
+    <div class="modal-box">
+      <h3 class="font-bold text-lg mb-3">Withdraw this post?</h3>
+      <p class="mb-4 text-sm">
+        The post will disappear from the M13 Practice Workshop feed. Researchers retain access
+        for the pilot study. You can ask a researcher to restore it later if you change your mind.
+      </p>
+      <div class="modal-action">
+        <form method="dialog" class="flex gap-2">
+          <button class="btn">Cancel</button>
+        </form>
+        <button class="btn btn-error" type="button" id="confirm-withdraw-btn">Yes, withdraw</button>
+      </div>
+    </div>
+    <form method="dialog" class="modal-backdrop"><button>close</button></form>
+  </dialog>
+  {% endif %}
+
+  <hr class="my-6">
+
+  <h2 class="text-2xl font-semibold mb-4">
+    Comments (<span id="comments-count-display">{{ post.comments_count }}</span>)
+  </h2>
+
+  <form id="comment-form" class="mb-6">
+    {% csrf_token %}
+    <textarea name="body" rows="3" required maxlength="2000"
+              class="textarea textarea-bordered w-full"
+              placeholder="Share your thoughts on this..."></textarea>
+    <button type="submit" class="btn btn-primary mt-2">Post comment</button>
+  </form>
+
+  <div id="comments-list" class="space-y-4">
+    {% for comment in comments %}
+      <div class="card bg-base-200 p-4" id="comment-{{ comment.id }}">
+        <p class="text-sm text-base-content/70 mb-2">
+          {{ comment.author_pseudonym }}
+          {% if comment.subject_area %} — {{ comment.subject_area|title }}{% endif %}
+          · {{ comment.created_at|timesince }} ago
+          {% if comment.updated_at and comment.updated_at|date:"U" != comment.created_at|date:"U" %}
+            <span class="text-xs italic" title="Edited {{ comment.updated_at|date:'M j, Y H:i' }}">(edited)</span>
+          {% endif %}
+        </p>
+        <p class="comment-body whitespace-pre-line">{{ comment.body }}</p>
+
+        {% if comment.user_id == request.user.id %}
+        <form class="comment-edit-form hidden mt-2" data-comment-id="{{ comment.id }}">
+          <textarea name="body" rows="3" required maxlength="2000"
+                    class="textarea textarea-bordered textarea-sm w-full mb-2">{{ comment.body }}</textarea>
+          <div class="flex gap-2">
+            <button type="submit" class="btn btn-primary btn-xs">Save</button>
+            <button type="button" class="btn btn-ghost btn-xs comment-edit-cancel">Cancel</button>
+          </div>
+        </form>
+        {% endif %}
+
+        <div class="flex flex-wrap gap-3 text-sm mt-2 items-center">
+          <button class="link comment-thumbs-btn" type="button"
+                  data-comment-id="{{ comment.id }}">
+            👍 <span class="comment-thumbs-count">{{ comment.thumbs_up_count }}</span>
+          </button>
+          {% if comment.user_id == request.user.id %}
+          <button class="link link-hover text-info comment-edit-btn" type="button"
+                  data-comment-id="{{ comment.id }}">Edit</button>
+          <button class="link link-hover text-error comment-delete-btn" type="button"
+                  data-comment-id="{{ comment.id }}">Delete</button>
+          {% endif %}
+        </div>
+      </div>
+    {% empty %}
+      <p class="text-center text-base-content/60 py-4" id="empty-comments-msg">
+        No comments yet. Be the first to share thoughts.
+      </p>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const csrfToken = '{{ csrf_token }}';
+
+// ── Thumbs-up on post ────────────────────────────────────────
+document.getElementById('post-thumbs-up-btn').addEventListener('click', async (e) => {
+  const btn = e.currentTarget;
+  const postId = btn.dataset.postId;
+  const response = await fetch('/blog/post/' + postId + '/thumbs-up/', {
+    method: 'POST',
+    headers: { 'X-CSRFToken': csrfToken },
+  });
+  if (!response.ok) return;
+  const data = await response.json();
+  document.getElementById('post-thumbs-count').textContent = data.count;
+  btn.classList.toggle('btn-primary', data.is_thumbed);
+  btn.classList.toggle('btn-outline', !data.is_thumbed);
+});
+
+// ── Thumbs-up on comments ────────────────────────────────────
+document.querySelectorAll('.comment-thumbs-btn').forEach(btn => {
+  btn.addEventListener('click', async () => {
+    const commentId = btn.dataset.commentId;
+    const response = await fetch('/blog/comment/' + commentId + '/thumbs-up/', {
+      method: 'POST',
+      headers: { 'X-CSRFToken': csrfToken },
+    });
+    if (!response.ok) return;
+    const data = await response.json();
+    btn.querySelector('.comment-thumbs-count').textContent = data.count;
+  });
+});
+
+// ── Comment submit ───────────────────────────────────────────
+document.getElementById('comment-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const formData = new FormData(e.target);
+  const response = await fetch('/blog/post/{{ post.id }}/comment/', {
+    method: 'POST',
+    body: formData,
+    headers: { 'X-CSRFToken': csrfToken },
+  });
+  if (response.ok) location.reload();
+});
+
+{% if is_author %}
+// ── Edit post title (author only) ────────────────────────────
+const editTitleBtn = document.getElementById('edit-title-btn');
+const editTitleForm = document.getElementById('edit-title-form');
+const titleViewBlock = document.getElementById('post-title-view');
+const editTitleCancel = document.getElementById('edit-title-cancel');
+
+if (editTitleBtn) {
+  editTitleBtn.addEventListener('click', () => {
+    titleViewBlock.classList.add('hidden');
+    editTitleForm.classList.remove('hidden');
+    editTitleForm.querySelector('input[name="title"]').focus();
+  });
+}
+if (editTitleCancel) {
+  editTitleCancel.addEventListener('click', () => {
+    editTitleForm.classList.add('hidden');
+    titleViewBlock.classList.remove('hidden');
+  });
+}
+if (editTitleForm) {
+  editTitleForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const fd = new FormData(editTitleForm);
+    const r = await fetch('/blog/post/{{ post.id }}/edit-title/', {
+      method: 'POST', body: fd, headers: { 'X-CSRFToken': csrfToken },
+    });
+    if (r.ok) {
+      const data = await r.json();
+      titleViewBlock.querySelector('h1').textContent = data.title;
+      document.title = data.title + ' — {{ post.module.code }} Practice Workshop';
+      editTitleForm.classList.add('hidden');
+      titleViewBlock.classList.remove('hidden');
+    } else {
+      const err = await r.json().catch(() => ({error: 'Update failed'}));
+      alert(err.error || 'Update failed');
+    }
+  });
+}
+
+// ── Withdraw post (author only) ──────────────────────────────
+const withdrawBtn = document.getElementById('confirm-withdraw-btn');
+if (withdrawBtn) {
+  withdrawBtn.addEventListener('click', async () => {
+    const r = await fetch('/blog/post/{{ post.id }}/withdraw/', {
+      method: 'POST', headers: { 'X-CSRFToken': csrfToken },
+    });
+    if (r.ok) {
+      const data = await r.json();
+      window.location.href = data.redirect_url;
+    } else {
+      alert('Withdraw failed.');
+    }
+  });
+}
+{% endif %}
+
+// ── Edit / delete own comments ───────────────────────────────
+document.querySelectorAll('.comment-edit-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const cid = btn.dataset.commentId;
+    const card = document.getElementById('comment-' + cid);
+    card.querySelector('.comment-body').classList.add('hidden');
+    card.querySelector('.comment-edit-form').classList.remove('hidden');
+  });
+});
+
+document.querySelectorAll('.comment-edit-cancel').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const form = btn.closest('.comment-edit-form');
+    const cid = form.dataset.commentId;
+    const card = document.getElementById('comment-' + cid);
+    form.classList.add('hidden');
+    card.querySelector('.comment-body').classList.remove('hidden');
+  });
+});
+
+document.querySelectorAll('.comment-edit-form').forEach(form => {
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const cid = form.dataset.commentId;
+    const fd = new FormData(form);
+    const r = await fetch('/blog/comment/' + cid + '/edit/', {
+      method: 'POST', body: fd, headers: { 'X-CSRFToken': csrfToken },
+    });
+    if (r.ok) {
+      const data = await r.json();
+      const card = document.getElementById('comment-' + cid);
+      card.querySelector('.comment-body').textContent = data.body;
+      card.querySelector('.comment-body').classList.remove('hidden');
+      form.classList.add('hidden');
+      // Surface the (edited) marker without full reload
+      const meta = card.querySelector('p.text-base-content\\/70');
+      if (meta && !meta.querySelector('.italic')) {
+        const tag = document.createElement('span');
+        tag.className = 'text-xs italic';
+        tag.textContent = '(edited)';
+        meta.appendChild(document.createTextNode(' '));
+        meta.appendChild(tag);
+      }
+    } else {
+      const err = await r.json().catch(() => ({error: 'Update failed'}));
+      alert(err.error || 'Update failed');
+    }
+  });
+});
+
+document.querySelectorAll('.comment-delete-btn').forEach(btn => {
+  btn.addEventListener('click', async () => {
+    if (!confirm('Delete this comment? It will be hidden from peers; researchers retain access.')) return;
+    const cid = btn.dataset.commentId;
+    const r = await fetch('/blog/comment/' + cid + '/delete/', {
+      method: 'POST', headers: { 'X-CSRFToken': csrfToken },
+    });
+    if (r.ok) {
+      const card = document.getElementById('comment-' + cid);
+      card.remove();
+      const counter = document.getElementById('comments-count-display');
+      const cur = parseInt(counter.textContent, 10) || 0;
+      counter.textContent = Math.max(0, cur - 1);
+    } else {
+      alert('Delete failed.');
+    }
+  });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>{{ title|default:"M13 Hybrid Workflow Canvas" }} — PROODOS</title>
+<style>
+  @page {
+    size: A4;
+    margin: 18mm 14mm 18mm 14mm;
+    @frame footer {
+      -pdf-frame-content: footerContent;
+      bottom: 8mm;
+      margin-left: 14mm;
+      margin-right: 14mm;
+      height: 12mm;
+    }
+  }
+  body {
+    font-family: Helvetica, Arial, sans-serif;
+    color: #1E293B;
+    font-size: 10.5pt;
+    line-height: 1.4;
+  }
+  .header {
+    border-bottom: 2pt solid #2563EB;
+    padding-bottom: 8pt;
+    margin-bottom: 14pt;
+  }
+  .brand { font-size: 18pt; font-weight: bold; color: #2563EB; margin: 0; }
+  .module-tag { font-size: 9pt; color: #64748B; margin: 2pt 0 0 0; }
+  h1 { font-size: 15pt; color: #1E293B; margin: 0 0 8pt 0; }
+  .summary {
+    background-color: #F1F5F9;
+    border-left: 3pt solid #2563EB;
+    padding: 8pt 10pt;
+    margin: 8pt 0 14pt 0;
+    font-size: 10pt;
+  }
+  .meta-table { width: 100%; margin: 0 0 14pt 0; border-collapse: collapse; }
+  .meta-table td { padding: 3pt 6pt; font-size: 9.5pt; }
+  .meta-table td.label { color: #64748B; width: 28%; }
+  .step {
+    background-color: #FFFFFF;
+    border: 0.7pt solid #CBD5E1;
+    border-left: 3pt solid #16A34A;
+    padding: 8pt 10pt;
+    margin: 0 0 8pt 0;
+  }
+  .step-num { color: #16A34A; font-weight: bold; }
+  .step-title { font-weight: bold; font-size: 11pt; }
+  .step-tools { color: #64748B; font-size: 9pt; margin-top: 3pt; }
+  .step-decision { color: #92400E; font-size: 9pt; margin-top: 3pt; font-style: italic; }
+  .section-title { font-size: 12pt; font-weight: bold; color: #1E40AF; margin: 14pt 0 6pt 0; border-bottom: 0.5pt solid #DBEAFE; padding-bottom: 3pt; }
+  .footer-content { font-size: 8pt; color: #94A3B8; text-align: center; }
+  .footer-content strong { color: #475569; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <p class="brand">PROODOS</p>
+  <p class="module-tag">{{ module_code|default:"M13" }} — Multimodal AI Content Creation · Challenge 2: Hybrid Workflow Canvas</p>
+</div>
+
+<h1>{{ title|default:"My Hybrid Workflow" }}</h1>
+
+{% if summary %}
+<div class="summary">{{ summary }}</div>
+{% endif %}
+
+<table class="meta-table">
+  <tr><td class="label">Author:</td><td><strong>{{ author|default:"—" }}</strong></td></tr>
+  <tr><td class="label">Subject:</td><td>{{ subject_area|default:"—" }}</td></tr>
+  <tr><td class="label">Grade level:</td><td>{{ grade_level|default:"—" }}</td></tr>
+  {% if learning_goal %}<tr><td class="label">Learning goal:</td><td>{{ learning_goal }}</td></tr>{% endif %}
+  {% if modality %}<tr><td class="label">Modality:</td><td>{{ modality }}</td></tr>{% endif %}
+  {% if prep_time %}<tr><td class="label">Prep time:</td><td>{{ prep_time }}</td></tr>{% endif %}
+</table>
+
+<div class="section-title">Workflow steps</div>
+
+{% if steps %}
+{% for step in steps %}
+<div class="step">
+  <p style="margin: 0;">
+    <span class="step-num">Step {{ forloop.counter }}.</span>
+    <span class="step-title">{{ step.title|default:"(no title)" }}</span>
+  </p>
+  {% if step.description %}<p style="margin: 4pt 0 0 0;">{{ step.description }}</p>{% endif %}
+  {% if step.tool %}<p class="step-tools">Tool / category: <strong>{{ step.tool }}</strong>{% if step.tool_category %} ({{ step.tool_category }}){% endif %}</p>{% endif %}
+  {% if step.decision %}<p class="step-decision">Decision point: {{ step.decision }}</p>{% endif %}
+</div>
+{% endfor %}
+{% else %}
+<p style="color: #94A3B8; font-style: italic;">No workflow steps recorded.</p>
+{% endif %}
+
+<div id="footerContent" class="footer-content">
+  Exported from PROODOS · {{ exported_at }} · Author: <strong>{{ author|default:"PROODOS user" }}</strong>
+  · License: workflow content remains the author's intellectual property.
+</div>
+
+</body>
+</html>
