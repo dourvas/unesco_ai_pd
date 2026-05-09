@@ -29,6 +29,9 @@ INSTALLED_APPS = [
     'apps.core',
     'apps.community',
     'apps.peer_blog',
+    # Phase C — EU AI Act + AILST baseline (2026-05)
+    'apps.compliance',
+    'apps.ailst',
 ]
 
 MIDDLEWARE = [
