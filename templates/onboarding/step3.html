@@ -1,6 +1,7 @@
 {% extends 'base.html' %}
+{% load i18n %}
 
-{% block title %}Step 3: Goals & Preferences{% endblock %}
+{% block title %}{% trans "Step 3: Goals & Preferences" %}{% endblock %}
 
 {% block content %}
 <div class="max-w-3xl mx-auto">
@@ -66,43 +67,79 @@
                     </div>
                 </div>
 
-                <div class="divider">Research Consent</div>
+                <div class="divider">{% trans "Research Consent" %}</div>
 
-                <!-- Research Consent -->
-                <div class="form-control mb-4">
-                    <label class="label cursor-pointer justify-start gap-3 p-4 bg-base-200 rounded-lg">
-                        {{ form.research_consent }}
-                        <div>
-                            <span class="label-text font-medium">Consent to use data for research purposes</span>
-                            <p class="text-sm text-base-content/70 mt-1">
-                                Your data will be used anonymously for research purposes (doctoral dissertation).
-                            </p>
-                        </div>
+                <!-- Research Participation: full verbatim text + checkbox -->
+                <div class="form-control mb-6">
+                    <div class="bg-base-200 rounded-lg p-5 mb-3">
+                        <h3 class="font-bold text-lg mb-3 text-primary">
+                            {% trans "Research Participation" %}
+                        </h3>
+                        <div class="text-sm leading-relaxed">{{ research_text|linebreaksbr }}</div>
+                    </div>
+                    <label class="label cursor-pointer justify-start gap-3 p-3 border-2 rounded-lg hover:border-primary transition-colors">
+                        {{ form.consent_research_participation }}
+                        <span class="label-text font-medium">{{ form.consent_research_participation.label }}</span>
                     </label>
+                    {% if form.consent_research_participation.errors %}
+                        <label class="label">
+                            <span class="label-text-alt text-error">{{ form.consent_research_participation.errors.0 }}</span>
+                        </label>
+                    {% endif %}
                 </div>
 
-                <!-- Contact for Research -->
+                <!-- Data Sharing: full verbatim text + checkbox -->
+                <div class="form-control mb-6">
+                    <div class="bg-base-200 rounded-lg p-5 mb-3">
+                        <h3 class="font-bold text-lg mb-3 text-primary">
+                            {% trans "Data Sharing for Secondary Research (Optional)" %}
+                        </h3>
+                        <div class="text-sm leading-relaxed">{{ data_sharing_text|linebreaksbr }}</div>
+                    </div>
+                    <label class="label cursor-pointer justify-start gap-3 p-3 border-2 rounded-lg hover:border-primary transition-colors">
+                        {{ form.consent_data_sharing }}
+                        <span class="label-text font-medium">{{ form.consent_data_sharing.label }}</span>
+                    </label>
+                    {% if form.consent_data_sharing.errors %}
+                        <label class="label">
+                            <span class="label-text-alt text-error">{{ form.consent_data_sharing.errors.0 }}</span>
+                        </label>
+                    {% endif %}
+                </div>
+
+                <div class="divider">{% trans "Contact preferences" %}</div>
+
+                <!-- Contact for Research (NOT a consent — direct boolean) -->
                 <div class="form-control mb-6">
                     <label class="label cursor-pointer justify-start gap-3 p-4 bg-base-200 rounded-lg">
                         {{ form.contact_for_research }}
                         <div>
-                            <span class="label-text font-medium">I'm available for a research interview (optional)</span>
+                            <span class="label-text font-medium">
+                                {% trans "I'm available for a research interview (optional)" %}
+                            </span>
                             <p class="text-sm text-base-content/70 mt-1">
-                                We may contact you for a brief interview about your experience.
+                                {% trans "Separate from the consents above. We may contact you for a brief interview about your experience. You can change this preference any time in your profile." %}
                             </p>
                         </div>
                     </label>
                 </div>
 
-                <!-- Privacy Notice -->
-                <div class="alert alert-info mb-6">
+                <!-- Privacy Notice + version stamp -->
+                <div class="alert alert-info mb-4">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 w-6 h-6">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                     </svg>
                     <div class="text-sm">
-                        <p class="font-medium mb-1">🔒 Data Protection</p>
-                        <p>Your information is protected in accordance with GDPR. You can withdraw your consent at any time.</p>
+                        <p class="font-medium mb-1">🔒 {% trans "Data Protection" %}</p>
+                        <p>
+                            {% blocktrans %}Your information is protected in accordance with the EU General Data Protection Regulation (GDPR) and Greek Law 4624/2019. You can withdraw your consent at any time.{% endblocktrans %}
+                        </p>
                     </div>
+                </div>
+                <div class="text-right mb-6">
+                    <span class="badge badge-ghost badge-sm">
+                        {% blocktrans with version=consent_version %}Consent text version: {{ version }}{% endblocktrans %}
+                    </span>
                 </div>
 
                 <!-- Form Actions -->

@@ -137,28 +137,92 @@ class ConsentServiceTest(TestCase):
         self.assertEqual(first.id, second.id)
         self.assertEqual(ConsentRecord.objects.count(), 1)
 
-    def test_revoke_consent_specific_version(self):
-        record_consent(user=self.user, consent_type='ai_disclosure',
-                       consent_text='v1 text', version='v1')
-        record_consent(user=self.user, consent_type='ai_disclosure',
-                       consent_text='v2 text', version='v2')
-        revoked = revoke_consent(user=self.user, consent_type='ai_disclosure',
-                                 version='v1')
-        self.assertEqual(revoked, 1)
-        v1 = ConsentRecord.objects.get(version='v1')
-        v2 = ConsentRecord.objects.get(version='v2')
-        self.assertFalse(v1.is_active)
+    def test_record_consent_supersedes_prior_version(self):
+        """C.2.2 supersede pattern: granting a NEW version revokes any prior
+        active versions of the same (user, consent_type), so exactly one
+        active row exists per consent identity. Audit rows preserved.
+        """
+        v1 = record_consent(
+            user=self.user, consent_type='ai_disclosure',
+            consent_text='v1 text', version='v1',
+        )
+        self.assertTrue(v1.is_active)
+        v2 = record_consent(
+            user=self.user, consent_type='ai_disclosure',
+            consent_text='v2 text', version='v2',
+        )
+        v1.refresh_from_db()
+        self.assertFalse(v1.is_active, "v1 must be revoked after v2 supersede")
         self.assertTrue(v2.is_active)
+        # Audit trail preserved
+        self.assertEqual(
+            ConsentRecord.objects.filter(
+                user=self.user, consent_type='ai_disclosure',
+            ).count(),
+            2,
+        )
 
-    def test_revoke_consent_all_versions(self):
-        record_consent(user=self.user, consent_type='ai_disclosure',
-                       consent_text='v1', version='v1')
-        record_consent(user=self.user, consent_type='ai_disclosure',
-                       consent_text='v2', version='v2')
+    def test_record_consent_same_version_is_idempotent_no_supersede(self):
+        """Re-recording the SAME version returns existing row, does not
+        spuriously revoke-and-recreate."""
+        first = record_consent(
+            user=self.user, consent_type='ai_disclosure',
+            consent_text='same text', version='v1',
+        )
+        second = record_consent(
+            user=self.user, consent_type='ai_disclosure',
+            consent_text='same text', version='v1',
+        )
+        self.assertEqual(first.id, second.id)
+        first.refresh_from_db()
+        self.assertTrue(first.is_active, "Same-version replay must not revoke")
+        self.assertEqual(
+            ConsentRecord.objects.filter(
+                user=self.user, consent_type='ai_disclosure',
+            ).count(),
+            1,
+        )
+
+    def test_revoke_consent_specific_version_via_direct_orm(self):
+        """Explicit revoke_consent(version='X') targets only that version.
+        Uses direct ORM creates to bypass the supersede pattern (under which
+        record_consent normally keeps at most one active row).
+        """
+        cr1 = ConsentRecord.objects.create(
+            user=self.user, consent_type='ai_disclosure',
+            consent_text='manual v1', version='manual_v1', granted=True,
+        )
+        cr2 = ConsentRecord.objects.create(
+            user=self.user, consent_type='ai_disclosure',
+            consent_text='manual v2', version='manual_v2', granted=True,
+        )
+        revoked = revoke_consent(
+            user=self.user, consent_type='ai_disclosure', version='manual_v1',
+        )
+        self.assertEqual(revoked, 1)
+        cr1.refresh_from_db()
+        cr2.refresh_from_db()
+        self.assertFalse(cr1.is_active)
+        self.assertTrue(cr2.is_active)
+
+    def test_revoke_consent_all_versions_via_direct_orm(self):
+        """revoke_consent without version revokes ALL active rows for
+        (user, consent_type). Uses direct ORM creates to set up multiple
+        active rows (record_consent's supersede would normally keep one)."""
+        cr1 = ConsentRecord.objects.create(
+            user=self.user, consent_type='ai_disclosure',
+            consent_text='v1', version='v1', granted=True,
+        )
+        cr2 = ConsentRecord.objects.create(
+            user=self.user, consent_type='ai_disclosure',
+            consent_text='v2', version='v2', granted=True,
+        )
         revoked = revoke_consent(user=self.user, consent_type='ai_disclosure')
         self.assertEqual(revoked, 2)
-        for cr in ConsentRecord.objects.all():
-            self.assertFalse(cr.is_active)
+        cr1.refresh_from_db()
+        cr2.refresh_from_db()
+        self.assertFalse(cr1.is_active)
+        self.assertFalse(cr2.is_active)
 
 
 class LegacyBooleanMigrationTest(TestCase):

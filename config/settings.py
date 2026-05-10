@@ -154,3 +154,13 @@ AILST_CURRENT_VERSION = 'ning_2025_v1'
 # apps/compliance/copy.py and update this value to match.
 AI_DISCLOSURE_CURRENT_VERSION = 'v1_pre_irb'
 
+# ============================================================
+# Phase C C.2.2 — Step 3 research consent version pin
+# ============================================================
+# Single setting for BOTH research_participation and data_sharing texts
+# because IHU IRB reviews them together as a combined consent package.
+# After IRB feedback, mint 'v2_irb_revised' in apps/compliance/copy.py
+# and update this value. record_consent's supersede pattern revokes
+# old-version active rows when a user re-consents under the new version.
+RESEARCH_CONSENT_CURRENT_VERSION = 'v1_pre_irb'
+

@@ -132,35 +132,121 @@ def onboarding_step2(request):
     return render(request, 'onboarding/step2.html', context)
 
 
+def _apply_step3_consents(*, user, research_checked, data_sharing_checked, ip_address):
+    """Phase C C.2.2 — Step 3 research-consent policy.
+
+    Translates the Step 3 checkbox state into ConsentRecord writes via the
+    canonical record_consent / revoke_consent helpers. The M6 sync signal
+    updates the legacy TeacherProfile boolean cache automatically.
+
+    This helper centralises the Step-3-specific mapping:
+      - 'consent_research_participation' checkbox -> consent_type='research_participation'
+      - 'consent_data_sharing' checkbox          -> consent_type='data_sharing'
+
+    Idempotent: re-submitting the same checkbox state is a no-op (the
+    record_consent supersede check returns the existing active row;
+    revoke_consent on already-empty active set returns 0).
+    """
+    from django.conf import settings
+
+    from apps.compliance.copy import (
+        DATA_SHARING_TEXT_V1_PRE_IRB,
+        RESEARCH_PARTICIPATION_TEXT_V1_PRE_IRB,
+    )
+    from apps.compliance.services import record_consent, revoke_consent
+
+    version = settings.RESEARCH_CONSENT_CURRENT_VERSION
+
+    if research_checked:
+        record_consent(
+            user=user,
+            consent_type='research_participation',
+            consent_text=RESEARCH_PARTICIPATION_TEXT_V1_PRE_IRB,
+            version=version,
+            ip_address=ip_address,
+        )
+    else:
+        # Revokes any active row of this consent_type — including legacy
+        # v0_pre_phase_c (M6 backfill) if user is opting out for the first
+        # time. One consent identity per consent_type.
+        revoke_consent(user=user, consent_type='research_participation')
+
+    if data_sharing_checked:
+        record_consent(
+            user=user,
+            consent_type='data_sharing',
+            consent_text=DATA_SHARING_TEXT_V1_PRE_IRB,
+            version=version,
+            ip_address=ip_address,
+        )
+    else:
+        revoke_consent(user=user, consent_type='data_sharing')
+
+
+def _step3_client_ip(request):
+    """Best-effort client IP for ConsentRecord rows (auto-redacted after 30 days
+    via apps/compliance/management/commands/redact_old_consent_ips)."""
+    forwarded = request.META.get('HTTP_X_FORWARDED_FOR', '')
+    if forwarded:
+        return forwarded.split(',')[0].strip()
+    return request.META.get('REMOTE_ADDR')
+
+
 @login_required
 def onboarding_step3(request):
     """
-    Step 3: Goals & Preferences
+    Step 3: Goals & Preferences + research consents.
+
+    Phase C C.2.2 refactor: research_consent and consent_data_sharing are
+    written via record_consent() (canonical path), not via direct boolean
+    writes. The M6 signal updates the booleans automatically.
     """
+    from django.conf import settings
+
+    from apps.compliance.copy import (
+        DATA_SHARING_TEXT_V1_PRE_IRB,
+        RESEARCH_PARTICIPATION_TEXT_V1_PRE_IRB,
+    )
+
     profile = get_object_or_404(TeacherProfile, user=request.user)
-    
+
     if request.session.get('onboarding_step', 0) < 2:
         messages.warning(request, 'Please complete Step 2 first.')
         return redirect('users:onboarding_step2')
-    
+
     if request.method == 'POST':
         form = GoalsPreferencesForm(request.POST, instance=profile)
         if form.is_valid():
+            # M3 attribution: history rows carry change_source.
+            form.instance._change_source = 'onboarding_step3'
             form.save()
+
+            _apply_step3_consents(
+                user=request.user,
+                research_checked=form.cleaned_data['consent_research_participation'],
+                data_sharing_checked=form.cleaned_data['consent_data_sharing'],
+                ip_address=_step3_client_ip(request),
+            )
+
             request.session['onboarding_step'] = 3
             messages.success(request, '✅ Step 3 completed!')
             return redirect('users:onboarding_summary')
     else:
         form = GoalsPreferencesForm(instance=profile)
-    
+
     context = {
         'form': form,
         'profile': profile,
         'current_step': 3,
         'total_steps': 3,
-        'progress_percentage': 100
+        'progress_percentage': 100,
+        # Verbatim consent texts shown to user; must match what
+        # _apply_step3_consents stores via record_consent.
+        'research_text': RESEARCH_PARTICIPATION_TEXT_V1_PRE_IRB,
+        'data_sharing_text': DATA_SHARING_TEXT_V1_PRE_IRB,
+        'consent_version': settings.RESEARCH_CONSENT_CURRENT_VERSION,
     }
-    
+
     return render(request, 'onboarding/step3.html', context)
 
 

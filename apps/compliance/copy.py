@@ -67,3 +67,89 @@ AI_DISCLOSURE_HTML_BULLETS_V1_PRE_IRB = (
     "Your data is governed by the EU General Data Protection Regulation "
     "(Regulation 2016/679, 'GDPR').",
 )
+
+
+# ============================================================
+# Phase C C.2.2 — Step 3 research consent texts
+# ============================================================
+# Two independent consents shown on onboarding Step 3. They are
+# versioned together (RESEARCH_CONSENT_CURRENT_VERSION) because the
+# IRB review is a single combined review.
+
+RESEARCH_PARTICIPATION_TEXT_V1_PRE_IRB = """\
+Research Participation — PROODOS Doctoral Research
+
+PROODOS is the empirical instrument of a doctoral dissertation at the
+International Hellenic University (Διεθνές Πανεπιστήμιο της Ελλάδος, IHU),
+Thessaloniki. The principal investigator is John Dourvas, doctoral
+researcher, under the supervision of Asst. Prof. Georgios Kokkonis,
+Department of Information and Electronic Systems Engineering.
+
+Your platform interactions are research data. This includes:
+  - Your responses to module activities and reflection prompts
+  - Your AILST questionnaire responses (3 administrations)
+  - Your AI dispute submissions when you contest AI feedback
+  - Your module progress and completion data
+  - The personalization fields you provide in your profile
+
+What participation involves:
+  - Completing the AI Literacy Scale for Teachers (AILST) at three
+    points: once after onboarding (T0), once after Module 5 (T1), and
+    once after Module 15 (T2). Each administration takes approximately
+    7 minutes.
+  - These three AILST administrations are required parts of the
+    programme. You cannot proceed to Module 6 without completing T1,
+    or receive a completion certificate without completing T2.
+  - Allowing your platform interaction data to be analysed for the
+    dissertation and any peer-reviewed publications arising from it.
+
+Your right to withdraw:
+  You may withdraw from the research at any time without consequence
+  using the Logout option (and, once available, through the Privacy
+  dashboard in your account settings). On withdrawal, your platform
+  data will be handled per the Privacy Policy and applicable provisions
+  of the EU General Data Protection Regulation (Regulation 2016/679,
+  'GDPR') and Greek Law 4624/2019.
+
+Contact:
+  For questions about the research, contact John Dourvas at
+  [TBD — IRB-approved contact email].
+
+Your acknowledgment:
+  By checking "I consent to participate in this research" you confirm
+  that you have read and understood the above.
+"""
+
+
+DATA_SHARING_TEXT_V1_PRE_IRB = """\
+Data Sharing for Secondary Research
+
+Optional. Separately from your participation in this research, this
+consent allows your anonymised platform data to be used in secondary
+research analyses approved separately by the IHU Research Ethics
+Committee.
+
+What "anonymised" means here:
+  - Direct identifiers are removed: your name, email address, and any
+    free-text content you wrote that could identify you.
+  - Technical identifiers are removed: IP address, device identifiers.
+  - Research variables are kept: subject area, grade level, years of
+    teaching experience, AILST responses, and module completion data.
+    These are the variables of scientific interest.
+
+Your right to withdraw:
+  You may revoke this consent independently of your research
+  participation at any time. Revocation prevents any future sharing of
+  your data. Data already shared in fully anonymised form is, by
+  definition, no longer linked to you and cannot be retroactively
+  identified.
+
+Optional consent:
+  This consent is OPTIONAL. Declining it does NOT affect your
+  participation in the research, your access to the platform, or your
+  programme certificate.
+
+Your acknowledgment:
+  By checking "I consent to data sharing" you confirm that you have
+  read and understood the above.
+"""

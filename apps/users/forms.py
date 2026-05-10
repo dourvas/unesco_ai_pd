@@ -205,10 +205,19 @@ class AIExperienceForm(forms.ModelForm):
 
 class GoalsPreferencesForm(forms.ModelForm):
     """
-    Step 3: Goals & Preferences
-    Learning objectives and communication style
+    Step 3: Goals & Preferences + research consents.
+
+    Phase C C.2.2 refactor:
+      - research_consent and consent_data_sharing are NO LONGER bound to
+        TeacherProfile via Meta.fields. They are exposed as standalone
+        BooleanField on the form; the view reads cleaned_data and calls
+        record_consent / revoke_consent (canonical write path).
+      - The booleans on TeacherProfile are kept in sync by the M6 signal
+        in apps/compliance/signals.py — transparent to this form.
+      - contact_for_research stays on Meta.fields (it's a contact
+        preference, not a consent event in the M6 mapping).
     """
-    
+
     # Multi-select for goals (custom field, stored as JSON)
     goals_checkboxes = forms.MultipleChoiceField(
         required=False,
@@ -227,58 +236,91 @@ class GoalsPreferencesForm(forms.ModelForm):
         ],
         label="What are your main goals? (select up to 3)"
     )
-    
+
+    # === Phase C C.2.2 — research consents (NOT ModelForm-bound) ===
+    consent_research_participation = forms.BooleanField(
+        required=False,
+        widget=forms.CheckboxInput(attrs={'class': 'checkbox checkbox-primary'}),
+        label=_('I consent to participate in this research'),
+    )
+
+    consent_data_sharing = forms.BooleanField(
+        required=False,
+        widget=forms.CheckboxInput(attrs={'class': 'checkbox checkbox-primary'}),
+        label=_('I consent to data sharing for secondary research'),
+    )
+
     class Meta:
         model = TeacherProfile
         fields = [
             'preferred_communication_style',
-            'research_consent',
-            'contact_for_research'
+            'contact_for_research',
+            # research_consent / consent_data_sharing REMOVED — managed
+            # by view via record_consent(); booleans synced by M6 signal.
         ]
-        
+
         widgets = {
             'preferred_communication_style': forms.RadioSelect(attrs={
                 'class': 'radio radio-primary'
-            }),
-            'research_consent': forms.CheckboxInput(attrs={
-                'class': 'checkbox checkbox-primary'
             }),
             'contact_for_research': forms.CheckboxInput(attrs={
                 'class': 'checkbox checkbox-primary'
             })
         }
-    
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        
-        # Remove blank choice
+
+        # Remove blank choice on the radio
         self.fields['preferred_communication_style'].empty_label = None
-        
+
         # Pre-populate goals_checkboxes from JSON field
         if self.instance.pk and self.instance.primary_goals:
             self.initial['goals_checkboxes'] = self.instance.primary_goals
-    
+
+        # Pre-populate consent checkboxes from canonical ConsentRecord state.
+        # Late import avoids circular dependency at module load time.
+        if self.instance.pk and self.instance.user_id:
+            from apps.compliance.models import ConsentRecord
+
+            self.initial['consent_research_participation'] = (
+                ConsentRecord.objects.filter(
+                    user_id=self.instance.user_id,
+                    consent_type='research_participation',
+                    granted=True,
+                    revoked_at__isnull=True,
+                ).exists()
+            )
+            self.initial['consent_data_sharing'] = (
+                ConsentRecord.objects.filter(
+                    user_id=self.instance.user_id,
+                    consent_type='data_sharing',
+                    granted=True,
+                    revoked_at__isnull=True,
+                ).exists()
+            )
+
     def clean_goals_checkboxes(self):
         goals = self.cleaned_data.get('goals_checkboxes', [])
-        
+
         # Limit to 3 goals
         if len(goals) > 3:
             raise forms.ValidationError(
                 'Please select up to 3 goals.'
             )
-        
+
         return goals
-    
+
     def save(self, commit=True):
         instance = super().save(commit=False)
-        
+
         # Convert checkbox selections to JSON array
         goals = self.cleaned_data.get('goals_checkboxes', [])
         instance.primary_goals = list(goals)
-        
+
         if commit:
             instance.save()
-        
+
         return instance
 
 

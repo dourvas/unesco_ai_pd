@@ -34,26 +34,47 @@ LEGACY_CONSENT_TEXT_TEMPLATE = (
 
 def record_consent(*, user, consent_type, consent_text, version,
                    granted=True, ip_address=None):
-    """Idempotent helper to write a ConsentRecord row.
+    """Idempotent helper to write a ConsentRecord row, with supersede semantics.
 
-    If a non-revoked row already exists for (user, consent_type, version),
-    that row is returned instead of creating a duplicate. Makes the AI
-    Disclosure middleware safe to re-trigger.
+    Two cases:
+
+    1. SAME (user, consent_type, version) row already active:
+       Return that row. No new write. (Idempotency for replays — e.g., a
+       user double-clicking 'I acknowledge' on the AI Disclosure modal.)
+
+    2. DIFFERENT version: revoke any prior active rows of the same
+       (user, consent_type), then create the new row. The new version
+       'supersedes' the prior one. Audit trail is preserved (old rows
+       remain in the table with revoked_at set); current state is clean
+       (exactly one active row per consent_type per user).
+
+    The supersede pattern:
+      - Mirrors how GDPR / IRB consent updates work in practice: a new
+        text version supersedes the previous one once explicitly agreed.
+      - Keeps the M6 sync_teacher_profile_booleans signal simple: the
+        canonical state remains "any active row of this consent_type".
+      - Avoids accumulating multiple active rows per consent_type, which
+        would muddy queries and analytics.
+
+    Per-row save() (not bulk update) when revoking prior active versions
+    so that the post_save signal fires correctly.
 
     Args:
         user: Django User instance.
         consent_type: One of CONSENT_TYPE_CHOICES values.
         consent_text: Verbatim text shown to the user.
-        version: Version tag (e.g., 'v1').
+        version: Version tag (e.g., 'v1_pre_irb').
         granted: True if user consented, False if explicitly denied.
         ip_address: Optional IP at consent time. Auto-redacted after 30 days
             via manage.py redact_old_consent_ips.
 
     Returns:
-        ConsentRecord row (created or pre-existing).
+        ConsentRecord row (newly created, or pre-existing if same version
+        was already active).
     """
     from .models import ConsentRecord
 
+    # Idempotency: same version already active for this (user, type)?
     existing = ConsentRecord.objects.filter(
         user=user,
         consent_type=consent_type,
@@ -62,6 +83,20 @@ def record_consent(*, user, consent_type, consent_text, version,
     ).first()
     if existing:
         return existing
+
+    # Supersede: revoke any active rows of OTHER versions for the same
+    # (user, consent_type). Per-row save() so the M6 sync signal fires.
+    now = timezone.now()
+    prior_active = ConsentRecord.objects.filter(
+        user=user,
+        consent_type=consent_type,
+        revoked_at__isnull=True,
+    )
+    for cr in prior_active:
+        cr.revoked_at = now
+        cr.save(update_fields=['revoked_at'])
+
+    # Create the new row.
     return ConsentRecord.objects.create(
         user=user,
         consent_type=consent_type,
@@ -75,8 +110,16 @@ def record_consent(*, user, consent_type, consent_text, version,
 def revoke_consent(*, user, consent_type, version: Optional[str] = None) -> int:
     """Mark active consents as revoked.
 
-    If `version` is None, revokes ALL active rows for (user, consent_type).
-    Otherwise revokes only matching version. Returns count of rows revoked.
+    If `version` is None, revokes ALL active rows for (user, consent_type) —
+    note that the supersede pattern in record_consent normally keeps at most
+    one active row per (user, consent_type), so version=None typically
+    revokes 0 or 1 rows. The 'all versions' wording reflects the legal
+    intent: one user's withdrawal of consent for a consent_type covers
+    every active row of that type, regardless of historical text version.
+    Otherwise revokes only matching version (used by tests that bypass
+    supersede via direct ORM creation).
+
+    Returns count of rows revoked.
 
     Implementation note: per-row save() (not bulk update()) so that the
     sync_teacher_profile_booleans post_save signal fires and the legacy
