@@ -179,21 +179,20 @@
     <!-- Confirmation -->
     <div class="card bg-primary text-primary-content shadow-xl mb-6">
         <div class="card-body">
-            <h3 class="card-title">🎉 Almost done!</h3>
+            <h3 class="card-title">One more short step</h3>
             <p>
-                Please confirm that your information is correct. You can edit your profile 
-                anytime from your settings.
+                Please confirm that your information is correct. After this you will
+                complete a brief AI literacy self-assessment (8&ndash;12 minutes), and
+                then you can begin the modules. You can edit your profile anytime from
+                your settings.
             </p>
             <form method="post" class="card-actions justify-end mt-4">
                 {% csrf_token %}
                 <a href="{% url 'users:onboarding_step3' %}" class="btn btn-ghost">
-                    ← Back to Step 3
+                    Back to Step 3
                 </a>
                 <button type="submit" class="btn btn-accent btn-lg">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                    </svg>
-                    Complete Profile
+                    Continue to AI Literacy baseline
                 </button>
             </form>
         </div>

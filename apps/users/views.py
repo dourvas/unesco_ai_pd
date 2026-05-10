@@ -266,10 +266,14 @@ def onboarding_summary(request):
         profile.profile_completion_date = timezone.now()
         profile.consent_timestamp = timezone.now() if profile.research_consent else None
         profile.save()
-        
-        request.session.pop('onboarding_step', None)
-        messages.success(request, '🎉 Congratulations! Your profile has been completed!')
-        return redirect('users:dashboard')
+
+        # Phase C C.2.3: post-Summary state advances to step 4. The AILST
+        # entry view does not key on this marker (profile_completed is the
+        # durable truth), but keeping it set makes the in-flight T0 state
+        # observable for analytics and debugging.
+        request.session['onboarding_step'] = 4
+        messages.success(request, 'Profile completed. One more short step before you start the modules.')
+        return redirect('ailst:entry', timepoint='t0')
     
     context = {
         'profile': profile,
