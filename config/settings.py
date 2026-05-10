@@ -130,3 +130,13 @@ GITHUB_WORKFLOWS_URL = _os.environ.get(
     'https://github.com/dourvas/proodos-eduai-teacher-workflows',
 )
 
+# ============================================================
+# Phase C M4 — AILST instrument version pin
+# ============================================================
+# Version of AILST items served to NEW T0 administrations. In-progress
+# AilstResponse rows preserve their own instrument_version (implicit pin
+# via AilstResponse.instrument_version). When transitioning to v2 in
+# the future, change this setting; existing in-progress users continue
+# with v1 until they complete T0/T1/T2.
+AILST_CURRENT_VERSION = 'ning_2025_v1'
+

@@ -1,0 +1,64 @@
+{
+  "_meta": {
+    "instrument_version": "ning_2025_v1",
+    "language": "en",
+    "source_paper": "Ning, Y., Zhang, W., Yao, D., Xu, B., & Wijaya, T. T. (2025). Development and validation of the Artificial Intelligence Literacy Scale for Teachers (AILST). Education and Information Technologies, 30, 17769-17803.",
+    "seed_date": "2026-05-10",
+    "removed_items": {
+      "A1": "I know how to use AI to integrate existing teaching resources.",
+      "A2": "I know how to use AI for teaching interaction.",
+      "E2": "I am able to perceive ethical and moral issues in the process of AI application keenly.",
+      "E6": "I am aware of the extent to which AI considers the individual differences of all students."
+    },
+    "removal_reason": "Removed by Ning et al. 2025 during EFA (factor loadings < 0.5 or cross-loadings on multiple factors). The retained 36-item set was validated via CFA (Cronbach alpha 0.851-0.943 across factors).",
+    "scoring_anchors": {
+      "5": "Fully applicable",
+      "4": "Applicable",
+      "3": "Uncertain",
+      "2": "Not applicable",
+      "1": "Completely not applicable"
+    },
+    "scoring_note": "Storage is raw 1-5 with anchor 'Fully applicable' = 5. Reverse-scoring (scored = 6 - raw) applies ONLY to K1, A3, E3 (negation-framed items). After reversal, higher final score = higher TAIL (Teacher AI Literacy) per paper convention."
+  },
+  "items": [
+    {"item_number": 1, "paper_code": "P1", "factor": "perception", "is_reverse_scored": false, "item_text": "I believe that AI can enhance the efficiency of teaching preparation, such as lesson planning."},
+    {"item_number": 2, "paper_code": "P2", "factor": "perception", "is_reverse_scored": false, "item_text": "It is my assertion that AI has the capacity to improve both the efficiency and effectiveness of teaching."},
+    {"item_number": 3, "paper_code": "P3", "factor": "perception", "is_reverse_scored": false, "item_text": "I have knowledge of common AI technologies and platforms utilized in educational settings."},
+    {"item_number": 4, "paper_code": "P4", "factor": "perception", "is_reverse_scored": false, "item_text": "It is recognized that the integration of AI resources into the teaching process will impose new demands on teachers."},
+    {"item_number": 5, "paper_code": "P5", "factor": "perception", "is_reverse_scored": false, "item_text": "I acknowledge that AI is driving advancements in education and catalyzing pedagogical reforms."},
+    {"item_number": 6, "paper_code": "P6", "factor": "perception", "is_reverse_scored": false, "item_text": "I am proficient in grasping the functionalities of prevalent AI applications in education."},
+    {"item_number": 7, "paper_code": "P7", "factor": "perception", "is_reverse_scored": false, "item_text": "I am adept at utilizing commonly used AI tools in educational contexts."},
+    {"item_number": 8, "paper_code": "P8", "factor": "perception", "is_reverse_scored": false, "item_text": "I am proficient in utilizing domain-specific AI, such as mathematics intelligent tutoring systems."},
+    {"item_number": 9, "paper_code": "P9", "factor": "perception", "is_reverse_scored": false, "item_text": "I can choose the appropriate AI based on the teaching content of the subject I teach."},
+    {"item_number": 10, "paper_code": "P10", "factor": "perception", "is_reverse_scored": false, "item_text": "I believe I can help my colleagues to easily learn to use AI."},
+
+    {"item_number": 11, "paper_code": "K1", "factor": "knowledge_skills", "is_reverse_scored": true, "item_text": "I am not fully versed in the common functionalities of AI in educational instruction, nor am I adept at discerning them."},
+    {"item_number": 12, "paper_code": "K2", "factor": "knowledge_skills", "is_reverse_scored": false, "item_text": "I have knowledge of prevalent AI educational platforms and am proficient in their utilization."},
+    {"item_number": 13, "paper_code": "K3", "factor": "knowledge_skills", "is_reverse_scored": false, "item_text": "I am committed to actively acquiring proficiency in new AI technologies and exploring their integration into my educational practices."},
+    {"item_number": 14, "paper_code": "K4", "factor": "knowledge_skills", "is_reverse_scored": false, "item_text": "I understand how to integrate AI with instructional content and methodologies to enhance classroom efficiency and effectiveness."},
+    {"item_number": 15, "paper_code": "K5", "factor": "knowledge_skills", "is_reverse_scored": false, "item_text": "I am capable of creating and simulating scenarios aligned with instructional content using AI."},
+    {"item_number": 16, "paper_code": "K6", "factor": "knowledge_skills", "is_reverse_scored": false, "item_text": "Based on instructional content, I can select appropriate teaching methods and AI tools for instruction."},
+    {"item_number": 17, "paper_code": "K7", "factor": "knowledge_skills", "is_reverse_scored": false, "item_text": "I can use personalized AI to select appropriate teaching methods to guide students in practice."},
+    {"item_number": 18, "paper_code": "K8", "factor": "knowledge_skills", "is_reverse_scored": false, "item_text": "I am capable of leveraging AI to identify and address individual differences among students, as well as provide personalized guidance."},
+    {"item_number": 19, "paper_code": "K9", "factor": "knowledge_skills", "is_reverse_scored": false, "item_text": "I engage in self-directed learning using AI to improve my understanding of disciplinary knowledge and educational theory."},
+    {"item_number": 20, "paper_code": "K10", "factor": "knowledge_skills", "is_reverse_scored": false, "item_text": "I am able to visualize student performance with the assistance of AI and provide reasoned interpretations."},
+
+    {"item_number": 21, "paper_code": "A3", "factor": "applications_innovation", "is_reverse_scored": true, "item_text": "I don't know how to use AI for real-time feedback (i.e., providing immediate feedback on student performance after completing tasks)."},
+    {"item_number": 22, "paper_code": "A4", "factor": "applications_innovation", "is_reverse_scored": false, "item_text": "I can anticipate potential problems in the process of AI application and develop solutions."},
+    {"item_number": 23, "paper_code": "A5", "factor": "applications_innovation", "is_reverse_scored": false, "item_text": "I can flexibly handle unexpected situations caused by AI failures in classroom teaching."},
+    {"item_number": 24, "paper_code": "A6", "factor": "applications_innovation", "is_reverse_scored": false, "item_text": "I can utilize AI to generate new teaching resources."},
+    {"item_number": 25, "paper_code": "A7", "factor": "applications_innovation", "is_reverse_scored": false, "item_text": "I can flexibly apply AI to create situations rich in creativity and inquiry."},
+    {"item_number": 26, "paper_code": "A8", "factor": "applications_innovation", "is_reverse_scored": false, "item_text": "I can innovate teaching models using AI."},
+    {"item_number": 27, "paper_code": "A9", "factor": "applications_innovation", "is_reverse_scored": false, "item_text": "I can master the application of AI in a certain subject and transfer it to other subjects."},
+    {"item_number": 28, "paper_code": "A10", "factor": "applications_innovation", "is_reverse_scored": false, "item_text": "I can use AI to update my own knowledge system in a subject."},
+
+    {"item_number": 29, "paper_code": "E1", "factor": "ethics", "is_reverse_scored": false, "item_text": "I realize there may be ethical and moral issues with the application of AI."},
+    {"item_number": 30, "paper_code": "E3", "factor": "ethics", "is_reverse_scored": true, "item_text": "I rely entirely on AI, and I believe AI can replace teachers."},
+    {"item_number": 31, "paper_code": "E4", "factor": "ethics", "is_reverse_scored": false, "item_text": "Before teaching, I will carefully check AI to ensure the stability and reliability of the technology."},
+    {"item_number": 32, "paper_code": "E5", "factor": "ethics", "is_reverse_scored": false, "item_text": "I hold a cautious attitude towards AI and will autonomously filter the resources provided by artificial intelligence."},
+    {"item_number": 33, "paper_code": "E7", "factor": "ethics", "is_reverse_scored": false, "item_text": "I focus on protecting student privacy and using AI for autonomous monitoring with the consent of learners."},
+    {"item_number": 34, "paper_code": "E8", "factor": "ethics", "is_reverse_scored": false, "item_text": "I pay attention to protecting the performance data analyzed by AI and will not disclose it to others."},
+    {"item_number": 35, "paper_code": "E9", "factor": "ethics", "is_reverse_scored": false, "item_text": "I believe artificial intelligence has its pros and cons, and I will try to minimize the negative impact on teaching."},
+    {"item_number": 36, "paper_code": "E10", "factor": "ethics", "is_reverse_scored": false, "item_text": "I will help students establish ethical and safety awareness of AI."}
+  ]
+}
