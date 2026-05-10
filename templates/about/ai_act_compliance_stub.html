@@ -1,0 +1,27 @@
+{% extends 'onboarding/_locked_base.html' %}
+{% load i18n %}
+
+{% block title %}{% trans "EU AI Act Compliance — PROODOS" %}{% endblock %}
+
+{% block locked_content %}
+<h1>{% trans "EU AI Act Compliance — PROODOS" %}</h1>
+
+<p>
+    {% blocktrans %}
+    This page is being prepared. The full AI Impact Assessment will be
+    available before the platform launch in 2026.
+    {% endblocktrans %}
+</p>
+
+<p>
+    {% blocktrans %}
+    For now, please refer to the disclosure modal you have just seen, or
+    contact the research team for details about how PROODOS handles AI
+    use under EU Regulation 2024/1689.
+    {% endblocktrans %}
+</p>
+
+<p class="secondary-link">
+    <a href="{% url 'compliance:ai_disclosure' %}">{% trans "Back to AI Disclosure" %}</a>
+</p>
+{% endblock %}

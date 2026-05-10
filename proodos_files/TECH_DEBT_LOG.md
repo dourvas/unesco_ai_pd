@@ -119,6 +119,34 @@ After Γ.1 the M1 migration was rewritten as an empty no-op placeholder (Django 
 
 ---
 
+## TD-008 — AI Disclosure revocation must clear acknowledgment timestamp
+
+**Status:** Active. Must be implemented in C.4 Privacy dashboard.
+**Where:** `apps/compliance/views.py` C.4 revocation endpoint (not yet written).
+
+When a user revokes the `ai_disclosure` consent (e.g., via the C.4 Privacy dashboard's "withdraw consent" action), `revoke_consent(user, consent_type='ai_disclosure')` will set `revoked_at=NOW()` on the active row. **However, that does NOT update `TeacherProfile.ai_disclosure_acknowledged_at`** — and the `AIDisclosureMiddleware` checks the latter, not the former. So a user who revokes ai_disclosure consent through C.4 would continue to pass through the middleware, contradicting their revocation.
+
+**Required fix in C.4 implementation:** the revocation view must do BOTH:
+
+```python
+revoke_consent(user=request.user, consent_type='ai_disclosure')
+profile = request.user.teacher_profile
+profile.ai_disclosure_acknowledged_at = None
+profile.save(update_fields=['ai_disclosure_acknowledged_at'])
+```
+
+After that, the user's next request hits the middleware, gets redirected back to the disclosure modal, must re-acknowledge to continue. This matches the spirit of revocation.
+
+**Test required (C.4):**
+1. Authenticate user, acknowledge → ack_user is acknowledged
+2. Revoke via Privacy dashboard endpoint
+3. Next request to `/dashboard/` → redirect to `/onboarding/ai-disclosure/`
+
+**Discovered in:** C.2.0 design (10 May 2026).
+**Resolved in:** C.4 implementation (pending).
+
+---
+
 ## TD entry conventions
 
 When adding a new entry:

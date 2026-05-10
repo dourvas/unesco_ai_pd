@@ -23,6 +23,9 @@ urlpatterns = [
     # 4. Practice Workshop (peer_blog) — Phase A Tier 3
     path('blog/', include('apps.peer_blog.urls', namespace='peer_blog')),
 
+    # 5. Compliance (AI Disclosure modal, Article 50 stub) — Phase C C.2.0
+    path('', include('apps.compliance.urls', namespace='compliance')),
+
 ]
 
 # Serve media and static files in development

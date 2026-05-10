@@ -1,0 +1,74 @@
+{% extends 'onboarding/_locked_base.html' %}
+{% load i18n %}
+
+{% block title %}{% trans "AI Use Disclosure — PROODOS" %}{% endblock %}
+
+{% block locked_content %}
+<h1>{% trans "Important: AI Use Disclosure" %}</h1>
+
+<p class="lead">
+    {% blocktrans %}
+    PROODOS uses AI (Google Gemini 2.5 Flash) to provide you with
+    personalised feedback, reflection prompts, and developmental insights
+    as you progress through the 15 modules of this professional development
+    programme.
+    {% endblocktrans %}
+</p>
+
+<p style="font-weight: 600; margin: 1rem 0 0.5rem;">
+    {% trans "What this means for you:" %}
+</p>
+<ul>
+    {% for bullet in disclosure_html_bullets %}
+        <li>{{ bullet }}</li>
+    {% endfor %}
+</ul>
+
+<p style="margin-top: 1.25rem;">
+    <strong>{% trans "Legal framing." %}</strong>
+    {% blocktrans %}
+    Under our assessment of the EU AI Act (Regulation 2024/1689), PROODOS
+    is classified as a Limited Risk AI system falling under Article 50
+    transparency obligations. No automated decisions are made about you,
+    your teaching, or your professional standing. The AI assists you; it
+    does not evaluate you administratively.
+    {% endblocktrans %}
+</p>
+
+<p style="margin-top: 1rem;">
+    <strong>{% trans "Your right to withdraw." %}</strong>
+    {% blocktrans %}
+    You may leave the platform at any time using the Logout option in the
+    top-right menu. After completing onboarding you will also have access
+    to a Privacy dashboard where you can review or delete your data.
+    {% endblocktrans %}
+</p>
+
+<p style="margin-top: 1rem;">
+    <strong>{% trans "Your acknowledgment." %}</strong>
+    {% blocktrans %}
+    By clicking "I acknowledge and continue" you confirm that you have
+    read this notice and understand that PROODOS uses AI assistance
+    throughout your interaction with the platform.
+    {% endblocktrans %}
+</p>
+
+<form method="post" action="{% url 'compliance:ai_disclosure' %}{% if next_url %}?next={{ next_url|urlencode }}{% endif %}" class="actions">
+    {% csrf_token %}
+    <input type="hidden" name="next" value="{{ next_url }}">
+    <a href="{% url 'compliance:ai_act_compliance' %}" target="_blank" rel="noopener" class="btn btn-secondary">
+        {% trans "Learn more" %}
+    </a>
+    <button type="submit" class="btn btn-primary">
+        {% trans "I acknowledge and continue" %}
+    </button>
+</form>
+
+<p class="secondary-link">
+    <a href="{% url 'users:logout' %}">{% trans "Or log out" %}</a>
+</p>
+
+<p class="version-stamp">
+    {% blocktrans with version=disclosure_version %}Disclosure version: {{ version }}{% endblocktrans %}
+</p>
+{% endblock %}

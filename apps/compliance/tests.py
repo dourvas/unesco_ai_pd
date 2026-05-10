@@ -279,3 +279,159 @@ class IPRedactionCommandTest(TestCase):
         recent.refresh_from_db()
         self.assertIsNone(old.ip_address)
         self.assertEqual(recent.ip_address, '192.0.2.99')
+
+
+# ============================================================
+# Phase C C.2.0 — AI Disclosure middleware + view tests
+# ============================================================
+
+from django.test import Client
+
+
+class AIDisclosureMiddlewareTest(TestCase):
+    """Middleware redirect logic across user states and request types."""
+
+    def setUp(self):
+        self.client = Client()
+        self.unack_user = User.objects.create_user(
+            username='middleware_unack', password='x',
+        )
+        TeacherProfile.objects.create(
+            user=self.unack_user,
+            subject_area='mathematics', grade_level='primary',
+            ai_experience='none',
+        )
+        self.ack_user = User.objects.create_user(
+            username='middleware_ack', password='x',
+        )
+        TeacherProfile.objects.create(
+            user=self.ack_user,
+            subject_area='mathematics', grade_level='primary',
+            ai_experience='none',
+            ai_disclosure_acknowledged_at=timezone.now(),
+        )
+
+    def test_anonymous_user_no_disclosure_redirect(self):
+        response = self.client.get('/')
+        # Landing or 200; in any case NOT redirected to disclosure.
+        location = response.get('Location', '')
+        self.assertNotIn('/onboarding/ai-disclosure/', location)
+
+    def test_unacknowledged_user_redirected_from_dashboard(self):
+        self.client.force_login(self.unack_user)
+        response = self.client.get('/dashboard/')
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('/onboarding/ai-disclosure/', response['Location'])
+        self.assertIn('next=/dashboard/', response['Location'])
+
+    def test_acknowledged_user_passes_through(self):
+        self.client.force_login(self.ack_user)
+        response = self.client.get('/dashboard/')
+        location = response.get('Location', '')
+        self.assertNotIn('/onboarding/ai-disclosure/', location)
+
+    def test_user_with_no_teacher_profile_redirected(self):
+        no_profile = User.objects.create_user(
+            username='middleware_noprofile', password='x',
+        )
+        self.client.force_login(no_profile)
+        response = self.client.get('/dashboard/')
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('/onboarding/ai-disclosure/', response['Location'])
+
+    def test_disclosure_url_itself_not_redirected(self):
+        self.client.force_login(self.unack_user)
+        response = self.client.get('/onboarding/ai-disclosure/')
+        self.assertEqual(response.status_code, 200)
+
+    def test_logout_url_not_redirected(self):
+        self.client.force_login(self.unack_user)
+        response = self.client.get('/logout/')
+        location = response.get('Location', '')
+        self.assertNotIn('/onboarding/ai-disclosure/', location)
+
+    def test_static_prefix_not_redirected(self):
+        self.client.force_login(self.unack_user)
+        response = self.client.get('/static/css/main.css')
+        # 404 is acceptable; the requirement is that we did NOT redirect
+        # to disclosure.
+        self.assertNotIn(
+            '/onboarding/ai-disclosure/',
+            response.get('Location', ''),
+        )
+
+    def test_ajax_request_returns_403_json(self):
+        self.client.force_login(self.unack_user)
+        response = self.client.get(
+            '/dashboard/',
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest',
+        )
+        self.assertEqual(response.status_code, 403)
+        body = response.json()
+        self.assertEqual(body['error'], 'ai_disclosure_required')
+        self.assertEqual(body['redirect_url'], '/onboarding/ai-disclosure/')
+
+    def test_about_ai_act_compliance_bypassed(self):
+        """The 'Learn more' stub URL must be reachable from the modal."""
+        self.client.force_login(self.unack_user)
+        response = self.client.get('/about/ai-act-compliance/')
+        # Stub renders; 200 expected, but in any case NOT a redirect to
+        # disclosure (which would be a loop).
+        self.assertNotIn(
+            '/onboarding/ai-disclosure/',
+            response.get('Location', ''),
+        )
+
+
+class AIDisclosureViewTest(TestCase):
+    """The disclosure view itself: GET renders, POST acknowledges."""
+
+    def setUp(self):
+        self.client = Client()
+        self.user = User.objects.create_user(username='view_user', password='x')
+
+    def test_get_renders_modal_page(self):
+        self.client.force_login(self.user)
+        response = self.client.get('/onboarding/ai-disclosure/')
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Important: AI Use Disclosure')
+        self.assertContains(response, 'I acknowledge and continue')
+
+    def test_post_creates_consent_record_and_acknowledges(self):
+        self.client.force_login(self.user)
+        response = self.client.post('/onboarding/ai-disclosure/')
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response['Location'], '/dashboard/')
+
+        cr = ConsentRecord.objects.get(
+            user=self.user, consent_type='ai_disclosure',
+        )
+        self.assertTrue(cr.is_active)
+        self.assertEqual(cr.version, 'v1_pre_irb')
+
+        profile = TeacherProfile.objects.get(user=self.user)
+        self.assertIsNotNone(profile.ai_disclosure_acknowledged_at)
+
+    def test_post_idempotent_re_acknowledgment(self):
+        self.client.force_login(self.user)
+        self.client.post('/onboarding/ai-disclosure/')
+        self.client.post('/onboarding/ai-disclosure/')
+        self.assertEqual(
+            ConsentRecord.objects.filter(
+                user=self.user, consent_type='ai_disclosure',
+            ).count(),
+            1,
+        )
+
+    def test_stored_consent_text_matches_copy_module_exactly(self):
+        """Regression: stored consent_text == AI_DISCLOSURE_TEXT_V1_PRE_IRB
+        verbatim. Guards against text edits without a version bump.
+        """
+        from apps.compliance.copy import AI_DISCLOSURE_TEXT_V1_PRE_IRB
+
+        self.client.force_login(self.user)
+        self.client.post('/onboarding/ai-disclosure/')
+        cr = ConsentRecord.objects.get(
+            user=self.user, consent_type='ai_disclosure',
+        )
+        self.assertEqual(cr.consent_text, AI_DISCLOSURE_TEXT_V1_PRE_IRB)

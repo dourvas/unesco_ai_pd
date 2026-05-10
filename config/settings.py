@@ -40,6 +40,10 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    # Phase C C.2.0 — EU AI Act Article 50(1) acknowledgment gate.
+    # Slot intentionally between AuthenticationMiddleware (needs request.user)
+    # and MessageMiddleware (so redirect doesn't lose pending messages).
+    'apps.compliance.middleware.AIDisclosureMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
@@ -139,4 +143,14 @@ GITHUB_WORKFLOWS_URL = _os.environ.get(
 # the future, change this setting; existing in-progress users continue
 # with v1 until they complete T0/T1/T2.
 AILST_CURRENT_VERSION = 'ning_2025_v1'
+
+# ============================================================
+# Phase C C.2.0 — AI Disclosure version pin
+# ============================================================
+# Version of the AI Disclosure consent text served to NEW users on the
+# Step 0 modal. Existing ConsentRecord rows preserve their own version;
+# this setting only controls what new acknowledgments record. After
+# IRB review, mint 'v2_irb_revised' (or similar) in
+# apps/compliance/copy.py and update this value to match.
+AI_DISCLOSURE_CURRENT_VERSION = 'v1_pre_irb'
 
