@@ -113,7 +113,7 @@ Your right to withdraw:
 
 Contact:
   For questions about the research, contact John Dourvas at
-  [TBD — IRB-approved contact email].
+  idourvas@ihu.gr.
 
 Your acknowledgment:
   By checking "I consent to participate in this research" you confirm
