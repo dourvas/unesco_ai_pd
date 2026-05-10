@@ -147,6 +147,30 @@ After that, the user's next request hits the middleware, gets redirected back to
 
 ---
 
+## TD-009 — Self-service profile change history view
+
+**Status:** Active. Defer to Phase D.
+**Where:** new route `/profile/history/` in `apps/users/urls.py` + view in `apps/users/views.py` + template `templates/users/profile_history.html`.
+
+The M3 migration introduced `TeacherProfileHistory` (signal-driven change tracker; 11 tracked fields, `change_event_id` UUID groups sibling changes per save event, `change_source` records caller). All change history is captured automatically from C.2.1 onwards.
+
+**However, users currently have no way to view their own history.** GDPR Article 15 (right of access) implies users can request this data, but a self-service UI is better than support tickets — and IRB reviewers may ask whether participants can audit what the platform has recorded about them.
+
+**Forward path:** new `/profile/history/` page that shows the user their own `TeacherProfileHistory` rows in a clean timeline format:
+
+- Group by `change_event_id` (one card per save event)
+- Within each card, list field-by-field changes (`old_value` → `new_value`)
+- Show `changed_at` timestamp and `change_source` (e.g., "Profile edit", "Admin action", "Data migration")
+- JSONField fields (`primary_goals`, `student_population_special_needs`) decoded from `_serialize` format for human-readable display
+
+Considered and rejected for C.2.1: showing a "last-modified" timestamp next to each field in the edit form. Reasons: UX clutter, mixing concerns (edit vs audit), premature feature for a pilot of 110 teachers. The audit view route is the right separation.
+
+**Discovered in:** C.2.1 design (10 May 2026).
+**Implementation effort:** ~150 LOC + template (similar to a simple list view); no schema change needed (M3 already captures everything).
+**Resolved at:** Phase D (post-pilot UX improvements).
+
+---
+
 ## TD entry conventions
 
 When adding a new entry:

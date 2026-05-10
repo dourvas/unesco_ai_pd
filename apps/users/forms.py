@@ -5,6 +5,8 @@ Version: 2.2.0 - International English version
 """
 
 from django import forms
+from django.utils.translation import gettext_lazy as _
+
 from .models import TeacherProfile
 
 
@@ -282,10 +284,16 @@ class GoalsPreferencesForm(forms.ModelForm):
 
 class ProfileEditForm(forms.ModelForm):
     """
-    Complete profile edit form (all fields in one form)
-    Used for editing after onboarding completion
+    Complete profile edit form (all fields in one form).
+    Used for editing after onboarding completion.
+
+    Phase C C.2.1 adds three personalization fields:
+      - current_curriculum_pressure (radio + 'Prefer not to say' empty option)
+      - institutional_ai_policy (radio + 'Prefer not to say' empty option)
+      - student_population_special_needs (multi-checkbox JSONB list with
+        'none' exclusive validation)
     """
-    
+
     # Custom multi-select fields
     ai_tools_checkboxes = forms.MultipleChoiceField(
         required=False,
@@ -303,7 +311,7 @@ class ProfileEditForm(forms.ModelForm):
         ],
         label="AI tools used"
     )
-    
+
     goals_checkboxes = forms.MultipleChoiceField(
         required=False,
         widget=forms.CheckboxSelectMultiple,
@@ -319,7 +327,57 @@ class ProfileEditForm(forms.ModelForm):
         ],
         label="Learning goals"
     )
-    
+
+    # === Phase C C.2.1 — three new personalization fields ===
+
+    SEN_CHOICES = [
+        ('learning_disability',          _('Learning disability')),
+        ('behavioural_support',          _('Behavioural support needs')),
+        ('physical_disability',          _('Physical disability')),
+        ('language_minority',            _('Language minority / ESL')),
+        ('gifted',                       _('Gifted / accelerated learners')),
+        ('socioeconomic_disadvantage',   _('Socioeconomic disadvantage')),
+        ('none',                         _('None of the above')),
+    ]
+
+    # Custom MultipleChoiceField overrides Django's auto-generated JSONField
+    # textarea. ModelForm.save() copies the chosen list back to the JSONField
+    # on the instance.
+    student_population_special_needs = forms.MultipleChoiceField(
+        choices=SEN_CHOICES,
+        widget=forms.CheckboxSelectMultiple(attrs={'class': 'sen-checkbox'}),
+        required=False,
+        label=_('Student population — special needs'),
+        help_text=_(
+            'Select all that apply. If none apply, choose "None of the above" '
+            'exclusively (do not combine with other options).'
+        ),
+    )
+
+    # ChoiceField with empty 'Prefer not to say' option prepended in __init__.
+    # The model field is nullable; '' is coerced to None in clean_*.
+    current_curriculum_pressure = forms.ChoiceField(
+        choices=[],  # populated in __init__
+        widget=forms.RadioSelect,
+        required=False,
+        label=_('Current curriculum pressure'),
+        help_text=_(
+            'How tight is your curriculum schedule right now? Used to tailor '
+            'the pacing of AI feedback.'
+        ),
+    )
+
+    institutional_ai_policy = forms.ChoiceField(
+        choices=[],  # populated in __init__
+        widget=forms.RadioSelect,
+        required=False,
+        label=_('Institutional AI policy'),
+        help_text=_(
+            'Your school or institution\'s official stance on AI use. '
+            'Choose "I do not know" if unsure about the official policy.'
+        ),
+    )
+
     class Meta:
         model = TeacherProfile
         fields = [
@@ -333,33 +391,74 @@ class ProfileEditForm(forms.ModelForm):
             'ai_teaching_integration',
             'preferred_communication_style',
             'research_consent',
-            'contact_for_research'
+            'contact_for_research',
+            # Phase C C.2.1
+            'current_curriculum_pressure',
+            'institutional_ai_policy',
+            'student_population_special_needs',
         ]
-    
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        
+
         # Pre-populate from JSON fields
         if self.instance.pk:
             if self.instance.ai_tools_used:
                 self.initial['ai_tools_checkboxes'] = self.instance.ai_tools_used
             if self.instance.primary_goals:
                 self.initial['goals_checkboxes'] = self.instance.primary_goals
-    
+            if self.instance.student_population_special_needs:
+                self.initial['student_population_special_needs'] = (
+                    self.instance.student_population_special_needs
+                )
+
+        # Phase C C.2.1: prepend 'Prefer not to say' empty option to the
+        # two RadioSelect ChoiceFields, drawing the rest from the model's
+        # canonical choice tuples (so labels stay in sync with the M2 model).
+        empty_option = ('', _('— Prefer not to say —'))
+        self.fields['current_curriculum_pressure'].choices = (
+            [empty_option] + list(TeacherProfile.CURRICULUM_PRESSURE_CHOICES)
+        )
+        self.fields['institutional_ai_policy'].choices = (
+            [empty_option] + list(TeacherProfile.INSTITUTIONAL_AI_POLICY_CHOICES)
+        )
+
     def clean_goals_checkboxes(self):
         goals = self.cleaned_data.get('goals_checkboxes', [])
         if len(goals) > 3:
             raise forms.ValidationError('Maximum 3 goals allowed.')
         return goals
-    
+
+    def clean_student_population_special_needs(self):
+        """Phase C C.2.1: 'none' is exclusive — cannot combine with others."""
+        data = self.cleaned_data.get('student_population_special_needs', [])
+        if 'none' in data and len(data) > 1:
+            raise forms.ValidationError(_(
+                'If you select "None of the above", please leave the other '
+                'options unchecked.'
+            ))
+        return list(data)
+
+    def clean_current_curriculum_pressure(self):
+        """Coerce '' (Prefer not to say) to None for nullable storage."""
+        val = self.cleaned_data.get('current_curriculum_pressure', '')
+        return val or None
+
+    def clean_institutional_ai_policy(self):
+        """Coerce '' (Prefer not to say) to None for nullable storage."""
+        val = self.cleaned_data.get('institutional_ai_policy', '')
+        return val or None
+
     def save(self, commit=True):
         instance = super().save(commit=False)
-        
+
         # Save multi-select fields as JSON
         instance.ai_tools_used = list(self.cleaned_data.get('ai_tools_checkboxes', []))
         instance.primary_goals = list(self.cleaned_data.get('goals_checkboxes', []))
-        
+        # student_population_special_needs is in Meta.fields so ModelForm copies
+        # cleaned_data automatically; no manual assignment needed.
+
         if commit:
             instance.save()
-        
+
         return instance

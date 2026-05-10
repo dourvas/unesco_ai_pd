@@ -1,6 +1,7 @@
 {% extends 'base.html' %}
+{% load i18n %}
 
-{% block title %}Edit Profile{% endblock %}
+{% block title %}{% trans "Edit Profile" %}{% endblock %}
 
 {% block content %}
 <div class="max-w-4xl mx-auto">
@@ -190,16 +191,77 @@
                     </div>
                 </div>
 
+                <div class="divider"></div>
+
+                <!-- Phase C C.2.1 — Additional context (3 personalization fields) -->
+                <div class="mb-8">
+                    <h2 class="text-2xl font-bold mb-4 flex items-center gap-2">
+                        <span>🧭</span> {% trans "Additional context" %}
+                    </h2>
+                    <p class="text-base-content/70 mb-4">
+                        {% trans "These details help PROODOS tailor AI feedback to your specific teaching context. All optional." %}
+                    </p>
+
+                    <!-- Current Curriculum Pressure -->
+                    <div class="form-control w-full mb-4">
+                        <label class="label">
+                            <span class="label-text font-medium">{{ form.current_curriculum_pressure.label }}</span>
+                        </label>
+                        {{ form.current_curriculum_pressure }}
+                        {% if form.current_curriculum_pressure.help_text %}
+                            <p class="text-base-content/70 text-sm mt-1">{{ form.current_curriculum_pressure.help_text }}</p>
+                        {% endif %}
+                        {% if form.current_curriculum_pressure.errors %}
+                            <label class="label"><span class="label-text-alt text-error">{{ form.current_curriculum_pressure.errors.0 }}</span></label>
+                        {% endif %}
+                    </div>
+
+                    <!-- Student Population Special Needs (multi-checkbox, 'none' exclusive) -->
+                    <div class="form-control w-full mb-4">
+                        <label class="label">
+                            <span class="label-text font-medium">{{ form.student_population_special_needs.label }}</span>
+                        </label>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2" id="sen-checkbox-group">
+                            {% for checkbox in form.student_population_special_needs %}
+                                <label class="label cursor-pointer justify-start gap-2">
+                                    {{ checkbox.tag }}
+                                    <span class="label-text">{{ checkbox.choice_label }}</span>
+                                </label>
+                            {% endfor %}
+                        </div>
+                        {% if form.student_population_special_needs.help_text %}
+                            <p class="text-base-content/70 text-sm mt-1">{{ form.student_population_special_needs.help_text }}</p>
+                        {% endif %}
+                        {% if form.student_population_special_needs.errors %}
+                            <label class="label"><span class="label-text-alt text-error">{{ form.student_population_special_needs.errors.0 }}</span></label>
+                        {% endif %}
+                    </div>
+
+                    <!-- Institutional AI Policy -->
+                    <div class="form-control w-full mb-4">
+                        <label class="label">
+                            <span class="label-text font-medium">{{ form.institutional_ai_policy.label }}</span>
+                        </label>
+                        {{ form.institutional_ai_policy }}
+                        {% if form.institutional_ai_policy.help_text %}
+                            <p class="text-base-content/70 text-sm mt-1">{{ form.institutional_ai_policy.help_text }}</p>
+                        {% endif %}
+                        {% if form.institutional_ai_policy.errors %}
+                            <label class="label"><span class="label-text-alt text-error">{{ form.institutional_ai_policy.errors.0 }}</span></label>
+                        {% endif %}
+                    </div>
+                </div>
+
                 <!-- Form Actions -->
                 <div class="card-actions justify-between mt-6">
                     <a href="{% url 'users:profile_view' %}" class="btn btn-ghost">
-                        Cancel
+                        {% trans "Cancel" %}
                     </a>
                     <button type="submit" class="btn btn-primary">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
                         </svg>
-                        Save Changes
+                        {% trans "Save Changes" %}
                     </button>
                 </div>
             </form>
@@ -230,11 +292,11 @@ document.addEventListener('DOMContentLoaded', function() {
     // Limit goals to 3
     const goalCheckboxes = document.querySelectorAll('input[name="goals_checkboxes"]');
     const maxSelections = 3;
-    
+
     goalCheckboxes.forEach(checkbox => {
         checkbox.addEventListener('change', function() {
             const checkedCount = document.querySelectorAll('input[name="goals_checkboxes"]:checked').length;
-            
+
             if (checkedCount >= maxSelections) {
                 goalCheckboxes.forEach(cb => {
                     if (!cb.checked) {
@@ -250,6 +312,44 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     });
+
+    // Phase C C.2.1 — SEN 'none' is exclusive: checking 'none' disables/unchecks
+    // the others; checking another unchecks 'none'. Form-level validation in
+    // ProfileEditForm.clean_student_population_special_needs is the safety net
+    // if JS is disabled.
+    const senGroup = document.getElementById('sen-checkbox-group');
+    if (senGroup) {
+        const senBoxes = senGroup.querySelectorAll('input[type="checkbox"]');
+        const senNone = senGroup.querySelector('input[value="none"]');
+        function applySenState() {
+            if (!senNone) return;
+            if (senNone.checked) {
+                senBoxes.forEach(cb => {
+                    if (cb !== senNone) {
+                        cb.checked = false;
+                        cb.disabled = true;
+                        cb.parentElement.classList.add('opacity-50');
+                    }
+                });
+            } else {
+                senBoxes.forEach(cb => {
+                    cb.disabled = false;
+                    cb.parentElement.classList.remove('opacity-50');
+                });
+            }
+        }
+        senBoxes.forEach(cb => {
+            cb.addEventListener('change', function() {
+                if (cb === senNone) {
+                    applySenState();
+                } else if (cb.checked && senNone && senNone.checked) {
+                    senNone.checked = false;
+                    applySenState();
+                }
+            });
+        });
+        applySenState();  // initial state for already-saved data
+    }
 });
 </script>
 {% endblock %}

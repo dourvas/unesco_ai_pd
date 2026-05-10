@@ -251,17 +251,22 @@ def profile_edit(request):
     if request.method == 'POST':
         form = ProfileEditForm(request.POST, instance=profile)
         if form.is_valid():
+            # Phase C M3 attribution: TeacherProfileHistory rows carry the
+            # 'profile_edit' source so analytics can distinguish user-driven
+            # changes from migrations or admin actions. The signal in
+            # apps/users/signals.py reads this transient attribute in post_save.
+            form.instance._change_source = 'profile_edit'
             form.save()
             messages.success(request, 'Your profile has been updated successfully!')
             return redirect('users:profile_view')
     else:
         form = ProfileEditForm(instance=profile)
-    
+
     context = {
         'form': form,
         'profile': profile
     }
-    
+
     return render(request, 'users/profile_edit.html', context)
 
 
