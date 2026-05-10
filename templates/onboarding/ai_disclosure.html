@@ -4,9 +4,11 @@
 {% block title %}{% trans "AI Use Disclosure — PROODOS" %}{% endblock %}
 
 {% block locked_content %}
-<h1>{% trans "Important: AI Use Disclosure" %}</h1>
+<h1 class="card-title text-2xl text-primary mb-3">
+    {% trans "Important: AI Use Disclosure" %}
+</h1>
 
-<p class="lead">
+<p class="font-semibold text-base mb-4">
     {% blocktrans %}
     PROODOS uses AI (Google Gemini 2.5 Flash) to provide you with
     personalised feedback, reflection prompts, and developmental insights
@@ -15,16 +17,16 @@
     {% endblocktrans %}
 </p>
 
-<p style="font-weight: 600; margin: 1rem 0 0.5rem;">
+<p class="font-semibold mt-4 mb-2">
     {% trans "What this means for you:" %}
 </p>
-<ul>
+<ul class="list-disc pl-6 mb-4 space-y-1">
     {% for bullet in disclosure_html_bullets %}
         <li>{{ bullet }}</li>
     {% endfor %}
 </ul>
 
-<p style="margin-top: 1.25rem;">
+<p class="mt-5">
     <strong>{% trans "Legal framing." %}</strong>
     {% blocktrans %}
     Under our assessment of the EU AI Act (Regulation 2024/1689), PROODOS
@@ -35,7 +37,7 @@
     {% endblocktrans %}
 </p>
 
-<p style="margin-top: 1rem;">
+<p class="mt-4">
     <strong>{% trans "Your right to withdraw." %}</strong>
     {% blocktrans %}
     You may leave the platform at any time using the Logout option in the
@@ -44,7 +46,7 @@
     {% endblocktrans %}
 </p>
 
-<p style="margin-top: 1rem;">
+<p class="mt-4">
     <strong>{% trans "Your acknowledgment." %}</strong>
     {% blocktrans %}
     By clicking "I acknowledge and continue" you confirm that you have
@@ -53,10 +55,14 @@
     {% endblocktrans %}
 </p>
 
-<form method="post" action="{% url 'compliance:ai_disclosure' %}{% if next_url %}?next={{ next_url|urlencode }}{% endif %}" class="actions">
+<form method="post"
+      action="{% url 'compliance:ai_disclosure' %}{% if next_url %}?next={{ next_url|urlencode }}{% endif %}"
+      class="card-actions justify-end items-center flex-wrap gap-3 mt-6">
     {% csrf_token %}
     <input type="hidden" name="next" value="{{ next_url }}">
-    <a href="{% url 'compliance:ai_act_compliance' %}" target="_blank" rel="noopener" class="btn btn-secondary">
+    <a href="{% url 'compliance:ai_act_compliance' %}"
+       target="_blank" rel="noopener"
+       class="btn btn-outline btn-primary">
         {% trans "Learn more" %}
     </a>
     <button type="submit" class="btn btn-primary">
@@ -64,11 +70,15 @@
     </button>
 </form>
 
-<p class="secondary-link">
-    <a href="{% url 'users:logout' %}">{% trans "Or log out" %}</a>
-</p>
+<div class="text-center mt-4">
+    <a href="{% url 'users:logout' %}" class="link link-hover text-sm text-base-content/70">
+        {% trans "Or log out" %}
+    </a>
+</div>
 
-<p class="version-stamp">
-    {% blocktrans with version=disclosure_version %}Disclosure version: {{ version }}{% endblocktrans %}
-</p>
+<div class="text-right mt-8">
+    <span class="badge badge-ghost badge-sm">
+        {% blocktrans with version=disclosure_version %}Disclosure version: {{ version }}{% endblocktrans %}
+    </span>
+</div>
 {% endblock %}
