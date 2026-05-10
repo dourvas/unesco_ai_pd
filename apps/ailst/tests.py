@@ -12,16 +12,19 @@ apps.ailst.scoring.compute_factor_scores) and AilstResponseLifecycleTest
 (model constraints, state machine, idempotency).
 """
 
+import re
 from collections import Counter
 from decimal import Decimal
 
 from django.contrib.auth.models import User
 from django.db import IntegrityError, connection, transaction
-from django.test import TestCase
+from django.test import Client, TestCase
+from django.urls import reverse
 from django.utils import timezone
 
 from apps.ailst.models import AilstItem, AilstResponse
 from apps.ailst.scoring import compute_factor_scores
+from apps.users.models import TeacherProfile
 
 
 EN_V1_FILTER = {'language': 'en', 'instrument_version': 'ning_2025_v1'}
@@ -304,3 +307,419 @@ class AilstResponseLifecycleTest(TestCase):
             resp.overall_score,
         )
         self.assertEqual(first, second)
+
+
+# ============================================================================
+# C.2.3 view-layer tests
+# ============================================================================
+#
+# Conventions for AILST view tests (mirrors C.2.2 onboarding tests):
+#   - Client + force_login on a fresh user.
+#   - TeacherProfile pre-populated with ai_disclosure_acknowledged_at and
+#     profile_completed=True so AIDisclosureMiddleware passes through.
+#   - research_consent True by default; per-test override for D7 gating.
+#   - Session has onboarding_step=4 to mirror post-Summary state. Tests
+#     of the onboarding gate explicitly clear this.
+
+
+PAGE_CODES = {
+    1: ['P1', 'P2', 'P3', 'P4', 'P5', 'P6', 'P7', 'P8', 'P9', 'P10'],
+    2: ['K1', 'K2', 'K3', 'K4', 'K5', 'K6', 'K7', 'K8', 'K9', 'K10'],
+    3: ['A3', 'A4', 'A5', 'A6', 'A7', 'A8', 'A9', 'A10'],
+    4: ['E1', 'E3', 'E4', 'E5', 'E7', 'E8', 'E9', 'E10'],
+}
+
+
+class _AilstViewTestBase(TestCase):
+    """Shared setUp for AILST view tests."""
+
+    def setUp(self):
+        self.client = Client()
+        self.user = User.objects.create_user(username='ailst_view_user', password='pw')
+        self.profile = TeacherProfile.objects.create(
+            user=self.user,
+            ai_disclosure_acknowledged_at=timezone.now(),
+            profile_completed=True,
+            research_consent=True,
+        )
+        self.client.force_login(self.user)
+        session = self.client.session
+        session['onboarding_step'] = 4
+        session.save()
+
+    def _set_onboarding_incomplete(self):
+        """Roll back the user's state to pre-Summary."""
+        self.profile.profile_completed = False
+        self.profile.save(update_fields=['profile_completed'])
+        session = self.client.session
+        session.pop('onboarding_step', None)
+        session.save()
+
+    def _post_page(self, page, *, timepoint='t0', answers=None):
+        """POST a page form. answers is a dict of paper_code -> int.
+
+        If answers is None, defaults to value 4 for every code on that page.
+        """
+        if answers is None:
+            answers = {code: 4 for code in PAGE_CODES[page]}
+        return self.client.post(
+            reverse('ailst:page', kwargs={'timepoint': timepoint, 'page': page}),
+            data={code: str(value) for code, value in answers.items()},
+        )
+
+    def _seed_responses(self, *, timepoint='T0', through_page):
+        """Create an AilstResponse with answers filled through `through_page`."""
+        responses = {}
+        for p in range(1, through_page + 1):
+            for code in PAGE_CODES[p]:
+                responses[code] = 4
+        return AilstResponse.objects.create(
+            user=self.user,
+            timepoint=timepoint,
+            language='en',
+            instrument_version='ning_2025_v1',
+            responses=responses,
+        )
+
+
+class AilstEntryViewTest(_AilstViewTestBase):
+
+    def test_entry_redirects_when_onboarding_incomplete(self):
+        self._set_onboarding_incomplete()
+        resp = self.client.get(reverse('ailst:entry', kwargs={'timepoint': 't0'}))
+        self.assertRedirects(resp, reverse('users:onboarding_welcome'),
+                             fetch_redirect_response=False)
+
+    def test_entry_renders_intro_for_first_visit(self):
+        resp = self.client.get(reverse('ailst:entry', kwargs={'timepoint': 't0'}))
+        self.assertEqual(resp.status_code, 200)
+        self.assertTemplateUsed(resp, 'ailst/intro.html')
+        self.assertEqual(
+            AilstResponse.objects.filter(user=self.user, timepoint='T0').count(),
+            0,
+            "Entry GET must not create an AilstResponse row.",
+        )
+
+    def test_entry_post_creates_response_and_redirects_to_page_1(self):
+        resp = self.client.post(reverse('ailst:entry', kwargs={'timepoint': 't0'}))
+        self.assertRedirects(
+            resp,
+            reverse('ailst:page', kwargs={'timepoint': 't0', 'page': 1}),
+            fetch_redirect_response=False,
+        )
+        self.assertTrue(
+            AilstResponse.objects.filter(user=self.user, timepoint='T0').exists()
+        )
+
+    def test_entry_redirects_to_first_incomplete_page_on_resume(self):
+        self._seed_responses(through_page=1)  # 10 answers, page 2 is next
+        resp = self.client.get(reverse('ailst:entry', kwargs={'timepoint': 't0'}))
+        self.assertRedirects(
+            resp,
+            reverse('ailst:page', kwargs={'timepoint': 't0', 'page': 2}),
+            fetch_redirect_response=False,
+        )
+
+    def test_entry_redirects_to_complete_when_done(self):
+        resp_row = self._seed_responses(through_page=4)
+        resp_row.compute_and_save_scores()
+        resp_row.completed_at = timezone.now()
+        resp_row.save(update_fields=['completed_at'])
+        resp = self.client.get(reverse('ailst:entry', kwargs={'timepoint': 't0'}))
+        self.assertRedirects(
+            resp,
+            reverse('ailst:complete', kwargs={'timepoint': 't0'}),
+            fetch_redirect_response=False,
+        )
+
+    def test_invalid_timepoint_returns_404(self):
+        resp = self.client.get('/ailst/t9/')
+        self.assertEqual(resp.status_code, 404)
+
+
+class AilstPageViewTest(_AilstViewTestBase):
+
+    def setUp(self):
+        super().setUp()
+        # Seed an empty AilstResponse so the page view is reachable.
+        AilstResponse.objects.create(
+            user=self.user,
+            timepoint='T0',
+            language='en',
+            instrument_version='ning_2025_v1',
+        )
+
+    def test_get_page_1_renders_10_perception_items(self):
+        resp = self.client.get(reverse('ailst:page', kwargs={'timepoint': 't0', 'page': 1}))
+        self.assertEqual(resp.status_code, 200)
+        self.assertTemplateUsed(resp, 'ailst/page.html')
+        for code in PAGE_CODES[1]:
+            self.assertContains(resp, f'name="{code}"')
+
+    def test_post_page_1_valid_redirects_to_page_2(self):
+        resp = self._post_page(1)
+        self.assertRedirects(
+            resp,
+            reverse('ailst:page', kwargs={'timepoint': 't0', 'page': 2}),
+            fetch_redirect_response=False,
+        )
+        row = AilstResponse.objects.get(user=self.user, timepoint='T0')
+        self.assertEqual(set(row.responses.keys()), set(PAGE_CODES[1]))
+
+    def test_post_page_with_missing_item_re_renders_with_error(self):
+        partial = {code: 4 for code in PAGE_CODES[1] if code != 'P5'}
+        resp = self.client.post(
+            reverse('ailst:page', kwargs={'timepoint': 't0', 'page': 1}),
+            data={code: str(value) for code, value in partial.items()},
+        )
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, 'before continuing')
+        row = AilstResponse.objects.get(user=self.user, timepoint='T0')
+        self.assertEqual(row.responses, {}, "Partial submit must not persist.")
+
+    def test_post_final_page_finalises_and_redirects_to_complete(self):
+        for p in range(1, 4):
+            self._post_page(p)
+        resp = self._post_page(4)
+        self.assertRedirects(
+            resp,
+            reverse('ailst:complete', kwargs={'timepoint': 't0'}),
+            fetch_redirect_response=False,
+        )
+        row = AilstResponse.objects.get(user=self.user, timepoint='T0')
+        self.assertIsNotNone(row.completed_at)
+        self.assertIsNotNone(row.perception_score)
+        self.assertIsNotNone(row.overall_score)
+
+    def test_resume_pre_populates_form_with_stored_answers(self):
+        # Manually seed page 1 partially via direct row update.
+        row = AilstResponse.objects.get(user=self.user, timepoint='T0')
+        row.responses = {code: 5 for code in PAGE_CODES[1]}
+        row.save(update_fields=['responses'])
+        resp = self.client.get(reverse('ailst:page', kwargs={'timepoint': 't0', 'page': 1}))
+        body = resp.content.decode('utf-8')
+        # Each P-field's value=5 radio must be the checked one. Django
+        # may serialise attributes in any order, so match within an input tag.
+        for code in PAGE_CODES[1]:
+            pattern = (
+                r'<input[^>]*\bname="' + re.escape(code)
+                + r'"[^>]*\bvalue="5"[^>]*\bchecked\b'
+                + r'|<input[^>]*\bvalue="5"[^>]*\bname="' + re.escape(code)
+                + r'"[^>]*\bchecked\b'
+                + r'|<input[^>]*\bchecked\b[^>]*\bname="' + re.escape(code)
+                + r'"[^>]*\bvalue="5"'
+            )
+            self.assertRegex(
+                body, pattern,
+                f'Expected the value="5" radio for {code} to be checked on resume.',
+            )
+
+    def test_invalid_page_number_returns_404(self):
+        resp = self.client.get(reverse('ailst:page', kwargs={'timepoint': 't0', 'page': 9}))
+        self.assertEqual(resp.status_code, 404)
+
+
+class AilstStateMachineTest(_AilstViewTestBase):
+
+    def test_skip_ahead_redirects_to_first_incomplete(self):
+        AilstResponse.objects.create(
+            user=self.user,
+            timepoint='T0',
+            language='en',
+            instrument_version='ning_2025_v1',
+        )
+        resp = self.client.get(reverse('ailst:page', kwargs={'timepoint': 't0', 'page': 3}))
+        self.assertRedirects(
+            resp,
+            reverse('ailst:page', kwargs={'timepoint': 't0', 'page': 1}),
+            fetch_redirect_response=False,
+        )
+
+    def test_back_to_completed_page_is_allowed_and_pre_populates(self):
+        self._seed_responses(through_page=2)  # pages 1 and 2 fully answered
+        resp = self.client.get(reverse('ailst:page', kwargs={'timepoint': 't0', 'page': 1}))
+        self.assertEqual(resp.status_code, 200)
+        body = resp.content.decode('utf-8')
+        # Spot-check P1: stored value=4 must be the pre-checked radio.
+        pattern = (
+            r'<input[^>]*\bname="P1"[^>]*\bvalue="4"[^>]*\bchecked\b'
+            r'|<input[^>]*\bvalue="4"[^>]*\bname="P1"[^>]*\bchecked\b'
+            r'|<input[^>]*\bchecked\b[^>]*\bname="P1"[^>]*\bvalue="4"'
+        )
+        self.assertRegex(body, pattern)
+
+    def test_completed_response_redirects_from_page_view(self):
+        row = self._seed_responses(through_page=4)
+        row.compute_and_save_scores()
+        row.completed_at = timezone.now()
+        row.save(update_fields=['completed_at'])
+        resp = self.client.get(reverse('ailst:page', kwargs={'timepoint': 't0', 'page': 1}))
+        self.assertRedirects(
+            resp,
+            reverse('ailst:complete', kwargs={'timepoint': 't0'}),
+            fetch_redirect_response=False,
+        )
+
+
+class AilstResearchConsentGatingTest(_AilstViewTestBase):
+    """D7 gating: research_consent=False blocks AILST entry on every route.
+
+    GDPR / IRB rationale: AILST is the primary research instrument;
+    collecting responses without active research_participation consent
+    would breach Article 9 special-category data requirements.
+    """
+
+    def _revoke_consent(self):
+        self.profile.research_consent = False
+        self.profile.save(update_fields=['research_consent'])
+
+    def test_entry_redirects_to_research_consent_required(self):
+        self._revoke_consent()
+        resp = self.client.get(reverse('ailst:entry', kwargs={'timepoint': 't0'}))
+        self.assertRedirects(
+            resp,
+            reverse('ailst:research_consent_required', kwargs={'timepoint': 't0'}),
+            fetch_redirect_response=False,
+        )
+
+    def test_page_view_redirects_to_research_consent_required(self):
+        self._revoke_consent()
+        resp = self.client.get(reverse('ailst:page', kwargs={'timepoint': 't0', 'page': 1}))
+        self.assertRedirects(
+            resp,
+            reverse('ailst:research_consent_required', kwargs={'timepoint': 't0'}),
+            fetch_redirect_response=False,
+        )
+
+    def test_partial_responses_preserved_on_consent_revocation(self):
+        """No auto-delete: GDPR audit trail and user-work preservation."""
+        seeded = self._seed_responses(through_page=1)
+        self._revoke_consent()
+        # User hits AILST → blocked, but row must still exist.
+        self.client.get(reverse('ailst:entry', kwargs={'timepoint': 't0'}))
+        self.assertTrue(
+            AilstResponse.objects.filter(pk=seeded.pk).exists(),
+            "Partial AilstResponse must NOT be auto-deleted on consent revoke.",
+        )
+
+    def test_consent_required_page_renders(self):
+        self._revoke_consent()
+        resp = self.client.get(
+            reverse('ailst:research_consent_required', kwargs={'timepoint': 't0'})
+        )
+        self.assertEqual(resp.status_code, 200)
+        self.assertTemplateUsed(resp, 'ailst/research_consent_required.html')
+
+
+class AilstCompleteViewTest(_AilstViewTestBase):
+
+    def test_complete_renders_for_completed_response(self):
+        row = self._seed_responses(through_page=4)
+        row.compute_and_save_scores()
+        row.completed_at = timezone.now()
+        row.save(update_fields=['completed_at'])
+        resp = self.client.get(reverse('ailst:complete', kwargs={'timepoint': 't0'}))
+        self.assertEqual(resp.status_code, 200)
+        self.assertTemplateUsed(resp, 'ailst/complete.html')
+
+    def test_complete_404_for_incomplete_response(self):
+        self._seed_responses(through_page=2)  # not completed
+        resp = self.client.get(reverse('ailst:complete', kwargs={'timepoint': 't0'}))
+        self.assertEqual(resp.status_code, 404)
+
+    def test_complete_does_not_show_factor_scores(self):
+        """D4: scores hidden during pilot for all timepoints (TD-010)."""
+        row = self._seed_responses(through_page=4)
+        row.compute_and_save_scores()
+        row.completed_at = timezone.now()
+        row.save(update_fields=['completed_at'])
+        resp = self.client.get(reverse('ailst:complete', kwargs={'timepoint': 't0'}))
+        body = resp.content.decode('utf-8')
+        # Decimal-formatted scores must not leak into the page.
+        for label in ('perception_score', '4.00', '4.50', '4.65', 'AI Perception'):
+            self.assertNotIn(
+                label, body,
+                f"Score-related token {label!r} must not appear on T0 complete page.",
+            )
+
+
+class AilstRestartViewTest(_AilstViewTestBase):
+
+    def test_restart_post_deletes_partial_and_redirects_to_entry(self):
+        seeded = self._seed_responses(through_page=2)
+        resp = self.client.post(reverse('ailst:restart', kwargs={'timepoint': 't0'}))
+        self.assertRedirects(
+            resp,
+            reverse('ailst:entry', kwargs={'timepoint': 't0'}),
+            fetch_redirect_response=False,
+        )
+        self.assertFalse(AilstResponse.objects.filter(pk=seeded.pk).exists())
+
+    def test_restart_get_redirects_without_deleting(self):
+        seeded = self._seed_responses(through_page=2)
+        resp = self.client.get(reverse('ailst:restart', kwargs={'timepoint': 't0'}))
+        self.assertRedirects(
+            resp,
+            reverse('ailst:entry', kwargs={'timepoint': 't0'}),
+            fetch_redirect_response=False,
+        )
+        self.assertTrue(AilstResponse.objects.filter(pk=seeded.pk).exists())
+
+    def test_restart_does_not_delete_completed_response(self):
+        row = self._seed_responses(through_page=4)
+        row.compute_and_save_scores()
+        row.completed_at = timezone.now()
+        row.save(update_fields=['completed_at'])
+        resp = self.client.post(reverse('ailst:restart', kwargs={'timepoint': 't0'}))
+        self.assertRedirects(
+            resp,
+            reverse('ailst:complete', kwargs={'timepoint': 't0'}),
+            fetch_redirect_response=False,
+        )
+        self.assertTrue(AilstResponse.objects.filter(pk=row.pk).exists())
+
+
+class AilstTimepointParameterisationTest(_AilstViewTestBase):
+
+    def test_t1_and_t2_routes_resolve(self):
+        for tp_url in ('t1', 't2'):
+            resp = self.client.get(reverse('ailst:entry', kwargs={'timepoint': tp_url}))
+            # First visit (no row) → intro page rendered, 200.
+            self.assertEqual(
+                resp.status_code, 200,
+                f"Entry view must work for timepoint {tp_url}",
+            )
+            self.assertTemplateUsed(resp, 'ailst/intro.html')
+
+    def test_t1_complete_flow_persists_with_correct_timepoint(self):
+        self.client.post(reverse('ailst:entry', kwargs={'timepoint': 't1'}))
+        for p in range(1, 4):
+            self._post_page(p, timepoint='t1')
+        self._post_page(4, timepoint='t1')
+        row = AilstResponse.objects.get(user=self.user, timepoint='T1')
+        self.assertIsNotNone(row.completed_at)
+
+
+class AilstMobileLikertRenderTest(_AilstViewTestBase):
+    """CP 5: full anchors must appear at every breakpoint, not numeric only."""
+
+    def test_page_renders_all_five_verbal_anchors(self):
+        AilstResponse.objects.create(
+            user=self.user,
+            timepoint='T0',
+            language='en',
+            instrument_version='ning_2025_v1',
+        )
+        resp = self.client.get(reverse('ailst:page', kwargs={'timepoint': 't0', 'page': 1}))
+        body = resp.content.decode('utf-8')
+        for anchor in (
+            'Fully applicable',
+            'Applicable',
+            'Uncertain',
+            'Not applicable',
+            'Completely not applicable',
+        ):
+            self.assertIn(
+                anchor, body,
+                f"Anchor {anchor!r} must be rendered (CP 5: full anchors required).",
+            )

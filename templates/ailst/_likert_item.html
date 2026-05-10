@@ -1,0 +1,36 @@
+{% load i18n %}
+{# Single AILST item: prompt text on the left, 5 Likert radios on the right.
+   Desktop (md+): two-column grid, radios laid out horizontally with anchors below.
+   Mobile: stacked — prompt above, radios vertically stacked with full anchor labels. #}
+<div class="form-control mb-6 p-4 bg-base-200 rounded-lg
+            md:grid md:grid-cols-5 md:gap-4 md:items-start
+            {% if field.errors %}border border-error{% endif %}">
+
+    <div class="md:col-span-2 mb-3 md:mb-0">
+        <p class="font-medium text-base">
+            {{ field.label }}
+        </p>
+        {% if field.errors %}
+            <p class="text-error text-sm mt-1" role="alert">
+                {{ field.errors|first }}
+            </p>
+        {% endif %}
+    </div>
+
+    <div class="md:col-span-3">
+        <div class="grid grid-cols-1 md:grid-cols-5 gap-2 md:gap-1">
+            {% for radio in field %}
+                <label class="cursor-pointer flex items-center gap-3
+                              md:flex-col md:items-center md:text-center md:gap-2">
+                    <span class="md:order-2">
+                        {{ radio.tag }}
+                    </span>
+                    <span class="text-sm md:text-xs md:order-1">
+                        {{ radio.choice_label }}
+                    </span>
+                </label>
+            {% endfor %}
+        </div>
+    </div>
+
+</div>

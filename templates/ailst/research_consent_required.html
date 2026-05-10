@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+{% load i18n %}
+
+{% block title %}{% trans "AI Literacy Self-Assessment — Research Consent Required" %}{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto py-12 px-4">
+
+    <div class="card bg-base-100 shadow-xl">
+        <div class="card-body">
+
+            <h1 class="card-title text-2xl text-primary mb-2">
+                {% trans "Research consent required" %}
+            </h1>
+
+            <p class="text-base mb-4">
+                {% blocktrans %}
+                The AI Literacy Self-Assessment is the primary research instrument
+                of this doctoral study. We can only collect your responses if you
+                have given active consent to research participation.
+                {% endblocktrans %}
+            </p>
+
+            <p class="text-base mb-4">
+                {% blocktrans %}
+                Your current setting indicates that you have not consented to research
+                participation, so this assessment is unavailable.
+                {% endblocktrans %}
+            </p>
+
+            <div class="alert alert-info mb-4">
+                <div>
+                    <p class="text-sm">
+                        {% blocktrans %}
+                        If you would like to take part, you can update your research
+                        consent from your profile settings and then return here.
+                        Otherwise you can continue with the modules without completing
+                        this assessment.
+                        {% endblocktrans %}
+                    </p>
+                </div>
+            </div>
+
+            <div class="card-actions justify-end mt-4">
+                <a href="{% url 'users:dashboard' %}" class="btn btn-ghost">
+                    {% trans "Back to dashboard" %}
+                </a>
+                <a href="{% url 'users:profile_edit' %}" class="btn btn-primary">
+                    {% trans "Update consent settings" %}
+                </a>
+            </div>
+
+        </div>
+    </div>
+
+</div>
+{% endblock %}

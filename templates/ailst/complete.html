@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+{% load i18n %}
+
+{% block title %}{% trans "AI Literacy Baseline — Recorded" %}{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto py-12 px-4">
+
+    <div class="card bg-base-100 shadow-xl">
+        <div class="card-body items-center text-center">
+
+            <h1 class="card-title text-2xl text-success mb-2">
+                {% trans "Thank you — your responses have been recorded." %}
+            </h1>
+
+            <p class="text-base mb-4">
+                {% blocktrans with timepoint=timepoint %}
+                Your {{ timepoint }} AI literacy self-assessment is complete.
+                {% endblocktrans %}
+            </p>
+
+            {# Per C.2.3 design decision D4 (10 May 2026): individual scores
+               are NOT displayed to participants during the pilot, to avoid
+               baseline priming and demand characteristics in later
+               administrations. Post-pilot reveal is tracked as TD-010. #}
+            <div class="alert alert-info mb-4">
+                <div class="text-left">
+                    <p class="text-sm">
+                        {% blocktrans %}
+                        Your individual AI literacy scores are not shown during the programme.
+                        They will be available to you in a research participation summary
+                        after the study concludes.
+                        {% endblocktrans %}
+                    </p>
+                </div>
+            </div>
+
+            <p class="text-base mb-4">
+                {% if timepoint == 'T0' %}
+                    {% trans "You are now ready to begin the first module of PROODOS." %}
+                {% else %}
+                    {% trans "You can continue with the programme from your dashboard." %}
+                {% endif %}
+            </p>
+
+            <div class="card-actions">
+                <a href="{% url 'users:dashboard' %}" class="btn btn-primary btn-lg">
+                    {% trans "Continue to dashboard" %}
+                </a>
+            </div>
+
+        </div>
+    </div>
+
+</div>
+{% endblock %}

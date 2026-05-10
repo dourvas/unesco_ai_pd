@@ -26,6 +26,9 @@ urlpatterns = [
     # 5. Compliance (AI Disclosure modal, Article 50 stub) — Phase C C.2.0
     path('', include('apps.compliance.urls', namespace='compliance')),
 
+    # 6. AILST instrument administration (T0/T1/T2) — Phase C C.2.3
+    path('ailst/', include('apps.ailst.urls', namespace='ailst')),
+
 ]
 
 # Serve media and static files in development

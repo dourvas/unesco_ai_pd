@@ -1,0 +1,99 @@
+{% extends 'base.html' %}
+{% load i18n %}
+
+{% block title %}{% blocktrans %}AI Literacy — Page {{ page }} of {{ total_pages }}{% endblocktrans %}{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto py-6 px-4">
+
+    {# Progress bar #}
+    <div class="mb-6">
+        <div class="flex justify-between items-center mb-1 text-sm">
+            <span class="font-medium">
+                {% blocktrans %}Page {{ page }} of {{ total_pages }}{% endblocktrans %}
+            </span>
+            <span class="text-base-content/70">{{ progress_percentage }}%</span>
+        </div>
+        <progress class="progress progress-primary w-full"
+                  value="{{ progress_percentage }}" max="100"
+                  aria-label="{% trans 'Survey progress' %}"></progress>
+    </div>
+
+    {% if is_resuming %}
+        <div class="alert alert-info mb-4">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 w-full">
+                <p class="text-sm">
+                    {% blocktrans with page=page total=total_pages %}
+                    Resuming from where you left off — page {{ page }} of {{ total }}.
+                    {% endblocktrans %}
+                </p>
+                <form method="post"
+                      action="{% url 'ailst:restart' timepoint=timepoint_url %}"
+                      class="shrink-0">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-ghost btn-sm">
+                        {% trans "Discard and start over" %}
+                    </button>
+                </form>
+            </div>
+        </div>
+    {% endif %}
+
+    <div class="card bg-base-100 shadow-xl">
+        <div class="card-body">
+
+            <h1 class="card-title text-xl text-primary mb-2">
+                {% if factor_name == 'perception' %}
+                    {% trans "Your perception of AI" %}
+                {% elif factor_name == 'knowledge_skills' %}
+                    {% trans "Your AI knowledge and skills" %}
+                {% elif factor_name == 'applications_innovation' %}
+                    {% trans "AI in your teaching: applications and innovation" %}
+                {% elif factor_name == 'ethics' %}
+                    {% trans "Ethical aspects of AI in education" %}
+                {% endif %}
+            </h1>
+
+            <p class="text-sm text-base-content/70 mb-4">
+                {% trans "Indicate how well each statement applies to you. Please answer every item before continuing." %}
+            </p>
+
+            <form method="post"
+                  action="{% url 'ailst:page' timepoint=timepoint_url page=page %}">
+                {% csrf_token %}
+
+                {% if form.non_field_errors %}
+                    <div class="alert alert-error mb-4">
+                        {{ form.non_field_errors }}
+                    </div>
+                {% endif %}
+
+                {% for field in form %}
+                    {% include 'ailst/_likert_item.html' with field=field %}
+                {% endfor %}
+
+                <div class="card-actions justify-between mt-4">
+                    {% if page > 1 %}
+                        <a href="{% url 'ailst:page' timepoint=timepoint_url page=page|add:'-1' %}"
+                           class="btn btn-ghost">
+                            {% trans "Back" %}
+                        </a>
+                    {% else %}
+                        <span></span>
+                    {% endif %}
+
+                    <button type="submit" class="btn btn-primary">
+                        {% if page == total_pages %}
+                            {% trans "Submit" %}
+                        {% else %}
+                            {% trans "Continue" %}
+                        {% endif %}
+                    </button>
+                </div>
+            </form>
+
+        </div>
+    </div>
+
+</div>
+{% endblock %}

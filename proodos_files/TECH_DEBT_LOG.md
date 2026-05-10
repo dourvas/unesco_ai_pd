@@ -171,6 +171,37 @@ Considered and rejected for C.2.1: showing a "last-modified" timestamp next to e
 
 ---
 
+## TD-010 — Post-pilot AILST score reveal feature
+
+**Status:** Active. Defer to post-pilot Phase G/H (deliverables and user feedback).
+**Where:** new route in `apps/ailst/urls.py` + view in `apps/ailst/views.py` + template `templates/ailst/research_summary.html`.
+
+C.2.3 design decision (D4, 10 May 2026): AILST factor scores and overall score are NOT shown to users during the pilot — the `complete.html` page after T0/T1/T2 contains only an acknowledgment message ("Your responses have been recorded.") without numbers.
+
+**Methodological rationale for hiding during the pilot:**
+
+1. **Baseline priming (T0):** showing T0 scores would establish an anchor for the user's self-image of their AI literacy. Subsequent self-assessment at T1/T2 would be biased by the anchor — a classic carryover effect in pre/post designs.
+2. **Demand characteristics (T1):** if T1 scores are visible after Module 5, the user can see their current level and may adjust T2 answers to perform "growth" — overestimating in domains they expect the programme to have improved. This produces apparent treatment effects that are artefacts of the measurement context, not of learning.
+3. **Asymmetric reveal is worse, not better:** showing only T2 scores forces the user to wonder where they started; showing T1+T2 but hiding T0 makes the trajectory ambiguous; showing all three undermines T1/T2 validity. The only methodologically clean option is: hide all three for the duration of the pilot.
+
+Standard research-ethics practice: participants receive feedback AFTER the study ends, never during. This protects measurement validity and is consistent with how the AILST instrument was originally validated.
+
+**Post-pilot deliverable (this TD):** a "Research participation summary" page that shows the user their T0/T1/T2 trajectory after the dissertation data analysis is complete. Built as part of post-pilot user-facing deliverables.
+
+**Implementation sketch:**
+
+- Route: `/ailst/research-summary/` (single page, no per-timepoint URL).
+- Permission: only visible after the pilot's official end date (a single setting or feature flag — e.g., `settings.AILST_RESEARCH_SUMMARY_ENABLED = False` until release-time toggle).
+- View: queries the 3 `AilstResponse` rows for the user, ordered by timepoint, with completed_at not null.
+- Template: renders factor scores as a 4-line chart (one line per factor across T0/T1/T2) plus a table with the numbers, with reflective context strings ("Your AI Knowledge & Skills score changed from X.X at baseline to Y.Y at programme completion").
+- Optional later: add an export-to-PDF button for participants who want a copy of their trajectory.
+
+**Discovered in:** C.2.3 design proposal D4 reversal (10 May 2026, John's decision).
+**Implementation effort:** ~120 LOC view + ~150 LOC template + simple chart (could use a small JS library or static SVG generation server-side); no schema change needed (M5 already stores scores; this is pure read-side).
+**Resolved at:** Post-pilot Phase G/H.
+
+---
+
 ## TD entry conventions
 
 When adding a new entry:

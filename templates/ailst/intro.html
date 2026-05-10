@@ -1,0 +1,69 @@
+{% extends 'base.html' %}
+{% load i18n %}
+
+{% block title %}{% trans "AI Literacy Baseline — PROODOS" %}{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto py-8 px-4">
+
+    <div class="card bg-base-100 shadow-xl">
+        <div class="card-body">
+
+            <h1 class="card-title text-2xl text-primary mb-2">
+                {% blocktrans with timepoint=timepoint %}
+                AI Literacy Self-Assessment ({{ timepoint }})
+                {% endblocktrans %}
+            </h1>
+
+            <p class="text-base mb-4">
+                {% blocktrans count items=total_items %}
+                Before you begin the modules, we ask you to complete a short
+                self-assessment of your current relationship with AI in teaching.
+                It has {{ items }} item to complete.
+                {% plural %}
+                Before you begin the modules, we ask you to complete a short
+                self-assessment of your current relationship with AI in teaching.
+                It has {{ items }} items to complete.
+                {% endblocktrans %}
+            </p>
+
+            <div class="alert alert-info mb-4">
+                <div>
+                    <h3 class="font-semibold">{% trans "What to expect" %}</h3>
+                    <ul class="list-disc pl-6 mt-2 space-y-1 text-sm">
+                        <li>{% blocktrans count pages=total_pages %}{{ pages }} short page covering one aspect of AI literacy.{% plural %}{{ pages }} short pages, each covering one aspect of AI literacy.{% endblocktrans %}</li>
+                        <li>{% trans "For every statement, indicate how well it applies to you, on a scale from 'Fully applicable' to 'Completely not applicable'." %}</li>
+                        <li>{% trans "There are no right or wrong answers. Your honest self-report is what we need." %}</li>
+                        <li>{% trans "Your progress is saved after each page; you can leave and return later from the same point." %}</li>
+                        <li>{% trans "Estimated time: 8 to 12 minutes." %}</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="alert alert-warning mb-4">
+                <div>
+                    <h3 class="font-semibold">{% trans "Use as a research instrument" %}</h3>
+                    <p class="text-sm mt-1">
+                        {% blocktrans %}
+                        Your responses form part of the research data for this doctoral study.
+                        You have already given your consent to research participation during
+                        onboarding. You can withdraw that consent at any time from your profile
+                        settings.
+                        {% endblocktrans %}
+                    </p>
+                </div>
+            </div>
+
+            <form method="post" action="{% url 'ailst:entry' timepoint=timepoint_url %}"
+                  class="card-actions justify-end mt-4">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-primary btn-lg">
+                    {% trans "Begin the self-assessment" %}
+                </button>
+            </form>
+
+        </div>
+    </div>
+
+</div>
+{% endblock %}
