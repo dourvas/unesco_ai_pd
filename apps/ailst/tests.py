@@ -768,3 +768,56 @@ class AilstTemplateCommentLeakTest(_AilstViewTestBase):
         row.save(update_fields=['completed_at'])
         resp = self.client.get(reverse('ailst:complete', kwargs={'timepoint': 't0'}))
         self._assert_no_comment_leak(resp.content.decode('utf-8'), where='complete.html')
+
+
+class TemplateMultiLineCommentStaticTest(TestCase):
+    """Static-scan regression for the multi-line {# ... #} bug class.
+
+    Discovered three times during Phase C C.2.3 / C.2.4 (10-11 May 2026):
+    each time, a per-template render-test passed because it checked for
+    specific phrases that happened to exist in earlier comments, while
+    a new comment with different wording slipped through unnoticed.
+
+    This test grep-scans the entire templates/ tree and fails on any
+    {# delimiter that is not closed by a matching #} on the SAME line
+    (Django's documented behaviour for {# ... #}). The rendered-HTML
+    tests in AilstTemplateCommentLeakTest above stay as a second-line
+    defence in case a future template engine quirk leaks something
+    else; this static scan is the cheap canonical guard.
+    """
+
+    def test_no_multi_line_hash_comments_in_templates(self):
+        import os
+        # Walk the project's templates/ directory.
+        here = os.path.dirname(os.path.abspath(__file__))
+        # apps/ailst/tests.py -> project root is three levels up.
+        project_root = os.path.abspath(os.path.join(here, '..', '..'))
+        templates_dir = os.path.join(project_root, 'templates')
+        offenders = []
+        for root, _dirs, files in os.walk(templates_dir):
+            # Skip backup files left in the tree.
+            if 'BACKUP' in root.upper():
+                continue
+            for name in files:
+                if not name.endswith('.html'):
+                    continue
+                if 'BACKUP' in name.upper():
+                    continue
+                path = os.path.join(root, name)
+                with open(path, 'r', encoding='utf-8') as fh:
+                    for lineno, line in enumerate(fh, start=1):
+                        # A line containing {# but no matching #} on the
+                        # same line opens a comment Django will not
+                        # close. False positive risk for lines like
+                        # 'hash {# this' inside a JS string is real but
+                        # negligible in this codebase; we accept it.
+                        if '{#' in line and '#}' not in line:
+                            rel = os.path.relpath(path, project_root)
+                            offenders.append(f'{rel}:{lineno}: {line.rstrip()}')
+        self.assertFalse(
+            offenders,
+            'Multi-line {# ... #} comments found. Django {# ... #} is '
+            'single-line only; use {% comment %}...{% endcomment %} for '
+            'multi-line. Offending lines:\n  '
+            + '\n  '.join(offenders),
+        )

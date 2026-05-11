@@ -549,10 +549,12 @@
 {% endif %}
 
     <div class="card-actions justify-center mt-6">
-        {# C.2.4: this button is rewired by the reflection submission
-           handler when the server returns ailst_redirect_url (M5 -> T1,
-           M15 -> T2 for research-consenting users). Otherwise it
-           reloads the page to show the completed module state. #}
+        {% comment %}
+        C.2.4: this button is rewired by the reflection submission
+        handler when the server returns ailst_redirect_url (M5 -> T1,
+        M15 -> T2 for research-consenting users). Otherwise it
+        reloads the page to show the completed module state.
+        {% endcomment %}
         <button data-reflection-continue
                 onclick="window.location.reload()"
                 class="btn btn-success btn-lg">
@@ -698,10 +700,12 @@
 </div>
 {% endif %}
     <div class="card-actions justify-center mt-6">
-        {# C.2.4: this button is rewired by the reflection submission
-           handler when the server returns ailst_redirect_url (M5 -> T1,
-           M15 -> T2 for research-consenting users). Otherwise it
-           reloads the page to show the completed module state. #}
+        {% comment %}
+        C.2.4: this button is rewired by the reflection submission
+        handler when the server returns ailst_redirect_url (M5 -> T1,
+        M15 -> T2 for research-consenting users). Otherwise it
+        reloads the page to show the completed module state.
+        {% endcomment %}
         <button data-reflection-continue
                 onclick="window.location.reload()"
                 class="btn btn-success btn-lg">
