@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load i18n %}
+{% load consent_format %}
 
 {% block title %}{% trans "Step 3: Goals & Preferences" %}{% endblock %}
 
@@ -75,7 +76,7 @@
                         <h3 class="font-bold text-lg mb-3 text-primary">
                             {% trans "Research Participation" %}
                         </h3>
-                        <div class="text-sm leading-relaxed">{{ research_text|linebreaksbr }}</div>
+                        <div class="text-sm leading-relaxed prose prose-sm max-w-none">{{ research_text|consent_format }}</div>
                     </div>
                     <label class="label cursor-pointer justify-start gap-3 p-3 border-2 rounded-lg hover:border-primary transition-colors">
                         {{ form.consent_research_participation }}
@@ -94,7 +95,7 @@
                         <h3 class="font-bold text-lg mb-3 text-primary">
                             {% trans "Data Sharing for Secondary Research (Optional)" %}
                         </h3>
-                        <div class="text-sm leading-relaxed">{{ data_sharing_text|linebreaksbr }}</div>
+                        <div class="text-sm leading-relaxed prose prose-sm max-w-none">{{ data_sharing_text|consent_format }}</div>
                     </div>
                     <label class="label cursor-pointer justify-start gap-3 p-3 border-2 rounded-lg hover:border-primary transition-colors">
                         {{ form.consent_data_sharing }}

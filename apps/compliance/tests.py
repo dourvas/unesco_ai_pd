@@ -499,3 +499,85 @@ class AIDisclosureViewTest(TestCase):
             user=self.user, consent_type='ai_disclosure',
         )
         self.assertEqual(cr.consent_text, AI_DISCLOSURE_TEXT_V1_PRE_IRB)
+
+
+# ============================================================================
+# C.2.5 follow-up: consent_format template filter tests
+# ============================================================================
+
+
+class ConsentFormatFilterTest(TestCase):
+    """Verify the consent_format template filter handles the structural
+    cases that appear in apps.compliance.copy: paragraphs separated by
+    blank lines, bullet lists with a lead-in line, and continuation
+    lines under a bullet."""
+
+    def _render(self, text):
+        from apps.compliance.templatetags.consent_format import consent_format
+        return consent_format(text)
+
+    def test_empty_text_returns_empty(self):
+        self.assertEqual(self._render(''), '')
+        self.assertEqual(self._render(None), '')
+
+    def test_single_paragraph_joins_soft_wraps_with_spaces(self):
+        text = (
+            "PROODOS is the empirical instrument of a doctoral dissertation\n"
+            "at the International Hellenic University, Thessaloniki."
+        )
+        out = self._render(text)
+        # Soft-wrap newline inside a paragraph collapses to one space.
+        self.assertIn('doctoral dissertation at the', out)
+        self.assertNotIn('<br', out)
+        self.assertTrue(out.startswith('<p>'))
+        self.assertTrue(out.endswith('</p>'))
+
+    def test_double_newline_starts_new_paragraph(self):
+        text = "First paragraph.\n\nSecond paragraph."
+        out = self._render(text)
+        self.assertEqual(out, '<p>First paragraph.</p><p>Second paragraph.</p>')
+
+    def test_bullet_list_with_lead_in_renders_p_plus_ul(self):
+        text = (
+            "Your platform interactions are research data. This includes:\n"
+            "  - Your responses to module activities\n"
+            "  - Your AILST questionnaire responses\n"
+            "  - Your module progress and completion data"
+        )
+        out = self._render(text)
+        self.assertIn('<p>Your platform interactions are research data. This includes:</p>', out)
+        self.assertIn('<ul', out)
+        self.assertIn('<li>Your responses to module activities</li>', out)
+        self.assertIn('<li>Your AILST questionnaire responses</li>', out)
+        self.assertIn('<li>Your module progress and completion data</li>', out)
+
+    def test_bullet_continuation_line_joins_with_space(self):
+        text = (
+            "What participation involves:\n"
+            "  - Completing the AI Literacy Scale (AILST) at three\n"
+            "    points: T0, T1, T2. Each takes about 7 minutes."
+        )
+        out = self._render(text)
+        # Continuation line is folded into the same <li>.
+        self.assertIn(
+            '<li>Completing the AI Literacy Scale (AILST) at three points: T0, T1, T2. Each takes about 7 minutes.</li>',
+            out,
+        )
+
+    def test_html_is_escaped(self):
+        text = "Bad <script>alert('x')</script> text."
+        out = self._render(text)
+        self.assertNotIn('<script>', out)
+        self.assertIn('&lt;script&gt;', out)
+
+    def test_real_consent_text_produces_no_brs(self):
+        """Regression on the original bug: the verbatim Research
+        Participation text used to render with <br> tags every ~80
+        chars, creating a tall column with a large right-side gap.
+        The filter must produce no <br>s at all."""
+        from apps.compliance.copy import RESEARCH_PARTICIPATION_TEXT_V1_PRE_IRB
+        out = self._render(RESEARCH_PARTICIPATION_TEXT_V1_PRE_IRB)
+        self.assertNotIn('<br', out)
+        # And it must produce both paragraph and list elements.
+        self.assertIn('<p>', out)
+        self.assertIn('<ul', out)
