@@ -549,7 +549,13 @@
 {% endif %}
 
     <div class="card-actions justify-center mt-6">
-        <button onclick="window.location.reload()" class="btn btn-success btn-lg">
+        {# C.2.4: this button is rewired by the reflection submission
+           handler when the server returns ailst_redirect_url (M5 -> T1,
+           M15 -> T2 for research-consenting users). Otherwise it
+           reloads the page to show the completed module state. #}
+        <button data-reflection-continue
+                onclick="window.location.reload()"
+                class="btn btn-success btn-lg">
             ✓ Reflection Completed
         </button>
     </div>
@@ -692,7 +698,13 @@
 </div>
 {% endif %}
     <div class="card-actions justify-center mt-6">
-        <button onclick="window.location.reload()" class="btn btn-success btn-lg">
+        {# C.2.4: this button is rewired by the reflection submission
+           handler when the server returns ailst_redirect_url (M5 -> T1,
+           M15 -> T2 for research-consenting users). Otherwise it
+           reloads the page to show the completed module state. #}
+        <button data-reflection-continue
+                onclick="window.location.reload()"
+                class="btn btn-success btn-lg">
             ✓ Reflection Completed
         </button>
     </div>
@@ -1147,7 +1159,7 @@ if (reflectionForm) {
             
             if (result.success) {
                 reflectionForm.classList.add('hidden');
-                
+
                 const feedbackSection = document.getElementById('feedback-section');
                 const feedbackContent = document.getElementById('feedback-content');
 
@@ -1157,12 +1169,26 @@ if (reflectionForm) {
                     peerContent.innerHTML = result.peer_synthesis;
                     peerCard.classList.remove('hidden');
                 }
-                
+
+                // AILST research-instrument gating (C.2.4): if the
+                // submission just completed M5 or M15 for a
+                // research-consenting user, rewire the "Reflection
+                // Completed" button(s) to navigate to /ailst/t1/ or
+                // /ailst/t2/ instead of reloading. The user reads the
+                // RAG feedback first, then clicks through to the AILST
+                // baseline.
+                if (result.ailst_redirect_url) {
+                    document.querySelectorAll('[data-reflection-continue]').forEach(btn => {
+                        btn.textContent = 'Continue to AI Literacy assessment';
+                        btn.onclick = () => { window.location.href = result.ailst_redirect_url; };
+                    });
+                }
+
                 if (result.feedback) {
                     feedbackContent.innerHTML = result.feedback;
                     feedbackSection.classList.remove('hidden');
                     feedbackSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                    
+
                     // Async calls - run in parallel
                     extractTensionsAsync(reflection_text);
                     // Store reflection text for on-demand peer synthesis
@@ -1172,6 +1198,10 @@ if (reflectionForm) {
                     if (dtpWrapper) {
                         dtpWrapper.classList.remove('hidden');
                     }
+                } else if (result.ailst_redirect_url) {
+                    // No feedback to display, but an AILST redirect is
+                    // required — go straight there without reload.
+                    window.location.href = result.ailst_redirect_url;
                 } else {
                     window.location.reload();
                 }

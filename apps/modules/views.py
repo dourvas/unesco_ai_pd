@@ -794,7 +794,21 @@ def mark_tab_complete(request, code, tab_name):
         
         # Mark tab complete
         next_tab = progress.mark_tab_complete(tab_name, **kwargs)
-        
+
+        # Phase C C.2.4 — AILST research-instrument gating.
+        # When the module that was just completed is M5 or M15 (and the
+        # user has active research_consent and the matching AILST
+        # timepoint is not already done), redirect the next page to
+        # /ailst/t1/ or /ailst/t2/ instead of advancing within the module
+        # tabs. The helper returns None when no redirect is required, in
+        # which case we fall through to the normal completion flow.
+        from apps.ailst.services import get_post_module_redirect_url
+        ailst_redirect_url = None
+        if progress.completed_at is not None:
+            ailst_redirect_url = get_post_module_redirect_url(
+                request.user, module.code,
+            )
+
         # Build response
         response_data = {
             'success': True,
@@ -802,6 +816,8 @@ def mark_tab_complete(request, code, tab_name):
             'module_completed': progress.completed_at is not None,
             'completion_percentage': progress.completion_percentage,
         }
+        if ailst_redirect_url:
+            response_data['ailst_redirect_url'] = ailst_redirect_url
         
         # Add feedback and peer synthesis to response if this is reflection
         # Add feedback, peer synthesis, and RTM tensions to response

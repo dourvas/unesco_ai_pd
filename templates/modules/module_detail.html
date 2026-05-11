@@ -136,6 +136,15 @@ async function markTabComplete(moduleCode, tabName) {
     const result = await response.json();
     
     if (result.success) {
+        // AILST research-instrument gating (C.2.4): when the user has
+        // just completed M5 or M15 and has active research_consent, the
+        // server returns ailst_redirect_url pointing at /ailst/t1/ or
+        // /ailst/t2/. We honour it before the normal next-tab flow so
+        // the survey runs immediately after module completion.
+        if (result.ailst_redirect_url) {
+            window.location.href = result.ailst_redirect_url;
+            return;
+        }
         if (result.next_tab && result.next_tab !== 'completed') {
             window.location.href = `?tab=${result.next_tab}`;
         } else {
@@ -164,6 +173,14 @@ if (activityForm) {
         const result = await response.json();
         
         if (result.success) {
+            // AILST gating (C.2.4): if the activity submission just
+            // completed M5 or M15 for a research-consenting user, the
+            // server returns ailst_redirect_url. Honour it before
+            // advancing to the next tab.
+            if (result.ailst_redirect_url) {
+                window.location.href = result.ailst_redirect_url;
+                return;
+            }
             window.location.href = `?tab=${result.next_tab}`;
         } else {
             alert(result.message);
