@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load i18n %}
 
 {% block title %}Profile Review{% endblock %}
 
@@ -176,26 +177,16 @@
         </div>
     </div>
 
-    <!-- Confirmation -->
-    <div class="card bg-primary text-primary-content shadow-xl mb-6">
-        <div class="card-body">
-            <h3 class="card-title">One more short step</h3>
-            <p>
-                Please confirm that your information is correct. After this you will
-                complete a brief AI literacy self-assessment (8&ndash;12 minutes), and
-                then you can begin the modules. You can edit your profile anytime from
-                your settings.
-            </p>
-            <form method="post" class="card-actions justify-end mt-4">
-                {% csrf_token %}
-                <a href="{% url 'users:onboarding_step3' %}" class="btn btn-ghost">
-                    Back to Step 3
-                </a>
-                <button type="submit" class="btn btn-accent btn-lg">
-                    Continue to AI Literacy baseline
-                </button>
-            </form>
-        </div>
+    <!-- Read-only review: navigation back to the confirm interstitial.
+         The CTA to complete the profile and start AILST lives on the
+         confirm page (templates/onboarding/confirm.html), not here. -->
+    <div class="flex flex-col sm:flex-row sm:justify-between gap-3 mt-6 mb-2">
+        <a href="{% url 'users:onboarding_step3' %}" class="btn btn-ghost">
+            {% trans "Edit Step 3" %}
+        </a>
+        <a href="{% url 'users:onboarding_confirm' %}" class="btn btn-primary btn-lg">
+            {% trans "Back to confirmation" %}
+        </a>
     </div>
 
 </div>

@@ -23,6 +23,7 @@ urlpatterns = [
     path('onboarding/step2/', views.onboarding_step2, name='onboarding_step2'),
     path('onboarding/step3/', views.onboarding_step3, name='onboarding_step3'),
     path('onboarding/summary/', views.onboarding_summary, name='onboarding_summary'),
+    path('onboarding/confirm/', views.onboarding_confirm, name='onboarding_confirm'),
     
     # 5. Profile Management
     path('profile/', views.profile_view, name='profile_view'),

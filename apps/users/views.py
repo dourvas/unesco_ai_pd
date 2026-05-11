@@ -234,7 +234,7 @@ def onboarding_step3(request):
 
             request.session['onboarding_step'] = 3
             messages.success(request, '✅ Step 3 completed!')
-            return redirect('users:onboarding_summary')
+            return redirect('users:onboarding_confirm')
     else:
         form = GoalsPreferencesForm(instance=profile)
 
@@ -257,28 +257,22 @@ def onboarding_step3(request):
 @login_required
 def onboarding_summary(request):
     """
-    Summary: Review all information and confirm
+    Summary: read-only review of all onboarding information.
+
+    Phase C C.2.5b refactor: this view used to also host the
+    "Complete profile and start AILST" POST. That CTA moved to the
+    new short interstitial page at /onboarding/confirm/ to reduce
+    dropout (the CTA used to sit below several scrollable cards and
+    many users would not reach it). The summary page now serves only
+    as an optional drill-down for users who want to verify their data
+    before confirming.
     """
     profile = get_object_or_404(TeacherProfile, user=request.user)
-    
+
     if request.session.get('onboarding_step', 0) < 3:
         messages.warning(request, 'Please complete all steps first.')
         return redirect('users:onboarding_step1')
-    
-    if request.method == 'POST':
-        profile.profile_completed = True
-        profile.profile_completion_date = timezone.now()
-        profile.consent_timestamp = timezone.now() if profile.research_consent else None
-        profile.save()
 
-        # Phase C C.2.3: post-Summary state advances to step 4. The AILST
-        # entry view does not key on this marker (profile_completed is the
-        # durable truth), but keeping it set makes the in-flight T0 state
-        # observable for analytics and debugging.
-        request.session['onboarding_step'] = 4
-        messages.success(request, 'Profile completed. One more short step before you start the modules.')
-        return redirect('ailst:entry', timepoint='t0')
-    
     context = {
         'profile': profile,
         'subject_display': profile.get_subject_area_display() if profile.subject_area else '-',
@@ -290,8 +284,46 @@ def onboarding_summary(request):
         'comm_style_display': profile.get_preferred_communication_style_display(),
         'completion_percentage': profile.completion_percentage
     }
-    
+
     return render(request, 'onboarding/summary.html', context)
+
+
+@login_required
+def onboarding_confirm(request):
+    """
+    Short interstitial page after Step 3 with three CTAs:
+
+        - Continue to AI Literacy baseline (primary)
+        - Review my profile (drill-down to /onboarding/summary/)
+        - Back to Step 3 (edit answers)
+
+    POST is the canonical completion path:
+      - Sets profile.profile_completed = True (durable truth used by the
+        AILST entry view and the dashboard guard).
+      - Sets profile.profile_completion_date and consent_timestamp.
+      - Advances request.session['onboarding_step'] to 4.
+      - Redirects to /ailst/t0/ to start the AI Literacy baseline.
+
+    GET renders the page; POST performs the state changes and the
+    forward redirect.
+    """
+    profile = get_object_or_404(TeacherProfile, user=request.user)
+
+    if request.session.get('onboarding_step', 0) < 3:
+        messages.warning(request, 'Please complete all steps first.')
+        return redirect('users:onboarding_step1')
+
+    if request.method == 'POST':
+        profile.profile_completed = True
+        profile.profile_completion_date = timezone.now()
+        profile.consent_timestamp = timezone.now() if profile.research_consent else None
+        profile.save()
+
+        request.session['onboarding_step'] = 4
+        messages.success(request, 'Profile completed. One more short step before you start the modules.')
+        return redirect('ailst:entry', timepoint='t0')
+
+    return render(request, 'onboarding/confirm.html', {'profile': profile})
 
 @login_required
 def onboarding_skip(request):

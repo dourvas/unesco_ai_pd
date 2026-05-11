@@ -298,3 +298,96 @@ class OnboardingStep3ConsentTest(TestCase):
             ConsentRecord.objects.filter(user=self.user).count(),
             initial_count,
         )
+
+
+# ============================================================================
+# C.2.5b: separate confirm interstitial after Step 3
+# ============================================================================
+
+
+class OnboardingConfirmInterstitialTest(TestCase):
+    """Phase C C.2.5b — Step 3 POST now redirects to /onboarding/confirm/,
+    the short interstitial that hosts the "Continue to AI Literacy
+    baseline" CTA. The summary page (/onboarding/summary/) becomes a
+    read-only drill-down with no state-change responsibilities.
+    """
+
+    def setUp(self):
+        self.client = Client()
+        self.user = User.objects.create_user(username='confirm_user', password='x')
+        self.profile = TeacherProfile.objects.create(
+            user=self.user,
+            subject_area='mathematics', grade_level='primary',
+            teaching_years='6-15',
+            school_location='urban',
+            average_class_size='medium',
+            ai_experience='basic',
+            preferred_communication_style='balanced',
+            research_consent=False,
+            consent_data_sharing=False,
+            ai_disclosure_acknowledged_at=timezone.now(),
+        )
+        self.client.force_login(self.user)
+
+    def _set_step(self, n):
+        session = self.client.session
+        session['onboarding_step'] = n
+        session.save()
+
+    def test_step3_post_redirects_to_confirm_not_summary(self):
+        """Step 3 POST should send the user to the confirm interstitial."""
+        self._set_step(2)
+        resp = self.client.post(
+            reverse('users:onboarding_step3'),
+            data={'preferred_communication_style': 'balanced'},
+        )
+        self.assertRedirects(
+            resp,
+            reverse('users:onboarding_confirm'),
+            fetch_redirect_response=False,
+        )
+
+    def test_confirm_get_renders_for_completed_steps(self):
+        self._set_step(3)
+        resp = self.client.get(reverse('users:onboarding_confirm'))
+        self.assertEqual(resp.status_code, 200)
+        self.assertTemplateUsed(resp, 'onboarding/confirm.html')
+        body = resp.content.decode('utf-8')
+        # All three CTA labels must appear.
+        self.assertIn('Continue to AI Literacy baseline', body)
+        self.assertIn('Review my profile', body)
+        self.assertIn('Back to Step 3', body)
+
+    def test_confirm_get_redirects_when_steps_incomplete(self):
+        self._set_step(1)
+        resp = self.client.get(reverse('users:onboarding_confirm'))
+        self.assertRedirects(
+            resp,
+            reverse('users:onboarding_step1'),
+            fetch_redirect_response=False,
+        )
+
+    def test_confirm_post_completes_profile_and_redirects_to_AILST(self):
+        self._set_step(3)
+        resp = self.client.post(reverse('users:onboarding_confirm'))
+        self.assertEqual(resp.status_code, 302)
+        self.assertTrue(resp.url.startswith('/ailst/t0/'))
+
+        self.profile.refresh_from_db()
+        self.assertTrue(self.profile.profile_completed)
+        self.assertIsNotNone(self.profile.profile_completion_date)
+
+        # Session marker advances to 4.
+        self.assertEqual(self.client.session.get('onboarding_step'), 4)
+
+    def test_summary_get_renders_readonly_with_back_to_confirm_link(self):
+        self._set_step(3)
+        resp = self.client.get(reverse('users:onboarding_summary'))
+        self.assertEqual(resp.status_code, 200)
+        self.assertTemplateUsed(resp, 'onboarding/summary.html')
+        body = resp.content.decode('utf-8')
+        # The "Continue to AI Literacy baseline" CTA must be GONE from
+        # the summary page — it lives on confirm only.
+        self.assertNotIn('Continue to AI Literacy baseline', body)
+        # And a navigation back to confirm must exist.
+        self.assertIn('Back to confirmation', body)
