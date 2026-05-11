@@ -287,7 +287,7 @@ Phase 2E-A is successful when:
 **Author:** John Dourvas  
 **Date:** February 5, 2026  
 **Context:** UNESCO AI Teacher PD Platform - Doctoral Dissertation  
-**Institution:** Aristotle University of Thessaloniki
+**Institution:** International Hellenic University (IHU), Thessaloniki
 
 **Usage:** This package is part of doctoral research. Feel free to use for academic purposes with appropriate citation.
 
