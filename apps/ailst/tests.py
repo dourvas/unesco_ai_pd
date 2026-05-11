@@ -732,23 +732,23 @@ class AilstTemplateCommentLeakTest(_AilstViewTestBase):
     render as plain text in the page body."""
 
     def _assert_no_comment_leak(self, body, *, where):
-        # Specific phrases that appear inside our template comments. If any
-        # of these appear in rendered HTML, a {# ... #} multi-line was used
-        # by mistake. (We intentionally check for the comment-text contents
-        # rather than the {# delimiter so the test catches the actual leak.)
-        leaked_phrases = (
-            'Single AILST item: prompt text on the left',
-            'Per C.2.3 design decision D4',
-            'Desktop (md+): two-column grid',
-            '{% comment %}',
-            '{% endcomment %}',
-        )
-        for phrase in leaked_phrases:
+        # Pattern-based check: any Django comment delimiter that survives
+        # template rendering means the template was authored wrong.
+        # Common culprits:
+        #   - multi-line {# ... #} (single-line only per Django docs)
+        #   - typo'd {%comment%} (no space) — does not match the tag
+        #   - {% comment %} tag literal escaped or printed as plain text
+        # The literal '#' character is allowed (used in CSS selectors,
+        # IDs, fragment URLs); we only flag the delimiter pairs.
+        forbidden_patterns = ('{#', '#}', '{% comment %}', '{% endcomment %}')
+        for pattern in forbidden_patterns:
             self.assertNotIn(
-                phrase, body,
-                f"Template-comment text {phrase!r} leaked into rendered "
-                f"HTML on {where}. Multi-line Django comments must use "
-                f"{{% comment %}}...{{% endcomment %}}, not {{# ... #}}.",
+                pattern, body,
+                f"Comment delimiter {pattern!r} leaked into rendered HTML "
+                f"on {where}. Multi-line Django comments must use "
+                f"{{% comment %}}...{{% endcomment %}}, not {{# ... #}}; "
+                f"single-line {{# ... #}} is fine only if no newline sits "
+                f"between the delimiters.",
             )
 
     def test_page_template_does_not_leak_comments(self):

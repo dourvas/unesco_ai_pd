@@ -22,13 +22,20 @@ Mobile: stacked — prompt above, radios vertically stacked with full anchor lab
     <div class="md:col-span-3">
         <div class="grid grid-cols-1 md:grid-cols-5 gap-2 md:gap-1">
             {% for radio in field %}
+                {% comment %}
+                Desktop: fixed-height bottom-aligned label so the five
+                radios in the row land on the same baseline regardless
+                of how many lines each anchor wraps to.
+                {% endcomment %}
                 <label class="cursor-pointer flex items-center gap-3
-                              md:flex-col md:items-center md:text-center md:gap-2">
+                              md:flex-col md:items-center md:text-center md:gap-1">
+                    <span class="text-sm md:text-xs md:order-1
+                                 md:min-h-[3.5rem] md:flex md:items-end
+                                 md:justify-center md:leading-tight">
+                        {{ radio.choice_label }}
+                    </span>
                     <span class="md:order-2">
                         {{ radio.tag }}
-                    </span>
-                    <span class="text-sm md:text-xs md:order-1">
-                        {{ radio.choice_label }}
                     </span>
                 </label>
             {% endfor %}
