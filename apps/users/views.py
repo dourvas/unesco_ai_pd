@@ -21,20 +21,24 @@ from django.contrib.auth.models import User
 @login_required
 def onboarding_welcome(request):
     """
-    Welcome page - just intro, NO profile creation
+    Welcome page - just intro, NO profile creation.
+
+    Onboarding-complete check uses TeacherProfile.profile_completed as
+    the durable truth, with the session marker as a fallback for
+    in-flight state. The session-only check used to send users back to
+    the dashboard if they had finished onboarding earlier; profile
+    flag is more reliable across logout/login cycles.
     """
-    # Check if already completed onboarding
     try:
         profile = TeacherProfile.objects.get(user=request.user)
-        # Check if onboarding is complete
-        if request.session.get('onboarding_step', 0) >= 3:
+        if profile.profile_completed or request.session.get('onboarding_step', 0) >= 3:
             messages.info(request, 'You have already completed onboarding!')
             return redirect('users:dashboard')
         # Has profile but onboarding not complete - continue where they left off
     except TeacherProfile.DoesNotExist:
         # No profile yet - this is fine for welcome page
         pass
-    
+
     return render(request, 'onboarding/welcome.html')
 
 @login_required
@@ -367,12 +371,24 @@ def profile_edit(request):
 @login_required
 def dashboard(request):
     """
-    Dashboard - requires completed profile
+    Dashboard - requires completed profile.
+
+    Guards:
+      - No TeacherProfile row -> send to onboarding welcome.
+      - Profile row exists but profile_completed is False (e.g. created
+        by ai_disclosure_view's get_or_create before the user reached
+        Step 1) -> also send to onboarding welcome. The dashboard
+        contents only make sense once the user has filled in their
+        teaching context, AI experience, and goals.
     """
     try:
         profile = TeacherProfile.objects.get(user=request.user)
     except TeacherProfile.DoesNotExist:
         messages.info(request, 'Please complete your profile to access the dashboard.')
+        return redirect('users:onboarding_welcome')
+
+    if not profile.profile_completed:
+        messages.info(request, 'Please finish your onboarding before opening the dashboard.')
         return redirect('users:onboarding_welcome')
     
     # Build modules with progress
