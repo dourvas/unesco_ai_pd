@@ -723,3 +723,48 @@ class AilstMobileLikertRenderTest(_AilstViewTestBase):
                 anchor, body,
                 f"Anchor {anchor!r} must be rendered (CP 5: full anchors required).",
             )
+
+
+class AilstTemplateCommentLeakTest(_AilstViewTestBase):
+    """Regression for the multi-line {# ... #} comment leak bug found in
+    browser smoke test (2026-05-10). Django's {# ... #} is single-line only;
+    multi-line comments must use {% comment %} ... {% endcomment %} or they
+    render as plain text in the page body."""
+
+    def _assert_no_comment_leak(self, body, *, where):
+        # Specific phrases that appear inside our template comments. If any
+        # of these appear in rendered HTML, a {# ... #} multi-line was used
+        # by mistake. (We intentionally check for the comment-text contents
+        # rather than the {# delimiter so the test catches the actual leak.)
+        leaked_phrases = (
+            'Single AILST item: prompt text on the left',
+            'Per C.2.3 design decision D4',
+            'Desktop (md+): two-column grid',
+            '{% comment %}',
+            '{% endcomment %}',
+        )
+        for phrase in leaked_phrases:
+            self.assertNotIn(
+                phrase, body,
+                f"Template-comment text {phrase!r} leaked into rendered "
+                f"HTML on {where}. Multi-line Django comments must use "
+                f"{{% comment %}}...{{% endcomment %}}, not {{# ... #}}.",
+            )
+
+    def test_page_template_does_not_leak_comments(self):
+        AilstResponse.objects.create(
+            user=self.user,
+            timepoint='T0',
+            language='en',
+            instrument_version='ning_2025_v1',
+        )
+        resp = self.client.get(reverse('ailst:page', kwargs={'timepoint': 't0', 'page': 1}))
+        self._assert_no_comment_leak(resp.content.decode('utf-8'), where='page.html')
+
+    def test_complete_template_does_not_leak_comments(self):
+        row = self._seed_responses(through_page=4)
+        row.compute_and_save_scores()
+        row.completed_at = timezone.now()
+        row.save(update_fields=['completed_at'])
+        resp = self.client.get(reverse('ailst:complete', kwargs={'timepoint': 't0'}))
+        self._assert_no_comment_leak(resp.content.decode('utf-8'), where='complete.html')

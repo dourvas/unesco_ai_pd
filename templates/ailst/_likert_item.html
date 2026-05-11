@@ -1,7 +1,9 @@
 {% load i18n %}
-{# Single AILST item: prompt text on the left, 5 Likert radios on the right.
-   Desktop (md+): two-column grid, radios laid out horizontally with anchors below.
-   Mobile: stacked — prompt above, radios vertically stacked with full anchor labels. #}
+{% comment %}
+Single AILST item: prompt text on the left, 5 Likert radios on the right.
+Desktop (md+): two-column grid, radios laid out horizontally with anchors below.
+Mobile: stacked — prompt above, radios vertically stacked with full anchor labels.
+{% endcomment %}
 <div class="form-control mb-6 p-4 bg-base-200 rounded-lg
             md:grid md:grid-cols-5 md:gap-4 md:items-start
             {% if field.errors %}border border-error{% endif %}">
