@@ -29,6 +29,9 @@ urlpatterns = [
     # 6. AILST instrument administration (T0/T1/T2) — Phase C C.2.3
     path('ailst/', include('apps.ailst.urls', namespace='ailst')),
 
+    # 7. PROODOS Epilogue (post-M15, pre-T2) — Phase C C.2.5
+    path('epilogue/', include('apps.epilogue.urls', namespace='epilogue')),
+
 ]
 
 # Serve media and static files in development

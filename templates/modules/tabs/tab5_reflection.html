@@ -1182,8 +1182,9 @@ if (reflectionForm) {
                 // RAG feedback first, then clicks through to the AILST
                 // baseline.
                 if (result.ailst_redirect_url) {
+                    const label = result.ailst_redirect_label || 'Continue';
                     document.querySelectorAll('[data-reflection-continue]').forEach(btn => {
-                        btn.textContent = 'Continue to AI Literacy assessment';
+                        btn.textContent = label;
                         btn.onclick = () => { window.location.href = result.ailst_redirect_url; };
                     });
                 }

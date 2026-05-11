@@ -202,6 +202,43 @@ Standard research-ethics practice: participants receive feedback AFTER the study
 
 ---
 
+## TD-011 — Full PROODOS Epilogue implementation
+
+**Status:** Active. Defer to post-pilot Phase G/H (or whenever the synthesis-and-dialogue feature is prioritised).
+**Where:** `apps/epilogue/` (currently a stub) — needs full Stage 0..3 implementation, Gemini integration, and Learning Portrait PDF export.
+
+C.2.5 (10 May 2026) introduced a placeholder for the PROODOS Epilogue so the post-M15 → T2 redirect chain can be wired research-correctly during the pilot. The current implementation is a single page with a "Mark complete and continue" button that flips `EpilogueCompletion.completed_at` and routes the user to AILST T2 (consent-gated) or the dashboard.
+
+The full feature is specified in:
+
+- `M16_CAPSTONE_REFLECTION_SPEC.md` (March 2026 — pedagogical rationale + 3-stage dialogue + Learning Portrait)
+- The April 2026 Patch Notes ("PROODOS Epilogue — Patch Notes", supplied during C.2.5 design):
+  - Renames the feature from "M16 Capstone" to "PROODOS Epilogue" (DB code `EPILOGUE`, not `M16`).
+  - Adds **Stage 0: Personal Evolution Dashboard** in front of the three dialogue stages (live DTP curve + RTM tensions, no input required).
+  - Establishes that the Epilogue is **a separate entity from the 15 UNESCO-aligned modules** (not a 16th module). The dissertation describes it as "a methodologically distinct post-completion feature that synthesises the research corpus generated across M1-M15."
+
+**Forward path:**
+
+1. **Schema extension** to the existing `epilogue_completions` table — add per-stage timestamps (`stage0_seen_at`, `stage1_completed_at` .. `stage3_completed_at`), the Gemini turn log (`dialogue_turns` JSONField, schema: `[{role, content, generated_at}]`), and `learning_portrait_text` (TextField) + `learning_portrait_pdf` (FileField / path).
+2. **Stage 0 — Personal Evolution Dashboard**: read DTP trajectory from `rag_queries`, RTM tensions from `reflection_tensions`. Render as a 4-line chart (one line per AILST factor across T0/T1/T2 if available, plus the M2-M15 DTP/RTM trajectory). The dashboard is silent — no input from the educator, just visualization.
+3. **Stages 1-3 (Look Back / Look In / Look Forward)**: Gemini-driven dialogue, ≤150 words per response, max 5 turns total. Context window includes DTP trajectory data + RTM tension summary (per Section 3 of the March spec).
+4. **Output: Learning Portrait**: 300-400 word synthesis composed from the educator's responses across the three stages, rendered both as in-page text and exported as PDF.
+5. **Per-user reusability**: decide whether the Epilogue is one-shot (current model behaviour — `OneToOneField` on `EpilogueCompletion`) or whether the educator can return to refresh the dashboard / re-do the dialogue. The patch notes raised this as an open question (Q5).
+
+**Open questions inherited from the spec (still unresolved):**
+
+- Q1-Q3 from the March spec (academic-original; copied into the implementation when ready).
+- Q4: dashboard always-visible vs. one-shot during the dialogue.
+- Q5: re-entry policy.
+- Q6: Learning Portrait PDF includes dashboard screenshot or text only.
+
+**Effort estimate:** ~1500-2000 LOC (Gemini integration is the heaviest piece; dashboard chart + PDF generation each ~300 LOC; schema migration trivial).
+
+**Discovered / scoped in:** C.2.5 design proposal (10 May 2026).
+**Resolved at:** Post-pilot Phase G/H.
+
+---
+
 ## TD entry conventions
 
 When adding a new entry:

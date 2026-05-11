@@ -112,6 +112,10 @@ class AilstModuleGatingTest(TestCase):
         self.assertTrue(data.get('success'), msg=data)
         self.assertTrue(data.get('module_completed'))
         self.assertEqual(data.get('ailst_redirect_url'), '/ailst/t1/')
+        self.assertEqual(
+            data.get('ailst_redirect_label'),
+            'Continue to AI Literacy assessment',
+        )
 
     def test_completing_M5_no_redirect_when_T1_already_completed(self):
         self._ensure_progress_completable('M5')
@@ -132,12 +136,22 @@ class AilstModuleGatingTest(TestCase):
             "Idempotency: completed T1 must suppress the redirect.",
         )
 
-    def test_completing_M15_redirects_to_T2_when_consent_and_T2_not_done(self):
+    def test_completing_M15_redirects_to_epilogue_not_to_T2(self):
+        """C.2.5: T2 is reached via the Epilogue, not directly from M15.
+
+        The mark_tab_complete response now sends a just-completed M15
+        user to /epilogue/. The Epilogue completion view is then
+        responsible for the (consent-gated) onward redirect to /ailst/t2/.
+        """
         self._ensure_progress_completable('M15')
         resp = self._post_reflection('M15', self._valid_reflection_text())
         data = resp.json()
         self.assertTrue(data.get('success'), msg=data)
-        self.assertEqual(data.get('ailst_redirect_url'), '/ailst/t2/')
+        self.assertEqual(data.get('ailst_redirect_url'), '/epilogue/')
+        self.assertEqual(
+            data.get('ailst_redirect_label'),
+            'Continue to PROODOS Epilogue',
+        )
 
     def test_completing_M5_no_redirect_when_user_lacks_research_consent(self):
         self.profile.research_consent = False

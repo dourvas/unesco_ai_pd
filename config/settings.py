@@ -32,6 +32,8 @@ INSTALLED_APPS = [
     # Phase C — EU AI Act + AILST baseline (2026-05)
     'apps.compliance',
     'apps.ailst',
+    # Phase C C.2.5 — PROODOS Epilogue stub (2026-05)
+    'apps.epilogue',
 ]
 
 MIDDLEWARE = [

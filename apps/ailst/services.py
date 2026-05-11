@@ -13,13 +13,21 @@ from apps.ailst.models import AilstResponse
 
 
 # Module-code -> AILST timepoint that should be administered immediately
-# after that module is completed. Per the research design:
-#   - M5  marks the end of the Acquire phase  -> T1
-#   - M15 marks the end of the programme       -> T2
+# after that module is completed.
+#
+# Per the research design:
+#   - M5 marks the end of the Acquire phase -> T1 (administered now).
+#   - T2 does NOT trigger from M15 directly. The PROODOS Epilogue
+#     (apps.epilogue) sits between M15 completion and T2: the user
+#     finishes M15, is sent to /epilogue/, and only after the Epilogue
+#     completion view fires does the user reach /ailst/t2/. See
+#     proodos_files/PROODOS Epilogue Patch Notes (April 2026) and
+#     C.2.5 commit notes for the rationale (T2 captures post-synthesis
+#     attitudes, not post-M15-content attitudes).
+#
 # Modules not in this mapping do not trigger any AILST redirect.
 POST_MODULE_AILST_TIMEPOINT = {
-    'M5':  'T1',
-    'M15': 'T2',
+    'M5': 'T1',
 }
 
 

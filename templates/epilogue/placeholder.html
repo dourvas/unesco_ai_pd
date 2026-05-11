@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+{% load i18n %}
+
+{% block title %}{% trans "PROODOS Epilogue" %}{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto py-12 px-4">
+
+    <div class="card bg-base-100 shadow-xl">
+        <div class="card-body">
+
+            <h1 class="card-title text-2xl text-primary mb-2">
+                {% trans "PROODOS Epilogue" %}
+            </h1>
+
+            <p class="text-base mb-4">
+                {% blocktrans %}
+                Welcome to the PROODOS Epilogue — a post-completion dialogic
+                reflection feature, distinct from the fifteen UNESCO-aligned
+                modules. The Epilogue invites you to look back across your
+                trajectory, recognise the tensions that surfaced, and decide
+                what you will carry forward.
+                {% endblocktrans %}
+            </p>
+
+            <div class="alert alert-info mb-4">
+                <div>
+                    <h3 class="font-semibold">{% trans "Feature under construction" %}</h3>
+                    <p class="text-sm mt-1">
+                        {% blocktrans %}
+                        The full Epilogue (Personal Evolution Dashboard, three-stage
+                        Gemini dialogue, and Learning Portrait PDF) is being built.
+                        For the duration of the pilot this page acts as a transition
+                        point: clicking the button below records that you have reached
+                        the end of the programme and forwards you to the closing AI
+                        literacy self-assessment.
+                        {% endblocktrans %}
+                    </p>
+                </div>
+            </div>
+
+            <p class="text-sm text-base-content/70 mb-4">
+                {% trans "Your reflections from M1-M15 are preserved and will appear here once the full Epilogue is released. You do not need to repeat any prior work." %}
+            </p>
+
+            {% if already_completed %}
+                <div class="alert alert-success mb-4">
+                    <span>
+                        {% blocktrans with completed_on=completion.completed_at|date:"M d, Y" %}
+                        You reached the Epilogue on {{ completed_on }}.
+                        {% endblocktrans %}
+                    </span>
+                </div>
+            {% endif %}
+
+            <form method="post" action="{% url 'epilogue:complete' %}"
+                  class="card-actions justify-end mt-4">
+                {% csrf_token %}
+                <a href="{% url 'users:dashboard' %}" class="btn btn-ghost">
+                    {% trans "Back to dashboard" %}
+                </a>
+                <button type="submit" class="btn btn-primary btn-lg">
+                    {% if already_completed %}
+                        {% trans "Continue" %}
+                    {% else %}
+                        {% trans "Mark complete and continue" %}
+                    {% endif %}
+                </button>
+            </form>
+
+        </div>
+    </div>
+
+</div>
+{% endblock %}

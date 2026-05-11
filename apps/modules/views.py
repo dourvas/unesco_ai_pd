@@ -795,17 +795,26 @@ def mark_tab_complete(request, code, tab_name):
         # Mark tab complete
         next_tab = progress.mark_tab_complete(tab_name, **kwargs)
 
-        # Phase C C.2.4 — AILST research-instrument gating.
-        # When the module that was just completed is M5 or M15 (and the
-        # user has active research_consent and the matching AILST
-        # timepoint is not already done), redirect the next page to
-        # /ailst/t1/ or /ailst/t2/ instead of advancing within the module
-        # tabs. The helper returns None when no redirect is required, in
-        # which case we fall through to the normal completion flow.
+        # Phase C C.2.4 + C.2.5 — post-module feature redirects.
+        # After a module's progress.completed_at is freshly set we ask
+        # two helpers in turn which feature (if any) should take over
+        # the next page:
+        #   1. AILST T1 after M5 (C.2.4, consent-gated).
+        #   2. PROODOS Epilogue after M15 (C.2.5, no consent gate);
+        #      the Epilogue then routes to /ailst/t2/ for consenting
+        #      users who have not yet done T2.
+        # Both helpers return None when no redirect applies, in which
+        # case we fall through to the normal next-tab flow.
         from apps.ailst.services import get_post_module_redirect_url
+        from apps.epilogue.services import get_post_module_epilogue_redirect_url
+
         ailst_redirect_url = None
+        epilogue_redirect_url = None
         if progress.completed_at is not None:
             ailst_redirect_url = get_post_module_redirect_url(
+                request.user, module.code,
+            )
+            epilogue_redirect_url = get_post_module_epilogue_redirect_url(
                 request.user, module.code,
             )
 
@@ -816,8 +825,18 @@ def mark_tab_complete(request, code, tab_name):
             'module_completed': progress.completed_at is not None,
             'completion_percentage': progress.completion_percentage,
         }
+        # Re-use the existing ailst_redirect_url JSON key for both
+        # destinations so the existing frontend handlers in
+        # module_detail.html and tab5_reflection.html keep working
+        # without modification — they navigate to whatever URL the
+        # server returns. (Key name is now a slight misnomer but
+        # changing it would force a frontend churn for zero gain.)
         if ailst_redirect_url:
             response_data['ailst_redirect_url'] = ailst_redirect_url
+            response_data['ailst_redirect_label'] = 'Continue to AI Literacy assessment'
+        elif epilogue_redirect_url:
+            response_data['ailst_redirect_url'] = epilogue_redirect_url
+            response_data['ailst_redirect_label'] = 'Continue to PROODOS Epilogue'
         
         # Add feedback and peer synthesis to response if this is reflection
         # Add feedback, peer synthesis, and RTM tensions to response
