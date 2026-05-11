@@ -239,6 +239,56 @@ The full feature is specified in:
 
 ---
 
+## TD-012 — Sequential module-prerequisite gating (M1 → M2 → … → M15)
+
+**Status:** Active. Defer to **pre-pilot** (must close before recruiting real participants).
+**Where:** `apps/modules/views.py::ModuleDetailView.get` — pre-render check; possibly also a guard inside `mark_tab_complete`.
+
+Discovered during the 2026-05-11 smoke test: a logged-in user with the right consent state can navigate directly to `/modules/M5/` (or any module URL) without having started, let alone completed, the preceding modules. There is currently no enforcement that M_n requires M_{n-1}.completed_at IS NOT NULL.
+
+This is convenient for the C.2.3 / C.2.4 / C.2.5 smoke tests (the tester can jump to M5 to verify the M5 → T1 redirect chain in seconds rather than completing four prior modules). **It must NOT survive into the real pilot** — research design requires sequential progression: each AILST timepoint measures the educator after a specific dose of the intervention, and skipping modules invalidates that measurement.
+
+**Forward path:**
+
+1. Add a helper `apps.modules.services.get_module_prerequisite_block(user, module)` that returns the first uncompleted prerequisite Module (or None if the path is clear).
+2. In `ModuleDetailView.get` (and in `mark_tab_complete` as a second-line defence against direct AJAX), call the helper. If it returns a Module, redirect to that module's detail page with a flash message ("Please complete <code> before opening <target>.").
+3. Decide whether to use the existing `Module.prerequisites` JSONField (which currently holds module-id lists per the model docstring but is not consulted at runtime), or derive prerequisites purely from `order_index` (M_n requires every module with smaller order_index). The simpler order_index approach matches the linear UNESCO progression and avoids stale prerequisite metadata.
+4. Add tests: M5 GET without M4 done → redirect to M4; M2 GET without M1 done → redirect to M1; M1 GET with no prior modules → renders; admin or staff bypass if needed for support.
+
+**Why this is also a research-design concern:** the AILST T1 administration captures the participant's literacy AFTER the Acquire phase (M1-M5). If the participant jumped straight to M5, the T1 measurement is contaminated. Same for T2 after the full programme.
+
+**Estimated effort:** ~60-100 LOC + tests. Trivial against the value.
+
+**Discovered in:** smoke test 2026-05-11 (John reached M5 directly, was able to complete it and trigger T1 without doing M1-M4).
+**Resolved at:** pre-pilot hardening pass (before user wipe CP 11 + real participant recruitment).
+
+---
+
+## TD-013 — Gate `/epilogue/` on M15 completion
+
+**Status:** Active. Defer to **pre-pilot** (same window as TD-012).
+**Where:** `apps/epilogue/views.py::epilogue_placeholder_view` — add a prerequisite check at the top.
+
+Discovered during the same 2026-05-11 smoke test: a logged-in user can navigate directly to `/epilogue/` without having completed M15 (or, given TD-012, without having completed M1-M14 either). The placeholder page renders, the user clicks "Mark complete and continue", `EpilogueCompletion.completed_at` is flipped, and they are forwarded to `/ailst/t2/`. This skips the entire intervention.
+
+Currently the view's only guard is `@login_required`. The C.2.5 services helper `get_post_module_epilogue_redirect_url` correctly returns `/epilogue/` only after M15 completion, but the URL itself is open.
+
+**Forward path:**
+
+1. At the top of `epilogue_placeholder_view`, check whether the user has a `UserModuleProgress` row for M15 with `completed_at IS NOT NULL`.
+2. If not, redirect to `/dashboard/` (or to whatever the next-up module is, if TD-012 lands first and we want a coherent forward path) with a flash message ("Please complete Module 15 before opening the Epilogue.").
+3. Mirror the guard in `epilogue_complete_view` (POST) as a second-line defence against the user crafting the POST directly via curl.
+4. Tests: GET without M15 done → redirect; GET with M15 done → renders; POST without M15 done → redirect, no completion row written.
+
+**Coupling with TD-010 (full Epilogue):** when TD-010 lands (Stage 0 dashboard, Gemini dialogue, Learning Portrait), this gate must remain — otherwise the Personal Evolution Dashboard would render with incomplete trajectory data.
+
+**Estimated effort:** ~30-50 LOC + tests.
+
+**Discovered in:** smoke test 2026-05-11 (John reached `/epilogue/` via direct URL after only M5).
+**Resolved at:** pre-pilot hardening pass (paired with TD-012).
+
+---
+
 ## TD entry conventions
 
 When adding a new entry:
