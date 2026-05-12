@@ -47,7 +47,15 @@ from apps.compliance.services import (
 )
 
 
-ERASURE_CONFIRMATION_TOKEN = 'ΔΙΑΓΡΑΦΗ'
+# Confirmation token for the irreversible erasure action. English
+# 'DELETE' matches the current UI language and follows the industry
+# pattern (GitHub, AWS console, etc.). When the platform ships a Greek
+# UI, this should localise to 'ΔΙΑΓΡΑΦΗ' via Django's translation
+# system rather than the model-level constant. (The earlier design
+# briefly proposed hard-coding the Greek token, but that conflicts
+# with the rest of the English UI the participant is reading at this
+# moment.)
+ERASURE_CONFIRMATION_TOKEN = 'DELETE'
 
 
 def _client_ip(request):

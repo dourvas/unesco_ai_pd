@@ -1043,8 +1043,9 @@ class ErasureConfirmPageTest(_PrivacyTestBase):
         self.assertEqual(resp.status_code, 200)
         self.assertTemplateUsed(resp, 'compliance/erasure_confirm.html')
         body = resp.content.decode('utf-8')
-        # Greek confirmation token rendered into the page.
-        self.assertIn('ΔΙΑΓΡΑΦΗ', body)
+        # English confirmation token rendered into the page (matches the
+        # current English UI; industry standard pattern).
+        self.assertIn('DELETE', body)
         # Form input always present and not JS-gated (CP-8).
         self.assertIn('name="confirmation"', body)
         self.assertNotIn('disabled', body.lower().split('<button')[1] if '<button' in body else '')
@@ -1055,7 +1056,7 @@ class ErasureConfirmPageTest(_PrivacyTestBase):
         original_username = self.user.username
         resp = self.client.post(
             reverse('compliance:erasure_execute'),
-            data={'confirmation': 'DELETE'},  # wrong token
+            data={'confirmation': 'delete'},  # wrong: case-sensitive
         )
         self.assertEqual(resp.status_code, 400)
         self.user.refresh_from_db()
@@ -1082,7 +1083,7 @@ class ErasureExecuteTest(_PrivacyTestBase):
     def _post_erase(self):
         return self.client.post(
             reverse('compliance:erasure_execute'),
-            data={'confirmation': 'ΔΙΑΓΡΑΦΗ'},
+            data={'confirmation': 'DELETE'},
         )
 
     def test_post_clears_user_and_profile_pii(self):
@@ -1268,7 +1269,7 @@ class C4AtomicityAndEdgeCaseTest(_PrivacyTestBase):
     def _post_erase(self):
         return self.client.post(
             reverse('compliance:erasure_execute'),
-            data={'confirmation': 'ΔΙΑΓΡΑΦΗ'},
+            data={'confirmation': 'DELETE'},
         )
 
     def test_revoke_then_erasure_in_sequence_clears_ip_and_marks_revoked(self):

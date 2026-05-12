@@ -151,7 +151,22 @@ Already detailed in D4 shape. Defaults:
 - **Verbatim consent text** is included (Art. 15 explicitly covers "the information given to the data subject").
 - **AI outputs** (RTM, DTP, RAG feedback) — see D11.
 
-### D6 — Erasure confirmation: Greek free-text "ΔΙΑΓΡΑΦΗ"
+### D6 — Erasure confirmation: free-text token matching UI language
+
+**Status:** D6 revised mid-implementation (2026-05-12). The original
+decision was for the Greek token ΔΙΑΓΡΑΦΗ, reasoning that the
+participant pool is Greek-speaking. On review, the rest of the UI
+(warning text, form labels, button labels) is in English, so asking
+for a Greek token mid-flow is inconsistent — the user is reading an
+English destructive-action warning and is then asked to switch
+language to confirm. **Final:** the token is `DELETE` (industry
+standard, matches the current UI language). When the platform ships
+a Greek UI, the token should localise to `ΔΙΑΓΡΑΦΗ` via Django's
+translation system rather than being a model constant — that swap
+happens together with the rest of the UI strings, keeping the
+participant in a single linguistic context.
+
+Original D6 wording (kept for design-history continuity):
 
 **Decision:** Two-step. The "Delete my account" button on the dashboard navigates to `/profile/privacy/erase/`, which shows:
 
