@@ -46,4 +46,14 @@ urlpatterns = [
         views.export_data_view,
         name='export_data',
     ),
+    path(
+        'profile/privacy/erase/',
+        views.erasure_confirm_view,
+        name='erasure_confirm',
+    ),
+    path(
+        'profile/privacy/erase/confirm/',
+        views.erasure_execute_view,
+        name='erasure_execute',
+    ),
 ]

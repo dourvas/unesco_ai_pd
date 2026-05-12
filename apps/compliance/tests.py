@@ -1029,3 +1029,294 @@ class DataExportTest(_PrivacyTestBase):
                     'peer_synthesis', 'rag_queries', 'ai_disputes'):
             self.assertIn(sub, ai, 'missing ai_outputs.' + sub)
             self.assertEqual(ai[sub], [], sub + ' must be empty array, not missing')
+
+
+# ============================================================================
+# C.4 commit 3 — GDPR Art. 17 right to erasure (account anonymization)
+# ============================================================================
+
+
+class ErasureConfirmPageTest(_PrivacyTestBase):
+
+    def test_get_renders_warning_and_form(self):
+        resp = self.client.get(reverse('compliance:erasure_confirm'))
+        self.assertEqual(resp.status_code, 200)
+        self.assertTemplateUsed(resp, 'compliance/erasure_confirm.html')
+        body = resp.content.decode('utf-8')
+        # Greek confirmation token rendered into the page.
+        self.assertIn('ΔΙΑΓΡΑΦΗ', body)
+        # Form input always present and not JS-gated (CP-8).
+        self.assertIn('name="confirmation"', body)
+        self.assertNotIn('disabled', body.lower().split('<button')[1] if '<button' in body else '')
+
+    def test_post_without_exact_token_returns_400_and_no_db_write(self):
+        from apps.users.models import TeacherProfile
+
+        original_username = self.user.username
+        resp = self.client.post(
+            reverse('compliance:erasure_execute'),
+            data={'confirmation': 'DELETE'},  # wrong token
+        )
+        self.assertEqual(resp.status_code, 400)
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.username, original_username)
+        # Profile untouched.
+        profile = TeacherProfile.objects.get(user=self.user)
+        self.assertFalse(profile.research_data_opted_out)
+
+
+_RAG_QUERIES_DDL_ERASURE = _RAG_QUERIES_DDL  # reuse from earlier in file
+
+
+class ErasureExecuteTest(_PrivacyTestBase):
+    """Covers the full erasure POST. Uses the shared _PrivacyTestBase
+    setUp; the rag_queries DDL is applied at class setUp because the
+    anonymize_user service also touches that table."""
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        with connection.cursor() as cur:
+            cur.execute(_RAG_QUERIES_DDL_ERASURE)
+
+    def _post_erase(self):
+        return self.client.post(
+            reverse('compliance:erasure_execute'),
+            data={'confirmation': 'ΔΙΑΓΡΑΦΗ'},
+        )
+
+    def test_post_clears_user_and_profile_pii(self):
+        from apps.users.models import TeacherProfile
+
+        self.user.first_name = 'Test'
+        self.user.last_name = 'User'
+        self.user.email = 'test@example.com'
+        self.user.save()
+        self.profile.first_name = 'Test'
+        self.profile.last_name = 'User'
+        self.profile.save()
+
+        self._post_erase()
+
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.username, 'anonymized_{}'.format(self.user.id))
+        self.assertEqual(
+            self.user.email,
+            'deleted-{}@anonymized.local'.format(self.user.id),
+        )
+        self.assertEqual(self.user.first_name, '')
+        self.assertEqual(self.user.last_name, '')
+        self.assertFalse(self.user.is_active)
+        self.assertFalse(self.user.has_usable_password())
+
+        profile = TeacherProfile.objects.get(user=self.user)
+        self.assertEqual(profile.first_name, '')
+        self.assertEqual(profile.last_name, '')
+
+    def test_post_sets_opt_out_and_clears_ack_at(self):
+        from apps.users.models import TeacherProfile
+        self._post_erase()
+        profile = TeacherProfile.objects.get(user=self.user)
+        self.assertTrue(profile.research_data_opted_out)
+        self.assertIsNone(profile.ai_disclosure_acknowledged_at)
+
+    def test_post_preserves_consentrecord_rows_clears_ip(self):
+        cr = ConsentRecord.objects.create(
+            user=self.user, consent_type='research_participation',
+            granted=True, consent_text='verbatim text', version='v1_pre_irb',
+            ip_address='10.0.0.1',
+        )
+        self._post_erase()
+        cr.refresh_from_db()
+        self.assertIsNone(cr.ip_address)
+        # Audit fields intact.
+        self.assertEqual(cr.consent_text, 'verbatim text')
+        self.assertEqual(cr.version, 'v1_pre_irb')
+        self.assertTrue(cr.granted)
+
+    def test_post_preserves_ailst_responses(self):
+        from apps.ailst.models import AilstResponse
+        AilstResponse.objects.create(
+            user=self.user, timepoint='T0', language='en',
+            instrument_version='ning_2025_v1',
+            responses={'P1': 4}, completed_at=timezone.now(),
+        )
+        self._post_erase()
+        self.assertEqual(
+            AilstResponse.objects.filter(user=self.user).count(), 1,
+            'Erasure must preserve AILST research data with the user_id '
+            'pointer to the anonymized auth_user row.',
+        )
+
+    def test_post_clears_module_progress_reflection_fields_keeps_metadata(self):
+        from apps.modules.models import Module, UserModuleProgress
+        m, _ = Module.objects.get_or_create(
+            code='ERASE1',
+            defaults={
+                'title': 'Erase Test', 'description': 'd',
+                'unesco_aspect': 'ethics', 'proficiency_level': 'Acquire',
+                'order_index': 98,
+            },
+        )
+        p = UserModuleProgress.objects.create(
+            user=self.user, module=m,
+            reflection_text='my reflection',
+            reflection_dtp='dtp', reflection_rag_feedback='rag',
+            reflection_peer_synthesis='peer',
+            completion_percentage=80,
+        )
+        self._post_erase()
+        p.refresh_from_db()
+        self.assertEqual(p.reflection_text, '')
+        self.assertEqual(p.reflection_dtp, '')
+        self.assertEqual(p.reflection_rag_feedback, '')
+        self.assertEqual(p.reflection_peer_synthesis, '')
+        # Non-PII metadata retained.
+        self.assertEqual(p.completion_percentage, 80)
+
+    def test_post_logs_user_out_and_redirects_to_landing(self):
+        resp = self._post_erase()
+        self.assertEqual(resp.status_code, 302)
+        self.assertIn('/', resp.url)
+        self.assertNotIn('_auth_user_id', self.client.session)
+
+    def test_irb_audit_query_returns_anonymized_users_consent_history(self):
+        """CP-7 — post-erasure, ConsentRecord rows for this user remain
+        queryable via the standard IRB audit filter
+        (consent_type='research_participation', granted=True) and the
+        consent_text / granted_at / version are all preserved.
+        """
+        from apps.compliance.copy import RESEARCH_PARTICIPATION_TEXT_V1_PRE_IRB
+        from apps.compliance.services import record_consent
+
+        record_consent(
+            user=self.user,
+            consent_type='research_participation',
+            consent_text=RESEARCH_PARTICIPATION_TEXT_V1_PRE_IRB,
+            version='v1_pre_irb',
+            ip_address='192.0.2.1',
+        )
+        user_pk = self.user.pk
+
+        self._post_erase()
+
+        # Same IRB-flavoured query — still returns the row.
+        cr = ConsentRecord.objects.filter(
+            user_id=user_pk,
+            consent_type='research_participation',
+            granted=True,
+        ).first()
+        self.assertIsNotNone(
+            cr,
+            'IRB audit query must still find the historical consent row '
+            'after erasure (7-year retention contract).',
+        )
+        self.assertEqual(cr.consent_text, RESEARCH_PARTICIPATION_TEXT_V1_PRE_IRB)
+        self.assertEqual(cr.version, 'v1_pre_irb')
+        self.assertIsNone(cr.ip_address)
+
+
+class C4SupersedeUnitTest(TestCase):
+    """CP-6 — replaces the original concurrent-POST test with a direct
+    unit test of revoke_consent's behaviour when multiple active rows
+    exist for the same (user, consent_type). The supersede pattern in
+    record_consent normally prevents this state from arising, but
+    direct ORM inserts can bypass the helper (e.g. data migrations),
+    and revoke_consent must still handle it correctly.
+    """
+
+    def test_revoke_revokes_all_active_rows_for_consent_type(self):
+        user = User.objects.create_user(username='supersede_user', password='x')
+        ConsentRecord.objects.create(
+            user=user, consent_type='research_participation', granted=True,
+            consent_text='v1 text', version='v1',
+        )
+        ConsentRecord.objects.create(
+            user=user, consent_type='research_participation', granted=True,
+            consent_text='v2 text', version='v2',
+        )
+        self.assertEqual(
+            ConsentRecord.objects.filter(
+                user=user, consent_type='research_participation',
+                revoked_at__isnull=True,
+            ).count(),
+            2,
+            'Pre-condition: two active rows from direct ORM inserts.',
+        )
+        revoked = revoke_consent(
+            user=user, consent_type='research_participation',
+        )
+        self.assertEqual(revoked, 2)
+        self.assertEqual(
+            ConsentRecord.objects.filter(
+                user=user, consent_type='research_participation',
+                revoked_at__isnull=True,
+            ).count(),
+            0,
+            'Post-condition: no orphan active rows after revoke.',
+        )
+
+
+class C4AtomicityAndEdgeCaseTest(_PrivacyTestBase):
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        with connection.cursor() as cur:
+            cur.execute(_RAG_QUERIES_DDL_ERASURE)
+
+    def _post_erase(self):
+        return self.client.post(
+            reverse('compliance:erasure_execute'),
+            data={'confirmation': 'ΔΙΑΓΡΑΦΗ'},
+        )
+
+    def test_revoke_then_erasure_in_sequence_clears_ip_and_marks_revoked(self):
+        """Sequential rather than parallel — the Django TestCase does
+        not give us true transaction overlap. Verifies the realistic
+        order that a confused user might take: withdraw a consent and
+        then immediately request erasure."""
+        cr = ConsentRecord.objects.create(
+            user=self.user, consent_type='research_participation',
+            granted=True, consent_text='t', version='v1_pre_irb',
+            ip_address='10.1.1.1',
+        )
+        self.client.post(reverse('compliance:revoke_research'))
+        self._post_erase()
+        cr.refresh_from_db()
+        self.assertIsNotNone(cr.revoked_at)
+        self.assertIsNone(cr.ip_address)
+
+    def test_post_erasure_request_treated_as_anonymous(self):
+        """After erasure, is_active=False. A subsequent request issued
+        with the same cookie / session is bounced as anonymous —
+        login_required redirects to /login/."""
+        self._post_erase()
+        # The view logout()ed us, but for completeness force_login on a
+        # different user is what would happen in the wild — here we
+        # simply attempt an authenticated route with no session.
+        resp = self.client.get(reverse('compliance:privacy_dashboard'))
+        self.assertEqual(resp.status_code, 302)
+        self.assertIn('/login/', resp.url)
+
+    def test_idempotent_anonymize_user_is_a_noop_second_call(self):
+        """Calling the service helper twice on the same user produces
+        no errors and no further state change: username remains the
+        anonymized sentinel, email the anonymized sentinel, ConsentRecord
+        rows untouched."""
+        from apps.compliance.services import anonymize_user
+
+        anonymize_user(self.user)
+        first_username = self.user.username
+        first_email = self.user.email
+
+        anonymize_user(self.user)
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.username, first_username)
+        self.assertEqual(self.user.email, first_email)
+        # And not a chain like anonymized_anonymized_42.
+        self.assertEqual(
+            self.user.username.count('anonymized_'),
+            1,
+            'Idempotency: re-anonymization must not stack prefixes.',
+        )

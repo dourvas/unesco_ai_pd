@@ -40,10 +40,14 @@ from apps.compliance.copy import (
 )
 from apps.compliance.models import ConsentRecord
 from apps.compliance.services import (
+    anonymize_user,
     gather_user_export,
     record_consent,
     revoke_consent,
 )
+
+
+ERASURE_CONFIRMATION_TOKEN = 'ΔΙΑΓΡΑΦΗ'
 
 
 def _client_ip(request):
@@ -242,6 +246,49 @@ def revoke_research_view(request):
           '"Delete my account" option below.'),
     )
     return redirect('compliance:privacy_dashboard')
+
+
+@login_required
+def erasure_confirm_view(request):
+    """GET /profile/privacy/erase/ — display the irreversible-action
+    warning and the Greek free-text confirmation form. The submit
+    button is always enabled; server-side validation is the single
+    point of enforcement (CP-8 accessibility decision).
+    """
+    error = None
+    if request.method == 'POST':
+        # Defensive: this view is GET-only; POSTs should target
+        # erasure_execute_view directly. Redirect there.
+        return redirect('compliance:erasure_execute')
+    return render(request, 'compliance/erasure_confirm.html', {
+        'expected_token': ERASURE_CONFIRMATION_TOKEN,
+        'error': error,
+    })
+
+
+@login_required
+@require_POST
+def erasure_execute_view(request):
+    """POST /profile/privacy/erase/confirm/ — validate the Greek token
+    and run the anonymization service. On success, log the user out
+    and redirect to the landing page with a closing flash.
+    """
+    submitted = request.POST.get('confirmation', '')
+    if submitted != ERASURE_CONFIRMATION_TOKEN:
+        return render(request, 'compliance/erasure_confirm.html', {
+            'expected_token': ERASURE_CONFIRMATION_TOKEN,
+            'error': _('The confirmation text did not match. Please type the '
+                       'word exactly as shown to proceed.'),
+        }, status=400)
+
+    anonymize_user(request.user)
+
+    logout(request)
+    messages.info(
+        request,
+        _('Your account has been anonymized. Thank you for your participation.'),
+    )
+    return redirect('users:landing')
 
 
 @login_required

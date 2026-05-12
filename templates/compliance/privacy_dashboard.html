@@ -276,16 +276,27 @@
     </div>
 
     {# ============================================================ #}
-    {# Card 3 — Delete account. Filled in commit 3 of C.4.           #}
+    {# Card 3 — Delete account (GDPR Art. 17)                        #}
     {# ============================================================ #}
     <div class="card bg-base-100 shadow-xl">
         <div class="card-body">
             <h2 class="card-title text-xl text-error">
                 {% trans "Delete my account" %}
             </h2>
-            <p class="text-sm text-base-content/70">
-                {% trans "Permanently anonymise your account (GDPR Article 17 right to erasure). Coming in the next release." %}
+            <p class="text-sm text-base-content/70 mb-4">
+                {% blocktrans %}
+                Permanently anonymise your account under GDPR Article 17.
+                Identifying information is removed; research contributions
+                remain attached to an anonymous account and are excluded
+                from future analyses through your opt-out. The action is
+                irreversible.
+                {% endblocktrans %}
             </p>
+            <div class="card-actions justify-end">
+                <a href="{% url 'compliance:erasure_confirm' %}" class="btn btn-outline btn-error">
+                    {% trans "Delete my account" %}
+                </a>
+            </div>
         </div>
     </div>
 

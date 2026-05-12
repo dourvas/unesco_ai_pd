@@ -293,6 +293,44 @@ Currently the view's only guard is `@login_required`. The C.2.5 services helper 
 
 ---
 
+## TD-014 — Selective deletion of individual reflections / AILST responses
+
+**Status:** Active. Defer to post-pilot Phase G/H.
+**Where:** new buttons in `/profile/privacy/` and per-item endpoints in `apps/compliance/views.py`.
+
+C.4 ships full account anonymization (Art. 17) as the only deletion path. GDPR Art. 17 is satisfied by erasure of "the data"; participants can already remove everything via that one action. The fine-grained "delete this specific reflection" / "delete this specific AILST response" experience requires additional UX and per-type cascade rules (clearing a reflection also clears its RAG feedback and DTP narrative; deleting an AILST response also clears the cached factor scores), plus consistency rules between selective delete and the JSON export.
+
+Out of scope for C.4. Implement in Phase G/H when the platform has lived data from the pilot and the question "which items would participants actually want to delete?" can be answered empirically.
+
+---
+
+## TD-015 — Data export as PDF (in addition to JSON)
+
+**Status:** Active. Defer to post-pilot Phase G/H.
+**Where:** `apps/compliance/services.py` + `apps/compliance/views.py`.
+
+C.4 ships GDPR Art. 15 right-of-access as a JSON download. Some participants — particularly older educators less comfortable with raw JSON — would benefit from a human-readable PDF version (sections per data category, table of consents, narrative summary, etc.). Requires reportlab or weasyprint integration, page-break and pagination logic, embedded fonts for Greek text rendering.
+
+The JSON form is the canonical Art. 15 deliverable and is enough for compliance. PDF is a UX nicety.
+
+---
+
+## TD-016 — 7-year ConsentRecord retention cleanup
+
+**Status:** Active. Defer to Phase H (production-scale operations).
+**Where:** `apps/compliance/management/commands/expire_old_consents.py` (new) + scheduled task.
+
+ConsentRecord rows are kept indefinitely post-erasure per D12 of the C.4 design (IRB / GDPR audit window of 7 years). Beyond 7 years, rows can and should be deleted under data minimisation. This needs:
+
+  - Management command `expire_old_consents --commit` that deletes rows where `granted_at < NOW - INTERVAL '7 years'` AND the linked user is anonymized (auth_user with `is_active=False` and the anonymized-username sentinel).
+  - Nightly schedule (or weekly) via cron / systemd timer / Django-Q.
+  - Dry-run mode by default; explicit `--commit` flag to perform deletes.
+  - Mirror the pattern of the existing `redact_old_consent_ips` command.
+
+Trivial implementation — ~80 LOC — but no urgency until the platform has been live for years. Bundle with the broader Phase H retention-policy work.
+
+---
+
 ## TD entry conventions
 
 When adding a new entry:

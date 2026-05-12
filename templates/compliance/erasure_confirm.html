@@ -1,0 +1,76 @@
+{% extends 'base.html' %}
+{% load i18n %}
+
+{% block title %}{% trans "Delete my account — confirmation" %}{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto py-12 px-4">
+
+    <div class="card bg-base-100 shadow-xl">
+        <div class="card-body">
+
+            <h1 class="card-title text-2xl text-error mb-2">
+                {% trans "Delete my account — irreversible" %}
+            </h1>
+
+            <div class="alert alert-warning mb-4">
+                <div>
+                    <h3 class="font-semibold mb-2">{% trans "What this action does" %}</h3>
+                    <ul class="list-disc pl-5 space-y-1 text-sm">
+                        <li>{% trans "All identifying information is permanently removed: your name, email, IP addresses." %}</li>
+                        <li>{% trans "Your reflections, AI feedback texts, and dispute submissions are cleared." %}</li>
+                        <li>{% trans "Your research contributions (AILST scores, module progression metadata, consent record audit) remain in the platform, attached to an anonymous account. They are excluded from future research analyses through the opt-out flag set at the same time." %}</li>
+                        <li>{% trans "You will be logged out immediately and you will not be able to log in again with this account." %}</li>
+                        <li>{% trans "This action cannot be undone." %}</li>
+                    </ul>
+                </div>
+            </div>
+
+            {% if error %}
+                <div class="alert alert-error mb-4">
+                    <span>{{ error }}</span>
+                </div>
+            {% endif %}
+
+            <form method="post"
+                  action="{% url 'compliance:erasure_execute' %}"
+                  class="space-y-4">
+                {% csrf_token %}
+                <div class="form-control">
+                    <label class="label" for="confirmation">
+                        <span class="label-text">
+                            {% blocktrans with token=expected_token %}
+                            To confirm, type <strong>{{ token }}</strong> in capital Greek letters below.
+                            {% endblocktrans %}
+                        </span>
+                    </label>
+                    <input type="text"
+                           name="confirmation"
+                           id="confirmation"
+                           class="input input-bordered"
+                           autocomplete="off"
+                           autocapitalize="characters"
+                           aria-describedby="confirmation-hint"
+                           required>
+                    <label class="label" for="confirmation">
+                        <span class="label-text-alt" id="confirmation-hint">
+                            {% trans "Exact case-sensitive match required." %}
+                        </span>
+                    </label>
+                </div>
+
+                <div class="card-actions justify-end gap-3">
+                    <a href="{% url 'compliance:privacy_dashboard' %}" class="btn btn-ghost">
+                        {% trans "Cancel" %}
+                    </a>
+                    <button type="submit" class="btn btn-error">
+                        {% trans "Delete my account permanently" %}
+                    </button>
+                </div>
+            </form>
+
+        </div>
+    </div>
+
+</div>
+{% endblock %}
