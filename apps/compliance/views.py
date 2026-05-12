@@ -37,6 +37,7 @@ from django.views.decorators.http import require_http_methods, require_POST
 from apps.compliance.copy import (
     AI_DISCLOSURE_HTML_BULLETS_V1_PRE_IRB,
     AI_DISCLOSURE_TEXT_V1_PRE_IRB,
+    AI_IMPACT_ASSESSMENT_V1_PRE_IRB,
 )
 from apps.compliance.models import ConsentRecord
 from apps.compliance.services import (
@@ -103,10 +104,22 @@ def ai_disclosure_view(request):
 
 
 def ai_act_compliance_stub_view(request):
-    """Placeholder for /about/ai-act-compliance/ until C.1 ships the full
-    AI Impact Assessment page. Public; no auth required.
+    """GET /about/ai-act-compliance/ — full EU AI Act Article 50
+    transparency notice.
+
+    Phase C C.1: the previous stub was replaced by the seven-section
+    AI Impact Assessment defined in apps.compliance.copy. Public; no
+    auth required (the path is bypass-listed in AIDisclosureMiddleware
+    so anonymous visitors arriving from the disclosure modal's "Learn
+    more" link can read it). The view name is kept as
+    `ai_act_compliance_stub_view` for backwards URL-reverse
+    compatibility — the URL pattern still maps it to the canonical
+    `compliance:ai_act_compliance` URL name.
     """
-    return render(request, 'about/ai_act_compliance_stub.html')
+    return render(request, 'about/ai_act_compliance.html', {
+        'sections': AI_IMPACT_ASSESSMENT_V1_PRE_IRB,
+        'version': settings.AI_IMPACT_ASSESSMENT_CURRENT_VERSION,
+    })
 
 
 # ============================================================================

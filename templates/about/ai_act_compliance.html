@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+{% load i18n %}
+{% load consent_format %}
+
+{% block title %}{% trans "EU AI Act Compliance — PROODOS" %}{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto py-8 px-4">
+
+    <header class="mb-8">
+        <h1 class="text-3xl font-bold text-primary mb-2">
+            {% trans "AI Impact Assessment" %}
+        </h1>
+        <p class="text-sm text-base-content/70">
+            {% blocktrans %}
+            EU AI Act Regulation 2024/1689 Article 50 transparency notice for the PROODOS EduAI platform.
+            {% endblocktrans %}
+        </p>
+        <p class="text-xs text-base-content/60 mt-1">
+            {% blocktrans with v=version %}Document version: {{ v }}{% endblocktrans %}
+        </p>
+    </header>
+
+    <article class="card bg-base-100 shadow-xl">
+        <div class="card-body prose prose-sm max-w-none">
+
+            {% for section in sections %}
+                <section class="mb-6">
+                    <h2 class="text-xl font-semibold text-primary mb-2">
+                        {{ section.heading }}
+                    </h2>
+                    <div class="leading-relaxed">
+                        {{ section.body|consent_format }}
+                    </div>
+                </section>
+                {% if not forloop.last %}
+                    <hr class="my-4 border-base-300">
+                {% endif %}
+            {% endfor %}
+
+        </div>
+    </article>
+
+    <div class="mt-8 flex flex-col sm:flex-row sm:justify-between gap-3 text-sm">
+        <a href="{% url 'users:landing' %}" class="link link-hover">
+            ← {% trans "Back to the home page" %}
+        </a>
+        {% if user.is_authenticated %}
+            <a href="{% url 'compliance:privacy_dashboard' %}" class="link link-hover">
+                {% trans "Privacy & data dashboard" %} →
+            </a>
+        {% endif %}
+    </div>
+
+</div>
+{% endblock %}

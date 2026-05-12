@@ -157,6 +157,14 @@ AILST_CURRENT_VERSION = 'ning_2025_v1'
 AI_DISCLOSURE_CURRENT_VERSION = 'v1_pre_irb'
 
 # ============================================================
+# Phase C C.1 — AI Impact Assessment (Article 50 transparency) version
+# ============================================================
+# The participant-facing transparency document rendered at
+# /about/ai-act-compliance/. Versioned in lockstep with the AI
+# Disclosure consent so that IRB review touches both together.
+AI_IMPACT_ASSESSMENT_CURRENT_VERSION = 'v1_pre_irb'
+
+# ============================================================
 # Phase C C.2.2 — Step 3 research consent version pin
 # ============================================================
 # Single setting for BOTH research_participation and data_sharing texts

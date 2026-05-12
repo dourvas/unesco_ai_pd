@@ -1258,6 +1258,84 @@ class C4SupersedeUnitTest(TestCase):
         )
 
 
+class AiImpactAssessmentPageTest(TestCase):
+    """Phase C C.1 — /about/ai-act-compliance/ now serves the full
+    EU AI Act Article 50 transparency notice from
+    apps.compliance.copy.AI_IMPACT_ASSESSMENT_V1_PRE_IRB. Public; no
+    auth required.
+    """
+
+    def setUp(self):
+        self.client = Client()
+
+    def test_anonymous_user_can_access(self):
+        resp = self.client.get(reverse('compliance:ai_act_compliance'))
+        self.assertEqual(resp.status_code, 200)
+        self.assertTemplateUsed(resp, 'about/ai_act_compliance.html')
+
+    def test_authenticated_user_can_access(self):
+        user = User.objects.create_user(username='c1_reader', password='x')
+        self.client.force_login(user)
+        resp = self.client.get(reverse('compliance:ai_act_compliance'))
+        self.assertEqual(resp.status_code, 200)
+
+    def test_all_seven_section_headings_rendered(self):
+        from apps.compliance.copy import AI_IMPACT_ASSESSMENT_V1_PRE_IRB
+
+        resp = self.client.get(reverse('compliance:ai_act_compliance'))
+        body = resp.content.decode('utf-8')
+        for section in AI_IMPACT_ASSESSMENT_V1_PRE_IRB:
+            self.assertIn(
+                section['heading'], body,
+                'Missing section heading: ' + section['heading'],
+            )
+        self.assertEqual(
+            len(AI_IMPACT_ASSESSMENT_V1_PRE_IRB), 7,
+            'Article 50 transparency doc must keep its seven sections '
+            '(What/AI components/Risk/Mitigation/Data/Rights/Contact). '
+            'If you add or remove sections, update this assertion AND '
+            'review the changelog entry in PHASE_C_MIGRATION_PLAN.',
+        )
+
+    def test_version_string_visible_on_page(self):
+        resp = self.client.get(reverse('compliance:ai_act_compliance'))
+        self.assertIn('v1_pre_irb', resp.content.decode('utf-8'))
+
+    def test_bullet_lists_rendered_via_consent_format_filter(self):
+        """Spot-check the consent_format filter on a known-bulleted
+        section: Section 2 "AI components in PROODOS" begins with a
+        lead-in line and four bullets. The rendered output must have
+        a <ul> element and at least four <li> children inside the
+        section's body container."""
+        resp = self.client.get(reverse('compliance:ai_act_compliance'))
+        body = resp.content.decode('utf-8')
+        self.assertIn('<ul', body)
+        # Section 2 mentions all four AI components by name.
+        for needle in ('RAG-based reflection feedback',
+                       'Reflective Tension Mapper',
+                       'Developmental Trajectory Predictor',
+                       'Peer synthesis'):
+            self.assertIn(needle, body)
+
+    def test_middleware_does_not_block_unacknowledged_user(self):
+        """The path is in BYPASS_PATHS — a logged-in user who has not
+        acknowledged AI disclosure can still read the transparency
+        notice (otherwise the 'Learn more' link in the modal would
+        loop)."""
+        user = User.objects.create_user(username='c1_unack', password='x')
+        # Profile exists but ai_disclosure_acknowledged_at is NULL.
+        from apps.users.models import TeacherProfile
+        TeacherProfile.objects.create(user=user)
+        self.client.force_login(user)
+
+        resp = self.client.get(reverse('compliance:ai_act_compliance'))
+        self.assertEqual(
+            resp.status_code, 200,
+            'AIDisclosureMiddleware must NOT redirect /about/ai-act-compliance/ '
+            'because the path is in the bypass set.',
+        )
+
+
 class C4AtomicityAndEdgeCaseTest(_PrivacyTestBase):
 
     @classmethod
