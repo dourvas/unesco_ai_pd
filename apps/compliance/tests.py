@@ -18,7 +18,8 @@ from datetime import timedelta
 from django.contrib.auth.models import User
 from django.core.management import call_command
 from django.db import IntegrityError, connection, transaction
-from django.test import TestCase
+from django.test import Client, TestCase
+from django.urls import reverse
 from django.utils import timezone
 
 from apps.compliance.models import ConsentRecord
@@ -581,3 +582,236 @@ class ConsentFormatFilterTest(TestCase):
         # And it must produce both paragraph and list elements.
         self.assertIn('<p>', out)
         self.assertIn('<ul', out)
+
+
+# ============================================================================
+# Phase C C.4 commit 1 — Privacy dashboard + per-consent revocation endpoints
+# ============================================================================
+
+
+class _PrivacyTestBase(TestCase):
+    """Shared setUp for the C.4 commit-1 test classes."""
+
+    def setUp(self):
+        from apps.users.models import TeacherProfile
+
+        self.client = Client()
+        self.user = User.objects.create_user(username='c4_user', password='pw')
+        self.profile = TeacherProfile.objects.create(
+            user=self.user,
+            subject_area='mathematics',
+            grade_level='primary',
+            teaching_years='6-15',
+            school_location='urban',
+            average_class_size='medium',
+            ai_experience='basic',
+            preferred_communication_style='balanced',
+            ai_disclosure_acknowledged_at=timezone.now(),
+            profile_completed=True,
+            research_consent=True,
+            consent_data_sharing=True,
+        )
+        self.client.force_login(self.user)
+
+    def _grant(self, consent_type, granted=True):
+        """Convenience: insert an active ConsentRecord row directly."""
+        return ConsentRecord.objects.create(
+            user=self.user,
+            consent_type=consent_type,
+            granted=granted,
+            consent_text='placeholder ' + consent_type + ' text',
+            version='v1_pre_irb',
+        )
+
+
+class PrivacyDashboardViewTest(_PrivacyTestBase):
+
+    def test_get_renders_for_user_with_active_consents(self):
+        self._grant('ai_disclosure')
+        self._grant('research_participation')
+        self._grant('data_sharing')
+        resp = self.client.get(reverse('compliance:privacy_dashboard'))
+        self.assertEqual(resp.status_code, 200)
+        self.assertTemplateUsed(resp, 'compliance/privacy_dashboard.html')
+        body = resp.content.decode('utf-8')
+        # Three "Active" badges should appear.
+        self.assertEqual(body.count('badge-success'), 3)
+
+    def test_get_shows_never_granted_state(self):
+        # No ConsentRecord rows seeded.
+        resp = self.client.get(reverse('compliance:privacy_dashboard'))
+        self.assertEqual(resp.status_code, 200)
+        body = resp.content.decode('utf-8')
+        self.assertIn('Never granted', body)
+
+    def test_get_shows_revoked_state_with_date(self):
+        cr = self._grant('research_participation')
+        cr.revoked_at = timezone.now()
+        cr.save(update_fields=['revoked_at'])
+        resp = self.client.get(reverse('compliance:privacy_dashboard'))
+        body = resp.content.decode('utf-8')
+        self.assertIn('Revoked', body)
+
+    def test_anon_user_redirects_to_login(self):
+        self.client.logout()
+        resp = self.client.get(reverse('compliance:privacy_dashboard'))
+        self.assertEqual(resp.status_code, 302)
+        self.assertIn('/login/', resp.url)
+
+
+class RevokeAiDisclosureTest(_PrivacyTestBase):
+
+    def test_post_revokes_active_consentrecord(self):
+        self._grant('ai_disclosure')
+        self.client.post(reverse('compliance:revoke_ai_disclosure'))
+        cr = ConsentRecord.objects.get(
+            user=self.user, consent_type='ai_disclosure',
+        )
+        self.assertIsNotNone(cr.revoked_at)
+
+    def test_post_clears_profile_ack_at(self):
+        """TD-008 closure: ack_at is set to None so the middleware re-shows
+        the modal on the next request."""
+        self._grant('ai_disclosure')
+        self.assertIsNotNone(self.profile.ai_disclosure_acknowledged_at)
+        self.client.post(reverse('compliance:revoke_ai_disclosure'))
+        self.profile.refresh_from_db()
+        self.assertIsNone(self.profile.ai_disclosure_acknowledged_at)
+
+    def test_post_logs_user_out(self):
+        self._grant('ai_disclosure')
+        resp = self.client.post(reverse('compliance:revoke_ai_disclosure'))
+        self.assertEqual(resp.status_code, 302)
+        # Anonymous session after logout.
+        self.assertNotIn('_auth_user_id', self.client.session)
+
+    def test_after_revoke_next_request_hits_middleware(self):
+        """Post-revoke: the next authenticated request lands on the
+        AI Disclosure modal because ack_at is None."""
+        self._grant('ai_disclosure')
+        self.client.post(reverse('compliance:revoke_ai_disclosure'))
+        # Re-authenticate as the same user (the logout in the revoke
+        # view dropped the session; force_login a fresh one).
+        self.client.force_login(self.user)
+        resp = self.client.get(reverse('users:dashboard'))
+        self.assertEqual(resp.status_code, 302)
+        self.assertIn('/onboarding/ai-disclosure/', resp.url)
+
+    def test_atomicity_revoke_failure_rolls_back(self):
+        """Simulate a save error during the profile ack-clear step.
+        The ConsentRecord revocation must roll back so the user is not
+        left in a contradictory half-state.
+
+        Approach: monkeypatch TeacherProfile.save to raise once. The
+        whole transaction.atomic() block rolls back, including the
+        revoke_consent call from earlier in the block.
+        """
+        from apps.users.models import TeacherProfile
+
+        cr = self._grant('ai_disclosure')
+        original_save = TeacherProfile.save
+
+        def boom(self, *a, **kw):
+            raise RuntimeError('simulated DB failure')
+
+        TeacherProfile.save = boom
+        try:
+            with self.assertRaises(RuntimeError):
+                self.client.post(reverse('compliance:revoke_ai_disclosure'))
+        finally:
+            TeacherProfile.save = original_save
+
+        cr.refresh_from_db()
+        self.assertIsNone(
+            cr.revoked_at,
+            'Atomic rollback must keep the ConsentRecord unrevoked when the '
+            'profile save raises.',
+        )
+
+
+class RevokeResearchConsentTest(_PrivacyTestBase):
+
+    def test_post_revokes_and_syncs_boolean(self):
+        self._grant('research_participation')
+        self.client.post(reverse('compliance:revoke_research'))
+        cr = ConsentRecord.objects.get(
+            user=self.user, consent_type='research_participation',
+        )
+        self.assertIsNotNone(cr.revoked_at)
+        self.profile.refresh_from_db()
+        self.assertFalse(self.profile.research_consent)
+
+    def test_post_sets_research_data_opted_out(self):
+        self._grant('research_participation')
+        self.assertFalse(self.profile.research_data_opted_out)
+        self.client.post(reverse('compliance:revoke_research'))
+        self.profile.refresh_from_db()
+        self.assertTrue(self.profile.research_data_opted_out)
+
+    def test_post_does_not_delete_existing_ailst_responses(self):
+        from apps.ailst.models import AilstResponse
+
+        self._grant('research_participation')
+        AilstResponse.objects.create(
+            user=self.user, timepoint='T0', language='en',
+            instrument_version='ning_2025_v1',
+            responses={'P1': 4}, completed_at=timezone.now(),
+        )
+        self.client.post(reverse('compliance:revoke_research'))
+        self.assertEqual(
+            AilstResponse.objects.filter(user=self.user).count(),
+            1,
+            'Revoke must not auto-delete already-collected research data.',
+        )
+
+    def test_post_blocks_future_ailst_entry(self):
+        """After revoke, the C.2.3 AILST entry view's research_consent
+        gate redirects the user to research_consent_required."""
+        self._grant('research_participation')
+        self.client.post(reverse('compliance:revoke_research'))
+        resp = self.client.get(reverse('ailst:entry', kwargs={'timepoint': 't1'}))
+        self.assertEqual(resp.status_code, 302)
+        self.assertIn('research-consent-required', resp.url)
+
+    def test_post_user_stays_logged_in(self):
+        self._grant('research_participation')
+        self.client.post(reverse('compliance:revoke_research'))
+        # Session still has auth user id.
+        self.assertIn('_auth_user_id', self.client.session)
+
+
+class RevokeDataSharingTest(_PrivacyTestBase):
+
+    def test_post_revokes_and_syncs_boolean(self):
+        self._grant('data_sharing')
+        self.client.post(reverse('compliance:revoke_data_sharing'))
+        cr = ConsentRecord.objects.get(
+            user=self.user, consent_type='data_sharing',
+        )
+        self.assertIsNotNone(cr.revoked_at)
+        self.profile.refresh_from_db()
+        self.assertFalse(self.profile.consent_data_sharing)
+
+    def test_post_does_not_touch_research_data_opted_out(self):
+        """data_sharing has narrower scope than research_participation.
+        Revoking it must NOT toggle the research-opt-out flag."""
+        self._grant('data_sharing')
+        self.assertFalse(self.profile.research_data_opted_out)
+        self.client.post(reverse('compliance:revoke_data_sharing'))
+        self.profile.refresh_from_db()
+        self.assertFalse(self.profile.research_data_opted_out)
+
+    def test_post_is_idempotent(self):
+        """Second POST after revoke is a no-op (no orphan rows, no errors)."""
+        self._grant('data_sharing')
+        self.client.post(reverse('compliance:revoke_data_sharing'))
+        first_revoked_at = ConsentRecord.objects.get(
+            user=self.user, consent_type='data_sharing',
+        ).revoked_at
+        self.client.post(reverse('compliance:revoke_data_sharing'))
+        # Same row, same revoked_at — no new row, no further update.
+        rows = ConsentRecord.objects.filter(
+            user=self.user, consent_type='data_sharing',
+        )
+        self.assertEqual(rows.count(), 1)
+        self.assertEqual(rows.first().revoked_at, first_revoked_at)

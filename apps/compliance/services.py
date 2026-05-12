@@ -144,6 +144,61 @@ def revoke_consent(*, user, consent_type, version: Optional[str] = None) -> int:
     return count
 
 
+def clear_pii_on_profile(profile):
+    """Phase C C.4 — clear personally identifying fields on a TeacherProfile.
+
+    Used by both the AI-Disclosure revocation path (TD-008 fix: clears
+    ack_at so the middleware re-shows the modal) and the full account
+    erasure (which calls this plus auth_user clearing).
+
+    Fields cleared to empty string:
+      first_name, last_name, display_name, subject_area_other,
+      ai_teaching_integration, current_curriculum_pressure,
+      institutional_ai_policy
+
+    JSON list fields reset to []:
+      ai_tools_used, primary_goals, student_population_special_needs
+
+    Lifecycle / consent state reset:
+      ai_disclosure_acknowledged_at -> None
+      profile_completed -> False
+      research_consent -> False
+      consent_data_sharing -> False
+      contact_for_research -> False
+
+    Does NOT touch:
+      research_data_opted_out (set by caller of erasure flow)
+      subject_area, grade_level, teaching_years, school_location,
+      average_class_size, ai_experience, preferred_communication_style
+      (research-relevant variables, per the data_sharing consent text
+      in apps/compliance/copy.py).
+
+    Caller is responsible for the .save() — this helper only mutates
+    the in-memory instance so a single .save(update_fields=[...])
+    can carry all the changes.
+    """
+    # Free-text PII strings -> empty string.
+    profile.first_name = ''
+    profile.last_name = ''
+    profile.display_name = ''
+    profile.subject_area_other = ''
+    profile.ai_teaching_integration = ''
+    profile.current_curriculum_pressure = ''
+    profile.institutional_ai_policy = ''
+
+    # JSON list-style fields with potential identifiers.
+    profile.ai_tools_used = []
+    profile.primary_goals = []
+    profile.student_population_special_needs = []
+
+    # Lifecycle + consent flag reset.
+    profile.ai_disclosure_acknowledged_at = None
+    profile.profile_completed = False
+    profile.research_consent = False
+    profile.consent_data_sharing = False
+    profile.contact_for_research = False
+
+
 def migrate_legacy_teacher_consents(*, TeacherProfile=None, ConsentRecord=None):
     """Backfill ConsentRecord rows for pre-Phase-C TeacherProfile booleans.
 

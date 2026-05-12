@@ -121,7 +121,11 @@ After Γ.1 the M1 migration was rewritten as an empty no-op placeholder (Django 
 
 ## TD-008 — AI Disclosure revocation must clear acknowledgment timestamp
 
-**Status:** Active. Must be implemented in C.4 Privacy dashboard.
+**Status:** RESOLVED in Phase C C.4 commit 1 (2026-05-12). The `revoke_ai_disclosure_view` in `apps/compliance/views.py` now runs an atomic transaction that calls `revoke_consent` AND clears `TeacherProfile.ai_disclosure_acknowledged_at`, then logs the user out. Verified by `apps/compliance/tests.py::RevokeAiDisclosureTest::test_post_clears_profile_ack_at` and the load-bearing `test_after_revoke_next_request_hits_middleware`.
+
+Original analysis kept below for historical context.
+
+**Status (historical):** Active. Must be implemented in C.4 Privacy dashboard.
 **Where:** `apps/compliance/views.py` C.4 revocation endpoint (not yet written).
 
 When a user revokes the `ai_disclosure` consent (e.g., via the C.4 Privacy dashboard's "withdraw consent" action), `revoke_consent(user, consent_type='ai_disclosure')` will set `revoked_at=NOW()` on the active row. **However, that does NOT update `TeacherProfile.ai_disclosure_acknowledged_at`** — and the `AIDisclosureMiddleware` checks the latter, not the former. So a user who revokes ai_disclosure consent through C.4 would continue to pass through the middleware, contradicting their revocation.

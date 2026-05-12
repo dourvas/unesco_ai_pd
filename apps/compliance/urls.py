@@ -20,4 +20,25 @@ urlpatterns = [
         views.ai_act_compliance_stub_view,
         name='ai_act_compliance',
     ),
+    # Phase C C.4 — Privacy dashboard + per-consent revocation endpoints.
+    path(
+        'profile/privacy/',
+        views.privacy_dashboard_view,
+        name='privacy_dashboard',
+    ),
+    path(
+        'profile/privacy/revoke/ai-disclosure/',
+        views.revoke_ai_disclosure_view,
+        name='revoke_ai_disclosure',
+    ),
+    path(
+        'profile/privacy/revoke/research/',
+        views.revoke_research_view,
+        name='revoke_research',
+    ),
+    path(
+        'profile/privacy/revoke/data-sharing/',
+        views.revoke_data_sharing_view,
+        name='revoke_data_sharing',
+    ),
 ]

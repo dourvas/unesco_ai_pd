@@ -274,7 +274,21 @@ class TeacherProfile(models.Model):
         default=False,
         verbose_name="Consent to data sharing"
     )
-    
+
+    research_data_opted_out = models.BooleanField(
+        default=False,
+        verbose_name="Opted out of research data inclusion",
+        help_text=(
+            "Set to True when the user revokes research_participation consent "
+            "OR triggers an account erasure (Phase C C.4). Future research "
+            "analyses and exports MUST filter out users with this flag set. "
+            "The user's already-collected data remains in the DB (no "
+            "retroactive delete) but is excluded from new analyses per the "
+            "user's withdrawal. Narrower data_sharing revocation does NOT "
+            "toggle this flag."
+        ),
+    )
+
     consent_timestamp = models.DateTimeField(
         blank=True,
         null=True,

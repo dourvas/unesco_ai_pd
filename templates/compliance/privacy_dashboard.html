@@ -1,0 +1,208 @@
+{% extends 'base.html' %}
+{% load i18n %}
+
+{% block title %}{% trans "Privacy & your data" %}{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto py-8 px-4">
+
+    <div class="mb-6">
+        <h1 class="text-2xl font-bold mb-2 text-primary">
+            {% trans "Privacy & your data" %}
+        </h1>
+        <p class="text-base-content/70">
+            {% blocktrans %}
+            From this page you can withdraw any of your consents, download a
+            copy of all data the platform holds about you, or close your
+            account. These rights are guaranteed by the EU General Data
+            Protection Regulation (GDPR) and Greek Law 4624/2019.
+            {% endblocktrans %}
+        </p>
+    </div>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert {% if message.tags == 'error' %}alert-error{% else %}alert-info{% endif %} mb-4">
+                <span>{{ message }}</span>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    {# ============================================================ #}
+    {# Card 1 — Consents                                              #}
+    {# ============================================================ #}
+    <div class="card bg-base-100 shadow-xl mb-6">
+        <div class="card-body">
+            <h2 class="card-title text-xl">
+                {% trans "Your consents" %}
+            </h2>
+            <p class="text-sm text-base-content/70 mb-4">
+                {% trans "You can withdraw each consent independently. Withdrawal is forward-looking and does not delete data already collected — for that, use the 'Delete my account' option below." %}
+            </p>
+
+            {# Row template: ai_disclosure, research_participation, data_sharing #}
+
+            {# --- AI Disclosure --- #}
+            <div class="p-4 bg-base-200 rounded-lg mb-3">
+                <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-3">
+                    <div class="flex-1">
+                        <h3 class="font-semibold text-base">
+                            {% trans "AI Disclosure (EU AI Act Article 50)" %}
+                        </h3>
+                        <p class="text-sm mt-1">
+                            {% trans "Acknowledgement that the platform uses AI to generate feedback and reflections." %}
+                        </p>
+                        <p class="text-xs mt-2 text-base-content/70">
+                            {% if ai_disclosure_state.state == 'active' %}
+                                <span class="badge badge-success badge-sm">{% trans "Active" %}</span>
+                                {% blocktrans with granted=ai_disclosure_state.granted_at|date:"M d, Y" version=ai_disclosure_state.version %}
+                                Granted on {{ granted }} (version {{ version }}).
+                                {% endblocktrans %}
+                            {% elif ai_disclosure_state.state == 'revoked' %}
+                                <span class="badge badge-warning badge-sm">{% trans "Revoked" %}</span>
+                                {% blocktrans with revoked=ai_disclosure_state.revoked_at|date:"M d, Y" %}
+                                Revoked on {{ revoked }}.
+                                {% endblocktrans %}
+                            {% else %}
+                                <span class="badge badge-ghost badge-sm">{% trans "Never granted" %}</span>
+                            {% endif %}
+                        </p>
+                        <p class="text-xs mt-1 text-warning">
+                            {% trans "Withdrawing AI Disclosure logs you out. You will need to re-acknowledge to use the platform again." %}
+                        </p>
+                    </div>
+                    {% if ai_disclosure_state.state == 'active' %}
+                        <form method="post"
+                              action="{% url 'compliance:revoke_ai_disclosure' %}"
+                              class="shrink-0">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-outline btn-warning btn-sm">
+                                {% trans "Withdraw" %}
+                            </button>
+                        </form>
+                    {% endif %}
+                </div>
+            </div>
+
+            {# --- Research Participation --- #}
+            <div class="p-4 bg-base-200 rounded-lg mb-3">
+                <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-3">
+                    <div class="flex-1">
+                        <h3 class="font-semibold text-base">
+                            {% trans "Research participation" %}
+                        </h3>
+                        <p class="text-sm mt-1">
+                            {% trans "Primary consent for the PROODOS doctoral research. Covers your AILST responses, reflections, and platform interactions." %}
+                        </p>
+                        <p class="text-xs mt-2 text-base-content/70">
+                            {% if research_state.state == 'active' %}
+                                <span class="badge badge-success badge-sm">{% trans "Active" %}</span>
+                                {% blocktrans with granted=research_state.granted_at|date:"M d, Y" version=research_state.version %}
+                                Granted on {{ granted }} (version {{ version }}).
+                                {% endblocktrans %}
+                            {% elif research_state.state == 'revoked' %}
+                                <span class="badge badge-warning badge-sm">{% trans "Revoked" %}</span>
+                                {% blocktrans with revoked=research_state.revoked_at|date:"M d, Y" %}
+                                Revoked on {{ revoked }}.
+                                {% endblocktrans %}
+                            {% else %}
+                                <span class="badge badge-ghost badge-sm">{% trans "Never granted" %}</span>
+                            {% endif %}
+                        </p>
+                        <p class="text-xs mt-1 text-base-content/70">
+                            {% trans "Withdrawing stops future AILST assessments. Existing data remains unless you also delete your account." %}
+                        </p>
+                    </div>
+                    {% if research_state.state == 'active' %}
+                        <form method="post"
+                              action="{% url 'compliance:revoke_research' %}"
+                              class="shrink-0">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-outline btn-warning btn-sm">
+                                {% trans "Withdraw" %}
+                            </button>
+                        </form>
+                    {% endif %}
+                </div>
+            </div>
+
+            {# --- Data Sharing --- #}
+            <div class="p-4 bg-base-200 rounded-lg">
+                <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-3">
+                    <div class="flex-1">
+                        <h3 class="font-semibold text-base">
+                            {% trans "Data sharing for secondary research (optional)" %}
+                        </h3>
+                        <p class="text-sm mt-1">
+                            {% trans "Optional secondary consent. Allows your anonymised data to be used in further research analyses approved by the IHU Ethics Committee." %}
+                        </p>
+                        <p class="text-xs mt-2 text-base-content/70">
+                            {% if data_sharing_state.state == 'active' %}
+                                <span class="badge badge-success badge-sm">{% trans "Active" %}</span>
+                                {% blocktrans with granted=data_sharing_state.granted_at|date:"M d, Y" version=data_sharing_state.version %}
+                                Granted on {{ granted }} (version {{ version }}).
+                                {% endblocktrans %}
+                            {% elif data_sharing_state.state == 'revoked' %}
+                                <span class="badge badge-warning badge-sm">{% trans "Revoked" %}</span>
+                                {% blocktrans with revoked=data_sharing_state.revoked_at|date:"M d, Y" %}
+                                Revoked on {{ revoked }}.
+                                {% endblocktrans %}
+                            {% else %}
+                                <span class="badge badge-ghost badge-sm">{% trans "Never granted" %}</span>
+                            {% endif %}
+                        </p>
+                        <p class="text-xs mt-1 text-base-content/70">
+                            {% trans "Withdrawing this consent does not affect your participation in the primary research." %}
+                        </p>
+                    </div>
+                    {% if data_sharing_state.state == 'active' %}
+                        <form method="post"
+                              action="{% url 'compliance:revoke_data_sharing' %}"
+                              class="shrink-0">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-outline btn-warning btn-sm">
+                                {% trans "Withdraw" %}
+                            </button>
+                        </form>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {# ============================================================ #}
+    {# Card 2 — Your data (export). Filled in commit 2 of C.4.       #}
+    {# ============================================================ #}
+    <div class="card bg-base-100 shadow-xl mb-6">
+        <div class="card-body">
+            <h2 class="card-title text-xl">
+                {% trans "Your data" %}
+            </h2>
+            <p class="text-sm text-base-content/70">
+                {% trans "Download a copy of all data the platform holds about you (GDPR Article 15 right of access). Coming in the next release." %}
+            </p>
+        </div>
+    </div>
+
+    {# ============================================================ #}
+    {# Card 3 — Delete account. Filled in commit 3 of C.4.           #}
+    {# ============================================================ #}
+    <div class="card bg-base-100 shadow-xl">
+        <div class="card-body">
+            <h2 class="card-title text-xl text-error">
+                {% trans "Delete my account" %}
+            </h2>
+            <p class="text-sm text-base-content/70">
+                {% trans "Permanently anonymise your account (GDPR Article 17 right to erasure). Coming in the next release." %}
+            </p>
+        </div>
+    </div>
+
+    <div class="mt-6 text-sm text-base-content/60">
+        <a href="{% url 'users:profile_view' %}" class="link link-hover">
+            ← {% trans "Back to profile" %}
+        </a>
+    </div>
+
+</div>
+{% endblock %}
