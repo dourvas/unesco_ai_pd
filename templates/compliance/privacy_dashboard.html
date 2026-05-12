@@ -300,9 +300,12 @@
         </div>
     </div>
 
-    <div class="mt-6 text-sm text-base-content/60">
+    <div class="mt-6 flex flex-col sm:flex-row sm:justify-between gap-3 text-sm text-base-content/60">
         <a href="{% url 'users:profile_view' %}" class="link link-hover">
             ← {% trans "Back to profile" %}
+        </a>
+        <a href="{% url 'compliance:ai_act_compliance' %}" class="link link-hover">
+            {% trans "Read the AI transparency notice (EU AI Act Article 50)" %} →
         </a>
     </div>
 

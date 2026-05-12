@@ -1336,6 +1336,111 @@ class AiImpactAssessmentPageTest(TestCase):
         )
 
 
+class AiActComplianceEntryPointsTest(TestCase):
+    """Phase C C.1 follow-up: the AI Impact Assessment notice must be
+    persistently reachable from at least three entry points so a
+    participant does not lose access to the transparency text after
+    the initial AI Disclosure modal:
+
+        1. Footer on the public landing page (anonymous + authenticated).
+        2. Footer on the authenticated layout (base.html) — every
+           dashboard / module / profile page.
+        3. The Privacy dashboard (/profile/privacy/).
+
+    These tests assert the canonical URL is reachable from each entry
+    point. They use assertContains on the URL string rather than the
+    visible "About" / "Privacy Policy" anchor text so that future
+    label changes (e.g. localisation) do not silently break the test.
+    """
+
+    def setUp(self):
+        self.client = Client()
+        self.notice_url = reverse('compliance:ai_act_compliance')
+
+    def test_landing_footer_links_to_notice(self):
+        resp = self.client.get(reverse('users:landing'))
+        self.assertEqual(resp.status_code, 200)
+        body = resp.content.decode('utf-8')
+        # The notice URL must appear at least twice in the footer
+        # (About + Privacy Policy both wired to the same doc) plus
+        # potentially elsewhere on the page.
+        self.assertGreaterEqual(
+            body.count(self.notice_url), 2,
+            'Landing footer must link to the AI transparency notice from '
+            'both the About and Privacy entries.',
+        )
+        # Contact link is a mailto, not a dead href="#".
+        self.assertIn('mailto:idourvas@ihu.gr', body)
+
+    def test_base_layout_footer_links_to_notice(self):
+        """Authenticated layout footer (base.html) must surface the
+        notice — pick the dashboard view as the canonical
+        base.html-rendering route. The user must be logged in to reach
+        dashboard, so we set up a complete profile."""
+        from apps.users.models import TeacherProfile
+
+        user = User.objects.create_user(username='c1_base', password='x')
+        TeacherProfile.objects.create(
+            user=user,
+            subject_area='mathematics', grade_level='primary',
+            teaching_years='6-15', school_location='urban',
+            average_class_size='medium', ai_experience='basic',
+            preferred_communication_style='balanced',
+            ai_disclosure_acknowledged_at=timezone.now(),
+            profile_completed=True,
+        )
+        self.client.force_login(user)
+
+        resp = self.client.get(reverse('users:dashboard'))
+        self.assertEqual(resp.status_code, 200)
+        body = resp.content.decode('utf-8')
+        self.assertIn(
+            self.notice_url, body,
+            'base.html footer must link to the AI transparency notice.',
+        )
+        self.assertIn('mailto:idourvas@ihu.gr', body)
+
+    def test_privacy_dashboard_links_to_notice(self):
+        """The /profile/privacy/ page must offer a contextual link to
+        the AI transparency notice — a participant looking at their
+        consents and data export options should be one click away
+        from the full legal context."""
+        from apps.users.models import TeacherProfile
+
+        user = User.objects.create_user(username='c1_priv', password='x')
+        TeacherProfile.objects.create(
+            user=user,
+            subject_area='mathematics', grade_level='primary',
+            teaching_years='6-15', school_location='urban',
+            average_class_size='medium', ai_experience='basic',
+            preferred_communication_style='balanced',
+            ai_disclosure_acknowledged_at=timezone.now(),
+            profile_completed=True,
+        )
+        self.client.force_login(user)
+
+        resp = self.client.get(reverse('compliance:privacy_dashboard'))
+        self.assertEqual(resp.status_code, 200)
+        self.assertIn(self.notice_url, resp.content.decode('utf-8'))
+
+    def test_landing_footer_no_dead_href_hash(self):
+        """No href='#' placeholders should remain in the landing footer
+        after this commit. (Verifies that the dead links from before
+        the wiring change have all been replaced with real
+        destinations.)"""
+        resp = self.client.get(reverse('users:landing'))
+        body = resp.content.decode('utf-8')
+        # The footer block is the last <footer> tag; check it specifically.
+        footer_start = body.rfind('<footer')
+        footer_end = body.find('</footer>', footer_start)
+        footer_html = body[footer_start:footer_end]
+        self.assertNotIn(
+            'href="#"', footer_html,
+            'Landing footer still contains dead href="#" placeholders. '
+            'Wire them to real destinations or remove the link entries.',
+        )
+
+
 class C4AtomicityAndEdgeCaseTest(_PrivacyTestBase):
 
     @classmethod
