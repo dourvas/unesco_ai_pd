@@ -123,6 +123,71 @@ Disclaimer που συνοδεύει κάθε video: *"This video prepares you f
 
 **Synthesis-phase consolidation files (pending):** `METHODOLOGY_CONSOLIDATION.md`, `CLUSTER_D_DEFENCE.md`, `CLUSTER_C_DEFERRAL.md`, `AUDIT_DELIVERABLES_INDEX.md`. Total estimated effort ~6-10h distributed across 3-4 sessions.
 
+### 2.8 Phase C — onboarding, AILST, GDPR, EU AI Act compliance (Μάιος 2026)
+
+**Status:** Code-bearing Phase C work complete στα 11 commits, με μία documented εξαίρεση (C.3 — carry-over στο επόμενο παράθυρο, βλ. 3.C.7) και δύο gaps στο C.2 sub-scope (Career Stage Differentiation step + AI-TPACK step, βλ. 3.C.2).
+
+**183 Phase C tests pass** στις πέντε αλλαγμένες apps (compliance 84 · users 23 · ailst 47 · modules 13 · epilogue 16).
+
+**Migrations εφαρμοσμένες σειριακά:**
+
+| Migration | Σκοπός | Pre-apply backup |
+|---|---|---|
+| `compliance/0001_initial` | M1 — `consent_records` (Django ORM replacement) | `pre_migration_backup_phaseC_M1_20260509.sql` |
+| `users/0007_teacherprofile_*` | M2 — 4 Phase C personalisation fields | `pre_migration_backup_phaseC_M2_20260509.sql` |
+| `compliance/0002_drop_dead_schema` | Γ.1 — dead-schema cleanup (22 tables + 2 functions dropped) | `pre_migration_backup_phaseC_GAMMA1_20260509.sql` |
+| `users/0008_teacherprofilehistory` | M3 — audit history table + signal | `pre_migration_backup_phaseC_M3_20260509.sql` |
+| `ailst/0001_initial` + `0002_seed_ailst_en` | M4 — AILST instrument schema + 36-item EN seed | `pre_migration_backup_phaseC_M4_20260510.sql` |
+| `ailst/0003_ailstresponse` | M5 — AILST response model + scoring helper | `pre_migration_backup_phaseC_M5_20260510.sql` |
+| `compliance/0003_consentrecord` + `0004_migrate_teacherprofile_consents` | M6 — `ConsentRecord` model + legacy boolean backfill | `pre_migration_backup_phaseC_M6_20260510.sql` |
+| `users/0009_drop_not_null_subject_grade` | Schema drift hotfix (mid-C.2.3) | (no separate backup — model already declared nullable) |
+| `epilogue/0001_initial` | C.2.5 — `epilogue_completions` table | `pre_migration_backup_phaseC_C25_20260511.sql` |
+| `users/0010_research_data_opted_out` | C.4 — durable research-opt-out flag | `pre_migration_backup_phaseC_C4_20260512.sql` |
+
+**Implementation arc:**
+
+- **C.2.0** — AI Disclosure modal + `AIDisclosureMiddleware` + `apps.compliance.copy` consent text constants (commit `c115372`).
+- **C.2.1** — Profile Edit extension for the 3 new M2 personalisation fields (commit `e86a727`).
+- **C.2.2** — Step 3 consent refactor: two independent consents (`research_participation` + `data_sharing`), `record_consent` supersede semantics, M6 sync signal (commit `a117220`).
+- **C.2.3** — AILST T0/T1/T2 administration views + flow, parameterised on timepoint, mobile-aware Likert UI (CP 8 closed) (commits `014789e` + `4748302` + 2 hotfixes).
+- **C.2.4** — M5 → T1 gating wired into `mark_tab_complete`, JSON `ailst_redirect_url` mechanism + frontend handler updates (commit `f8501ef` + leak hotfix).
+- **C.2.5** — PROODOS Epilogue placeholder + M15 → Epilogue → T2 reroute. New `apps.epilogue` app with `EpilogueCompletion` model. Full Epilogue Stage 0..3 + Learning Portrait PDF deferred to TD-011 (commit `bec8951`).
+- **C.2.5b** — Confirm interstitial after Step 3 (CTA-dropout UX fix) (commit `bdb6670`).
+- **C.4** — Privacy dashboard at `/profile/privacy/`: three per-consent revoke endpoints, Art. 15 JSON data export (`gather_user_export`), Art. 17 anonymisation (`anonymize_user` Python service). Closes TD-008. Three commits (`eb36db1` + `6055616` + `1dee58b`) plus one in-flight correction (`2cd0a04` — `DELETE` instead of `ΔΙΑΓΡΑΦΗ` to match the English UI).
+- **C.1** — EU AI Act Article 50 transparency notice. Seven-section AI Impact Assessment at `/about/ai-act-compliance/`, replacing the C.2.0 stub. Versioned as `AI_IMPACT_ASSESSMENT_V1_PRE_IRB` (commit `f64cbda`).
+- **Footer + entry-point wiring** — `base.html` + `landing.html` footers + Privacy dashboard now all link to the transparency notice. Also fixed "International University of Greece" → "International Hellenic University" in the `base.html` footer (commit `22d38ad`).
+- **C.6 (TD-012 + TD-013)** — pre-pilot sequential progression gates. `ModuleDetailView` blocks out-of-order navigation, `mark_tab_complete` returns 409, `/epilogue/` gated on M15 completion. Staff/superuser bypass. (commit `050aba7`).
+- **CP-11** — `scripts/cp11_wipe_test_users.py` — non-staff user wipe script with `--dry-run` default and interactive YES confirmation. Cascades through Django ORM + explicit raw-SQL DELETE on `rag_queries` (commit `950e44a`).
+
+**Closed tech-debt items this phase:** TD-008 (AI Disclosure revocation must clear ack timestamp), TD-012 (sequential module gate), TD-013 (Epilogue gating on M15).
+
+**Active tech-debt items added this phase, all deferred to post-pilot:**
+
+| TD | Topic | Defer to |
+|---|---|---|
+| TD-010 | Post-pilot AILST score reveal page | Phase G/H |
+| TD-011 | Full PROODOS Epilogue (Stage 0..3 + Learning Portrait PDF) | Phase G (covered already at Phase G in this roadmap) |
+| TD-014 | Selective deletion of individual reflections / AILST responses | Post-pilot |
+| TD-015 | Data export as PDF (in addition to JSON) | Post-pilot |
+| TD-016 | 7-year ConsentRecord retention cleanup management command | Phase H |
+| TD-017 | Machine-readable AI content markers (Article 50(2)) — C.3 | **Επόμενο παράθυρο** (βλ. 3.C.7) |
+
+**Session logs covering Phase C:**
+
+| Log | Range |
+|---|---|
+| `proodos_files/SESSION_LOG_PHASE_C_M1_M3_20260509.md` | M1 + M2 + Γ.1 + M3 migrations |
+| `proodos_files/SESSION_LOG_PHASE_C_M4_20260510.md` | M4 AILST seed |
+| `proodos_files/SESSION_LOG_PHASE_C_M5_M6_20260510.md` | M5 AILST response + M6 ConsentRecord |
+| `proodos_files/SESSION_LOG_PHASE_C_C20_C22_20260510.md` | C.2.0 + C.2.1 + C.2.2 |
+| `proodos_files/SESSION_LOG_PHASE_C_C23_C25_20260511.md` | C.2.3 + C.2.4 + C.2.5 + C.2.5b + hotfixes |
+| `proodos_files/SESSION_LOG_PHASE_C_C4_C1_CP11_20260512.md` | C.4 + C.1 + footer wiring + C.6 + CP-11 |
+| `proodos_files/C4_DESIGN_PROPOSAL_PRIVACY_DASHBOARD.md` | Design D1-D14 + 8 CP refinements για το C.4 |
+| `proodos_files/C23_DESIGN_PROPOSAL_20260510.md` | Design για C.2.3 |
+| `proodos_files/EPILOGUE_C25_IMPLEMENTATION_NOTES_20260511.md` | Epilogue placeholder specifics |
+| `proodos_files/PHASE_C_MIGRATION_PLAN_v1_20260509.md` | Master changelog (συμπληρώνεται entry ανά piece) |
+| `proodos_files/TECH_DEBT_LOG.md` | Όλο το TD log |
+
 ---
 
 ## 3. Φάσεις πορείας
@@ -177,67 +242,180 @@ Disclaimer που συνοδεύει κάθε video: *"This video prepares you f
 
 Δουλεύεις στον ίδιο κώδικα μία φορά αντί για τέσσερις.
 
-#### C.1 — AI Impact Assessment PDF
+#### C.1 — AI Impact Assessment
 
-5σέλιδο επίσημο έγγραφο που τεκμηριώνει το PROODOS ως Limited Risk:
-- System description
-- Risk classification rationale (γιατί Limited όχι High)
-- Obligation coverage matrix
-- Voluntary high-risk obligations
-- Risk mitigation measures
+**Status:** ✅ DONE — HTML version live at `/about/ai-act-compliance/`, seven sections covering System / AI components / Risk classification / Mitigation + oversight / Data handling + retention / Participant rights / Contact. Versioned as `AI_IMPACT_ASSESSMENT_V1_PRE_IRB` in `apps/compliance/copy.py`. Replaces the C.2.0 stub. Commit `f64cbda`.
 
-**Αρχείο αναφοράς:** `EU_AI_ACT_COMPLIANCE_PLAN_APR2026.md` Section 5 (Συμπλήρωμα 1).
+**Note on the "PDF" framing in the original roadmap:** the deliverable is currently HTML rather than a 5-page formal PDF. The HTML page satisfies Article 50(1) transparency obligation (machine- and human-readable, persistently reachable from three footer entry points). A PDF export pass is deferred — same TD entry as the data-export PDF (TD-015) covers it.
+
+**Αρχείο αναφοράς:** `EU_AI_ACT_COMPLIANCE_PLAN_APR2026.md` Section 5 (Συμπλήρωμα 1). The implementation deviated from the "5σέλιδο PDF" framing per pragmatic decision documented in `proodos_files/SESSION_LOG_PHASE_C_C4_C1_CP11_20260512.md`.
 
 #### C.2 — Onboarding Redesign (ενοποιημένο)
 
-Νέο multi-step onboarding που περιλαμβάνει:
+**Status:** ⚠️ ΜΕΡΙΚΩΣ DONE — Step 1 και Step 3 ολοκληρώθηκαν. Step 2 (Career Stage RAG personalisation) και Step 4 (AI-TPACK) **δεν έγιναν** σε αυτή τη φάση. Βλ. ξεχωριστά bullets:
 
-**Step 1 — AI Disclosure Modal (Article 50(1))**
-- Νέο `consent_records` με `consent_type='ai_disclosure'`
-- Modal δεν κλείνει χωρίς acknowledgment
-- Κείμενο: "AI-Assisted PD", "Όλες οι προτάσεις είναι συμβουλευτικές", "Εσύ είσαι ο τελικός κριτής"
+**Step 1 — AI Disclosure Modal (Article 50(1))** — ✅ **DONE** (C.2.0, commit `c115372`)
+- `AIDisclosureMiddleware` slot between Authentication και Messages middleware
+- Modal at `/onboarding/ai-disclosure/` with "I acknowledge and continue" + "Or log out" links
+- `ConsentRecord` write path with `consent_type='ai_disclosure'` via `record_consent` service
+- Versioned as `AI_DISCLOSURE_TEXT_V1_PRE_IRB`
+- TD-008 (revocation must clear ack timestamp) closed in C.4 commit 1
 
-**Step 2 — Career Stage Capture**
-Το `teaching_years` field ήδη υπάρχει στη DB (`'0-5'`, `'6-15'`, `'16-25'`, `'25+'`). Δεν χρειάζεται schema change. Ζητάμε ρητά την τιμή και την χρησιμοποιούμε σε:
-- RAG queries με career_stage parameter
-- Feedback emphasis (νέοι: critical trust + ethics, έμπειροι: workload relief + identity reframing)
+**Step 2 — Career Stage Capture** — ❌ **GAP — not implemented**
+- Το `teaching_years` field υπάρχει ήδη στη DB (από M2 και προηγούμενα) και συλλέγεται στο onboarding Step 1 form
+- Η δεύτερη μισή του spec — **χρήση της τιμής στις RAG queries + feedback emphasis logic** — δεν έγινε
+- Δεν προστέθηκε `career_stage` parameter στο `rag_query_system.py`
+- Δεν έγινε διαφοροποίηση feedback emphasis (νέοι vs έμπειροι)
+- **Action:** add as a new TD entry για follow-up session — ~50-80 LOC σε `apps/modules/views.py` + `rag_query_system.py`. Schema change δεν χρειάζεται.
 
-**Step 3 — AILST Baseline (T0)**
-Ολόκληρη η AILST scale (Ning et al. 2025, 36 ερωτήματα, 4 παράγοντες):
-- AI Perception
-- Knowledge & Skills
-- Applications & Innovation
-- Ethics
+**Step 3 — AILST Baseline (T0)** — ✅ **DONE** (C.2.3, commits `014789e` + `4748302`)
+- Πλήρης AILST scale (Ning et al. 2025, 36 items, 4 factors) στο M4 seed
+- T0/T1/T2 administration parameterised σε ένα view set
+- Mobile Likert UI (CP 8 closed: radio-table desktop / stacked card mobile, full anchors σε κάθε breakpoint)
+- Resume-from-partial state machine με cannot-skip-ahead + select_for_update concurrency guard
+- Scoring (`apps.ailst.scoring`): CP 5 anchor mapping + CP 4 reverse (K1/A3/E3) + CP 6 mean-of-factor-means, mathematically verified end-to-end on `smith@example.com` smoke test
+- T1 triggers from M5 completion (C.2.4); T2 triggers from PROODOS Epilogue completion (C.2.5 reroute — see G.x in Phase G)
+- D4 decision: factor scores hidden during pilot for all timepoints; post-pilot reveal as TD-010
 
-Αποθηκεύεται ως T0 baseline. Σύγκριση με T1 (μετά M5) και T2 (μετά M15) → primary research variable για τη διατριβή.
+**Step 4 — AI-TPACK self-assessment** — ❌ **PARKED**
+- Original spec marked as "προαιρετικό" + "μπορεί να μπει σε δεύτερη φάση αν το onboarding γίνει υπερφορτωμένο"
+- Decision: parked as future-work entry. Reason: τρία AILST timepoints + Epilogue ήδη συγκροτούν επαρκές measurement scaffold για το dissertation; AI-TPACK additive value δεν δικαιολογεί επιπλέον participant burden στο pilot
+- Listed στο Section 5 (παρκαρισμένες ιδέες) below
 
-**Step 4 (προαιρετικό) — AI-TPACK self-assessment**
-Σύντομο 14-item self-assessment από το Eyal (2025) framework. Δεν είναι αυστηρή προαπαίτηση — μπορεί να μπει σε δεύτερη φάση αν το onboarding γίνει υπερφορτωμένο.
+**Επιπρόσθετα κομμάτια που υλοποιήθηκαν στο C.2 arc αλλά δεν προβλέπονταν στο original roadmap:**
+
+- **C.2.1 — Profile Edit extension** — οι 3 Phase C personalisation fields (current_curriculum_pressure, student_population_special_needs, institutional_ai_policy) εκτίθενται στο profile edit form (commit `e86a727`).
+- **C.2.2 — Step 3 consent amendment** — δύο ανεξάρτητες consents (research_participation + data_sharing), supersede pattern στο `record_consent`, IRB-defensible verbatim text storage (commit `a117220`).
+- **C.2.4 — M5 → T1 module-completion gating** — JSON `ailst_redirect_url` mechanism wired into `mark_tab_complete`, frontend handlers updated σε δύο template sites (commit `f8501ef`).
+- **C.2.5 — PROODOS Epilogue placeholder + M15 → Epilogue → T2 reroute** — separate `apps/epilogue/` app with `EpilogueCompletion` model. T2 πια triggers μετά το Epilogue, όχι κατευθείαν μετά το M15 (commit `bec8951`). Full Epilogue Stage 0..3 + Learning Portrait PDF is Phase G of this roadmap (TD-011).
+- **C.2.5b — Confirm interstitial** — short page between Step 3 Summary and AILST T0 to reduce dropout risk (commit `bdb6670`).
+- **C.6 — Pre-pilot sequential gates** — TD-012 (module prerequisite gate) and TD-013 (Epilogue gating on M15) closed in commit `050aba7`.
 
 **Αρχεία αναφοράς:**
 - `EU_AI_ACT_COMPLIANCE_PLAN_APR2026.md` Section 5 (Συμπλήρωμα 2) — onboarding modal spec
 - `Literature_Review_Synthesis_Note.md` Section 5 — AILST + AI-TPACK measurement plan
-- `M1_SYSTEM_VERIFIED.md` — current 3-step onboarding (Teaching Context → AI Experience → Goals)
+- `M1_SYSTEM_VERIFIED.md` — pre-C.2 onboarding architecture (3-step → now 4-step + confirm interstitial)
+- `proodos_files/C23_DESIGN_PROPOSAL_20260510.md` — C.2.3 design D1-D13
+- `proodos_files/EPILOGUE_C25_IMPLEMENTATION_NOTES_20260511.md` — Epilogue placeholder + spec for full implementation
 
 #### C.3 — Machine-readable AI content markers (Article 50(2))
 
-- HTML data attributes σε όλα τα AI cards (`data-ai-generated`, `data-ai-model`, `data-ai-timestamp`)
-- Page-level meta tags
-- JSON-LD structured data
-- Template tag `{% ai_provenance %}`
+**Status:** ❌ **NOT DONE — carry-over στο επόμενο παράθυρο.** Tracked ως **TD-017** στο `proodos_files/TECH_DEBT_LOG.md` (entry να γραφτεί στο επόμενο session που θα πιάσει το piece — η αναφορά εδώ είναι κανονική roadmap-level).
+
+**Τι έγινε ενώ θα έπρεπε να γίνει το C.3:**
+- Partial forward-compatibility marker: `data-ai-generated="true"` HTML attribute σε **4 spots μόνο** στο `templates/compliance/privacy_dashboard.html` (RTM card / DTP card / RAG feedback card / rag_queries card). Στην C.4 commit 2 αναφέρεται ρητά ως "per the C.3 forward-compatibility note" — δηλαδή **προετοιμασία**, όχι το C.3 self.
+
+**Τι ΔΕΝ έγινε (full C.3 scope):**
+- HTML data-attributes (`data-ai-generated` + `data-ai-model` + `data-ai-timestamp` + όλα τα provenance metadata) σε **κανέναν άλλο AI output rendering site**: το `tab5_reflection.html` (RAG feedback, RTM positions, DTP narratives, peer synthesis), τα module content templates που εμφανίζουν AI summaries, το AI Disclosure modal, κανένα από αυτά δεν φέρει τα markers.
+- Page-level meta tags για AI provenance.
+- JSON-LD structured data για AI provenance.
+- Template tag `{% ai_provenance %}`.
+- Provenance metadata storage layer (model version, generated_at, prompt hash, etc. per artefact).
+
+**Αιτιολόγηση του carry-over:**
+- C.3 αγγίζει το αρχιτεκτονικό layer όλων των AI rendering sites, οπότε χρειάζεται προσεκτικό design (HTML attrs vs JSON-LD vs template tag — τρεις διαφορετικές αρχιτεκτονικές επιλογές που πρέπει να αποφασιστούν συντονισμένα)
+- Δεν είναι "lost" piece — είναι deferred με σαφές spec
+- Το επόμενο session αρχίζει με design proposal pass, ακολουθεί 2 commits (data attrs + provenance metadata · JSON-LD + template tag)
+- Estimated effort: ~250-400 LOC + tests
+
+**Open design questions για το επόμενο παράθυρο:**
+
+1. **Provenance storage location** — νέο `apps.compliance.models.AIArtefactProvenance` με FKs σε όλα τα AI-output rows; ή denormalised fields σε κάθε existing model (UserModuleProgress, ReflectionTension, rag_queries); ή hybrid;
+2. **Template tag signature** — `{% ai_provenance for=artefact %}` που auto-resolves το type, ή `{% ai_provenance model="gemini-2.5-flash" generated_at=date %}` με explicit args;
+3. **JSON-LD schema** — schema.org/CreativeWork με extension; ή schema.org/SoftwareApplication; ή custom EU AI Act schema (αν υπάρχει); ή none και μόνο HTML attrs (lighter footprint);
+4. **Coverage scope για το pilot** — όλα τα AI rendering sites, ή μόνο τα 4 main (RAG / RTM / DTP / peer synthesis) και αναβολή ολόκληρου του attribute markup μέχρι v2.0;
+5. **Reverse compatibility** — δεν θέλουμε rerender υπάρχουσας research data; νέα markers εφαρμόζονται μόνο σε νέα generated content; ή retroactive backfill via management command;
 
 **Αρχείο αναφοράς:** `EU_AI_ACT_COMPLIANCE_PLAN_APR2026.md` Section 5 (Συμπλήρωμα 3).
 
-#### C.4 — Data Retention & Deletion Policy (GDPR + EU AI Act)
+#### C.4 — Privacy Dashboard (GDPR + EU AI Act)
 
-- Profile page section "Privacy & Data"
-- View / Download / Delete buttons (καλούν την υπάρχουσα `anonymize_user()`)
-- Privacy Policy page (markdown rendered)
-- Automated cleanup jobs τεκμηριωμένα
+**Status:** ✅ DONE — three commits arc `eb36db1` + `6055616` + `1dee58b` plus correction `2cd0a04`.
 
-**Αρχείο αναφοράς:** `EU_AI_ACT_COMPLIANCE_PLAN_APR2026.md` Section 5 (Συμπλήρωμα 4).
+**Implemented surface:**
+- New page `/profile/privacy/` (linked από `/profile/`, από το `base.html` footer, και από το `landing.html` footer)
+- Three per-consent revoke endpoints with explicit per-type session semantics:
+  - `revoke_ai_disclosure_view` (POST) — atomic transaction που revokes ConsentRecord **και** clears `TeacherProfile.ai_disclosure_acknowledged_at` (closes TD-008), μετά logout → landing
+  - `revoke_research_view` (POST) — supersede + sets `TeacherProfile.research_data_opted_out=True` (new flag from migration `users/0010`), user stays logged in
+  - `revoke_data_sharing_view` (POST) — supersede only (narrower scope, does NOT toggle research_data_opted_out), user stays logged in
+- Art. 15 data export — `apps.compliance.services.gather_user_export(user)` aggregates TeacherProfile, ConsentRecord, AilstResponse, UserModuleProgress, EpilogueCompletion, AI outputs (RTM, DTP, RAG feedback, peer synthesis) και τα raw-SQL `rag_queries` rows. Served as JSON file download.
+- Art. 17 anonymisation — `apps.compliance.services.anonymize_user(user)` Python service (replaces the broken-and-dropped DB function from Γ.1). Atomic transaction: NULLs PII on auth_user + TeacherProfile, retains auth_user row (preserves FKs), clears reflection-content text on UserModuleProgress + ReflectionTension + rag_queries, retains ConsentRecord rows με IP redaction (7-year IRB window), sets `research_data_opted_out=True`. Then logout + landing.
+- Confirmation token `DELETE` (server-side validation only, no JS-gated submit — CP-8 accessibility decision)
 
-**Έξοδος Phase C:** Πλήρης συμμόρφωση με EU AI Act + νέα ερευνητική μεταβλητή (career stage) + AILST T0 baseline + verification checklist 100%.
+**Note on "Privacy Policy page" framing in the original roadmap:** there is no separate markdown-rendered privacy policy doc. The AI Impact Assessment at `/about/ai-act-compliance/` covers privacy in Sections 5 + 6, and the footer "Privacy" link points there. Single source of truth.
+
+**Έξοδος Phase C:** Πλήρης συμμόρφωση με EU AI Act Article 50(1) (transparency notice — C.1) και με GDPR Articles 7(3) / 15 / 17 / 21 (Privacy dashboard — C.4) + AILST T0/T1/T2 administration με Epilogue chain (C.2.3 + C.2.4 + C.2.5). **C.3 carry-over** + Career Stage gap (3.C.2 Step 2) + post-IRB updates (3.C.5) + pre-pilot operational tasks (3.C.6).
+
+**Αρχείο αναφοράς:** `EU_AI_ACT_COMPLIANCE_PLAN_APR2026.md` Section 5 (Συμπλήρωμα 4) + `proodos_files/C4_DESIGN_PROPOSAL_PRIVACY_DASHBOARD.md` (D1-D14 + 8 CP refinements).
+
+---
+
+#### C.5 — Post-IRB updates checklist
+
+**Status:** Awaiting IHU IRB feedback (CP 7 + CP 10). When feedback arrives, apply this checklist in one focused session.
+
+| Change | File / location | Action |
+|---|---|---|
+| New AI Disclosure text version | `apps/compliance/copy.py` | Add `AI_DISCLOSURE_TEXT_V2_IRB_REVISED` + `AI_DISCLOSURE_HTML_BULLETS_V2_IRB_REVISED`. Do NOT edit v1. |
+| New research participation text | `apps/compliance/copy.py` | Add `RESEARCH_PARTICIPATION_TEXT_V2_IRB_REVISED`. Do NOT edit v1. |
+| New data sharing text | `apps/compliance/copy.py` | Add `DATA_SHARING_TEXT_V2_IRB_REVISED`. Do NOT edit v1. |
+| New AI Impact Assessment list | `apps/compliance/copy.py` | Add `AI_IMPACT_ASSESSMENT_V2_IRB_REVISED` (list of `{'heading','body'}` dicts). Do NOT edit v1. |
+| Bump version pins | `config/settings.py` | `AI_DISCLOSURE_CURRENT_VERSION = 'v2_irb_revised'`; `RESEARCH_CONSENT_CURRENT_VERSION = 'v2_irb_revised'`; `AI_IMPACT_ASSESSMENT_CURRENT_VERSION = 'v2_irb_revised'`. |
+| Update view import | `apps/compliance/views.py` | `ai_act_compliance_stub_view` imports `AI_IMPACT_ASSESSMENT_V2_IRB_REVISED`. |
+| Mark CP 7 + CP 10 resolved | `proodos_files/PHASE_C_MIGRATION_PLAN_v1_20260509.md` §2 | Move CP 7 + CP 10 από §2.2 (Pending) σε §2.1 (Resolved) με reference στο IRB approval date. |
+| Re-verify supersede flow | (operational) | Test ότι existing users with v1 active consents get supersede to v2 on next Step 3 visit. |
+| Re-deploy + re-acknowledge staff | `scripts/pre_deploy_c20_acknowledge_staff.py --commit` | Re-run to grant v2 ack to staff. The supersede pattern automatically revokes their v1 row. |
+
+**Σημείωση:** το current copy φέρει σκόπιμα τα `v1_pre_irb` markers + "Will be revised after IHU IRB review" wording για να είναι easy-to-grep όταν φτάσει η ώρα. Σε αυτό το checklist, αυτές οι αναφορές αντικαθίστανται από τις v2 εκδόσεις, ΟΧΙ διαγράφονται.
+
+---
+
+#### C.6 — Pre-pilot operational checklist
+
+**Status:** READY. Run immediately before participant recruitment.
+
+| Step | Command / Action | Risk |
+|---|---|---|
+| 1. Fresh DB backup | `pg_dump unesco_ai_teacher_pd > pre_pilot_wipe_<date>.sql` at repo root | None — read-only |
+| 2. Dry-run wipe | `python scripts/cp11_wipe_test_users.py` | None — read-only; prints user list + cascade footprint |
+| 3. Confirm output | Eyeball the list. Staff accounts must NOT appear in the deletion list. | Low |
+| 4. Execute wipe | `python scripts/cp11_wipe_test_users.py --commit`, type `YES` when prompted | Destructive — backup at step 1 is the safety net |
+| 5. Re-ack staff | `python scripts/pre_deploy_c20_acknowledge_staff.py --commit` | None — idempotent; staff already had ack rows but cascade may have touched the FK targets |
+| 6. Verify clean state | Visit `/admin/auth/user/` — only staff + superuser rows should appear | None |
+| 7. Smoke test new-user flow | Register a fresh user, walk through Step 1 → 2 → 3 → Confirm → AILST T0 | None |
+| 8. Pilot recruitment | Begin inviting participants | — |
+
+The CP-11 wipe script is at `scripts/cp11_wipe_test_users.py`. Core logic exposed as `wipe_non_staff_users()` for direct test invocation. Both `--dry-run` (default) and interactive YES confirmation are built in.
+
+---
+
+#### C.7 — Carry-over για επόμενο παράθυρο: C.3 machine-readable AI markers
+
+**Status:** Identified gap. Spec available, implementation deferred. See **3.C.3** above για το full Status block και τα 5 open design questions.
+
+**One-line summary για το επόμενο handoff:** the platform produces AI-generated content (RAG feedback, RTM positions, DTP narratives, peer synthesis) but only a partial forward-compatibility marker exists (4 HTML attributes on the privacy dashboard). Article 50(2) of the EU AI Act recommends machine-readable marking of synthetic content; C.3 operationalises this with HTML data-attributes + page-level JSON-LD + a reusable `{% ai_provenance %}` template tag. The full work plan is in `EU_AI_ACT_COMPLIANCE_PLAN_APR2026.md` Section 5 (Συμπλήρωμα 3) + the five open design questions in 3.C.3.
+
+**Suggested approach for the next session:**
+
+1. Read this section + 3.C.3 above + the EU AI Act plan Συμπλήρωμα 3.
+2. Decide the five open design questions με design proposal (`C3_DESIGN_PROPOSAL_AI_PROVENANCE.md`).
+3. Implement in 2 commits: (a) provenance metadata storage + HTML data-attrs across all AI rendering sites; (b) JSON-LD + `{% ai_provenance %}` template tag + tests.
+4. Update this roadmap: move C.3 from 3.C.7 carry-over to a "DONE" badge inside 3.C.3.
+5. Update TECH_DEBT_LOG to mark TD-017 RESOLVED.
+
+---
+
+#### C.x — Other follow-ups raised during Phase C implementation
+
+| Item | Defer to | Reference |
+|---|---|---|
+| Career Stage RAG personalisation (C.2 Step 2 unfinished half) | New TD entry, ~50-80 LOC follow-up session | 3.C.2 Step 2 above |
+| AI-TPACK self-assessment | Section 5 (παρκαρισμένες ιδέες) | 3.C.2 Step 4 above |
+| Full PROODOS Epilogue Stage 0..3 + Learning Portrait PDF | Phase G (this roadmap) | TD-011 |
+| Post-pilot AILST score reveal | Phase G/H | TD-010 |
+| Selective deletion of single reflections / AILST responses | Post-pilot | TD-014 |
+| Data export as PDF (in addition to JSON) | Post-pilot | TD-015 |
+| 7-year ConsentRecord retention cleanup management command | Phase H | TD-016 |
 
 ---
 
