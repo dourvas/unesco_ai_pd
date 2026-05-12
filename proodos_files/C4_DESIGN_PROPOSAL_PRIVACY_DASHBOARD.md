@@ -56,7 +56,7 @@ The historical function's _semantic_ intent is the reference for what fields to 
 
 1. **`auth_user` row** (NOT deleted — preserves FK targets for ConsentRecord and research data):
    - `username` → `f'anonymized_{user.id}'` (must remain unique; the integer keeps it so)
-   - `email` → `''` (empty string; column is `NOT NULL UNIQUE` historically, empty is safer than NULL; revisit if conflict with other anonymized rows by appending `f'@deleted.local-{user.id}'`)
+   - `email` → `f'deleted-{user.id}@anonymized.local'` — verified 2026-05-11 via `\d auth_user` + `pg_constraint`: column is `NOT NULL` (254 chars) but **not UNIQUE**. A structured sentinel is preferred over empty string for parity with the `username` pattern and easier identification in support queries. (See Q3 below for the cross-reference.)
    - `first_name` → `''`
    - `last_name` → `''`
    - `is_active` → `False` (prevents login)
@@ -76,9 +76,15 @@ The historical function's _semantic_ intent is the reference for what fields to 
    - `ip_address` → `None` (redact remaining IPs immediately; the 30-day batch job is moot post-erasure)
    - All other fields unchanged. `granted` / `granted_at` / `revoked_at` / `consent_text` / `version` are part of the IRB audit trail and survive 7 years.
 
-4. **`AilstResponse` rows, `UserModuleProgress` rows, `EpilogueCompletion` row, reflection text, AI dispute submissions**: **retained as-is**. The `user_id` FK now points to an anonymized auth_user row. Research analyses can exclude opt-outs by filtering on `TeacherProfile.research_data_opted_out=True`.
+4. **`AilstResponse` rows, `EpilogueCompletion` row**: **retained as-is**. The `user_id` FK now points to an anonymized auth_user row. Research analyses can exclude opt-outs by filtering on `TeacherProfile.research_data_opted_out=True`.
 
-5. **Final actions** (after the atomic block commits):
+5. **`UserModuleProgress` rows**: retained for progression metadata. The three reflection-content TextFields (`reflection_text`, `reflection_rag_feedback`, `reflection_peer_synthesis`, `reflection_dtp`) are **cleared to `''`** — these are user-authored or AI-personalised content that should not survive erasure even though the row stays.
+
+6. **`rag_queries` rows** (raw SQL, see D11 table): the PII columns (`reflection_text`, `generated_response`, `feedback_comments`, identifying parts of `teacher_context` JSONB, `query_embedding` vector) are cleared per D11. The row itself is retained because its `module_id` and timing/cost metrics are useful for non-personal RAG telemetry analysis.
+
+7. **`ReflectionTension` rows (RTM)** and any **AI dispute submissions** (`apps.modules.models.AIOutputDispute`): user-written content cleared to `''`; rows retained.
+
+8. **Final actions** (after the atomic block commits):
    - `logout(request)` to drop the current session.
    - `messages.info(request, 'Your account has been anonymized.')`
    - Redirect to `users:landing`.
@@ -154,8 +160,8 @@ Already detailed in D4 shape. Defaults:
   - "Your research contributions stay in the platform, attached to an anonymous account."
   - "You will be logged out immediately. You cannot log in again."
   - "This action is irreversible."
-- A `<input type="text">` field labelled "Type ΔΙΑΓΡΑΦΗ in capital Greek letters to confirm" — the submit button is JS-disabled until the exact case-sensitive match.
-- The form POSTs to `/profile/privacy/erase/confirm/`, where the view re-validates the exact match server-side as well (never trust JS).
+- A `<input type="text">` field labelled "Type ΔΙΑΓΡΑΦΗ in capital Greek letters to confirm" — **plain text input, always enabled**, no JS gating. Server-side validation in the POST view re-checks the exact case-sensitive match and re-renders the form with an error if the token is wrong.
+- The form POSTs to `/profile/privacy/erase/confirm/`. The view is the only enforcement point — keeping the submit always-enabled avoids the JS-gated-button accessibility hazard (assistive-tech users cannot fight a disabled button) and matches the principle of "never trust the client" for destructive actions.
 
 Greek language for the confirmation token matches the participant pool (Greek-speaking K-12 educators). The English token `DELETE` would be cognitively foreign and slightly less impactful.
 
@@ -186,19 +192,44 @@ The `select_for_update` on the profile row guards against the (rare) race where 
 
 This closes **TD-008**.
 
-### D9 — research_consent revocation cascade
+### D9 — research_consent and data_sharing revocation cascades (and their session policy)
 
-**Decision:** Following John's specification:
+Two distinct revoke paths, each preserves the session (user **stays logged in**, redirected to the dashboard with a flash). This contrasts with D8 AI Disclosure, which logs the user out because the platform fundamentally cannot serve an unacknowledged user.
+
+#### D9a — research_participation revoke
 
 1. `revoke_consent(user, consent_type='research_participation')` — supersede pattern, ConsentRecord row marked revoked.
 2. M6 signal auto-syncs `TeacherProfile.research_consent = False`.
-3. **Set `TeacherProfile.research_data_opted_out = True`** (the new flag from D13). This is the durable opt-out that filters the user out of future research analyses and exports.
-4. **Already-collected data is preserved** — no auto-delete. The AILST responses and reflection texts stay in the DB.
-5. **Future AILST timepoints are blocked** — the C.2.3 entry view already gates on `profile.research_consent` and will redirect the user to the `research_consent_required` page.
+3. **Set `TeacherProfile.research_data_opted_out = True`** (the new flag from D13). Durable opt-out that filters the user out of future research analyses and exports.
+4. **Already-collected data is preserved** — no auto-delete. AILST responses, reflection texts, RAG-query records stay in the DB.
+5. **Future AILST timepoints are blocked** — the C.2.3 AILST entry view already gates on `profile.research_consent` and redirects to the `research_consent_required` page.
+6. **Future RAG / DTP / RTM generation continues to work** — these are pedagogical features driven by the user's reflections, not research collection. The user opted out of research, not out of the programme.
 
-If the user wants the already-collected data deleted, they must use the **separate "Delete my account" action** (the erasure flow). Two rights, two actions. This matches the legal framing: revocation is forward-looking; erasure is retrospective.
+**Session:** user **stays logged in**; redirect to `/profile/privacy/` with flash:
+> "Research participation consent withdrawn. We will not include new data from your activity in research analyses, and the next AI Literacy assessments (T1/T2) will be unavailable. Your existing data remains until you ask us to delete it via the 'Delete my account' option below."
 
-The post-revoke flash message clarifies this: "Research participation consent withdrawn. We will not collect new research data from you. Your existing data remains until you ask us to delete it via the 'Delete my account' option below."
+#### D9b — data_sharing revoke
+
+The data_sharing consent is the **OPTIONAL secondary consent** described verbatim in `apps/compliance/copy.py::DATA_SHARING_TEXT_V1_PRE_IRB`. From that text: "this consent allows your anonymised platform data to be used in secondary research analyses approved separately by the IHU Research Ethics Committee." Declining or revoking it "does NOT affect your participation in the research, your access to the platform, or your programme certificate."
+
+What revoke does:
+
+1. `revoke_consent(user, consent_type='data_sharing')` — supersede pattern.
+2. M6 signal auto-syncs `TeacherProfile.consent_data_sharing = False`.
+3. **Does NOT touch `research_data_opted_out`** — this flag is the broader research opt-out. data_sharing is narrower (secondary-analysis only). A user can be research-participating but data-sharing-revoked.
+4. **No effect on AILST gating** — AILST is part of the primary research, not the secondary analyses, so the user keeps doing T1/T2 normally.
+5. **Future external sharing is blocked** — when an analytics export targets a "secondary research" recipient (downstream researcher, post-publication dataset), it must filter out users with `consent_data_sharing=False`. This filter responsibility lives in the analytics pipeline (TD-followup at Phase G/H), not in this view.
+
+**Session:** user **stays logged in**; redirect to `/profile/privacy/` with flash:
+> "Data sharing consent withdrawn. We will not share your data with affiliated researchers beyond the primary study. Your participation in the research itself is unaffected."
+
+#### Summary table: revoke session/flash semantics
+
+| Consent type | Session after revoke | Redirect target | Flash gist |
+|---|---|---|---|
+| ai_disclosure (D8) | Logged out | `/` (landing) | "AI Disclosure withdrawn. You have been logged out." |
+| research_participation (D9a) | Logged in | `/profile/privacy/` | "Research participation withdrawn. No new data collected. Existing data remains until you delete the account." |
+| data_sharing (D9b) | Logged in | `/profile/privacy/` | "Data sharing withdrawn. Research participation itself unaffected." |
 
 ### D10 — Middleware bypass for `/profile/privacy/`: NO
 
@@ -208,7 +239,7 @@ The post-revoke flash message clarifies this: "Research participation consent wi
 
 **Decision:** A dedicated section "AI-generated insights based on your reflections" in the **Your data** card on the dashboard. Layout:
 
-- **Summary line**: counts ("12 RTM positions across 9 modules", "5 DTP narratives generated", "4 RAG feedback responses").
+- **Summary line**: counts ("12 RTM positions across 9 modules", "5 DTP narratives generated", "4 RAG feedback responses", "N raw RAG queries logged").
 - **"View all" expand button** that reveals collapsible cards per module:
   - **RTM positions card** for each module: shows the tension positions JSON the user confirmed.
   - **DTP narrative card** for each module: shows the rendered narrative HTML/text.
@@ -217,11 +248,32 @@ The post-revoke flash message clarifies this: "Research participation consent wi
 
 The same AI outputs appear verbatim in the JSON export under `ai_outputs`. The export is the canonical Art. 15 deliverable; the dashboard view is a friendly UI on top.
 
-**Source tables:**
-- RTM positions: `apps.modules.models.ReflectionTension`
-- DTP narratives: `UserModuleProgress.reflection_dtp` JSON field
-- RAG feedback: `UserModuleProgress.reflection_rag_feedback` text field
-- Peer synthesis (also AI-generated): `UserModuleProgress.reflection_peer_synthesis` text field — include in the same card stack.
+**Source tables (verified 2026-05-11 against live schema and `apps.modules.models`):**
+
+| Output | Source | Confirmed |
+|---|---|---|
+| RTM positions | `apps.modules.models.ReflectionTension` (Django ORM model) | ✓ |
+| DTP narrative | `UserModuleProgress.reflection_dtp` (TextField, line 268 of models.py) | ✓ field name exact |
+| RAG feedback (rendered) | `UserModuleProgress.reflection_rag_feedback` (TextField, line 265) | ✓ field name exact |
+| Peer synthesis (rendered) | `UserModuleProgress.reflection_peer_synthesis` (TextField, line 267) | ✓ field name exact |
+| **Raw RAG query log** | `rag_queries` table — **raw-SQL, no Django ORM model** | ✓ exists in live DB; same pattern as the pre-Phase-C `consent_records` quirk |
+
+**RagQuery / `rag_queries` table details (raw SQL, requires `cursor.execute` access in the service):**
+
+| Column | Type | PII? | Action on erasure |
+|---|---|---|---|
+| `id` | int | no | retain |
+| `user_id` | int FK to `auth_user` | no | retain (points at anonymized user) |
+| `module_id` | int | no | retain |
+| `reflection_text` | text | **YES** (user's reflection verbatim) | clear to `'[anonymized]'` |
+| `teacher_context` | jsonb | partially (subject_area, grade_level fine; name/email if leaked into context) | clear `name` and `full_name` keys only; keep research-relevant fields |
+| `query_embedding` | vector(768) | indirectly (semantic representation of reflection_text) | clear (set NULL) |
+| `retrieved_chunks` | jsonb | no (programme content chunks) | retain |
+| `generated_response` | text | **YES** (AI response referencing user context) | clear to `'[anonymized]'` |
+| `feedback_rating` / `feedback_comments` / `feedback_timestamp` | int / text / ts | comments are PII | clear comments to `''` |
+| `processing_time_ms` / `api_cost_eur` / timestamps | metrics | no | retain |
+
+Implementation note: because `rag_queries` is outside the ORM, both the export-gather and the anonymize functions take a `with connection.cursor() as cur` block. Tests cover the SQL paths with explicit row inserts via raw cursor (to keep the test DB representative).
 
 ### D12 — ConsentRecord retention post-erasure: 7 years, pointer to anonymized auth_user
 
@@ -420,32 +472,35 @@ def anonymize_user(user: User) -> None:
 16. Does NOT touch `research_data_opted_out` (that flag tracks the broader research opt-out).
 17. Idempotency: second POST is a no-op.
 
-### `DataExportTest` (6)
+### `DataExportTest` (7)
 18. GET returns JSON content-type + Content-Disposition attachment.
 19. JSON top-level keys match the spec (export_version, exported_at, user, profile, consents, ailst_responses, module_progress, epilogue_completion, ai_outputs).
 20. Verbatim consent_text is included.
-21. AI outputs include RTM, DTP, RAG feedback.
+21. AI outputs include RTM, DTP, RAG feedback, peer synthesis, and raw rag_queries rows.
 22. Export is unaffected by `research_data_opted_out` (Art. 15 is a personal right, not contingent on research participation).
 23. Anon user → 302 to login.
+24. **Fresh user (zero AILST/modules/Epilogue/RAG rows) — JSON shape is consistent**: all expected keys present, optional sections are empty arrays / null values, **never missing keys**. (CP-5 addition: protects downstream parsers from `KeyError` on minimal-data users.)
 
 ### `ErasureConfirmPageTest` (2)
-24. GET renders the warning + the Greek confirmation form.
-25. Submit without the exact "ΔΙΑΓΡΑΦΗ" string → form re-renders with error, no DB write.
+25. GET renders the warning + the Greek confirmation form.
+26. Submit without the exact "ΔΙΑΓΡΑΦΗ" string → form re-renders with error, no DB write.
 
-### `ErasureExecuteTest` (5)
-26. POST with correct token: PII fields NULL/empty on TeacherProfile + auth_user.
-27. POST: `research_data_opted_out` set to True.
-28. POST: ConsentRecord rows preserved with `ip_address=None`, all other fields intact.
-29. POST: AilstResponse rows preserved unchanged.
-30. POST: user is logged out, redirected to landing, flash message present.
+### `ErasureExecuteTest` (7)
+27. POST with correct token: PII fields NULL/empty on TeacherProfile + auth_user (incl. `email = 'deleted-{id}@anonymized.local'`).
+28. POST: `research_data_opted_out` set to True; `ai_disclosure_acknowledged_at` set to None.
+29. POST: ConsentRecord rows preserved with `ip_address=None`, all other fields intact.
+30. POST: AilstResponse rows preserved unchanged (FK still resolves to anonymized user).
+31. POST: UserModuleProgress rows preserved structurally, but `reflection_text` / `reflection_rag_feedback` / `reflection_peer_synthesis` / `reflection_dtp` cleared to empty strings. `rag_queries` PII columns cleared per D11 table; row count unchanged.
+32. POST: user is logged out, redirected to landing, flash message present.
+33. **CP-7 addition: post-erasure IRB-audit query still works.** `ConsentRecord.objects.filter(consent_type='research_participation', granted=True)` over the historical row continues to return the anonymized user's record (granted_at, version, consent_text all intact). Asserts that the 7-year retention is real and queryable, not merely "rows that exist".
 
 ### `AtomicityAndEdgeCaseTest` (4)
-31. Race: two concurrent revoke POSTs for the same consent — second one is a no-op (M6 supersede + select_for_update on profile).
-32. Race: revoke + erasure POST in parallel — erasure wins, consent row is correctly marked revoked AND IP cleared.
-33. Post-erasure middleware behaviour: subsequent request to the now-anonymized user is treated as anonymous (since `is_active=False`), redirected to /login/.
-34. Idempotency: calling `anonymize_user(already_anonymized_user)` is a no-op write (no exceptions, no state change).
+34. **CP-6 refactor — supersede unit test.** Direct unit test of `revoke_consent` against a user with two ConsentRecord rows of the same `consent_type` (created via direct ORM bypass of `record_consent`'s supersede). Calling `revoke_consent` revokes BOTH rows in a single per-row save loop, and the resulting count returned is 2. Replaces the earlier concurrent-POST test, which was unreliable in Django's transactional test runner (transactions do not actually overlap in the default `TransactionTestCase` semantics, so the "race" cannot be reproduced). The supersede-pattern unit test verifies the underlying invariant that the concurrent-POST test was trying to assert — namely "no orphan active rows after revoke".
+35. Race-style integration: revoke POST + erasure POST in sequence within a single test (the realistic order, since true parallelism cannot be exercised here). Erasure-after-revoke: consent row is correctly marked revoked AND its IP is cleared.
+36. Post-erasure middleware behaviour: a subsequent request issued with the (still-cookied) session of the now-`is_active=False` user is treated as anonymous, redirected to /login/. The user cannot inadvertently re-enter the platform.
+37. Idempotency: calling `anonymize_user(already_anonymized_user)` is a no-op write (no exceptions, no state change). Specifically: the username remains `anonymized_{id}` (not `anonymized_anonymized_{id}`), the email remains the sentinel pattern (not concatenated), and ConsentRecord rows are not double-revoked.
 
-**Total: 34 tests.** Comfortably in the 25-35 target.
+**Total: 37 tests** (up from the original 34 to absorb CP-5 + CP-6 + CP-7 additions). Comfortably in the 25-35 target — narrowly above it but the extra coverage is IRB-load-bearing.
 
 ---
 
@@ -463,19 +518,19 @@ Per John's directive:
 - TD-008 closed in TECH_DEBT_LOG.
 
 **Commit 2: Data export (Art. 15)**
-- New `apps/compliance/services.py::gather_user_export(user)`.
+- New `apps/compliance/services.py::gather_user_export(user)` — includes a `with connection.cursor()` block for the raw-SQL `rag_queries` rows per CP-4 verification.
 - New view `export_data_view`.
 - New URL pattern.
 - Extension of `privacy_dashboard.html` with the Your-data card + AI-outputs section.
-- Tests class 5 (6 tests).
+- Tests class 5 (7 tests, including the fresh-user CP-5 case).
 
 **Commit 3: Account erasure (Art. 17)**
-- New `apps/compliance/services.py::anonymize_user(user)`.
-- New views `erasure_confirm_view` (GET form) + `erasure_execute_view` (POST execute).
+- New `apps/compliance/services.py::anonymize_user(user)` — covers both ORM tables and the `rag_queries` raw-SQL path; uses sentinel email pattern verified per CP-1.
+- New views `erasure_confirm_view` (GET form) + `erasure_execute_view` (POST execute). Server-side-only validation of "ΔΙΑΓΡΑΦΗ" per CP-8.
 - New URL patterns for both.
 - New template `erasure_confirm.html`.
 - Extension of `privacy_dashboard.html` with the Delete-account card.
-- Tests classes 6-8 (11 tests).
+- Tests classes 6-8 (13 tests, including the IRB-audit CP-7 query test and the CP-6 supersede unit test in place of the dropped concurrent-POST test).
 - TD-014, TD-015, TD-016 added to TECH_DEBT_LOG.
 - Plan changelog entry C.4.
 
@@ -489,7 +544,7 @@ This split is bisectable: a regression in the erasure flow can be reverted witho
 
 🛑 **Q2 — Should the dashboard be reachable for an already-anonymized user?** Edge case: if the anonymization happens but somehow the session was not flushed (browser kept a stale cookie that re-authenticates via remember-me?), the user might land on `/profile/privacy/`. With `is_active=False`, Django's auth middleware rejects them at request time. So this should not be reachable in practice. **Default: no special handling; standard `@login_required` redirects to /login/.**
 
-🛑 **Q3 — `auth_user.email = ''` collision risk?** Multiple anonymized users would all have empty email. Django's `User.email` field is NOT unique by default (no `unique=True` in the auth app), so empty strings should not collide. **Verified: no special handling needed.**
+🛑 **Q3 — `auth_user.email` collision risk?** Verified 2026-05-11 on the live DB: `auth_user.email` is `NOT NULL` (254 chars) and **NOT UNIQUE** — no constraint of any kind named with `email` appears in `pg_constraint` for `auth_user`. Per D1 we use `f'deleted-{user.id}@anonymized.local'`, which is collision-free by construction (the user.id is unique), and the choice of a sentinel pattern over empty string is for readability not for constraint satisfaction. **Resolved: no special handling needed.**
 
 🛑 **Q4 — JSON export when there are NO AILST/module/Epilogue rows yet?** A user who just registered and triggered erasure has empty research data. The shape of the JSON should still include those keys with empty arrays / null values, not omit them. **Default: always include all keys; tests will assert this.**
 
