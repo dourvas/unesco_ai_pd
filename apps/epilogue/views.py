@@ -28,13 +28,36 @@ from django.views.decorators.http import require_POST
 from apps.epilogue.models import EpilogueCompletion
 
 
+def _is_m15_completed(user) -> bool:
+    """Phase C TD-013 — M15 completion is the prerequisite for entering
+    the Epilogue. Helper isolates the dependency on apps.modules so
+    the import remains lazy and the test suites stay decoupled.
+    """
+    from apps.modules.services import user_has_completed_module
+    return user_has_completed_module(user, 'M15')
+
+
 @login_required
 def epilogue_placeholder_view(request):
     """GET /epilogue/ — placeholder page until TD-011 lands.
 
     Creates an EpilogueCompletion row on first visit so the start
     timestamp is captured for research-design accounting.
+
+    Phase C TD-013: blocked unless the user has completed M15. Staff
+    and superusers bypass for support. A blocked user is redirected
+    to the dashboard with an informational flash; the dashboard
+    nudge banner (when added) can point them at the next-up module.
     """
+    if not (request.user.is_staff or request.user.is_superuser):
+        if not _is_m15_completed(request.user):
+            from django.contrib import messages
+            messages.info(
+                request,
+                'The PROODOS Epilogue is available after you complete Module 15.',
+            )
+            return redirect('users:dashboard')
+
     EpilogueCompletion.objects.get_or_create(user=request.user)
 
     completion = EpilogueCompletion.objects.get(user=request.user)
@@ -56,7 +79,21 @@ def epilogue_complete_view(request):
     Idempotent: a second POST after the row is already completed does
     not change completed_at and still routes the user forward according
     to the same rules.
+
+    Phase C TD-013: defensive mirror of the GET gate. Even though a
+    crafted POST without M15 completion would fail the GET gate first
+    (the user would never see the Submit button), accept the request
+    only when M15 is done. Staff and superusers bypass.
     """
+    if not (request.user.is_staff or request.user.is_superuser):
+        if not _is_m15_completed(request.user):
+            from django.contrib import messages
+            messages.info(
+                request,
+                'The PROODOS Epilogue is available after you complete Module 15.',
+            )
+            return redirect('users:dashboard')
+
     with transaction.atomic():
         completion, _ = EpilogueCompletion.objects.select_for_update().get_or_create(
             user=request.user,

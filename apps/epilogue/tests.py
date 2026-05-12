@@ -18,7 +18,13 @@ from apps.users.models import TeacherProfile
 class EpilogueViewBase(TestCase):
     def setUp(self):
         self.client = Client()
-        self.user = User.objects.create_user(username='epilogue_user', password='pw')
+        # is_staff so the TD-013 M15-completion gate bypasses for the
+        # existing C.2.5 test classes. We are exercising the Epilogue
+        # placeholder/complete/routing logic, not the gate itself; the
+        # gate has its own dedicated EpilogueM15GatingTest below.
+        self.user = User.objects.create_user(
+            username='epilogue_user', password='pw', is_staff=True,
+        )
         self.profile = TeacherProfile.objects.create(
             user=self.user,
             ai_disclosure_acknowledged_at=timezone.now(),
@@ -141,3 +147,82 @@ class EpilogueRedirectHelperTest(EpilogueViewBase):
         self.profile.save(update_fields=['research_consent'])
         url = get_post_module_epilogue_redirect_url(self.user, 'M15')
         self.assertEqual(url, '/epilogue/')
+
+
+# ============================================================================
+# TD-013 — Epilogue gating on M15 completion
+# ============================================================================
+
+
+class EpilogueM15GatingTest(EpilogueViewBase):
+    """The Epilogue must be unreachable until M15 is completed.
+    Staff and superusers bypass for support work.
+
+    Tests:
+      - Without M15 row: GET /epilogue/ redirects to dashboard.
+      - Without M15 row: POST /epilogue/complete/ redirects to dashboard,
+        no EpilogueCompletion row created.
+      - With M15 completed: both views work normally.
+      - Staff users bypass the gate regardless of M15 state.
+    """
+
+    def setUp(self):
+        super().setUp()
+        # Override the base setUp's is_staff=True for the gating tests.
+        # The base sets it for the older C.2.5 tests that pre-dated the
+        # gate; the gating tests below need the gate to actually fire.
+        self.user.is_staff = False
+        self.user.save(update_fields=['is_staff'])
+
+    @classmethod
+    def setUpTestData(cls):
+        from apps.modules.models import Module
+        Module.objects.get_or_create(
+            code='M15',
+            defaults={
+                'title': 'M15 for gating', 'description': 'gating',
+                'unesco_aspect': 'professional_development',
+                'proficiency_level': 'Create',
+                'order_index': 215, 'is_published': True,
+            },
+        )
+
+    def _complete_m15(self):
+        from apps.modules.models import Module, UserModuleProgress
+        m = Module.objects.get(code='M15')
+        UserModuleProgress.objects.update_or_create(
+            user=self.user, module=m,
+            defaults={'completed_at': timezone.now(),
+                      'completion_percentage': 100, 'status': 'completed'},
+        )
+
+    def test_get_without_m15_redirects_to_dashboard(self):
+        resp = self.client.get(reverse('epilogue:placeholder'))
+        self.assertEqual(resp.status_code, 302)
+        self.assertIn('/dashboard/', resp.url)
+        self.assertFalse(
+            EpilogueCompletion.objects.filter(user=self.user).exists(),
+            'Gate must prevent the EpilogueCompletion row from being created '
+            'when the M15 prerequisite is not satisfied.',
+        )
+
+    def test_post_complete_without_m15_redirects_to_dashboard(self):
+        resp = self.client.post(reverse('epilogue:complete'))
+        self.assertEqual(resp.status_code, 302)
+        self.assertIn('/dashboard/', resp.url)
+        self.assertFalse(
+            EpilogueCompletion.objects.filter(user=self.user).exists(),
+            'Defensive POST guard must not create or flip the completion row.',
+        )
+
+    def test_get_with_m15_completed_renders(self):
+        self._complete_m15()
+        resp = self.client.get(reverse('epilogue:placeholder'))
+        self.assertEqual(resp.status_code, 200)
+        self.assertTrue(EpilogueCompletion.objects.filter(user=self.user).exists())
+
+    def test_staff_user_bypasses_m15_gate(self):
+        self.user.is_staff = True
+        self.user.save()
+        resp = self.client.get(reverse('epilogue:placeholder'))
+        self.assertEqual(resp.status_code, 200)

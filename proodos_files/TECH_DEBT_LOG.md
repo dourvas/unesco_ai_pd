@@ -245,7 +245,11 @@ The full feature is specified in:
 
 ## TD-012 — Sequential module-prerequisite gating (M1 → M2 → … → M15)
 
-**Status:** Active. Defer to **pre-pilot** (must close before recruiting real participants).
+**Status:** RESOLVED in Phase C C.6 (2026-05-12). New helper `apps/modules/services.py::get_module_prerequisite_block` walks `Module.order_index` ascending and returns the first prior module the user has not completed (or None if the path is clear). The helper is called from two enforcement points: `ModuleDetailView.get` (GET-side redirect to the first uncompleted prior module with an info flash) and `mark_tab_complete` (defensive AJAX guard returning HTTP 409 with an explanatory JSON body). Staff and superuser bypass for support work. Verified by `apps/modules/tests.py::SequentialModuleGatingTest` (6 tests: M1 always accessible, jumping ahead redirects to first uncompleted, full prereqs cleared, partial prereqs redirects to the gap, staff bypass, AJAX 409 defence).
+
+Original analysis kept below for historical context.
+
+**Status (historical):** Active. Defer to **pre-pilot** (must close before recruiting real participants).
 **Where:** `apps/modules/views.py::ModuleDetailView.get` — pre-render check; possibly also a guard inside `mark_tab_complete`.
 
 Discovered during the 2026-05-11 smoke test: a logged-in user with the right consent state can navigate directly to `/modules/M5/` (or any module URL) without having started, let alone completed, the preceding modules. There is currently no enforcement that M_n requires M_{n-1}.completed_at IS NOT NULL.
@@ -270,7 +274,11 @@ This is convenient for the C.2.3 / C.2.4 / C.2.5 smoke tests (the tester can jum
 
 ## TD-013 — Gate `/epilogue/` on M15 completion
 
-**Status:** Active. Defer to **pre-pilot** (same window as TD-012).
+**Status:** RESOLVED in Phase C C.6 (2026-05-12). New `_is_m15_completed(user)` helper in `apps/epilogue/views.py` (lazy import of `apps.modules.services.user_has_completed_module` to avoid app coupling) guards both `epilogue_placeholder_view` (GET) and `epilogue_complete_view` (POST defence). A non-staff user without M15 completion is redirected to the dashboard with an informational flash; no `EpilogueCompletion` row is created. Staff and superuser bypass. Verified by `apps/epilogue/tests.py::EpilogueM15GatingTest` (4 tests: GET without M15 redirects + no row created, POST defence, full access with M15 done, staff bypass).
+
+Original analysis kept below for historical context.
+
+**Status (historical):** Active. Defer to **pre-pilot** (same window as TD-012).
 **Where:** `apps/epilogue/views.py::epilogue_placeholder_view` — add a prerequisite check at the top.
 
 Discovered during the same 2026-05-11 smoke test: a logged-in user can navigate directly to `/epilogue/` without having completed M15 (or, given TD-012, without having completed M1-M14 either). The placeholder page renders, the user clicks "Mark complete and continue", `EpilogueCompletion.completed_at` is flipped, and they are forwarded to `/ailst/t2/`. This skips the entire intervention.

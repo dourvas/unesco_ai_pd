@@ -73,7 +73,7 @@ class ModuleListView(LoginRequiredMixin, ListView):
 class ModuleDetailView(LoginRequiredMixin, DetailView):
     """
     Display module content with 5-tab navigation
-    
+
     Tab 1 (introduction): Static content from modules table
     Tab 3 (activity): Special TAB 3 handling with prompts
     Tabs 2, 4, 5: Dynamic content from module_content with personalization
@@ -83,7 +83,35 @@ class ModuleDetailView(LoginRequiredMixin, DetailView):
     context_object_name = 'module'
     slug_field = 'code'
     slug_url_kwarg = 'code'
-    
+
+    def get(self, request, *args, **kwargs):
+        """Phase C TD-012 — sequential prerequisite gate.
+
+        Before rendering the module page, check whether the user has
+        completed every prior module in order_index sequence. If not,
+        redirect to the first uncompleted prior module with an
+        informational flash. Staff and superusers bypass for support.
+        """
+        from django.contrib import messages
+        from apps.modules.services import get_module_prerequisite_block
+
+        # Resolve the target module first so we can inspect order_index.
+        self.object = self.get_object()
+
+        if not (request.user.is_staff or request.user.is_superuser):
+            blocker = get_module_prerequisite_block(request.user, self.object)
+            if blocker is not None:
+                messages.info(
+                    request,
+                    'Please complete %s before opening %s.' % (
+                        blocker.code, self.object.code,
+                    ),
+                )
+                return redirect('modules:detail', code=blocker.code)
+
+        context = self.get_context_data(object=self.object)
+        return self.render_to_response(context)
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         module = self.object
@@ -642,7 +670,24 @@ def mark_tab_complete(request, code, tab_name):
     - reflection: 350-800 words + RAG feedback generation
     """
     module = get_object_or_404(Module, code=code)
-    
+
+    # Phase C TD-012 — sequential prerequisite gate (defensive AJAX
+    # check). The GET-side guard in ModuleDetailView.get already
+    # redirects unprivileged users away from out-of-order module
+    # pages, but the AJAX endpoint is callable directly via curl /
+    # browser console / parallel-tab race. Staff and superusers bypass
+    # for support.
+    if not (request.user.is_staff or request.user.is_superuser):
+        from apps.modules.services import get_module_prerequisite_block
+        blocker = get_module_prerequisite_block(request.user, module)
+        if blocker is not None:
+            return JsonResponse({
+                'success': False,
+                'message': 'Please complete %s before completing tabs in %s.' % (
+                    blocker.code, module.code,
+                ),
+            }, status=409)
+
     try:
         progress = UserModuleProgress.objects.get(user=request.user, module=module)
     except UserModuleProgress.DoesNotExist:

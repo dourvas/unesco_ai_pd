@@ -56,7 +56,13 @@ class AilstModuleGatingTest(TestCase):
 
     def setUp(self):
         self.client = Client()
-        self.user = User.objects.create_user(username='gating_user', password='pw')
+        # is_staff so the TD-012 sequential prerequisite gate bypasses
+        # for this test class. We are exercising the AILST routing logic
+        # from mark_tab_complete, not the module ordering gate; the gate
+        # has its own dedicated SequentialModuleGatingTest below.
+        self.user = User.objects.create_user(
+            username='gating_user', password='pw', is_staff=True,
+        )
         self.profile = TeacherProfile.objects.create(
             user=self.user,
             ai_disclosure_acknowledged_at=timezone.now(),
@@ -207,3 +213,109 @@ class AilstModuleGatingTest(TestCase):
                     'completion_percentage'):
             self.assertIn(key, data, f"Missing legacy key {key!r}.")
         self.assertNotIn('ailst_redirect_url', data)
+
+
+# ============================================================================
+# TD-012 — Sequential module-prerequisite gating
+# ============================================================================
+
+
+class SequentialModuleGatingTest(TestCase):
+    """The order_index-based prerequisite gate must:
+      - Redirect a non-staff user opening M_n out of sequence to the
+        first uncompleted prior module.
+      - Allow access to M1 unconditionally.
+      - Allow access to a module whose prerequisites are all done.
+      - Allow staff / superuser bypass for support work.
+      - Block the AJAX mark_tab_complete endpoint with 409 when called
+        directly out of sequence (defensive AJAX path).
+    """
+
+    @classmethod
+    def setUpTestData(cls):
+        from apps.modules.models import Module
+        for code, order_index in (('GT1', 1), ('GT2', 2), ('GT3', 3)):
+            Module.objects.get_or_create(
+                code=code,
+                defaults={
+                    'title': 'Gating Test ' + code,
+                    'description': 'gating test',
+                    'unesco_aspect': 'ethics',
+                    'proficiency_level': 'Acquire',
+                    'order_index': 50 + order_index,
+                    'is_published': True,
+                },
+            )
+
+    def setUp(self):
+        self.client = Client()
+        self.user = User.objects.create_user(username='gate_user', password='pw')
+        self.profile = TeacherProfile.objects.create(
+            user=self.user,
+            ai_disclosure_acknowledged_at=timezone.now(),
+            profile_completed=True,
+            research_consent=True,
+        )
+        self.client.force_login(self.user)
+
+    def _complete_module(self, code):
+        from apps.modules.models import Module, UserModuleProgress
+        m = Module.objects.get(code=code)
+        UserModuleProgress.objects.update_or_create(
+            user=self.user, module=m,
+            defaults={'completed_at': timezone.now(),
+                      'completion_percentage': 100, 'status': 'completed'},
+        )
+
+    def test_first_module_is_always_accessible(self):
+        resp = self.client.get(reverse('modules:detail', kwargs={'code': 'GT1'}))
+        self.assertEqual(resp.status_code, 200)
+
+    def test_jumping_to_middle_module_redirects_to_first_uncompleted(self):
+        resp = self.client.get(reverse('modules:detail', kwargs={'code': 'GT3'}))
+        self.assertRedirects(
+            resp, reverse('modules:detail', kwargs={'code': 'GT1'}),
+            fetch_redirect_response=False,
+        )
+
+    def test_access_allowed_when_prerequisites_are_done(self):
+        self._complete_module('GT1')
+        self._complete_module('GT2')
+        resp = self.client.get(reverse('modules:detail', kwargs={'code': 'GT3'}))
+        self.assertEqual(resp.status_code, 200)
+
+    def test_partial_prerequisites_redirects_to_first_uncompleted(self):
+        self._complete_module('GT1')
+        # GT2 NOT completed. Trying GT3 should redirect to GT2.
+        resp = self.client.get(reverse('modules:detail', kwargs={'code': 'GT3'}))
+        self.assertRedirects(
+            resp, reverse('modules:detail', kwargs={'code': 'GT2'}),
+            fetch_redirect_response=False,
+        )
+
+    def test_staff_user_bypasses_gate(self):
+        self.user.is_staff = True
+        self.user.save()
+        resp = self.client.get(reverse('modules:detail', kwargs={'code': 'GT3'}))
+        self.assertEqual(resp.status_code, 200)
+
+    def test_mark_tab_complete_ajax_blocked_when_out_of_order(self):
+        """Defensive AJAX guard: mark_tab_complete must reject calls on
+        a module whose prerequisites are not done, even though the
+        GET-side gate already redirects."""
+        from apps.modules.models import Module, UserModuleProgress
+        m = Module.objects.get(code='GT3')
+        # Create a progress row directly to simulate the rare case where
+        # a user has a UserModuleProgress row for GT3 without finishing
+        # GT1/GT2 (e.g. via admin / data migration).
+        UserModuleProgress.objects.create(user=self.user, module=m)
+
+        resp = self.client.post(
+            reverse('modules:mark_tab_complete',
+                    kwargs={'code': 'GT3', 'tab_name': 'introduction'}),
+            data=json.dumps({}), content_type='application/json',
+        )
+        self.assertEqual(resp.status_code, 409)
+        data = resp.json()
+        self.assertFalse(data['success'])
+        self.assertIn('GT1', data['message'])
