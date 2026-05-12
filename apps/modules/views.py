@@ -5,6 +5,7 @@ from django.views.generic import ListView, DetailView
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST, require_http_methods, require_GET
 from django.db.models import Q, Case, When, IntegerField
+from django.db import transaction
 from django.utils import timezone
 from datetime import datetime
 import json
@@ -12,6 +13,14 @@ import sys
 import os
 import markdown
 import importlib
+
+from apps.compliance.services import record_ai_provenance
+
+# Phase C C.3 commit 2a — gemini-2.5-flash is the operative model across
+# the RAG / RTM / DTP / peer synthesis paths. Centralised here so a future
+# model bump is a one-line change. Matches the constant in
+# apps/compliance/management/commands/backfill_ai_provenance.py.
+PROVENANCE_MODEL_NAME = 'gemini-2.5-flash'
 
 from .models import (
     Module,
@@ -837,8 +846,24 @@ def mark_tab_complete(request, code, tab_name):
         else:
             kwargs = {}
         
-        # Mark tab complete
-        next_tab = progress.mark_tab_complete(tab_name, **kwargs)
+        # Mark tab complete.
+        # Phase C C.3 commit 2a — CP-9 invariant: wrap save + provenance
+        # write in one transaction.atomic. mark_tab_complete calls
+        # progress.save() internally, so any state set on the instance
+        # (including reflection_rag_feedback from kwargs) is persisted in
+        # the same transaction as the provenance row. If the provenance
+        # write raises, both rollback.
+        with transaction.atomic():
+            next_tab = progress.mark_tab_complete(tab_name, **kwargs)
+            if tab_name == 'reflection' and kwargs.get('rag_feedback'):
+                record_ai_provenance(
+                    artefact_kind='rag_feedback',
+                    artefact_pk=progress.pk,
+                    user=progress.user,
+                    module=progress.module,
+                    model_name=PROVENANCE_MODEL_NAME,
+                    generated_at=timezone.now(),
+                )
 
         # Phase C C.2.4 + C.2.5 — post-module feature redirects.
         # After a module's progress.completed_at is freshly set we ask
@@ -899,10 +924,21 @@ def mark_tab_complete(request, code, tab_name):
                     )
                     response_data['peer_synthesis'] = peer_synthesis_html
                     print(f"✅ Peer synthesis added to response ({len(peer_synthesis_html)} chars)")
-                    
-                    # 🆕 Save peer synthesis to database
-                    progress.reflection_peer_synthesis = peer_synthesis_html
-                    progress.save(update_fields=['reflection_peer_synthesis'])
+
+                    # 🆕 Save peer synthesis to database. CP-9 invariant
+                    # (Phase C C.3 commit 2a): save + provenance in one
+                    # atomic block.
+                    with transaction.atomic():
+                        progress.reflection_peer_synthesis = peer_synthesis_html
+                        progress.save(update_fields=['reflection_peer_synthesis'])
+                        record_ai_provenance(
+                            artefact_kind='peer_synthesis',
+                            artefact_pk=progress.pk,
+                            user=progress.user,
+                            module=progress.module,
+                            model_name=PROVENANCE_MODEL_NAME,
+                            generated_at=timezone.now(),
+                        )
                     print(f"✅ Peer synthesis saved to database")
                 except Exception as e:
                     print(f"⚠️ Error converting peer synthesis to HTML: {e}")
@@ -1921,25 +1957,39 @@ def save_tensions(request, code):
                     'message': f'Invalid position: {position}. Must be 1-5.'
                 })
         
-        # Save or update each tension
+        # Save or update each tension. CP-9 invariant (Phase C C.3
+        # commit 2a): save + provenance write in one atomic block per
+        # tension. Provenance is recorded for the row by (kind, pk);
+        # on update_or_create's "update" branch (existing tension being
+        # re-positioned by the user), record_ai_provenance is a silent
+        # no-op due to get_or_create idempotency in the helper.
         saved_count = 0
         for t in tensions_data:
             comment = t.get('comment', '') or ''
-            ReflectionTension.objects.update_or_create(
-                user=request.user,
-                module=module,
-                tension_label=t['tension_label'],
-                defaults={
-                    'left_pole': t['left_pole'],
-                    'right_pole': t['right_pole'],
-                    'grounding_quote': t['grounding_quote'],
-                    'selected_position': t['position'],
-                    'optional_comment': comment.strip() or None,
-                    'time_spent_ms': t.get('time_spent_ms'),
-                    'comment_used': bool(comment.strip()),
-                    'position_confirmed': t.get('position_confirmed', False)
-                }
-            )
+            with transaction.atomic():
+                tension, _created = ReflectionTension.objects.update_or_create(
+                    user=request.user,
+                    module=module,
+                    tension_label=t['tension_label'],
+                    defaults={
+                        'left_pole': t['left_pole'],
+                        'right_pole': t['right_pole'],
+                        'grounding_quote': t['grounding_quote'],
+                        'selected_position': t['position'],
+                        'optional_comment': comment.strip() or None,
+                        'time_spent_ms': t.get('time_spent_ms'),
+                        'comment_used': bool(comment.strip()),
+                        'position_confirmed': t.get('position_confirmed', False)
+                    }
+                )
+                record_ai_provenance(
+                    artefact_kind='rtm_position',
+                    artefact_pk=tension.pk,
+                    user=tension.user,
+                    module=tension.module,
+                    model_name=PROVENANCE_MODEL_NAME,
+                    generated_at=timezone.now(),
+                )
             saved_count += 1
         
         print(f"✅ RTM: Saved {saved_count} tensions for user {request.user.id}, module {module.code}")
@@ -2112,8 +2162,18 @@ def extract_peer_synthesis_view(request, code):
             progress = UserModuleProgress.objects.get(
                 user=request.user, module=module
             )
-            progress.reflection_peer_synthesis = peer_synthesis_html
-            progress.save(update_fields=['reflection_peer_synthesis'])
+            # CP-9 invariant: save + provenance in one atomic block.
+            with transaction.atomic():
+                progress.reflection_peer_synthesis = peer_synthesis_html
+                progress.save(update_fields=['reflection_peer_synthesis'])
+                record_ai_provenance(
+                    artefact_kind='peer_synthesis',
+                    artefact_pk=progress.pk,
+                    user=progress.user,
+                    module=progress.module,
+                    model_name=PROVENANCE_MODEL_NAME,
+                    generated_at=timezone.now(),
+                )
             print(f"✅ Peer synthesis saved ({len(peer_synthesis_html)} chars)")
             return JsonResponse({'success': True, 'peer_synthesis': peer_synthesis_html})
         else:
@@ -2181,14 +2241,24 @@ def extract_dtp_view(request, code):
         )
         
         if dtp_result:
-            # Save DTP result to database
+            # Save DTP result to database. CP-9 invariant: save +
+            # provenance in one atomic block.
             try:
                 progress = UserModuleProgress.objects.get(user=request.user, module=module)
-                progress.reflection_dtp = json.dumps(dtp_result)
-                progress.save()
+                with transaction.atomic():
+                    progress.reflection_dtp = json.dumps(dtp_result)
+                    progress.save()
+                    record_ai_provenance(
+                        artefact_kind='dtp_narrative',
+                        artefact_pk=progress.pk,
+                        user=progress.user,
+                        module=progress.module,
+                        model_name=PROVENANCE_MODEL_NAME,
+                        generated_at=timezone.now(),
+                    )
             except Exception as e:
                 print(f"⚠️ Could not save DTP: {e}")
-            
+
             return JsonResponse({'success': True, 'dtp': dtp_result})
         else:
             return JsonResponse({'success': False, 'message': 'DTP computation failed'})

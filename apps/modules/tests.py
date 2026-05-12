@@ -319,3 +319,315 @@ class SequentialModuleGatingTest(TestCase):
         data = resp.json()
         self.assertFalse(data['success'])
         self.assertIn('GT1', data['message'])
+
+
+# ============================================================================
+# Phase C C.3 commit 2a — AI provenance forward-write hooks
+# ============================================================================
+#
+# CP-9 invariant: every AI artefact save path also writes an
+# AIArtefactProvenance row inside the same transaction.atomic block.
+# If the provenance write raises, the source-row save rolls back too.
+
+_RAG_QUERIES_DDL = """
+CREATE TABLE IF NOT EXISTS rag_queries (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL,
+    module_id INTEGER,
+    reflection_text TEXT NOT NULL,
+    teacher_context JSONB NOT NULL DEFAULT '{}'::jsonb,
+    query_embedding TEXT,
+    retrieved_chunks JSONB DEFAULT '[]'::jsonb,
+    num_chunks_retrieved INTEGER DEFAULT 0,
+    generated_response TEXT NOT NULL,
+    generation_tokens INTEGER,
+    feedback_rating INTEGER,
+    feedback_comments TEXT,
+    feedback_timestamp TIMESTAMP,
+    processing_time_ms INTEGER,
+    api_cost_eur NUMERIC(10,6),
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
+);
+"""
+
+
+class AIProvenanceWriteHookTest(TestCase):
+    """Forward-write hooks: each AI output save path produces a
+    matching AIArtefactProvenance row in the same atomic block.
+
+    Covers four ORM-managed save paths (RAG feedback, DTP narrative,
+    peer synthesis inline, RTM position) plus the raw-SQL rag_queries
+    INSERT path. The sixth test exercises the CP-9 rollback invariant.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        from django.db import connection as _conn
+        with _conn.cursor() as cur:
+            cur.execute(_RAG_QUERIES_DDL)
+
+    def setUp(self):
+        self.client = Client()
+        self.user = User.objects.create_user(
+            username='prov_writer', password='pw', is_staff=True,
+        )
+        TeacherProfile.objects.create(
+            user=self.user,
+            subject_area='mathematics', grade_level='primary',
+            ai_experience='none',
+            ai_disclosure_acknowledged_at=timezone.now(),
+            profile_completed=True,
+            research_consent=True,
+        )
+        self.module = Module.objects.create(
+            code='MZ', title='Provenance test module',
+            description='Test', order_index=999,
+            unesco_aspect='ethics', proficiency_level='Acquire',
+            is_published=True,
+        )
+        self.client.force_login(self.user)
+
+    def _make_progress(self):
+        return UserModuleProgress.objects.create(
+            user=self.user,
+            module=self.module,
+            introduction_completed=True,
+            introduction_completed_at=timezone.now(),
+            main_content_completed=True,
+            main_content_completed_at=timezone.now(),
+            activity_completed=True,
+            activity_completed_at=timezone.now(),
+            assessment_completed=True,
+            assessment_completed_at=timezone.now(),
+        )
+
+    def test_rag_feedback_save_writes_provenance(self):
+        """mark_tab_complete reflection path with non-empty rag_feedback
+        in kwargs creates a matching provenance row. Mocks
+        process_reflection to bypass the live Gemini call.
+        """
+        from unittest.mock import patch
+        from apps.compliance.models import AIArtefactProvenance
+
+        progress = self._make_progress()
+
+        # Mock process_reflection at the views.py import site to return
+        # an artefact that triggers the rag_feedback write path. The
+        # 350-word reflection text passes the 300-800 word validator.
+        reflection_text = ('I reflected on my classroom teaching practice today and '
+                           'considered new approaches to AI literacy support. '
+                           ) * 22  # ~352 words
+        with patch('apps.modules.views.process_reflection', return_value={
+            'query_id': 1, 'feedback': 'Mocked AI feedback markdown.',
+            'peer_synthesis': None,
+        }):
+            resp = self.client.post(
+                reverse('modules:mark_tab_complete',
+                        kwargs={'code': 'MZ', 'tab_name': 'reflection'}),
+                data=json.dumps({'reflection_text': reflection_text}),
+                content_type='application/json',
+            )
+
+        self.assertEqual(resp.status_code, 200, msg=resp.content)
+        self.assertTrue(resp.json().get('success'), msg=resp.content)
+        self.assertTrue(
+            AIArtefactProvenance.objects.filter(
+                artefact_kind='rag_feedback',
+                artefact_pk=str(progress.pk),
+                user=self.user,
+                model_name='gemini-2.5-flash',
+            ).exists(),
+            'Expected rag_feedback provenance row for the UserModuleProgress.',
+        )
+
+    def test_rtm_position_save_writes_provenance(self):
+        """save_tensions creates a provenance row per tension."""
+        from apps.compliance.models import AIArtefactProvenance
+        from apps.modules.models import ReflectionTension
+
+        # save_tensions requires an existing UserModuleProgress (404 otherwise).
+        self._make_progress()
+        tensions_payload = {
+            'tensions': [{
+                'tension_label': 'Test tension',
+                'left_pole': 'Left',
+                'right_pole': 'Right',
+                'grounding_quote': 'Quote',
+                'position': 3,
+                'comment': '',
+            }],
+        }
+        resp = self.client.post(
+            reverse('modules:save_tensions', kwargs={'code': 'MZ'}),
+            data=json.dumps(tensions_payload),
+            content_type='application/json',
+        )
+        self.assertEqual(resp.status_code, 200, msg=resp.content)
+        tension = ReflectionTension.objects.get(user=self.user, module=self.module)
+        self.assertTrue(
+            AIArtefactProvenance.objects.filter(
+                artefact_kind='rtm_position',
+                artefact_pk=str(tension.pk),
+                user=self.user,
+                model_name='gemini-2.5-flash',
+            ).exists(),
+            'Expected rtm_position provenance row for the saved ReflectionTension.',
+        )
+
+    def test_dtp_narrative_save_writes_provenance(self):
+        """Direct unit test of the dtp_narrative save + provenance
+        atomic pair. The view's upstream raw psycopg2 SELECT against
+        rag_queries cannot see the test-DB-only DDL (separate connection,
+        uncommitted schema in TestCase outer transaction). The patched
+        site itself — `progress.save()` + `record_ai_provenance` inside
+        one `transaction.atomic()` — is exactly what we test here, the
+        same structure the view uses."""
+        from django.db import transaction as _txn
+        from apps.compliance.models import AIArtefactProvenance
+        from apps.compliance.services import record_ai_provenance
+
+        progress = self._make_progress()
+        dtp_result = {'trajectory': 'mock'}
+        with _txn.atomic():
+            progress.reflection_dtp = json.dumps(dtp_result)
+            progress.save()
+            record_ai_provenance(
+                artefact_kind='dtp_narrative',
+                artefact_pk=progress.pk,
+                user=progress.user,
+                module=progress.module,
+                model_name='gemini-2.5-flash',
+                generated_at=timezone.now(),
+            )
+        self.assertTrue(
+            AIArtefactProvenance.objects.filter(
+                artefact_kind='dtp_narrative',
+                artefact_pk=str(progress.pk),
+                user=self.user,
+            ).exists(),
+            'Expected dtp_narrative provenance row.',
+        )
+
+    def test_peer_synthesis_inline_save_writes_provenance(self):
+        """mark_tab_complete reflection path with peer_synthesis in
+        rag_result writes a provenance row inside the inline atomic
+        block (the second atomic call from C.3 commit 2a)."""
+        from unittest.mock import patch
+        from apps.compliance.models import AIArtefactProvenance
+
+        progress = self._make_progress()
+        reflection_text = ('I reflected on my classroom teaching practice today and '
+                           'considered new approaches to AI literacy support. '
+                           ) * 22
+        with patch('apps.modules.views.process_reflection', return_value={
+            'query_id': 1, 'feedback': 'rag feedback',
+            'peer_synthesis': 'Mocked peer synthesis markdown.',
+        }):
+            resp = self.client.post(
+                reverse('modules:mark_tab_complete',
+                        kwargs={'code': 'MZ', 'tab_name': 'reflection'}),
+                data=json.dumps({'reflection_text': reflection_text}),
+                content_type='application/json',
+            )
+        self.assertEqual(resp.status_code, 200, msg=resp.content)
+        self.assertTrue(
+            AIArtefactProvenance.objects.filter(
+                artefact_kind='peer_synthesis',
+                artefact_pk=str(progress.pk),
+                user=self.user,
+            ).exists(),
+            'Expected peer_synthesis provenance row from inline save.',
+        )
+
+    def test_store_rag_query_writes_provenance_in_same_atomic(self):
+        """store_rag_query (raw-SQL) writes an AIArtefactProvenance row
+        inside one atomic block — verifies the RETURNING id path (CP-3)
+        and the same-transaction guarantee (CP-9). Bypasses Gemini by
+        calling the function directly with synthetic arguments."""
+        from rag_query_system import store_rag_query
+        from apps.compliance.models import AIArtefactProvenance
+        from django.db import connection as _conn
+
+        before = AIArtefactProvenance.objects.filter(
+            artefact_kind='rag_query'
+        ).count()
+        query_id = store_rag_query(
+            conn=None,  # not used after C.3 commit 2a refactor
+            user_id=self.user.id,
+            module_id=self.module.id,
+            reflection_text='r',
+            teacher_context={'subject': 'mathematics'},
+            query_embedding=None,  # TEXT column in test DDL — None acceptable
+            retrieved_chunks=[],
+            generated_response='Mock AI response.',
+            generation_tokens=100,
+            processing_time_ms=500,
+            api_cost_eur=0.001,
+        )
+        self.assertIsNotNone(query_id)
+        self.assertEqual(
+            AIArtefactProvenance.objects.filter(
+                artefact_kind='rag_query', artefact_pk=str(query_id),
+            ).count(),
+            1,
+            'Expected exactly one rag_query provenance row.',
+        )
+        self.assertEqual(
+            AIArtefactProvenance.objects.filter(
+                artefact_kind='rag_query'
+            ).count(),
+            before + 1,
+        )
+
+    def test_cp9_rollback_when_provenance_raises_during_rtm_save(self):
+        """CP-9 invariant: when record_ai_provenance raises during the
+        atomic block, the source-row save is rolled back too — no
+        ReflectionTension created, no provenance created.
+
+        Uses RTM save_tensions as the exercise path because it is fully
+        ORM-managed and does not require AI mocking."""
+        from unittest.mock import patch
+        from apps.compliance.models import AIArtefactProvenance
+        from apps.modules.models import ReflectionTension
+
+        # save_tensions requires UserModuleProgress.
+        self._make_progress()
+        tensions_payload = {
+            'tensions': [{
+                'tension_label': 'CP-9 invariant tension',
+                'left_pole': 'L', 'right_pole': 'R',
+                'grounding_quote': 'q', 'position': 4, 'comment': '',
+            }],
+        }
+        # save_tensions's outer try/except swallows the RuntimeError and
+        # returns a 500 JSON. The load-bearing CP-9 assertion is on DB
+        # state — the source row must NOT exist post-call.
+        with patch(
+            'apps.modules.views.record_ai_provenance',
+            side_effect=RuntimeError('simulated provenance failure'),
+        ):
+            resp = self.client.post(
+                reverse('modules:save_tensions', kwargs={'code': 'MZ'}),
+                data=json.dumps(tensions_payload),
+                content_type='application/json',
+            )
+        self.assertEqual(
+            resp.status_code, 500,
+            'View should propagate provenance failure as 500.',
+        )
+        self.assertFalse(
+            ReflectionTension.objects.filter(
+                user=self.user, module=self.module,
+                tension_label='CP-9 invariant tension',
+            ).exists(),
+            'CP-9 invariant: ReflectionTension save must have been rolled back.',
+        )
+        self.assertEqual(
+            AIArtefactProvenance.objects.filter(
+                artefact_kind='rtm_position', user=self.user,
+            ).count(),
+            0,
+            'CP-9 invariant: no provenance row created when the write raised.',
+        )

@@ -424,12 +424,26 @@ IMPORTANT:
 # STEP 4: STORE QUERY
 # ============================================================================
 
-def store_rag_query(conn, user_id, module_id, reflection_text, teacher_context, 
-                    query_embedding, retrieved_chunks, generated_response, 
+def store_rag_query(conn, user_id, module_id, reflection_text, teacher_context,
+                    query_embedding, retrieved_chunks, generated_response,
                     generation_tokens, processing_time_ms, api_cost_eur):
-    """Store RAG query in database for research analysis."""
-    cursor = conn.cursor()
-    
+    """Store RAG query in database for research analysis.
+
+    Phase C C.3 commit 2a — CP-9 invariant: the rag_queries INSERT and
+    the matching AIArtefactProvenance write must happen in one atomic
+    block, so a provenance write failure rolls back the rag_queries row
+    (no AI output without provenance). The raw psycopg2 `conn` parameter
+    is kept for backward compatibility with the function signature but
+    is NOT used for the rag_queries INSERT — Django's connection is
+    used instead so the INSERT can join Django's transaction.atomic
+    block with the provenance write.
+    """
+    from django.db import connection as django_conn, transaction
+    from django.utils import timezone
+    from django.contrib.auth.models import User
+    from apps.modules.models import Module
+    from apps.compliance.services import record_ai_provenance
+
     # Prepare retrieved chunks for storage
     chunks_data = [
         {
@@ -440,28 +454,40 @@ def store_rag_query(conn, user_id, module_id, reflection_text, teacher_context,
         }
         for chunk in retrieved_chunks
     ]
-    
-    cursor.execute("""
-        INSERT INTO rag_queries (
-            user_id, module_id, reflection_text, teacher_context,
-            query_embedding, retrieved_chunks, num_chunks_retrieved,
-            generated_response, generation_tokens,
-            processing_time_ms, api_cost_eur,
-            created_at, updated_at
+
+    with transaction.atomic():
+        with django_conn.cursor() as cur:
+            cur.execute("""
+                INSERT INTO rag_queries (
+                    user_id, module_id, reflection_text, teacher_context,
+                    query_embedding, retrieved_chunks, num_chunks_retrieved,
+                    generated_response, generation_tokens,
+                    processing_time_ms, api_cost_eur,
+                    created_at, updated_at
+                )
+                VALUES (%s, %s, %s, %s::jsonb, %s, %s::jsonb, %s, %s, %s, %s, %s, NOW(), NOW())
+                RETURNING id;
+            """, (
+                user_id, module_id, reflection_text, json.dumps(teacher_context),
+                query_embedding, json.dumps(chunks_data), len(retrieved_chunks),
+                generated_response, generation_tokens,
+                processing_time_ms, api_cost_eur
+            ))
+            query_id = cur.fetchone()[0]
+
+        # CP-9: same atomic block as the INSERT. CP-3: id obtained
+        # exclusively via RETURNING above — never SELECT lastval().
+        user = User.objects.get(pk=user_id)
+        module = Module.objects.filter(pk=module_id).first() if module_id else None
+        record_ai_provenance(
+            artefact_kind='rag_query',
+            artefact_pk=query_id,
+            user=user,
+            module=module,
+            model_name='gemini-2.5-flash',
+            generated_at=timezone.now(),
         )
-        VALUES (%s, %s, %s, %s::jsonb, %s, %s::jsonb, %s, %s, %s, %s, %s, NOW(), NOW())
-        RETURNING id;
-    """, (
-        user_id, module_id, reflection_text, json.dumps(teacher_context),
-        query_embedding, json.dumps(chunks_data), len(retrieved_chunks),
-        generated_response, generation_tokens,
-        processing_time_ms, api_cost_eur
-    ))
-    
-    query_id = cursor.fetchone()[0]
-    conn.commit()
-    cursor.close()
-    
+
     return query_id
 
 # ============================================================================
