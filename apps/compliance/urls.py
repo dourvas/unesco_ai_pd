@@ -41,4 +41,9 @@ urlpatterns = [
         views.revoke_data_sharing_view,
         name='revoke_data_sharing',
     ),
+    path(
+        'profile/privacy/export/',
+        views.export_data_view,
+        name='export_data',
+    ),
 ]

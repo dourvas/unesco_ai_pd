@@ -171,16 +171,107 @@
     </div>
 
     {# ============================================================ #}
-    {# Card 2 — Your data (export). Filled in commit 2 of C.4.       #}
+    {# Card 2 — Your data (export, GDPR Art. 15)                     #}
     {# ============================================================ #}
     <div class="card bg-base-100 shadow-xl mb-6">
         <div class="card-body">
             <h2 class="card-title text-xl">
                 {% trans "Your data" %}
             </h2>
-            <p class="text-sm text-base-content/70">
-                {% trans "Download a copy of all data the platform holds about you (GDPR Article 15 right of access). Coming in the next release." %}
+            <p class="text-sm text-base-content/70 mb-4">
+                {% trans "Download a JSON file containing every piece of data the platform holds about you. This is the GDPR Article 15 right of access. The file is generated on demand and is not stored anywhere on the server." %}
             </p>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+                <div class="stat bg-base-200 rounded-lg p-3">
+                    <div class="stat-title text-xs">{% trans "AI Literacy administrations" %}</div>
+                    <div class="stat-value text-2xl">{{ counts.ailst }}</div>
+                </div>
+                <div class="stat bg-base-200 rounded-lg p-3">
+                    <div class="stat-title text-xs">{% trans "Modules with progress" %}</div>
+                    <div class="stat-value text-2xl">{{ counts.modules }}</div>
+                </div>
+                <div class="stat bg-base-200 rounded-lg p-3">
+                    <div class="stat-title text-xs">{% trans "Consent events" %}</div>
+                    <div class="stat-value text-2xl">{{ counts.consents }}</div>
+                </div>
+                <div class="stat bg-base-200 rounded-lg p-3">
+                    <div class="stat-title text-xs">{% trans "AI-generated insights" %}</div>
+                    <div class="stat-value text-2xl">{{ counts.ai_outputs }}</div>
+                </div>
+            </div>
+
+            {% comment %}
+            AI-generated outputs section — per D11 + CP-4. Every card
+            carries data-ai-generated="true" (machine-readable marker
+            for the future C.3 transparency layer).
+            {% endcomment %}
+            {% if ai_outputs %}
+                <details class="mb-4 bg-base-200 rounded-lg">
+                    <summary class="cursor-pointer p-3 font-medium">
+                        {% trans "View AI-generated insights based on your reflections" %}
+                    </summary>
+                    <div class="p-3 space-y-3">
+                        {% if ai_outputs.rtm_positions %}
+                            <div class="card bg-base-100 shadow-sm" data-ai-generated="true">
+                                <div class="card-body">
+                                    <h4 class="font-semibold text-sm">
+                                        {% trans "Reflective Tension Mapper positions" %}
+                                        <span class="badge badge-ghost badge-sm ml-1">{{ ai_outputs.rtm_positions|length }}</span>
+                                    </h4>
+                                    <ul class="text-xs text-base-content/70 list-disc pl-4 space-y-1">
+                                        {% for t in ai_outputs.rtm_positions %}
+                                            <li>{{ t.module_code }} — {{ t.tension_label }} (position {{ t.selected_position }})</li>
+                                        {% endfor %}
+                                    </ul>
+                                </div>
+                            </div>
+                        {% endif %}
+                        {% if ai_outputs.dtp_narratives %}
+                            <div class="card bg-base-100 shadow-sm" data-ai-generated="true">
+                                <div class="card-body">
+                                    <h4 class="font-semibold text-sm">
+                                        {% trans "Developmental Trajectory Predictor narratives" %}
+                                        <span class="badge badge-ghost badge-sm ml-1">{{ ai_outputs.dtp_narratives|length }}</span>
+                                    </h4>
+                                    <p class="text-xs text-base-content/70">
+                                        {% trans "Full narrative text is included in the JSON download." %}
+                                    </p>
+                                </div>
+                            </div>
+                        {% endif %}
+                        {% if ai_outputs.rag_feedback %}
+                            <div class="card bg-base-100 shadow-sm" data-ai-generated="true">
+                                <div class="card-body">
+                                    <h4 class="font-semibold text-sm">
+                                        {% trans "RAG feedback responses" %}
+                                        <span class="badge badge-ghost badge-sm ml-1">{{ ai_outputs.rag_feedback|length }}</span>
+                                    </h4>
+                                </div>
+                            </div>
+                        {% endif %}
+                        {% if ai_outputs.rag_queries %}
+                            <div class="card bg-base-100 shadow-sm" data-ai-generated="true">
+                                <div class="card-body">
+                                    <h4 class="font-semibold text-sm">
+                                        {% trans "Raw AI query log" %}
+                                        <span class="badge badge-ghost badge-sm ml-1">{{ ai_outputs.rag_queries|length }}</span>
+                                    </h4>
+                                    <p class="text-xs text-base-content/70">
+                                        {% trans "Telemetry records of each AI request made during your reflections. Included in the JSON download." %}
+                                    </p>
+                                </div>
+                            </div>
+                        {% endif %}
+                    </div>
+                </details>
+            {% endif %}
+
+            <div class="card-actions justify-end">
+                <a href="{% url 'compliance:export_data' %}" class="btn btn-primary">
+                    {% trans "Download as JSON" %}
+                </a>
+            </div>
         </div>
     </div>
 

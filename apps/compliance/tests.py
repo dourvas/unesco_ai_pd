@@ -815,3 +815,217 @@ class RevokeDataSharingTest(_PrivacyTestBase):
         )
         self.assertEqual(rows.count(), 1)
         self.assertEqual(rows.first().revoked_at, first_revoked_at)
+
+
+# ============================================================================
+# C.4 commit 2 — GDPR Art. 15 data export
+# ============================================================================
+
+
+_RAG_QUERIES_DDL = """
+CREATE TABLE IF NOT EXISTS rag_queries (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL,
+    module_id INTEGER NOT NULL,
+    reflection_text TEXT NOT NULL,
+    teacher_context JSONB NOT NULL DEFAULT '{}'::jsonb,
+    query_embedding TEXT,
+    retrieved_chunks JSONB DEFAULT '[]'::jsonb,
+    num_chunks_retrieved INTEGER DEFAULT 0,
+    generated_response TEXT NOT NULL,
+    generation_tokens INTEGER,
+    feedback_rating INTEGER,
+    feedback_comments TEXT,
+    feedback_timestamp TIMESTAMP,
+    processing_time_ms INTEGER,
+    api_cost_eur NUMERIC(10,6),
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
+);
+"""
+
+
+class DataExportTest(_PrivacyTestBase):
+    """Exercises the JSON export endpoint and the gather_user_export
+    service helper.
+
+    The 7th test covers the CP-5 invariant: a fresh user with zero
+    optional rows still gets a JSON document with every expected key
+    present (empty arrays / null values), so downstream parsers do
+    not throw KeyError.
+
+    rag_queries is a raw-SQL table that lives outside Django migrations
+    in production. The class setUp ensures the table exists in the
+    test DB so we can exercise the export path against it; the
+    service helper is independently defensive against the missing
+    table (test_export_works_when_rag_queries_table_absent in the
+    AtomicityAndEdgeCaseTest class verifies that).
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        # rag_queries lives outside Django migrations; create on demand.
+        with connection.cursor() as cur:
+            cur.execute(_RAG_QUERIES_DDL)
+
+    def test_get_returns_json_attachment(self):
+        self._grant('research_participation')
+        resp = self.client.get(reverse('compliance:export_data'))
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp['Content-Type'], 'application/json')
+        self.assertIn('attachment;', resp['Content-Disposition'])
+        self.assertIn('proodos_export_', resp['Content-Disposition'])
+
+    def test_json_top_level_keys_match_spec(self):
+        import json
+
+        self._grant('research_participation')
+        resp = self.client.get(reverse('compliance:export_data'))
+        payload = json.loads(resp.content.decode('utf-8'))
+        for key in (
+            'export_version', 'exported_at', 'user', 'profile',
+            'consents', 'ailst_responses', 'module_progress',
+            'epilogue_completion', 'ai_outputs',
+        ):
+            self.assertIn(key, payload, 'missing top-level key ' + repr(key))
+        self.assertEqual(payload['export_version'], '1')
+
+    def test_verbatim_consent_text_included(self):
+        """Stored verbatim text survives the export round-trip
+        unchanged — required for any future IRB audit that asks
+        the user to prove what they agreed to."""
+        import json
+
+        from apps.compliance.copy import RESEARCH_PARTICIPATION_TEXT_V1_PRE_IRB
+        from apps.compliance.services import record_consent
+
+        record_consent(
+            user=self.user,
+            consent_type='research_participation',
+            consent_text=RESEARCH_PARTICIPATION_TEXT_V1_PRE_IRB,
+            version='v1_pre_irb',
+        )
+
+        resp = self.client.get(reverse('compliance:export_data'))
+        payload = json.loads(resp.content.decode('utf-8'))
+        consent_texts = [c['consent_text'] for c in payload['consents']]
+        self.assertIn(RESEARCH_PARTICIPATION_TEXT_V1_PRE_IRB, consent_texts)
+
+    def test_ai_outputs_include_rtm_dtp_rag_and_rag_queries(self):
+        """ai_outputs is the central D11 payload. Test seeds an RTM
+        position, fills in DTP / RAG / peer-synthesis text fields on
+        UserModuleProgress, and inserts one raw-SQL rag_queries row.
+        All five sub-arrays should be non-empty in the export.
+        """
+        import json
+
+        from django.db import connection
+
+        from apps.modules.models import (
+            Module,
+            ReflectionTension,
+            UserModuleProgress,
+        )
+
+        module, _ = Module.objects.get_or_create(
+            code='MEXP',
+            defaults={
+                'title': 'Export Test',
+                'description': 'Export Test',
+                'unesco_aspect': 'ethics',
+                'proficiency_level': 'Acquire',
+                'order_index': 99,
+            },
+        )
+        UserModuleProgress.objects.create(
+            user=self.user, module=module,
+            reflection_dtp='dtp text',
+            reflection_rag_feedback='rag text',
+            reflection_peer_synthesis='peer text',
+        )
+        ReflectionTension.objects.create(
+            user=self.user, module=module,
+            tension_label='Test tension',
+            left_pole='left', right_pole='right',
+            grounding_quote='quote', selected_position=3,
+        )
+        with connection.cursor() as cur:
+            cur.execute(
+                """
+                INSERT INTO rag_queries
+                    (user_id, module_id, reflection_text, teacher_context,
+                     generated_response, created_at, updated_at)
+                VALUES (%s, %s, %s, %s::jsonb, %s, NOW(), NOW())
+                """,
+                [self.user.id, module.id, 'reflection', '{}', 'response'],
+            )
+
+        resp = self.client.get(reverse('compliance:export_data'))
+        payload = json.loads(resp.content.decode('utf-8'))
+        ai = payload['ai_outputs']
+        self.assertEqual(len(ai['rtm_positions']), 1)
+        self.assertEqual(len(ai['dtp_narratives']), 1)
+        self.assertEqual(len(ai['rag_feedback']), 1)
+        self.assertEqual(len(ai['peer_synthesis']), 1)
+        self.assertEqual(len(ai['rag_queries']), 1)
+        # rag_queries row preserves the user's reflection text verbatim.
+        self.assertEqual(ai['rag_queries'][0]['reflection_text'], 'reflection')
+
+    def test_export_unaffected_by_research_data_opted_out(self):
+        """Art. 15 is a personal right. A user who opted out of research
+        still has the right to download all their personal data — the
+        opt-out only affects future research analyses, not exports."""
+        import json
+
+        self.profile.research_data_opted_out = True
+        self.profile.save(update_fields=['research_data_opted_out'])
+
+        from apps.ailst.models import AilstResponse
+        AilstResponse.objects.create(
+            user=self.user, timepoint='T0', language='en',
+            instrument_version='ning_2025_v1',
+            responses={'P1': 4}, completed_at=timezone.now(),
+        )
+
+        resp = self.client.get(reverse('compliance:export_data'))
+        payload = json.loads(resp.content.decode('utf-8'))
+        self.assertEqual(len(payload['ailst_responses']), 1)
+        self.assertTrue(payload['profile']['research_data_opted_out'])
+
+    def test_anon_user_redirects_to_login(self):
+        self.client.logout()
+        resp = self.client.get(reverse('compliance:export_data'))
+        self.assertEqual(resp.status_code, 302)
+        self.assertIn('/login/', resp.url)
+
+    def test_fresh_user_export_has_consistent_shape(self):
+        """CP-5 — a user with zero AILST / module / Epilogue / RAG rows
+        still gets a JSON with every top-level key present, optional
+        sections as empty arrays / null values, never missing keys.
+        """
+        import json
+
+        # No grants, no progress, no AILST. Pure baseline user.
+        resp = self.client.get(reverse('compliance:export_data'))
+        payload = json.loads(resp.content.decode('utf-8'))
+
+        # All top-level keys present.
+        for key in (
+            'export_version', 'exported_at', 'user', 'profile',
+            'consents', 'ailst_responses', 'module_progress',
+            'epilogue_completion', 'ai_outputs',
+        ):
+            self.assertIn(key, payload, 'missing top-level key ' + repr(key))
+
+        # Empty containers, not missing.
+        self.assertEqual(payload['consents'], [])
+        self.assertEqual(payload['ailst_responses'], [])
+        self.assertEqual(payload['module_progress'], [])
+        self.assertIsNone(payload['epilogue_completion'])
+
+        ai = payload['ai_outputs']
+        for sub in ('rtm_positions', 'dtp_narratives', 'rag_feedback',
+                    'peer_synthesis', 'rag_queries', 'ai_disputes'):
+            self.assertIn(sub, ai, 'missing ai_outputs.' + sub)
+            self.assertEqual(ai[sub], [], sub + ' must be empty array, not missing')

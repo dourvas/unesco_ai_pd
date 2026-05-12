@@ -5,10 +5,18 @@ Centralised write/revoke path for ConsentRecord. C.2 AI Disclosure
 middleware, C.4 Privacy dashboard, and the legacy-boolean data migration
 all flow through these helpers. Keeps business logic out of views and
 out of migrations.
+
+C.4 additions (commits 2 and 3):
+  - gather_user_export(user) -> dict: GDPR Art. 15 right of access.
+    Builds the full personal-data snapshot for the user, including the
+    raw-SQL rag_queries rows. Caller serialises to JSON.
+  - anonymize_user(user) -> None: GDPR Art. 17 right to erasure.
+    (Lands in commit 3 of C.4.)
 """
 
 from typing import Optional
 
+from django.db import connection
 from django.utils import timezone
 
 
@@ -275,3 +283,293 @@ def migrate_legacy_teacher_consents(*, TeacherProfile=None, ConsentRecord=None):
             created_count += 1
 
     return created_count
+
+
+# ============================================================================
+# Phase C C.4 commit 2 — GDPR Art. 15 right of access (data export)
+# ============================================================================
+
+EXPORT_VERSION = '1'
+
+
+def _iso(dt):
+    """Serialise a datetime to ISO-8601 or return None."""
+    return dt.isoformat() if dt else None
+
+
+def _profile_to_dict(profile):
+    """Serialise TeacherProfile to a dict that survives json.dumps.
+    JSONField values (list/dict) pass through; numeric/text fields too.
+    Auto datetimes are ISO-formatted; choice fields keep their stored
+    value (not display label) for round-trip-ability."""
+    if profile is None:
+        return None
+    return {
+        'first_name': profile.first_name,
+        'last_name': profile.last_name,
+        'display_name': profile.display_name,
+        'subject_area': profile.subject_area,
+        'subject_area_other': profile.subject_area_other,
+        'grade_level': profile.grade_level,
+        'teaching_years': profile.teaching_years,
+        'school_location': profile.school_location,
+        'average_class_size': profile.average_class_size,
+        'ai_experience': profile.ai_experience,
+        'ai_tools_used': profile.ai_tools_used,
+        'ai_teaching_integration': profile.ai_teaching_integration,
+        'primary_goals': profile.primary_goals,
+        'preferred_communication_style': profile.preferred_communication_style,
+        'profile_completed': profile.profile_completed,
+        'profile_completion_date': _iso(profile.profile_completion_date),
+        'research_consent': profile.research_consent,
+        'consent_data_sharing': profile.consent_data_sharing,
+        'contact_for_research': profile.contact_for_research,
+        'research_data_opted_out': profile.research_data_opted_out,
+        'consent_timestamp': _iso(profile.consent_timestamp),
+        'ai_disclosure_acknowledged_at': _iso(profile.ai_disclosure_acknowledged_at),
+        'current_curriculum_pressure': profile.current_curriculum_pressure,
+        'student_population_special_needs': profile.student_population_special_needs,
+        'institutional_ai_policy': profile.institutional_ai_policy,
+        'created_at': _iso(profile.created_at) if hasattr(profile, 'created_at') else None,
+        'updated_at': _iso(profile.updated_at) if hasattr(profile, 'updated_at') else None,
+    }
+
+
+def _consents_to_list(user):
+    from apps.compliance.models import ConsentRecord
+    rows = ConsentRecord.objects.filter(user=user).order_by('granted_at')
+    return [
+        {
+            'consent_type': r.consent_type,
+            'version': r.version,
+            'granted': r.granted,
+            'granted_at': _iso(r.granted_at),
+            'revoked_at': _iso(r.revoked_at),
+            'consent_text': r.consent_text,
+            'ip_address': r.ip_address,
+        }
+        for r in rows
+    ]
+
+
+def _ailst_responses_to_list(user):
+    from apps.ailst.models import AilstResponse
+    rows = AilstResponse.objects.filter(user=user).order_by('timepoint')
+    return [
+        {
+            'timepoint': r.timepoint,
+            'language': r.language,
+            'instrument_version': r.instrument_version,
+            'responses': r.responses,
+            'started_at': _iso(r.started_at),
+            'completed_at': _iso(r.completed_at),
+            'last_saved_at': _iso(r.last_saved_at),
+            'perception_score': float(r.perception_score) if r.perception_score is not None else None,
+            'knowledge_skills_score': float(r.knowledge_skills_score) if r.knowledge_skills_score is not None else None,
+            'applications_innovation_score': float(r.applications_innovation_score) if r.applications_innovation_score is not None else None,
+            'ethics_score': float(r.ethics_score) if r.ethics_score is not None else None,
+            'overall_score': float(r.overall_score) if r.overall_score is not None else None,
+        }
+        for r in rows
+    ]
+
+
+def _module_progress_to_list(user):
+    """Serialise UserModuleProgress rows. Reflection content text fields
+    are included as separate keys; the AI-generated fields under
+    `ai_outputs` reference the SAME text by module code (see
+    _ai_outputs_to_dict) so a downstream parser can pick whichever
+    grouping is convenient.
+    """
+    from apps.modules.models import UserModuleProgress
+    rows = UserModuleProgress.objects.filter(user=user).select_related('module').order_by('module__order_index')
+    return [
+        {
+            'module_code': p.module.code,
+            'started_at': _iso(p.started_at),
+            'completed_at': _iso(p.completed_at),
+            'completion_percentage': p.completion_percentage,
+            'status': p.status,
+            'introduction_completed': p.introduction_completed,
+            'main_content_completed': p.main_content_completed,
+            'activity_completed': p.activity_completed,
+            'assessment_completed': p.assessment_completed,
+            'reflection_completed': p.reflection_completed,
+            'reflection_text': p.reflection_text or '',
+        }
+        for p in rows
+    ]
+
+
+def _epilogue_to_dict(user):
+    from apps.epilogue.models import EpilogueCompletion
+    row = EpilogueCompletion.objects.filter(user=user).first()
+    if row is None:
+        return None
+    return {
+        'started_at': _iso(row.started_at),
+        'completed_at': _iso(row.completed_at),
+    }
+
+
+def _ai_outputs_to_dict(user):
+    """Aggregate every AI-generated artefact linked to the user.
+
+    Sources:
+      - RTM positions: ReflectionTension rows (one row per tension; a
+        module may have multiple).
+      - DTP narratives, RAG feedback, peer synthesis: TextField columns
+        on UserModuleProgress keyed by module_code.
+      - Raw RAG query log: rag_queries table (raw SQL — no Django ORM
+        model). Includes the user's reflection text, the AI response,
+        retrieved chunks, feedback rating/comments, and cost metrics.
+        Per D11 + CP-4 verification.
+      - AI dispute submissions: AIOutputDispute rows.
+    """
+    from apps.modules.models import (
+        AIOutputDispute,
+        ReflectionTension,
+        UserModuleProgress,
+    )
+
+    rtm = [
+        {
+            'module_code': t.module.code,
+            'tension_label': t.tension_label,
+            'left_pole': t.left_pole,
+            'right_pole': t.right_pole,
+            'grounding_quote': t.grounding_quote,
+            'selected_position': t.selected_position,
+            'position_confirmed': t.position_confirmed,
+        }
+        for t in ReflectionTension.objects.filter(user=user).select_related('module')
+    ]
+
+    progress_rows = (
+        UserModuleProgress.objects.filter(user=user).select_related('module')
+    )
+    dtp_narratives = []
+    rag_feedback = []
+    peer_synthesis = []
+    for p in progress_rows:
+        if p.reflection_dtp:
+            dtp_narratives.append({'module_code': p.module.code, 'text': p.reflection_dtp})
+        if p.reflection_rag_feedback:
+            rag_feedback.append({'module_code': p.module.code, 'text': p.reflection_rag_feedback})
+        if p.reflection_peer_synthesis:
+            peer_synthesis.append({'module_code': p.module.code, 'text': p.reflection_peer_synthesis})
+
+    rag_queries = _rag_queries_to_list(user)
+
+    disputes = [
+        {
+            'module_code': d.module.code if d.module_id else None,
+            'feature_type': d.feature_type,
+            'rating': d.rating,
+        }
+        for d in AIOutputDispute.objects.filter(user=user).select_related('module')
+    ]
+
+    return {
+        'rtm_positions': rtm,
+        'dtp_narratives': dtp_narratives,
+        'rag_feedback': rag_feedback,
+        'peer_synthesis': peer_synthesis,
+        'rag_queries': rag_queries,
+        'ai_disputes': disputes,
+    }
+
+
+def _rag_queries_to_list(user):
+    """rag_queries is a raw-SQL table outside the Django ORM (same quirk
+    pattern as the pre-Phase-C consent_records). Pull rows via a cursor.
+
+    Defensive: if the table does not exist in this environment (e.g. a
+    fresh test DB before any rag_queries DDL has been applied), the
+    ProgrammingError is caught and an empty list is returned. The
+    export is best-effort on this table; missing-table is non-fatal
+    because rag_queries is raw infrastructure, not a Django-managed
+    artefact.
+
+    Implementation: wrap the query in a savepoint via transaction.atomic
+    so a ProgrammingError rolls back only the savepoint and leaves the
+    outer transaction state clean. Without this, the TestCase outer
+    transaction would be marked broken and every subsequent query in
+    the same test would fail.
+    """
+    from django.db import transaction
+    from django.db.utils import ProgrammingError
+
+    rows = []
+    try:
+        with transaction.atomic():
+            with connection.cursor() as cur:
+                cur.execute(
+                    """
+                    SELECT id, module_id, reflection_text, teacher_context,
+                           retrieved_chunks, num_chunks_retrieved,
+                           generated_response, generation_tokens,
+                           feedback_rating, feedback_comments,
+                           feedback_timestamp, processing_time_ms,
+                           api_cost_eur, created_at, updated_at
+                    FROM rag_queries
+                    WHERE user_id = %s
+                    ORDER BY created_at
+                    """,
+                    [user.id],
+                )
+                cols = [c[0] for c in cur.description]
+                for row in cur.fetchall():
+                    entry = dict(zip(cols, row))
+                    for k in ('feedback_timestamp', 'created_at', 'updated_at'):
+                        entry[k] = _iso(entry[k]) if entry[k] else None
+                    if entry.get('api_cost_eur') is not None:
+                        entry['api_cost_eur'] = float(entry['api_cost_eur'])
+                    rows.append(entry)
+    except ProgrammingError:
+        # Savepoint rolled back; outer transaction state is clean.
+        pass
+    return rows
+
+
+def gather_user_export(user) -> dict:
+    """GDPR Art. 15 right of access — full personal-data snapshot for `user`.
+
+    Returns a JSON-serialisable dict. Always contains every top-level
+    key, with empty arrays / null values when there is nothing to
+    report (per CP-5: downstream parsers should never see KeyError on
+    a fresh user). Caller is responsible for serialising to JSON.
+
+    Top-level keys:
+      - export_version (str)
+      - exported_at (ISO-8601 str)
+      - user (dict: username/email/dates)
+      - profile (dict from _profile_to_dict, or None if no profile row)
+      - consents (list)
+      - ailst_responses (list)
+      - module_progress (list)
+      - epilogue_completion (dict or None)
+      - ai_outputs (dict with rtm_positions / dtp_narratives /
+        rag_feedback / peer_synthesis / rag_queries / ai_disputes lists)
+    """
+    profile = getattr(user, 'teacher_profile', None)
+
+    return {
+        'export_version': EXPORT_VERSION,
+        'exported_at': _iso(timezone.now()),
+        'user': {
+            'username': user.username,
+            'email': user.email,
+            'first_name': user.first_name,
+            'last_name': user.last_name,
+            'date_joined': _iso(user.date_joined),
+            'last_login': _iso(user.last_login),
+            'is_active': user.is_active,
+        },
+        'profile': _profile_to_dict(profile),
+        'consents': _consents_to_list(user),
+        'ailst_responses': _ailst_responses_to_list(user),
+        'module_progress': _module_progress_to_list(user),
+        'epilogue_completion': _epilogue_to_dict(user),
+        'ai_outputs': _ai_outputs_to_dict(user),
+    }

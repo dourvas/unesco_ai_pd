@@ -39,7 +39,11 @@ from apps.compliance.copy import (
     AI_DISCLOSURE_TEXT_V1_PRE_IRB,
 )
 from apps.compliance.models import ConsentRecord
-from apps.compliance.services import record_consent, revoke_consent
+from apps.compliance.services import (
+    gather_user_export,
+    record_consent,
+    revoke_consent,
+)
 
 
 def _client_ip(request):
@@ -133,13 +137,32 @@ def privacy_dashboard_view(request):
 
     Top-level page surfaces:
       - Active / revoked state for each of the three consent types.
-      - 'Data export' and 'Delete my account' actions (commits 2 and 3).
+      - Summary counts of personal data + AI-generated insights, plus
+        a download-as-JSON button (commit 2 of C.4).
+      - 'Delete my account' action (commit 3 of C.4).
     """
+    snapshot = gather_user_export(request.user)
+    ai_outputs = snapshot.get('ai_outputs') or {}
+    counts = {
+        'ailst': len(snapshot.get('ailst_responses') or []),
+        'modules': len(snapshot.get('module_progress') or []),
+        'consents': len(snapshot.get('consents') or []),
+        'ai_outputs': (
+            len(ai_outputs.get('rtm_positions') or [])
+            + len(ai_outputs.get('dtp_narratives') or [])
+            + len(ai_outputs.get('rag_feedback') or [])
+            + len(ai_outputs.get('peer_synthesis') or [])
+            + len(ai_outputs.get('rag_queries') or [])
+        ),
+    }
+
     return render(request, 'compliance/privacy_dashboard.html', {
         'ai_disclosure_state': _consent_state(request.user, 'ai_disclosure'),
         'research_state': _consent_state(request.user, 'research_participation'),
         'data_sharing_state': _consent_state(request.user, 'data_sharing'),
         'profile': getattr(request.user, 'teacher_profile', None),
+        'counts': counts,
+        'ai_outputs': ai_outputs,
     })
 
 
@@ -219,6 +242,34 @@ def revoke_research_view(request):
           '"Delete my account" option below.'),
     )
     return redirect('compliance:privacy_dashboard')
+
+
+@login_required
+def export_data_view(request):
+    """GET /profile/privacy/export/ — GDPR Art. 15 JSON download.
+
+    Builds the full personal-data snapshot via
+    apps.compliance.services.gather_user_export and serves it as a
+    file attachment. Synchronous (the snapshot is small even for
+    completed participants — single-digit kilobytes typically). The
+    export includes data even when `research_data_opted_out=True`
+    because Art. 15 is a personal right that does not depend on
+    research participation.
+    """
+    import json
+
+    from django.http import HttpResponse
+
+    payload = gather_user_export(request.user)
+    body = json.dumps(payload, indent=2, ensure_ascii=False, default=str)
+
+    filename = 'proodos_export_{username}_{date}.json'.format(
+        username=request.user.username or 'user',
+        date=timezone.now().strftime('%Y%m%d'),
+    )
+    response = HttpResponse(body, content_type='application/json')
+    response['Content-Disposition'] = 'attachment; filename="{}"'.format(filename)
+    return response
 
 
 @login_required
