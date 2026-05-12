@@ -704,3 +704,78 @@ def anonymize_user(user) -> None:
         except ProgrammingError:
             # Table absent in this environment.
             pass
+
+
+# ============================================================================
+# Phase C C.3 commit 1 — AI Artefact Provenance write helper
+# ============================================================================
+#
+# EU AI Act Article 50(2): machine-readable provenance for every AI-generated
+# artefact. This helper is called from the forward-write paths in commit 2a
+# (rag_query_system.py + apps/modules/views.py) and from the retroactive
+# backfill command in this commit.
+#
+# Transaction contract (CP-9): this helper does NOT open its own
+# `transaction.atomic` block. Callers are responsible for wrapping the
+# source-row save AND this call inside a single atomic block, so a
+# provenance-write failure rolls back the source-row write too. This avoids
+# the race where the source row is committed but the provenance row is not.
+#
+# Idempotency (CP-7): the function uses `get_or_create` keyed by the
+# unique pair `(artefact_kind, artefact_pk)`. Calling it twice with the
+# same pair is a silent no-op — no warning, no error, no defaults overwrite.
+# This is what makes the backfill safe to rerun and safe to run after
+# forward-writes have already populated some rows.
+
+def record_ai_provenance(
+    *,
+    artefact_kind: str,
+    artefact_pk: int,
+    user,
+    model_name: str,
+    generated_at,
+    module=None,
+    prompt_hash: Optional[str] = None,
+):
+    """Record provenance for one AI-generated artefact.
+
+    Returns the AIArtefactProvenance row (created or pre-existing). Caller
+    is responsible for the surrounding transaction (CP-9). Re-entrant by
+    `(artefact_kind, artefact_pk)` via get_or_create (CP-7).
+
+    Args:
+        artefact_kind: one of AIArtefactProvenance.ARTEFACT_KIND_CHOICES.
+        artefact_pk: source-row primary key. For rag_queries (raw-SQL),
+            this is the integer returned by the `RETURNING id` clause on
+            the INSERT (CP-3 — never SELECT lastval()).
+        user: auth_user owning the artefact. Cascades on user deletion.
+        model_name: AI model identifier (e.g., 'gemini-2.5-flash').
+        generated_at: datetime when the artefact was produced.
+        module: optional Module FK. Nullable for rag_queries with NULL
+            module_id; required-by-convention for the four Django-managed
+            artefact kinds.
+        prompt_hash: optional sha256 of the prompt body + retrieval
+            context. Nullable for retroactive backfill.
+
+    Raises: lets the DB layer raise (IntegrityError, etc.) — the caller's
+    transaction will roll back its source-row save.
+    """
+    from apps.compliance.models import AIArtefactProvenance
+
+    # CharField storage: coerce any pk type (int from BigAutoField,
+    # UUID from ReflectionTension) into a normalised string. UUIDs use
+    # the standard hex-dashes form; ints use base-10.
+    pk_as_str = str(artefact_pk)
+
+    obj, _created = AIArtefactProvenance.objects.get_or_create(
+        artefact_kind=artefact_kind,
+        artefact_pk=pk_as_str,
+        defaults={
+            'user': user,
+            'module': module,
+            'model_name': model_name,
+            'generated_at': generated_at,
+            'prompt_hash': prompt_hash,
+        },
+    )
+    return obj

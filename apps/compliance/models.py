@@ -5,6 +5,10 @@ Phase C M6 introduces ConsentRecord — GDPR-compliant consent tracking.
 Replaces the dropped raw-SQL `consent_records` table (which had FK to a
 separate raw-SQL `users` table, now defunct). New table FK is to
 `auth_user`.
+
+Phase C C.3 (commit 1) introduces AIArtefactProvenance — machine-readable
+provenance metadata for every AI-generated artefact the platform produces
+(EU AI Act Article 50(2)).
 """
 
 from django.contrib.auth.models import User
@@ -113,3 +117,99 @@ class ConsentRecord(models.Model):
         Use at call sites instead of repeating `granted and not revoked_at`.
         """
         return self.granted and self.revoked_at is None
+
+
+class AIArtefactProvenance(models.Model):
+    """One row per AI-generated artefact the platform produces.
+
+    Captures the model identifier and generation timestamp so the platform
+    can satisfy EU AI Act Article 50(2) (machine-readable provenance) and
+    so the C.4 GDPR Art. 15 export can attribute every AI output.
+
+    The `(artefact_kind, artefact_pk)` pair is polymorphic — it references
+    rows in five different sources without a Django FK, because one of the
+    sources (`rag_queries`) lives outside the ORM as a raw-SQL table.
+    Cascade on user deletion is the only ORM-level relation enforced; the
+    artefact rows themselves are cleared by their own paths (Django CASCADE
+    for the ORM-managed sources; explicit raw-SQL DELETE for rag_queries
+    in `cp11_wipe_test_users.py` and `anonymize_user`).
+
+    Idempotency: `unique_together = ('artefact_kind', 'artefact_pk')` plus
+    `get_or_create` in the helper means the backfill command and the
+    forward-write hooks can both run without colliding.
+    """
+
+    ARTEFACT_KIND_CHOICES = [
+        ('rtm_position', 'RTM tension position'),
+        ('dtp_narrative', 'DTP developmental trajectory narrative'),
+        ('rag_feedback', 'RAG reflection feedback'),
+        ('peer_synthesis', 'Peer reflection synthesis'),
+        ('rag_query', 'Raw rag_queries telemetry row'),
+        ('epilogue_portrait', 'Epilogue Learning Portrait (forward-compat)'),
+    ]
+
+    artefact_kind = models.CharField(
+        max_length=24,
+        choices=ARTEFACT_KIND_CHOICES,
+    )
+    artefact_pk = models.CharField(
+        max_length=64,
+        help_text=(
+            "Primary key in the source table for this artefact_kind, "
+            "stored as string. Not a Django FK because rag_queries is "
+            "raw-SQL; integrity is enforced at write time. CharField "
+            "(not int) because the five source tables use heterogeneous "
+            "pk types: ReflectionTension uses UUIDField, UserModuleProgress "
+            "and rag_queries use BigAutoField. The helper coerces to str."
+        ),
+    )
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='ai_artefact_provenance',
+    )
+    module = models.ForeignKey(
+        'modules.Module',
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='ai_artefact_provenance',
+        help_text="Nullable: rag_queries rows may carry a NULL module_id.",
+    )
+    model_name = models.CharField(
+        max_length=64,
+        help_text="AI model identifier, e.g., 'gemini-2.5-flash'.",
+    )
+    generated_at = models.DateTimeField(
+        help_text="When the artefact was generated. For backfill, the source row's created_at.",
+    )
+    prompt_hash = models.CharField(
+        max_length=64, null=True, blank=True,
+        help_text=(
+            "sha256 of the prompt text + retrieval context (privacy-respecting). "
+            "Nullable for retroactive backfill where the prompt is not reconstructible."
+        ),
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'AI Artefact Provenance'
+        verbose_name_plural = 'AI Artefact Provenance'
+        constraints = [
+            models.UniqueConstraint(
+                fields=['artefact_kind', 'artefact_pk'],
+                name='uq_ai_provenance_kind_pk',
+            ),
+        ]
+        indexes = [
+            models.Index(fields=['user', 'artefact_kind'],
+                         name='idx_ai_prov_user_kind'),
+            models.Index(fields=['module', 'artefact_kind'],
+                         name='idx_ai_prov_module_kind'),
+        ]
+        ordering = ['-generated_at']
+
+    def __str__(self):
+        return (
+            f'{self.artefact_kind}#{self.artefact_pk} '
+            f'[{self.model_name} @ {self.generated_at:%Y-%m-%d %H:%M}]'
+        )

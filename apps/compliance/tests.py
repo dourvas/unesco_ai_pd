@@ -1504,3 +1504,226 @@ class C4AtomicityAndEdgeCaseTest(_PrivacyTestBase):
             1,
             'Idempotency: re-anonymization must not stack prefixes.',
         )
+
+
+# ============================================================================
+# Phase C C.3 commit 1 — AIArtefactProvenance storage layer + backfill
+# ============================================================================
+
+
+class AIArtefactProvenanceModelTest(TestCase):
+    """Storage model contracts: __str__, unique constraint, ordering, cascade."""
+
+    def setUp(self):
+        self.user = User.objects.create_user(username='prov_user', password='x')
+
+    def _create_provenance(self, **overrides):
+        from apps.compliance.models import AIArtefactProvenance
+        defaults = {
+            'artefact_kind': 'rag_feedback',
+            'artefact_pk': 1,
+            'user': self.user,
+            'model_name': 'gemini-2.5-flash',
+            'generated_at': timezone.now(),
+        }
+        defaults.update(overrides)
+        return AIArtefactProvenance.objects.create(**defaults)
+
+    def test_str_includes_kind_pk_model_and_timestamp(self):
+        row = self._create_provenance()
+        s = str(row)
+        self.assertIn('rag_feedback', s)
+        self.assertIn('#1', s)
+        self.assertIn('gemini-2.5-flash', s)
+
+    def test_unique_constraint_on_kind_and_pk(self):
+        """A second row with the same (artefact_kind, artefact_pk) is rejected."""
+        from apps.compliance.models import AIArtefactProvenance
+        self._create_provenance(artefact_kind='rag_feedback', artefact_pk=42)
+        with self.assertRaises(IntegrityError):
+            with transaction.atomic():
+                AIArtefactProvenance.objects.create(
+                    artefact_kind='rag_feedback',
+                    artefact_pk=42,
+                    user=self.user,
+                    model_name='gemini-2.5-flash',
+                    generated_at=timezone.now(),
+                )
+
+    def test_user_cascade_clears_provenance_rows(self):
+        """Deleting the user cascades to AIArtefactProvenance via FK CASCADE.
+
+        This is the load-bearing invariant for GDPR Art. 17 anonymisation:
+        the anonymize_user flow deletes the auth_user (functionally — sets
+        sentinel + flips is_active), but the CASCADE deletes ai_artefact_provenance
+        rows aligned with that user."""
+        from apps.compliance.models import AIArtefactProvenance
+        self._create_provenance(artefact_kind='rag_feedback', artefact_pk=1)
+        self._create_provenance(artefact_kind='rtm_position', artefact_pk=2)
+        self.assertEqual(
+            AIArtefactProvenance.objects.filter(user=self.user).count(), 2
+        )
+        self.user.delete()
+        self.assertEqual(AIArtefactProvenance.objects.count(), 0)
+
+
+class RecordAIProvenanceHelperTest(TestCase):
+    """record_ai_provenance helper contracts: get_or_create idempotency,
+    module=None acceptance, transaction-atomic invariant."""
+
+    def setUp(self):
+        self.user = User.objects.create_user(username='prov_helper', password='x')
+
+    def test_idempotent_get_or_create_on_same_kind_and_pk(self):
+        """CP-7: calling twice with same (kind, pk) is a silent no-op.
+        Second call must not raise, must not overwrite defaults."""
+        from apps.compliance.models import AIArtefactProvenance
+        from apps.compliance.services import record_ai_provenance
+
+        t1 = timezone.now()
+        record_ai_provenance(
+            artefact_kind='dtp_narrative', artefact_pk=99,
+            user=self.user, model_name='gemini-2.5-flash',
+            generated_at=t1,
+        )
+        # Second call with a DIFFERENT model_name should not overwrite —
+        # get_or_create's defaults branch only applies on insert.
+        record_ai_provenance(
+            artefact_kind='dtp_narrative', artefact_pk=99,
+            user=self.user, model_name='gemini-1.5-flash',  # would-be-overwrite attempt
+            generated_at=timezone.now(),
+        )
+        rows = AIArtefactProvenance.objects.filter(
+            artefact_kind='dtp_narrative', artefact_pk=99
+        )
+        self.assertEqual(rows.count(), 1)
+        self.assertEqual(rows.first().model_name, 'gemini-2.5-flash')
+
+    def test_helper_accepts_module_none_for_rag_query_kind(self):
+        """rag_queries rows may carry NULL module_id — helper must accept it."""
+        from apps.compliance.models import AIArtefactProvenance
+        from apps.compliance.services import record_ai_provenance
+
+        record_ai_provenance(
+            artefact_kind='rag_query', artefact_pk=7,
+            user=self.user, module=None,
+            model_name='gemini-2.5-flash',
+            generated_at=timezone.now(),
+        )
+        row = AIArtefactProvenance.objects.get(artefact_kind='rag_query', artefact_pk=7)
+        self.assertIsNone(row.module)
+
+
+class BackfillAIProvenanceCommandTest(TestCase):
+    """backfill_ai_provenance management command contracts."""
+
+    def setUp(self):
+        self.user = User.objects.create_user(username='backfill_user', password='x')
+        from apps.modules.models import Module
+        self.module = Module.objects.create(
+            code='MX',
+            title='Backfill seed module',
+            order_index=99,
+        )
+
+    def _seed_one_dtp(self):
+        from apps.modules.models import UserModuleProgress
+        return UserModuleProgress.objects.create(
+            user=self.user,
+            module=self.module,
+            reflection_dtp='Seeded DTP text for backfill.',
+            started_at=timezone.now(),
+        )
+
+    def _seed_one_rtm(self):
+        from apps.modules.models import ReflectionTension
+        return ReflectionTension.objects.create(
+            user=self.user,
+            module=self.module,
+            tension_label='Seed tension',
+            left_pole='Left', right_pole='Right',
+            grounding_quote='Seed quote',
+            selected_position=3,
+        )
+
+    def test_dry_run_default_writes_nothing(self):
+        """Without --commit, the command must write zero provenance rows."""
+        from apps.compliance.models import AIArtefactProvenance
+        self._seed_one_dtp()
+        self._seed_one_rtm()
+
+        call_command('backfill_ai_provenance', no_input=True)
+        self.assertEqual(AIArtefactProvenance.objects.count(), 0)
+
+    def test_commit_creates_rows_for_seeded_artefacts(self):
+        """With --commit + --no-input, the command writes one row per
+        seeded artefact across the Django-managed kinds."""
+        from apps.compliance.models import AIArtefactProvenance
+        self._seed_one_dtp()
+        self._seed_one_rtm()
+
+        call_command('backfill_ai_provenance', commit=True, no_input=True)
+        kinds_seen = set(
+            AIArtefactProvenance.objects.values_list('artefact_kind', flat=True)
+        )
+        self.assertIn('dtp_narrative', kinds_seen)
+        self.assertIn('rtm_position', kinds_seen)
+        # All seeded rows carry the documented backfill model_name.
+        for row in AIArtefactProvenance.objects.all():
+            self.assertEqual(row.model_name, 'gemini-2.5-flash')
+
+    def test_commit_is_idempotent_on_rerun(self):
+        """Running the backfill twice produces zero new rows on the
+        second call. Validates CP-7 get_or_create semantics."""
+        from apps.compliance.models import AIArtefactProvenance
+        self._seed_one_dtp()
+        self._seed_one_rtm()
+
+        call_command('backfill_ai_provenance', commit=True, no_input=True)
+        first_count = AIArtefactProvenance.objects.count()
+
+        call_command('backfill_ai_provenance', commit=True, no_input=True)
+        self.assertEqual(AIArtefactProvenance.objects.count(), first_count)
+
+    def test_rag_queries_missing_table_is_non_fatal(self):
+        """In a fresh TestCase DB, the rag_queries raw-SQL table does not
+        exist. The backfill must swallow ProgrammingError on that source
+        and complete successfully on the Django-managed kinds."""
+        # No seeding — just confirm the command runs without raising.
+        call_command('backfill_ai_provenance', no_input=True)
+        # Dry-run exit; no assertion needed beyond non-raising.
+
+
+class AIArtefactProvenanceAdminTest(TestCase):
+    """Admin page renders for staff."""
+
+    def setUp(self):
+        from apps.users.models import TeacherProfile
+        self.admin = User.objects.create_superuser(
+            username='admin_prov', email='a@a.com', password='x'
+        )
+        # AIDisclosureMiddleware (between Authentication and Messages
+        # middleware) redirects any logged-in user without an ack
+        # timestamp to /onboarding/ai-disclosure/. /admin/ is NOT in the
+        # bypass list (only /admin/login + /admin/logout are). Seed the
+        # ack so the admin URL renders.
+        TeacherProfile.objects.create(
+            user=self.admin,
+            subject_area='mathematics', grade_level='primary',
+            ai_experience='none',
+            ai_disclosure_acknowledged_at=timezone.now(),
+        )
+        self.client = Client()
+        self.client.force_login(self.admin)
+
+    def test_changelist_page_renders_200(self):
+        from apps.compliance.models import AIArtefactProvenance
+        AIArtefactProvenance.objects.create(
+            artefact_kind='rag_feedback', artefact_pk=1,
+            user=self.admin,
+            model_name='gemini-2.5-flash',
+            generated_at=timezone.now(),
+        )
+        resp = self.client.get('/admin/compliance/aiartefactprovenance/')
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, 'rag_feedback')

@@ -339,6 +339,49 @@ Trivial implementation — ~80 LOC — but no urgency until the platform has bee
 
 ---
 
+## TD-017 — Machine-readable AI content markers (Article 50(2)) — C.3
+
+**Status:** Active. Phase C C.3 piece in flight (2026-05-12). Commit 1 of 4 in progress at the time of this entry.
+**Where:** `apps/compliance/models.py::AIArtefactProvenance`, `apps/compliance/services.py::record_ai_provenance`, `apps/compliance/management/commands/backfill_ai_provenance.py`, `apps/compliance/templatetags/ai_provenance.py` (commit 3), `rag_query_system.py` write paths (commit 2a), `apps/modules/views.py` save hooks (commit 2a), `templates/modules/tabs/tab5_reflection.html` (commit 2b), `templates/compliance/privacy_dashboard.html` (commit 2b).
+
+EU AI Act Article 50(2) recommends that providers of AI systems mark generated content in a machine-readable format. The platform's own AI Disclosure text (`AI_DISCLOSURE_TEXT_V1_PRE_IRB`) explicitly references "Article 50 transparency obligations". C.3 operationalises this commitment with three layers: HTML data-attributes, page-level JSON-LD, and a reusable `{% ai_provenance %}` template tag. Provenance metadata is stored in the new `AIArtefactProvenance` Django model and consumed by both the HTML layer and the C.4 GDPR Art. 15 export (`export_version` bumps `'1'` → `'2'`).
+
+**Design proposal:** `proodos_files/C3_DESIGN_PROPOSAL_AI_MARKERS.md` (D1-D12; D1-D5 approved 2026-05-12 with 10 CP-style corrections).
+**Pre-flight audit:** `proodos_files/audit_rag_queries_provenance_20260512.md` (CP-1) — established that `'gemini-2.5-flash'` single-constant backfill is safe (no model-standardisation transition in git history; zero rows in the fallback-path proxy bucket).
+**Commit split (CP-4):**
+  - Commit 1 (this one): storage model + migration `0005_aiartefactprovenance` + `record_ai_provenance` helper + `backfill_ai_provenance` management command + admin registration + TD-017 + TD-018 entries.
+  - Commit 2a: forward-write hooks in `rag_query_system.py` (with `RETURNING id` — CP-3 rejected `SELECT lastval()`) and `apps/modules/views.py`. CP-9 transaction-atomic invariant: `save() + record_ai_provenance()` wrapped in one block at every call site.
+  - Commit 2b: HTML data-attrs across all 9 AI rendering sites + export mirror (`_ai_outputs_to_dict` grows a `provenance` sub-dict; EXPORT_VERSION `'1'` → `'2'`) + opacity fix `text-base-content/70` (CP-10).
+  - Commit 3: page-level JSON-LD (schema.org/CreativeWork) + `{% ai_provenance %}` template tag using `{% blocktrans %}` (CP-5: single translatable string with placeholders, Greek-word-order safe) + close-out (roadmap + plan changelog + session log).
+
+**Deployment order (CP-2):** C.3 deploy → `backfill_ai_provenance --commit` → CP-11 wipe → pilot recruitment. Backfill runs BEFORE CP-11 because CP-11 cascade-clears the 19 non-staff `rag_queries` rows in scope; running backfill after CP-11 would leave the interim window between deploy and CP-11 with inconsistent provenance during staff testing.
+
+**Resolved at:** commit 3 of this piece (status block will be moved to RESOLVED form, with hash references for commits 1 + 2a + 2b + 3).
+
+---
+
+## TD-018 — Per-artefact-instance AI dispute deep-links
+
+**Status:** Active. Defer to post-pilot Phase G/H.
+**Where:** `apps/modules/urls.py` (URL pattern), `apps/modules/views.py::save_ai_dispute`, `apps/modules/models.py::AIOutputDispute` (likely schema extension), `templates/modules/tabs/tab5_reflection.html` (UI deep-link).
+
+The existing dispute flow is keyed on `(user, module, feature_type)` where `feature_type ∈ {'RAG', 'RTM', 'DTP'}` — one dispute row per user/module/feature, not per artefact instance. A teacher who wants to dispute "this specific DTP narrative" must do so at module level; there is no per-artefact-instance deep-link.
+
+The C.3 design proposal initially planned to emit a per-artefact dispute link from the `{% ai_provenance %}` template tag using `(kind, id)` URL parameters. Pre-implementation verification (CP-6) showed the URL pattern doesn't carry those parameters today, and adding per-artefact-instance disputing would require:
+
+  - New URL pattern: `modules/<str:code>/dispute/<str:kind>/<int:id>/`
+  - View extension to look up the artefact by `(kind, id)`
+  - `AIOutputDispute` schema extension: drop `unique_together=(user, module, feature_type)` in favour of one row per artefact instance (or, alternatively, add `artefact_kind` + `artefact_pk` columns and switch unique_together)
+  - UI change: deep-link button next to each AI artefact in `tab5_reflection.html`
+
+That work is >100 LOC of dispute infrastructure not strictly required for Article 50(2) machine-readability. The existing module-level dispute UI remains accessible to participants during the pilot.
+
+**Discovered in:** C.3 design pre-implementation verification, 2026-05-12.
+**Implementation effort:** ~150-200 LOC + tests + migration if `AIOutputDispute` schema changes.
+**Resolved at:** post-pilot Phase G/H, once the pilot answers "do participants want to dispute specific artefacts or whole feature classes?".
+
+---
+
 ## TD entry conventions
 
 When adding a new entry:
