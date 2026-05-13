@@ -6,6 +6,14 @@ import sys
 
 def main():
     """Run administrative tasks."""
+    # TD-005 (resolved 2026-05-13): force UTF-8 on stdio so monolith
+    # diagnostic prints (e.g. rag_query_system.py "Using NEW google.genai
+    # API") don't crash on Windows + Greek locale (cp1253). errors='replace'
+    # guards against any future non-cp1253 char in vendored deps too.
+    if hasattr(sys.stdout, 'reconfigure'):
+        sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+    if hasattr(sys.stderr, 'reconfigure'):
+        sys.stderr.reconfigure(encoding='utf-8', errors='replace')
     os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
     try:
         from django.core.management import execute_from_command_line

@@ -81,21 +81,13 @@ Audit reference: `audits/DEAD_SCHEMA_AUDIT_20260509.md` §1.1 Tier 3.
 
 ## TD-005 — `rag_query_system.py` cp1253 print encoding
 
-**Status:** Deferred. Convenience fix anytime.
-**Where:** `rag_query_system.py:26` and similar near `print("✓ Using NEW google.genai API")`.
+**Status:** RESOLVED in Phase E commit 1.5 (2026-05-13). Fix applied at `manage.py:11-16` — `sys.stdout`/`sys.stderr` reconfigured to UTF-8 with `errors='replace'` at the top of `main()`. Covers every Django CLI command (test, runserver, migrate, shell, custom management commands), not just the test runner. The `errors='replace'` mode keeps a hypothetical future un-encodable char from crashing the CLI instead of merely substituting it.
 
-The checkmark character `✓` cannot be encoded in `cp1253` (Greek Windows shell default). Crashes any `manage.py` invocation from a Bash shell that inherits cp1253 encoding.
+Chosen over the v3 proposal's alternative (edit `rag_query_system.py` directly) because manage.py is the single entry point for every CLI invocation, and the monolith disappears in Phase E commit 10 anyway — patching it would be wasted work.
 
-**Workaround in current use:** prefix every Bash invocation with `PYTHONIOENCODING=utf-8`.
+**Original analysis (kept for context):**
 
-**Permanent fix:**
-
-```python
-import sys
-sys.stdout.reconfigure(encoding='utf-8')
-```
-
-Add at top of `rag_query_system.py` before any print. Or replace `✓` with ASCII `[OK]`. Either is fine.
+The checkmark character `✓` (at `rag_query_system.py:26, 32, 36`) cannot be encoded in `cp1253` (Greek Windows shell default). Before the fix, any `manage.py` invocation from a shell inheriting cp1253 crashed at module import time when the monolith printed its API-detection banner. Workaround was `PYTHONIOENCODING=utf-8` prefix on every invocation — now obsolete.
 
 ---
 
