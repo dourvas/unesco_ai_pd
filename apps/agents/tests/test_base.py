@@ -173,3 +173,97 @@ class BaseAIAgentContractTest(TestCase):
             )
         events = [r.getMessage() for r in cm.records]
         self.assertNotIn('agent.cost', events)
+
+
+# ----------------------------------------------------------------------
+# extract() contract — Phase E commit 3.
+#
+# extract() is the second public entry point on BaseAIAgent, introduced
+# for agents whose AI output is ephemeral and persisted by a separate
+# user-driven action (RTM-style). Verifies:
+#   - no transaction.atomic opened
+#   - no _persist called
+#   - no _record_provenance called / no provenance row written
+#   - _do_generate output returned verbatim
+#   - cost tracker fires for GenerationResult outputs (cost is logged
+#     regardless of whether the artefact is persisted)
+#   - audit log emits agent.extract.start + agent.extract.complete
+#   - no user / module / save_target / save_field kwargs required
+# ----------------------------------------------------------------------
+class _ExtractOnlyAgent(BaseAIAgent):
+    """Minimal extract-only subclass. Returns whatever value it is
+    given. artefact_kind is set proactively (recommended for
+    extract-only agents per BaseAIAgent docstring) but never reaches
+    any provenance write because extract() does not call
+    _record_provenance."""
+    artefact_kind = 'rtm_position'
+
+    def _do_generate(self, *, value='proposal'):
+        return value
+
+
+class BaseAIAgentExtractContractTest(TestCase):
+    def test_extract_returns_do_generate_output(self):
+        result = _ExtractOnlyAgent().extract(value=['t1', 't2'])
+        self.assertEqual(result, ['t1', 't2'])
+
+    def test_extract_does_not_write_provenance(self):
+        before = AIArtefactProvenance.objects.count()
+        _ExtractOnlyAgent().extract(value='ephemeral')
+        self.assertEqual(
+            AIArtefactProvenance.objects.count(), before,
+            'extract() must not write any provenance row.',
+        )
+
+    def test_extract_does_not_call_persist(self):
+        agent = _ExtractOnlyAgent()
+        with patch.object(_ExtractOnlyAgent, '_persist') as mock_persist:
+            agent.extract(value='x')
+        mock_persist.assert_not_called()
+
+    def test_extract_does_not_call_record_provenance(self):
+        agent = _ExtractOnlyAgent()
+        with patch.object(_ExtractOnlyAgent, '_record_provenance') as mock_prov:
+            agent.extract(value='x')
+        mock_prov.assert_not_called()
+
+    def test_extract_emits_start_and_complete_audit_events(self):
+        with self.assertLogs('agents.audit', level='INFO') as cm:
+            _ExtractOnlyAgent().extract(value='x')
+        events = [r.getMessage() for r in cm.records]
+        self.assertIn('agent.extract.start', events)
+        self.assertIn('agent.extract.complete', events)
+        # Critically: NO agent.generate.* event (different code path).
+        self.assertNotIn('agent.generate.start', events)
+        self.assertNotIn('agent.generate.complete', events)
+
+    def test_extract_requires_no_user_or_module(self):
+        # The signature on BaseAIAgent.extract is **kwargs only —
+        # no required user/module. Compare with generate() which
+        # mandates user=. This codifies that extract() outputs are
+        # not attributable to a user at the agent layer (the
+        # companion CRUD endpoint owns attribution).
+        out = _ExtractOnlyAgent().extract(value='no-user-needed')
+        self.assertEqual(out, 'no-user-needed')
+
+    def test_extract_logs_cost_for_generation_result(self):
+        """Cost is logged regardless of persistence — extract() still
+        invokes _track_cost so the dissertation can report cost-per-
+        Gemini-call across the platform."""
+        from apps.agents.shared.llm_client import GenerationResult
+
+        class _GenResultAgent(BaseAIAgent):
+            artefact_kind = 'rtm_position'
+
+            def _do_generate(self, **kwargs):
+                return GenerationResult(
+                    text='proposal text',
+                    model='gemini-2.5-flash',
+                    tokens_estimate=42,
+                    cost_eur_estimate=0.00001,
+                )
+
+        with self.assertLogs('agents.audit', level='INFO') as cm:
+            _GenResultAgent().extract()
+        events = [r.getMessage() for r in cm.records]
+        self.assertIn('agent.cost', events)

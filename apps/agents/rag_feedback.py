@@ -25,7 +25,7 @@ from typing import Any, Optional
 
 import markdown
 
-from apps.agents.base import BaseAIAgent
+from apps.agents.research import ResearchInstrumentAgent
 from apps.agents.shared.db import dict_cursor
 from apps.agents.shared.llm_client import GenerationResult, get_llm_client
 from apps.agents.shared.cost_tracker import CostRecord, track as track_cost
@@ -34,7 +34,7 @@ from apps.agents.shared.cost_tracker import CostRecord, track as track_cost
 RAG_MAX_OUTPUT_TOKENS = 2500
 
 
-class RAGFeedbackAgent(BaseAIAgent):
+class RAGFeedbackAgent(ResearchInstrumentAgent):
     """Reflection feedback generator with pgvector retrieval grounding.
 
     Public artefact: a UserModuleProgress row with reflection_rag_feedback
