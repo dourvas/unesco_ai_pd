@@ -1,6 +1,12 @@
 <!-- TAB 5: Structured Reflection with Smart Prompts + Part 3 Automation -->
+{% load ai_provenance %}
 {% if current_tab == 'reflection' %}
 <h2 class="card-title text-2xl mb-4">📝 Reflection & Action Plan</h2>
+
+{# C.3 commit 3 — page-level JSON-LD for every AI artefact rendered on this page. #}
+{# Article 50(2) machine-readable provenance: schema.org CreativeWork nodes with #}
+{# SoftwareApplication creator. View context passes a list of provenance rows. #}
+{% ai_provenance_jsonld ai_provenance_jsonld_list %}
 
 <div class="space-y-6 w-full">
 {% if not progress.reflection_completed %}
@@ -312,10 +318,7 @@
                 <span>Retrieval-Augmented Generation — your text was matched against the knowledge base to generate relevant, module-specific feedback</span>
                 <span class="font-semibold text-base-content/60">Intent</span>
                 <span>Provide feedback grounded in the module's learning objectives, personalised to what you wrote</span>
-                {% if progress.rag_feedback_provenance %}
-                <span class="font-semibold text-base-content/60">Generated at</span>
-                <span data-ai-generated-at-display>{{ progress.rag_feedback_provenance.generated_at|date:'d M Y H:i' }}</span>
-                {% endif %}
+                {% ai_provenance for=progress.rag_feedback_provenance %}
             </div>
             <div class="border-t border-base-300 pt-2 mt-2 space-y-1">
                 <p class="text-base-content/60">⚠️ This feedback responds to your specific reflection — it is not a generic template.</p>
@@ -650,10 +653,7 @@
                 <span>Longitudinal thematic mapping — the model compared concepts, concerns, and language across both reflections to describe change over time</span>
                 <span class="font-semibold text-base-content/60">Intent</span>
                 <span>Help you observe how your thinking about AI is evolving across modules</span>
-                {% if progress.dtp_narrative_provenance %}
-                <span class="font-semibold text-base-content/60">Generated at</span>
-                <span>{{ progress.dtp_narrative_provenance.generated_at|date:'d M Y H:i' }}</span>
-                {% endif %}
+                {% ai_provenance for=progress.dtp_narrative_provenance %}
             </div>
             <div class="border-t border-base-300 pt-2 mt-2 space-y-1">
                 <p class="text-base-content/60">⚠️ This signal describes what changed — it does not evaluate whether the change is positive or negative. Growth is not always linear.</p>
@@ -777,10 +777,7 @@
                 <span>Retrieval-Augmented Generation — your text was matched against the knowledge base to generate relevant, module-specific feedback</span>
                 <span class="font-semibold text-base-content/60">Intent</span>
                 <span>Provide feedback grounded in the module's learning objectives, personalised to what you wrote</span>
-                {% if progress.rag_feedback_provenance %}
-                <span class="font-semibold text-base-content/60">Generated at</span>
-                <span>{{ progress.rag_feedback_provenance.generated_at|date:'d M Y H:i' }}</span>
-                {% endif %}
+                {% ai_provenance for=progress.rag_feedback_provenance %}
             </div>
             <div class="border-t border-base-300 pt-2 mt-2 space-y-1">
                 <p class="text-base-content/60">⚠️ This feedback responds to your specific reflection — it is not a generic template.</p>
@@ -884,10 +881,7 @@
                     <span>Cross-disciplinary aggregation — the model surfaced patterns from how peers in different contexts addressed similar challenges</span>
                     <span class="font-semibold text-base-content/60">Intent</span>
                     <span>Help you see your reflection in dialogue with the wider PROODOS cohort</span>
-                    {% if progress.peer_synthesis_provenance %}
-                    <span class="font-semibold text-base-content/60">Generated at</span>
-                    <span>{{ progress.peer_synthesis_provenance.generated_at|date:'d M Y H:i' }}</span>
-                    {% endif %}
+                    {% ai_provenance for=progress.peer_synthesis_provenance %}
                 </div>
                 <div class="border-t border-base-300 pt-2 mt-2 space-y-1">
                     <p class="text-base-content/60">⚠️ Peer synthesis surfaces patterns across the cohort — it does not single out any individual peer.</p>

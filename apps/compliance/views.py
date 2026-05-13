@@ -203,6 +203,20 @@ def privacy_dashboard_view(request):
                 'latest_generated_at': latest.generated_at,
             }
 
+    # C.3 commit 3 — JSON-LD page-level block. Lists the latest
+    # provenance row per kind (avoids surfacing every individual
+    # artefact in the structured data — the summary is the right
+    # granularity for this dashboard, which renders counts not
+    # individual artefacts).
+    ai_provenance_jsonld_list = [
+        AIArtefactProvenance.objects
+        .filter(user=request.user, artefact_kind=kind)
+        .order_by('-generated_at').first()
+        for kind in ('rtm_position', 'dtp_narrative', 'rag_feedback',
+                     'peer_synthesis', 'rag_query')
+    ]
+    ai_provenance_jsonld_list = [p for p in ai_provenance_jsonld_list if p is not None]
+
     return render(request, 'compliance/privacy_dashboard.html', {
         'ai_disclosure_state': _consent_state(request.user, 'ai_disclosure'),
         'research_state': _consent_state(request.user, 'research_participation'),
@@ -211,6 +225,7 @@ def privacy_dashboard_view(request):
         'counts': counts,
         'ai_outputs': ai_outputs,
         'provenance_summary': provenance_summary,
+        'ai_provenance_jsonld_list': ai_provenance_jsonld_list,
     })
 
 

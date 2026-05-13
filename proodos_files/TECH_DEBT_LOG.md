@@ -341,7 +341,11 @@ Trivial implementation — ~80 LOC — but no urgency until the platform has bee
 
 ## TD-017 — Machine-readable AI content markers (Article 50(2)) — C.3
 
-**Status:** Active. Phase C C.3 piece in flight (2026-05-12). Commit 1 of 4 in progress at the time of this entry.
+**Status:** RESOLVED in Phase C C.3, four-commit arc (2026-05-12). Commits `6b9ec09` (storage + backfill) + `1bc8e55` (write hooks) + `0d91191` (export mirror + HTML data-attrs) + this commit (`{% ai_provenance %}` + `{% ai_provenance_jsonld %}` template tags + page-level JSON-LD on tab5 + privacy_dashboard). Verified by 31 tests across `apps/compliance/tests.py` (storage, export mirror, HTML rendering, JSON-LD validity, template-tag fallbacks) + 6 tests in `apps/modules/tests.py` (forward-write hooks + CP-9 transaction-atomic invariant). Full Phase C suite passes at 214.
+
+The original Active status block is kept below for historical context.
+
+**Status (historical):** Active. Phase C C.3 piece in flight (2026-05-12). Commit 1 of 4 in progress at the time of this entry.
 **Where:** `apps/compliance/models.py::AIArtefactProvenance`, `apps/compliance/services.py::record_ai_provenance`, `apps/compliance/management/commands/backfill_ai_provenance.py`, `apps/compliance/templatetags/ai_provenance.py` (commit 3), `rag_query_system.py` write paths (commit 2a), `apps/modules/views.py` save hooks (commit 2a), `templates/modules/tabs/tab5_reflection.html` (commit 2b), `templates/compliance/privacy_dashboard.html` (commit 2b).
 
 EU AI Act Article 50(2) recommends that providers of AI systems mark generated content in a machine-readable format. The platform's own AI Disclosure text (`AI_DISCLOSURE_TEXT_V1_PRE_IRB`) explicitly references "Article 50 transparency obligations". C.3 operationalises this commitment with three layers: HTML data-attributes, page-level JSON-LD, and a reusable `{% ai_provenance %}` template tag. Provenance metadata is stored in the new `AIArtefactProvenance` Django model and consumed by both the HTML layer and the C.4 GDPR Art. 15 export (`export_version` bumps `'1'` → `'2'`).

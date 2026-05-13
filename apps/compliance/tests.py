@@ -2003,3 +2003,162 @@ class PrivacyDashboardProvenanceMarkersTest(TestCase):
             'data-ai-artefact-id=', content,
             'Per-artefact id must not appear on summary cards.',
         )
+
+
+# ============================================================================
+# Phase C C.3 commit 3 — Template tags + page-level JSON-LD
+# ============================================================================
+
+
+class AIProvenanceTemplateTagsTest(TestCase):
+    """Verifies the two new template tags shipped in commit 3:
+
+      - `{% ai_provenance for=record %}` — Generated at row in XAI panel.
+      - `{% ai_provenance_jsonld provenances %}` — page-level JSON-LD.
+    """
+
+    def setUp(self):
+        from apps.users.models import TeacherProfile
+        from apps.compliance.models import AIArtefactProvenance
+        from apps.modules.models import Module
+        self.user = User.objects.create_user(
+            username='tag_user', password='x', is_staff=True,
+        )
+        TeacherProfile.objects.create(
+            user=self.user,
+            subject_area='mathematics', grade_level='primary',
+            ai_experience='none',
+            ai_disclosure_acknowledged_at=timezone.now(),
+            profile_completed=True,
+            research_consent=True,
+        )
+        self.module = Module.objects.create(
+            code='TG', title='Tag test', description='t',
+            order_index=970, unesco_aspect='ethics',
+            proficiency_level='Acquire', is_published=True,
+        )
+        self.provenance = AIArtefactProvenance.objects.create(
+            artefact_kind='rag_feedback', artefact_pk='42',
+            user=self.user, module=self.module,
+            model_name='gemini-2.5-flash',
+            generated_at=timezone.now(),
+        )
+        self.client = Client()
+        self.client.force_login(self.user)
+
+    def _render(self, template_source, context):
+        from django.template import Context, Template
+        tmpl = Template('{% load ai_provenance %}' + template_source)
+        return tmpl.render(Context(context))
+
+    def test_ai_provenance_tag_renders_generated_at_row(self):
+        """`{% ai_provenance for=record %}` emits the Generated at row
+        when a provenance row is passed."""
+        out = self._render(
+            '{% ai_provenance for=p %}',
+            {'p': self.provenance},
+        )
+        self.assertIn('Generated at', out)
+        # Value rendered via |date filter — at minimum carries 4-digit year.
+        self.assertIn('2026', out)
+
+    def test_ai_provenance_tag_renders_nothing_when_for_is_none(self):
+        """Tag must render nothing (only whitespace) when the provenance
+        argument is None — protects views that forget to prefetch from
+        ungraceful crashes."""
+        out = self._render(
+            '{% ai_provenance for=p %}',
+            {'p': None},
+        )
+        self.assertNotIn('Generated at', out)
+
+    def test_ai_provenance_jsonld_block_valid_json(self):
+        """The JSON-LD block emitted by `{% ai_provenance_jsonld %}` is
+        parseable JSON with the expected @context + @graph keys."""
+        import re, json as _json
+        out = self._render(
+            '{% ai_provenance_jsonld provenances %}',
+            {'provenances': [self.provenance]},
+        )
+        self.assertIn('<script type="application/ld+json">', out)
+        # Extract the JSON payload between the script tags.
+        match = re.search(
+            r'<script type="application/ld\+json">(.*)</script>',
+            out, re.DOTALL,
+        )
+        self.assertIsNotNone(match, 'No JSON-LD script tag found.')
+        payload = _json.loads(match.group(1))
+        self.assertEqual(payload['@context'], 'https://schema.org')
+        self.assertEqual(len(payload['@graph']), 1)
+        node = payload['@graph'][0]
+        self.assertEqual(node['@type'], 'CreativeWork')
+        self.assertEqual(node['creator']['@type'], 'SoftwareApplication')
+        self.assertEqual(node['creator']['name'], 'gemini-2.5-flash')
+
+    def test_ai_provenance_jsonld_block_empty_when_no_provenances(self):
+        """Empty list -> no script tag (signals no AI artefacts on page)."""
+        out = self._render(
+            '{% ai_provenance_jsonld provenances %}',
+            {'provenances': []},
+        )
+        self.assertNotIn('application/ld+json', out)
+
+    def test_tab5_renders_jsonld_block_once(self):
+        """tab5 page renders the JSON-LD block exactly once (no
+        duplication across the live + completed-state sections)."""
+        from apps.modules.models import UserModuleProgress
+        from apps.compliance.models import AIArtefactProvenance
+        progress = UserModuleProgress.objects.create(
+            user=self.user, module=self.module,
+            reflection_text='r' * 1500,
+            reflection_dtp='{"narrative":"x"}',
+            reflection_rag_feedback='<p>feedback</p>',
+            reflection_completed=True,
+            reflection_completed_at=timezone.now(),
+            started_at=timezone.now(),
+        )
+        AIArtefactProvenance.objects.create(
+            artefact_kind='rag_feedback', artefact_pk=str(progress.pk),
+            user=self.user, module=self.module,
+            model_name='gemini-2.5-flash',
+            generated_at=timezone.now(),
+        )
+        resp = self.client.get(
+            reverse('modules:detail', kwargs={'code': 'TG'}) + '?tab=reflection'
+        )
+        self.assertEqual(resp.status_code, 200)
+        content = resp.content.decode('utf-8')
+        self.assertEqual(
+            content.count('<script type="application/ld+json">'), 1,
+            'JSON-LD block must appear exactly once on the tab5 page.',
+        )
+
+    def test_privacy_dashboard_renders_jsonld_block(self):
+        """The privacy dashboard renders a JSON-LD block when at least
+        one provenance row exists for the user."""
+        resp = self.client.get(reverse('compliance:privacy_dashboard'))
+        self.assertEqual(resp.status_code, 200)
+        content = resp.content.decode('utf-8')
+        # provenance row created in setUp triggers exactly one block.
+        self.assertEqual(
+            content.count('<script type="application/ld+json">'), 1,
+            'JSON-LD must render once on the privacy dashboard.',
+        )
+        self.assertIn('gemini-2.5-flash', content)
+
+    def test_ai_provenance_tag_uses_translatable_label(self):
+        """The 'Generated at' label is wrapped in `{% trans %}` so a
+        switched LANGUAGE_CODE renders the translated string (when a
+        catalogue is present) or the source string (when none is). The
+        load-bearing assertion is that the source label is not
+        hard-coded inside Python strings — the tag delegates to the
+        included template which uses `{% trans %}`."""
+        # Inspect the partial template source to confirm `{% trans %}` is used.
+        from pathlib import Path
+        partial_path = (
+            Path(__file__).resolve().parent.parent.parent
+            / 'templates' / 'compliance' / '_ai_provenance_row.html'
+        )
+        source = partial_path.read_text(encoding='utf-8')
+        self.assertIn('{% trans "Generated at" %}', source)
+        self.assertIn('{% load i18n %}', source)

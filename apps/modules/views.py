@@ -683,6 +683,11 @@ class ModuleDetailView(LoginRequiredMixin, DetailView):
                 ('rtm_position', str(tension.pk))
             )
 
+        # C.3 commit 3 — flat list for the page-level JSON-LD block.
+        # The {% ai_provenance_jsonld %} tag consumes this list and
+        # emits one schema.org/CreativeWork node per row.
+        ai_provenance_jsonld_list = list(provenance_rows)
+
         context.update({
             'current_tab': current_tab,
             'progress': progress,
@@ -696,6 +701,7 @@ class ModuleDetailView(LoginRequiredMixin, DetailView):
             'dispute_rag': dispute_rag,
             'dispute_rtm': dispute_rtm,
             'dispute_dtp': dispute_dtp,
+            'ai_provenance_jsonld_list': ai_provenance_jsonld_list,
         })
 
         return context

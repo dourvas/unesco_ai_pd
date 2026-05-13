@@ -125,9 +125,9 @@ Disclaimer που συνοδεύει κάθε video: *"This video prepares you f
 
 ### 2.8 Phase C — onboarding, AILST, GDPR, EU AI Act compliance (Μάιος 2026)
 
-**Status:** Code-bearing Phase C work complete στα 11 commits, με μία documented εξαίρεση (C.3 — carry-over στο επόμενο παράθυρο, βλ. 3.C.7) και δύο gaps στο C.2 sub-scope (Career Stage Differentiation step + AI-TPACK step, βλ. 3.C.2).
+**Status:** Code-bearing Phase C work complete στα 15 commits (11 από το προηγούμενο arc + 4 του C.3 σε αυτό το παράθυρο). Δύο gaps στο C.2 sub-scope παραμένουν (Career Stage Differentiation step + AI-TPACK step, βλ. 3.C.2). C.3 ολοκληρώθηκε σε αυτό το παράθυρο — βλ. 3.C.3 για τις 4 commits.
 
-**183 Phase C tests pass** στις πέντε αλλαγμένες apps (compliance 84 · users 23 · ailst 47 · modules 13 · epilogue 16).
+**214 Phase C tests pass** στις πέντε αλλαγμένες apps (compliance 115 · users 23 · ailst 47 · modules 13 · epilogue 16). Aύξηση 31 tests από το C.3 arc (10 storage + 6 write hooks + 8 read paths + 7 template tags/JSON-LD).
 
 **Migrations εφαρμοσμένες σειριακά:**
 
@@ -300,7 +300,13 @@ Disclaimer που συνοδεύει κάθε video: *"This video prepares you f
 
 #### C.3 — Machine-readable AI content markers (Article 50(2))
 
-**Status:** ❌ **NOT DONE — carry-over στο επόμενο παράθυρο.** Tracked ως **TD-017** στο `proodos_files/TECH_DEBT_LOG.md` (entry να γραφτεί στο επόμενο session που θα πιάσει το piece — η αναφορά εδώ είναι κανονική roadmap-level).
+**Status:** ✅ **DONE — four-commit arc, 2026-05-12.** Commits `6b9ec09` (storage layer + retroactive backfill management command) + `1bc8e55` (forward-write hooks with CP-9 transaction-atomic invariant) + `0d91191` (export mirror + HTML data-attrs + Option C XAI work) + commit 3 (`{% ai_provenance %}` + `{% ai_provenance_jsonld %}` template tags + page-level JSON-LD on tab5 + privacy_dashboard + this roadmap update + session log). TD-017 marked RESOLVED in `proodos_files/TECH_DEBT_LOG.md`. Two open follow-up TDs: TD-018 (per-artefact-instance dispute deep-links, post-pilot), TD-019 (peer-synthesis dispute UX requires `AIOutputDispute.FEATURE_CHOICES` migration, post-pilot). Full Phase C suite at 214 tests.
+
+Design proposal at `proodos_files/C3_DESIGN_PROPOSAL_AI_MARKERS.md` (D1-D12, approved 2026-05-12 with 10 CP-style corrections including D10 revised to Option C — drop standalone attribution line, instead surface per-artefact `Generated at` row inside existing XAI panels + add parity panel for peer synthesis). Pre-flight audit at `proodos_files/audit_rag_queries_provenance_20260512.md` validates the single-constant `gemini-2.5-flash` backfill strategy.
+
+The original NOT DONE status block + the 5 open design questions are kept below for historical context. Each question now has a documented answer in the design proposal D1-D12.
+
+**Status (historical):** ❌ **NOT DONE — carry-over στο επόμενο παράθυρο.** Tracked ως **TD-017** στο `proodos_files/TECH_DEBT_LOG.md` (entry να γραφτεί στο επόμενο session που θα πιάσει το piece — η αναφορά εδώ είναι κανονική roadmap-level).
 
 **Τι έγινε ενώ θα έπρεπε να γίνει το C.3:**
 - Partial forward-compatibility marker: `data-ai-generated="true"` HTML attribute σε **4 spots μόνο** στο `templates/compliance/privacy_dashboard.html` (RTM card / DTP card / RAG feedback card / rag_queries card). Στην C.4 commit 2 αναφέρεται ρητά ως "per the C.3 forward-compatibility note" — δηλαδή **προετοιμασία**, όχι το C.3 self.
@@ -389,9 +395,11 @@ The CP-11 wipe script is at `scripts/cp11_wipe_test_users.py`. Core logic expose
 
 ---
 
-#### C.7 — Carry-over για επόμενο παράθυρο: C.3 machine-readable AI markers
+#### C.7 — Carry-over (CLOSED): C.3 machine-readable AI markers
 
-**Status:** Identified gap. Spec available, implementation deferred. See **3.C.3** above για το full Status block και τα 5 open design questions.
+**Status:** ✅ CLOSED 2026-05-12 — the C.3 piece this section described was completed in a four-commit arc on 2026-05-12. See **3.C.3** above for the DONE block + commit hashes + cross-references. This section is retained for historical context.
+
+**Historical status:** Identified gap. Spec available, implementation deferred. See **3.C.3** above για το full Status block και τα 5 open design questions.
 
 **One-line summary για το επόμενο handoff:** the platform produces AI-generated content (RAG feedback, RTM positions, DTP narratives, peer synthesis) but only a partial forward-compatibility marker exists (4 HTML attributes on the privacy dashboard). Article 50(2) of the EU AI Act recommends machine-readable marking of synthetic content; C.3 operationalises this with HTML data-attributes + page-level JSON-LD + a reusable `{% ai_provenance %}` template tag. The full work plan is in `EU_AI_ACT_COMPLIANCE_PLAN_APR2026.md` Section 5 (Συμπλήρωμα 3) + the five open design questions in 3.C.3.
 

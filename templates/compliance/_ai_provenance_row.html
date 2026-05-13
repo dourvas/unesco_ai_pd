@@ -1,0 +1,5 @@
+{% load i18n %}
+{% if provenance %}
+<span class="font-semibold text-base-content/60">{% trans "Generated at" %}</span>
+<span>{{ provenance.generated_at|date:'d M Y H:i' }}</span>
+{% endif %}

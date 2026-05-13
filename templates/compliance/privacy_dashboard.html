@@ -1,9 +1,15 @@
 {% extends 'base.html' %}
 {% load i18n %}
+{% load ai_provenance %}
 
 {% block title %}{% trans "Privacy & your data" %}{% endblock %}
 
 {% block content %}
+{# C.3 commit 3 — page-level JSON-LD machine-readable provenance for #}
+{# every AI artefact summarised on this dashboard. View context #}
+{# passes a flat list of provenance rows (latest per kind plus all #}
+{# rag_queries provenance rows when available). #}
+{% ai_provenance_jsonld ai_provenance_jsonld_list %}
 <div class="max-w-3xl mx-auto py-8 px-4">
 
     <div class="mb-6">
