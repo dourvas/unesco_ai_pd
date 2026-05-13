@@ -29,7 +29,7 @@
 
 ---
 
-## Τρέχουσα κατάσταση (snapshot — 2026-05-12)
+## Τρέχουσα κατάσταση (snapshot — 2026-05-13)
 
 Bird's-eye view. Αυτό το block ενημερώνεται σε κάθε session-end. Τα detail sections (§2, §3) δίνουν depth· εδώ είναι το at-a-glance index για να ξέρει το επόμενο παράθυρο πού στεκόμαστε.
 
@@ -39,7 +39,7 @@ Bird's-eye view. Αυτό το block ενημερώνεται σε κάθε sess
 |---|---|---|
 | **A.** Module content (M1-M15) + RAG ingest + browser tests | ✅ Complete | §3 Phase A |
 | **B.** Validation & Cleanup | ⚠️ Partial — B.2 (video badges) + B.4 (Edit Profile via C.2.1) done· B.1 (Content Validation Matrix) + B.3 (code cleanup) trickling | §3 Phase B |
-| **C.** Onboarding + EU AI Act + GDPR | ✅ **Code-bearing complete** — 15 commits, 214 tests pass | §2.8, §3 Phase C |
+| **C.** Onboarding + EU AI Act + GDPR | ✅ **100% code-bearing complete** — 15 commits, 214 tests pass. Career Stage Step 2 gap closed by Option A decision 2026-05-13 (deferred to post-pilot research direction — TD-020). | §2.8, §3 Phase C |
 
 **Phase C breakdown:**
 
@@ -54,7 +54,6 @@ Bird's-eye view. Αυτό το block ενημερώνεται σε κάθε sess
 
 | Item | Effort | Reference |
 |---|---|---|
-| **C.2 Step 2** — Career Stage RAG personalisation | ~50-80 LOC, single commit | §3.C.2 Step 2, §3.C.x |
 | **Phase D** — Pilot Readiness Features (TCS, Position Confirmation Analytics, DTP-XAI extension, Dashboard UNESCO Matrix 5×3 + RTM Heatmap) | Multi-session | §3 Phase D |
 | **Phase E** — Multi-agent refactor (RAG/RTM/DTP/Peer agent abstractions + shared infra) | Multi-session | §3 Phase E |
 | **Phase F** — Multimodal reflection (voice input + image input) | Multi-session | §3 Phase F |
@@ -76,7 +75,7 @@ These are **operational tasks, NOT in-phase code-bearing work**. They run after 
 | State | TDs |
 |---|---|
 | **Resolved** | TD-008 (consent revoke clear ack), TD-012 (sequential gate), TD-013 (Epilogue M15 gate), **TD-017 (machine-readable markers — closed in C.3 this session)** |
-| **Active deferred to post-pilot Phase G/H or beyond** | TD-001, TD-002, TD-003, TD-004, TD-009, TD-010, TD-011, TD-014, TD-015, TD-016, **TD-018 (per-artefact dispute deep-links)**, **TD-019 (peer dispute UX)** |
+| **Active deferred to post-pilot Phase G/H or beyond** | TD-001, TD-002, TD-003, TD-004, TD-009, TD-010, TD-011, TD-014, TD-015, TD-016, **TD-018 (per-artefact dispute deep-links)**, **TD-019 (peer dispute UX)**, **TD-020 (post-hoc career-stage exploratory analysis — 2026-05-13)** |
 | **Convenience-when-possible** | TD-005 (cp1253 encoding), TD-006 (.gitignore ephemerals), TD-007 (M1 placeholder squash) |
 
 Full TD register: `proodos_files/TECH_DEBT_LOG.md`.
@@ -315,12 +314,25 @@ Disclaimer που συνοδεύει κάθε video: *"This video prepares you f
 - Versioned as `AI_DISCLOSURE_TEXT_V1_PRE_IRB`
 - TD-008 (revocation must clear ack timestamp) closed in C.4 commit 1
 
-**Step 2 — Career Stage Capture** — ❌ **GAP — not implemented**
-- Το `teaching_years` field υπάρχει ήδη στη DB (από M2 και προηγούμενα) και συλλέγεται στο onboarding Step 1 form
-- Η δεύτερη μισή του spec — **χρήση της τιμής στις RAG queries + feedback emphasis logic** — δεν έγινε
-- Δεν προστέθηκε `career_stage` parameter στο `rag_query_system.py`
-- Δεν έγινε διαφοροποίηση feedback emphasis (νέοι vs έμπειροι)
-- **Action:** add as a new TD entry για follow-up session — ~50-80 LOC σε `apps/modules/views.py` + `rag_query_system.py`. Schema change δεν χρειάζεται.
+**Step 2 — Career Stage Capture** — ⏸ **DEFERRED to post-pilot research direction (decision 2026-05-13)**
+
+Το `teaching_years` field υπάρχει ήδη στη DB (από M2) και συλλέγεται στο onboarding Step 1 form. Η δεύτερη μισή του spec (χρήση της τιμής στις RAG queries + feedback emphasis logic per career stage) **δεν θα υλοποιηθεί πριν το pilot** — Option A approved 2026-05-13.
+
+**Rationale (four points):**
+
+1. **Already documented as limitation.** TAB1 dissertation chapter §8.1 explicitly states that PROODOS does not personalise at career-stage level και ότι "the current design accepts this limitation." Adding career-stage differentiation now would invalidate the acknowledged scope.
+2. **Pedagogical claim risk.** The proposed mapping (early-career → ethics framing, experienced → workload relief) lacks documented theoretical/empirical backing. Implementing it χωρίς literature support would create an unjustified design claim στο dissertation.
+3. **Research design integrity.** Differentiated treatment now requires IRB protocol amendment, statistical plan update, και potential per-stage stratified analysis (underpowered σε ~25 users per stage).
+4. **Pilot timing.** Phase C είναι structurally complete και frozen for IRB review. Adding new AI behaviour risks delaying IRB submission.
+
+**Personalisation narrative preserved without career-stage work.** The dissertation already supports:
+  - Hybrid personalisation = pre-generated subject content + RAG retrieval + reflection-adaptive AI
+  - Subject (16 values) + grade-band = segmentation axes
+  - Reflection-adaptive AI (RTM/DTP/RAG/peer) = true per-individual personalisation
+
+**Post-pilot follow-up (optional, exploratory):** TD-020 opened to investigate whether career stage (via existing `teacher_profile.teaching_years`) predicted differential outcomes in AILST T2-T0 deltas, RTM tension patterns, or reflection quality. Becomes a post-hoc research question, NOT a treatment variable.
+
+**Action:** none required pre-pilot. No code changes. No IRB amendment. No dissertation chapter rewrite.
 
 **Step 3 — AILST Baseline (T0)** — ✅ **DONE** (C.2.3, commits `014789e` + `4748302`)
 - Πλήρης AILST scale (Ning et al. 2025, 36 items, 4 factors) στο M4 seed
@@ -476,7 +488,7 @@ The CP-11 wipe script is at `scripts/cp11_wipe_test_users.py`. Core logic expose
 
 | Item | Defer to | Reference |
 |---|---|---|
-| Career Stage RAG personalisation (C.2 Step 2 unfinished half) | New TD entry, ~50-80 LOC follow-up session | 3.C.2 Step 2 above |
+| Career Stage RAG personalisation (C.2 Step 2 unfinished half) | **DEFERRED to post-pilot research direction** (decision 2026-05-13) — `teaching_years` retained as exploratory variable for post-hoc analysis only (TD-020). NOT a treatment variable. See 3.C.2 Step 2 above for full rationale. | 3.C.2 Step 2 |
 | AI-TPACK self-assessment | Section 5 (παρκαρισμένες ιδέες) | 3.C.2 Step 4 above |
 | Full PROODOS Epilogue Stage 0..3 + Learning Portrait PDF | Phase G (this roadmap) | TD-011 |
 | Post-pilot AILST score reveal | Phase G/H | TD-010 |

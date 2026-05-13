@@ -406,6 +406,30 @@ Discovered during C.3 commit 2b pre-implementation verification (2026-05-12). Th
 
 ---
 
+## TD-020 — Post-hoc career-stage exploratory analysis
+
+**Status:** Active. Defer to post-pilot research analysis (Phase I dissertation work).
+**Where:** No code site. Statistical analysis plan addendum to be drafted alongside the dissertation's results chapter.
+
+**Origin.** During Phase C planning, "Career Stage RAG personalisation" was scoped as the second half of C.2 Step 2 — add a `career_stage` parameter to the RAG prompt builder, derive it from `teacher_profile.teaching_years`, and differentiate feedback emphasis (early-career → ethics framing, experienced → workload relief). On 2026-05-13 the decision was taken NOT to implement this pre-pilot (Option A). The four rationale points are recorded in `PROODOS_UNIFIED_ROADMAP.md` §3.C.2 Step 2: (a) the dissertation chapter §8.1 already documents the absence of career-stage personalisation as an acknowledged scope limitation; (b) the proposed mapping lacks documented theoretical/empirical backing and would create an unjustified design claim; (c) introducing differentiated treatment now requires IRB protocol amendment + statistical plan update + per-stage stratified analysis underpowered at ~25 users/stage; (d) Phase C is structurally complete and frozen for IRB review, and adding new AI behaviour risks delaying IRB submission.
+
+**What this TD captures.** The platform DOES collect `teaching_years` at onboarding (existing M2 field) and the value is stored per participant for the full pilot duration. This is enough data to run an EXPLORATORY (not confirmatory) post-hoc analysis after the pilot completes:
+
+  - **Question 1:** Do participants in different career-stage bins (early-career 0-5 / mid-career 6-15 / experienced 16-25 / veteran 25+ years) show differential AILST T2-T0 deltas (overall and per factor: K, A, U, E)?
+  - **Question 2:** Are RTM tension patterns (which tensions get surfaced, how they are positioned) systematically different across career-stage bins?
+  - **Question 3:** Is reflection quality (length, depth indicators) correlated with career stage?
+  - **Question 4:** Does the dispute-rating distribution (👍 / partial / no) vary by career stage — i.e., do experienced teachers reject AI feedback at different rates?
+
+These are framed as **post-hoc exploratory** questions, NOT as primary research hypotheses, because the platform did not apply differentiated treatment. Career stage becomes a *predictor* in the analysis, not a *treatment factor*. Reporting must explicitly disclose this framing to avoid spurious confirmatory inference.
+
+**Effort:** ~3-5 days of statistical work post-pilot (SQL queries against the existing `teacher_profiles` + `ailst_responses` + `reflection_tensions` + `user_module_progress` tables; visualisation in the dissertation's results chapter; an honest "exploratory analysis" caveat block).
+
+**Dependencies:** none. The data is already being collected.
+
+**Resolved at:** post-pilot Phase I (dissertation results chapter). The TD entry is closed once the analysis is written up.
+
+---
+
 ## TD entry conventions
 
 When adding a new entry:
