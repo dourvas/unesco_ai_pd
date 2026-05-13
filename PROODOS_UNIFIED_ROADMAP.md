@@ -31,6 +31,8 @@
 
 ## Τρέχουσα κατάσταση (snapshot — 2026-05-13)
 
+*Latest update: Phase F.5 (TAB5 Visual Redesign) added to remaining work as a parked entry awaiting Phase F.1+F.2 functional completion. See §3 Phase F.5 for the full addendum content.*
+
 Bird's-eye view. Αυτό το block ενημερώνεται σε κάθε session-end. Τα detail sections (§2, §3) δίνουν depth· εδώ είναι το at-a-glance index για να ξέρει το επόμενο παράθυρο πού στεκόμαστε.
 
 ### Code-bearing work — DONE
@@ -57,6 +59,7 @@ Bird's-eye view. Αυτό το block ενημερώνεται σε κάθε sess
 | **Phase D** — Pilot Readiness Features (TCS, Position Confirmation Analytics, DTP-XAI extension, Dashboard UNESCO Matrix 5×3 + RTM Heatmap) | Multi-session | §3 Phase D |
 | **Phase E** — Multi-agent refactor (RAG/RTM/DTP/Peer agent abstractions + shared infra) | Multi-session | §3 Phase E |
 | **Phase F** — Multimodal reflection (voice input + image input) | Multi-session | §3 Phase F |
+| **Phase F.5** — TAB5 Visual Redesign (parked; awaits F.1 + F.2 functional completion) | Single focused arc post-F | §3 Phase F.5 |
 | **Phase G** — Full PROODOS Epilogue (Stage 0..3 + Gemini dialogue + Learning Portrait PDF — TD-011) | Multi-session | §3 Phase G |
 | **Phase H** — Closing flow (T2a immediate post-test + Certificate + T2b delayed post-test 4-6 weeks later) | Multi-session | §3 Phase H |
 | **Phase I** — Dissertation writing | External (John) | §3 Phase I |
@@ -587,6 +590,59 @@ The CP-11 wipe script is at `scripts/cp11_wipe_test_users.py`. Core logic expose
 **Αρχεία αναφοράς:**
 - `tab5_reflection.html` — current text-only form
 - `Literature_Review_Synthesis_Note.md` — critique + Mayer multimedia learning principles
+
+---
+
+#### F.5 — TAB5 Visual Redesign
+
+**Status:** ⏸ Parked — awaits Phase F functional completion (F.1 voice + F.2 image).
+**Trigger to start:** F.1 + F.2 functionally complete.
+**Date added:** 2026-05-13.
+
+**Problem statement.** The current TAB5 reflection page is functional but visually old-fashioned. The pain point is overall visual era, not specific structural issues (panels, density, flow). DaisyUI cards with hard-edged borders (`border-2 border-blue-200`), pastel background fills (`bg-blue-50`, `bg-yellow-50`, `bg-green-50`), emoji-prefixed titles (💡 Part 1, 📝 Reflection), DaisyUI `badge` counters for word targets, and a stacked `<form>` layout with no spatial differentiation between reflection-input and AI-output zones together produce a 2020-era admin-UI register. The page reads as "fill out a form", not "reflect and converse with an intelligent system".
+
+**Why not now — three reasons to defer to F.5:**
+
+  1. **Phase E is Python-only.** Touching templates breaks the multi-agent refactor's test invariant ("new + old produce identical output"). Doing the redesign during E would forfeit that safety net.
+  2. **Phase F adds new input modalities.** Voice (F.1) and image upload (F.2) introduce new UI affordances that must be designed into the redesign from the start. Redesigning before F = redesigning twice.
+  3. **Phase D.4 establishes data-viz language.** The Dashboard (D.4) sets a colour system, typography scale, and visual rhythm for data-dense content. The TAB5 redesign should be consistent with that language. Sequencing matters.
+
+**Proposed scope (when F.5 starts).** A unified "reflection space" rather than cosmetic refresh.
+
+| Concern | Current state | F.5 target |
+|---|---|---|
+| Visual era | 2020 pastel-card form | Modern editorial / magazine reflective surface |
+| Input affordances | Text only (4 textareas) | Text + voice + image (post-F) |
+| AI output zones | Mixed into the form flow | Visually distinct from reflection-input zones |
+| Reading rhythm | Vertical stack, no hierarchy | Section pacing, generous whitespace, deliberate type scale |
+| Color system | Aspect-coloured pastels | Aspect colour system consistent with TAB2 magazine + D.4 Dashboard |
+| Trust signals | XAI panels inline | Trust signals (AI provenance, XAI, HITL) as first-class peers to the reflection itself |
+| Mobile experience | Functional, not optimised | Equal-priority mobile design |
+
+**Design language anchors (to confirm at F.5 start).** The platform already has visual reference points. F.5 should pull from them, not start fresh:
+
+  - **TAB1 Magazine Redesign** (§2.4) — typographic hero, info bar, 5-aspect colour system. Editorial register.
+  - **TAB2 Magazine Upgrade** — sticky Part navigator, aspect-coloured numerals, reading progress bar. Magazine register.
+  - **D.4 Dashboard** (Phase D) — data-viz colour system + RTM Heatmap rhythm. To be defined.
+
+TAB5 should sit naturally in this family — same editorial register as TAB1/TAB2, same data-viz language as the Dashboard.
+
+**Open questions to surface at F.5 start (NOT to answer now):**
+
+  1. Should reflection-input and AI-output live in distinct visual columns (split-pane), or alternating bands (vertical magazine flow)?
+  2. How prominently should voice input appear once F.1 lands? Equal weight to text, or secondary affordance?
+  3. Image upload: thumbnail strip, or single hero artefact per reflection?
+  4. Should the four parts of the reflection still be visually separated, or merged into a single flowing space with subtle dividers?
+  5. Trust signals (provenance, XAI, HITL): persistent sidebar, or expand-on-demand under each AI output? Note that the C.3 commit 2b + 3 work established the current expand-on-demand pattern (collapsible `<details>` panels with the "Generated at" row plus the data-attrs/JSON-LD machine-readable layer); F.5 must preserve the regulatory contract (Article 50(1) human-readable + 50(2) machine-readable) under any visual change.
+  6. Modal AI outputs (RTM, DTP, Peer Synthesis on-demand buttons) — keep as modal, or in-page panel that animates in?
+
+**What this is NOT:**
+
+  - NOT a commitment to a specific visual direction.
+  - NOT a substitute for the Phase F roadmap entries (F.1, F.2, F.3, F.4 stay as-is).
+  - NOT a dissertation-priority item. The redesign serves UX and pilot adoption, not the research contribution. The Phase C transparency posture (XAI panels, machine-readable provenance, HITL) is the regulatory-defensible substance and is preserved across the redesign.
+
+**Αρχεία αναφοράς:** the addendum source document (drafted 2026-05-13) was merged into this section; the design language anchors above point at §2.4 (TAB1 + TAB2 magazine redesigns) and the future §3 Phase D.4 (Dashboard).
 
 ---
 
