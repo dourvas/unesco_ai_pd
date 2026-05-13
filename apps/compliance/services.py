@@ -289,7 +289,14 @@ def migrate_legacy_teacher_consents(*, TeacherProfile=None, ConsentRecord=None):
 # Phase C C.4 commit 2 — GDPR Art. 15 right of access (data export)
 # ============================================================================
 
-EXPORT_VERSION = '1'
+EXPORT_VERSION = '2'
+# Schema history:
+#   v1 — C.4 commit 2 — Initial GDPR Art. 15 export shape.
+#   v2 — C.3 commit 2b — Every ai_outputs entry grows a `provenance` sub-dict
+#        {model_name, generated_at, prompt_hash, artefact_kind, artefact_id}
+#        sourced from the new AIArtefactProvenance model. No keys renamed
+#        or removed; downstream parsers written against v1 will see
+#        additional keys and should treat unknown keys as opaque.
 
 
 def _iso(dt):
@@ -431,6 +438,30 @@ def _ai_outputs_to_dict(user):
         ReflectionTension,
         UserModuleProgress,
     )
+    from apps.compliance.models import AIArtefactProvenance
+
+    # C.3 commit 2b: build a (kind, pk_str) -> provenance lookup once,
+    # then attach a provenance sub-dict to each output entry. CP-7
+    # idempotency on the provenance side means at most one row per pair.
+    provenance_lookup = {
+        (p.artefact_kind, p.artefact_pk): p
+        for p in AIArtefactProvenance.objects.filter(user=user)
+    }
+
+    def _prov_dict(kind, pk):
+        """Look up provenance row and serialise. Returns None when no
+        provenance exists yet (legacy rows without backfill, or future
+        artefact kinds added before backfill runs)."""
+        prov = provenance_lookup.get((kind, str(pk)))
+        if prov is None:
+            return None
+        return {
+            'model_name': prov.model_name,
+            'generated_at': _iso(prov.generated_at),
+            'prompt_hash': prov.prompt_hash,
+            'artefact_kind': prov.artefact_kind,
+            'artefact_id': prov.artefact_pk,
+        }
 
     rtm = [
         {
@@ -441,6 +472,7 @@ def _ai_outputs_to_dict(user):
             'grounding_quote': t.grounding_quote,
             'selected_position': t.selected_position,
             'position_confirmed': t.position_confirmed,
+            'provenance': _prov_dict('rtm_position', t.pk),
         }
         for t in ReflectionTension.objects.filter(user=user).select_related('module')
     ]
@@ -453,13 +485,31 @@ def _ai_outputs_to_dict(user):
     peer_synthesis = []
     for p in progress_rows:
         if p.reflection_dtp:
-            dtp_narratives.append({'module_code': p.module.code, 'text': p.reflection_dtp})
+            dtp_narratives.append({
+                'module_code': p.module.code,
+                'text': p.reflection_dtp,
+                'provenance': _prov_dict('dtp_narrative', p.pk),
+            })
         if p.reflection_rag_feedback:
-            rag_feedback.append({'module_code': p.module.code, 'text': p.reflection_rag_feedback})
+            rag_feedback.append({
+                'module_code': p.module.code,
+                'text': p.reflection_rag_feedback,
+                'provenance': _prov_dict('rag_feedback', p.pk),
+            })
         if p.reflection_peer_synthesis:
-            peer_synthesis.append({'module_code': p.module.code, 'text': p.reflection_peer_synthesis})
+            peer_synthesis.append({
+                'module_code': p.module.code,
+                'text': p.reflection_peer_synthesis,
+                'provenance': _prov_dict('peer_synthesis', p.pk),
+            })
 
     rag_queries = _rag_queries_to_list(user)
+    # Attach provenance to each rag_queries entry. The list is built by
+    # `_rag_queries_to_list` which returns dicts keyed by 'id'.
+    for entry in rag_queries:
+        rq_id = entry.get('id') if isinstance(entry, dict) else None
+        if rq_id is not None:
+            entry['provenance'] = _prov_dict('rag_query', rq_id)
 
     disputes = [
         {

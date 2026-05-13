@@ -181,6 +181,28 @@ def privacy_dashboard_view(request):
         ),
     }
 
+    # C.3 commit 2b — per-kind provenance summary for the 4 AI-output
+    # cards (RTM / DTP / RAG / rag_queries). Each card surfaces the
+    # latest generated_at across that kind's artefacts, plus the model.
+    # Per the design proposal D2b-4: per-artefact id is NOT exposed on
+    # the summary cards (cards represent counts; per-artefact detail
+    # lives in the JSON export).
+    from apps.compliance.models import AIArtefactProvenance
+    provenance_summary = {}
+    for kind in ('rtm_position', 'dtp_narrative', 'rag_feedback',
+                 'peer_synthesis', 'rag_query'):
+        latest = (
+            AIArtefactProvenance.objects
+            .filter(user=request.user, artefact_kind=kind)
+            .order_by('-generated_at')
+            .first()
+        )
+        if latest is not None:
+            provenance_summary[kind] = {
+                'model_name': latest.model_name,
+                'latest_generated_at': latest.generated_at,
+            }
+
     return render(request, 'compliance/privacy_dashboard.html', {
         'ai_disclosure_state': _consent_state(request.user, 'ai_disclosure'),
         'research_state': _consent_state(request.user, 'research_participation'),
@@ -188,6 +210,7 @@ def privacy_dashboard_view(request):
         'profile': getattr(request.user, 'teacher_profile', None),
         'counts': counts,
         'ai_outputs': ai_outputs,
+        'provenance_summary': provenance_summary,
     })
 
 

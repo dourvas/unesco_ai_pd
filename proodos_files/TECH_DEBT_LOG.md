@@ -382,6 +382,26 @@ That work is >100 LOC of dispute infrastructure not strictly required for Articl
 
 ---
 
+## TD-019 — Peer synthesis dispute UX
+
+**Status:** Active. Defer to post-pilot Phase G/H.
+**Where:** `apps/modules/models.py::AIOutputDispute.FEATURE_CHOICES`, `templates/modules/tabs/tab5_reflection.html` peer synthesis card (~L819-830), `apps/modules/views.py::save_ai_dispute`.
+
+The existing `AIOutputDispute` model carries `FEATURE_CHOICES = [('rag', …), ('rtm', …), ('dtp', …)]` — three feature types. The dispute UX (`submitDispute(feature, rating)` buttons) is wired on the RAG, RTM, and DTP rendering surfaces in `tab5_reflection.html`. **Peer synthesis has neither a `('peer', 'Peer Synthesis')` choice nor a dispute UI**, despite being a substantively similar Gemini-generated output.
+
+Discovered during C.3 commit 2b pre-implementation verification (2026-05-12). The C.3 piece adds a new XAI disclosure panel for peer synthesis (parity with RAG/RTM/DTP — Option C in `C3_DESIGN_PROPOSAL_AI_MARKERS.md` §D10), but the dispute UX gap is left as this TD because closing it requires:
+
+  - schema migration to add `('peer', 'Peer Synthesis')` to `FEATURE_CHOICES` (and to the DB CHECK constraint if present);
+  - new HITL button row in `tab5_reflection.html` mirroring the RAG dispute UX (L765-797 area);
+  - test coverage for the new feature_type;
+  - decision on whether the existing `unique_together = (user, module, feature_type)` index extends sensibly to peer synthesis (one peer-synthesis dispute per user per module: yes, fine).
+
+**Effort estimate:** ~80-100 LOC + migration + 2-3 tests.
+
+**Resolved at:** post-pilot Phase G/H, once the pilot answers whether participants want per-feature dispute granularity for peer synthesis.
+
+---
+
 ## TD entry conventions
 
 When adding a new entry:

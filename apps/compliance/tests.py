@@ -889,7 +889,9 @@ class DataExportTest(_PrivacyTestBase):
             'epilogue_completion', 'ai_outputs',
         ):
             self.assertIn(key, payload, 'missing top-level key ' + repr(key))
-        self.assertEqual(payload['export_version'], '1')
+        # C.3 commit 2b bumped EXPORT_VERSION from '1' to '2' when the
+        # provenance sub-dict was added to every ai_outputs entry.
+        self.assertEqual(payload['export_version'], '2')
 
     def test_verbatim_consent_text_included(self):
         """Stored verbatim text survives the export round-trip
@@ -1727,3 +1729,277 @@ class AIArtefactProvenanceAdminTest(TestCase):
         resp = self.client.get('/admin/compliance/aiartefactprovenance/')
         self.assertEqual(resp.status_code, 200)
         self.assertContains(resp, 'rag_feedback')
+
+
+# ============================================================================
+# Phase C C.3 commit 2b — Export mirror + HTML data-attrs + per-artefact UX
+# ============================================================================
+
+
+class ExportMirrorProvenanceTest(TestCase):
+    """Verifies the v2 export shape: each ai_outputs entry gains a
+    `provenance` sub-dict, `EXPORT_VERSION` bumps to '2', CP-5
+    fresh-user invariant preserved."""
+
+    def setUp(self):
+        from apps.users.models import TeacherProfile
+        self.user = User.objects.create_user(username='export_user_2b', password='x')
+        TeacherProfile.objects.create(
+            user=self.user,
+            subject_area='mathematics', grade_level='primary',
+            ai_experience='none',
+            ai_disclosure_acknowledged_at=timezone.now(),
+        )
+
+    def test_export_version_is_2(self):
+        from apps.compliance.services import gather_user_export, EXPORT_VERSION
+        self.assertEqual(EXPORT_VERSION, '2')
+        snap = gather_user_export(self.user)
+        self.assertEqual(snap['export_version'], '2')
+
+    def test_fresh_user_export_no_provenance_keys_leaked(self):
+        """CP-5 invariant: zero artefacts → empty arrays, no provenance
+        keys in the empty lists (there's nothing to attach to)."""
+        from apps.compliance.services import gather_user_export
+        snap = gather_user_export(self.user)
+        ai = snap['ai_outputs']
+        for kind in ('rtm_positions', 'dtp_narratives', 'rag_feedback',
+                     'peer_synthesis', 'rag_queries'):
+            self.assertEqual(ai[kind], [], f'{kind} must be empty for fresh user')
+
+    def test_export_attaches_provenance_to_each_kind(self):
+        """For each populated artefact kind, the export entry carries
+        the `provenance` sub-dict with the documented keys."""
+        from apps.compliance.services import gather_user_export
+        from apps.compliance.models import AIArtefactProvenance
+        from apps.modules.models import Module, UserModuleProgress, ReflectionTension
+
+        module = Module.objects.create(
+            code='EX', title='Export test', description='t',
+            order_index=900, unesco_aspect='ethics',
+            proficiency_level='Acquire', is_published=True,
+        )
+        progress = UserModuleProgress.objects.create(
+            user=self.user,
+            module=module,
+            reflection_dtp='dtp text',
+            reflection_rag_feedback='rag text',
+            reflection_peer_synthesis='peer text',
+            started_at=timezone.now(),
+        )
+        tension = ReflectionTension.objects.create(
+            user=self.user,
+            module=module,
+            tension_label='t',
+            left_pole='L', right_pole='R',
+            grounding_quote='q', selected_position=3,
+        )
+        # Seed provenance rows for 4 ORM kinds.
+        for kind, pk in (
+            ('dtp_narrative', progress.pk),
+            ('rag_feedback', progress.pk),
+            ('peer_synthesis', progress.pk),
+            ('rtm_position', tension.pk),
+        ):
+            AIArtefactProvenance.objects.create(
+                artefact_kind=kind, artefact_pk=str(pk),
+                user=self.user, module=module,
+                model_name='gemini-2.5-flash',
+                generated_at=timezone.now(),
+            )
+
+        snap = gather_user_export(self.user)
+        ai = snap['ai_outputs']
+        for kind_key, plural_key in (
+            ('dtp_narrative', 'dtp_narratives'),
+            ('rag_feedback', 'rag_feedback'),
+            ('peer_synthesis', 'peer_synthesis'),
+            ('rtm_position', 'rtm_positions'),
+        ):
+            entries = ai[plural_key]
+            self.assertEqual(len(entries), 1, plural_key)
+            prov = entries[0].get('provenance')
+            self.assertIsNotNone(prov, f'{plural_key} missing provenance')
+            self.assertEqual(prov['model_name'], 'gemini-2.5-flash')
+            self.assertEqual(prov['artefact_kind'], kind_key)
+            self.assertIsNotNone(prov['generated_at'])
+
+
+class Tab5ProvenanceHtmlTest(TestCase):
+    """Tab5 renders the data-ai-* attributes on each AI output container
+    and surfaces the per-artefact 'Generated at' row inside the existing
+    XAI panel grids. Includes the NEW peer synthesis XAI panel."""
+
+    @classmethod
+    def setUpTestData(cls):
+        from apps.modules.models import Module
+        cls.module = Module.objects.create(
+            code='TZ', title='Tab5 prov test', description='t',
+            order_index=950, unesco_aspect='ethics',
+            proficiency_level='Acquire', is_published=True,
+        )
+
+    def setUp(self):
+        from apps.users.models import TeacherProfile
+        self.user = User.objects.create_user(
+            username='tab5_prov', password='x', is_staff=True,
+        )
+        TeacherProfile.objects.create(
+            user=self.user,
+            subject_area='mathematics', grade_level='primary',
+            ai_experience='none',
+            ai_disclosure_acknowledged_at=timezone.now(),
+            profile_completed=True,
+            research_consent=True,
+        )
+        self.client = Client()
+        self.client.force_login(self.user)
+
+    def _seed_progress_with_all_ai_outputs(self):
+        from apps.modules.models import UserModuleProgress, ReflectionTension
+        from apps.compliance.models import AIArtefactProvenance
+        progress = UserModuleProgress.objects.create(
+            user=self.user, module=self.module,
+            reflection_text='r' * 1500,
+            reflection_dtp='{"narrative":"DTP narrative text"}',
+            reflection_rag_feedback='<p>RAG html</p>',
+            reflection_peer_synthesis='<p>Peer synthesis html</p>',
+            reflection_completed=True,
+            reflection_completed_at=timezone.now(),
+            started_at=timezone.now(),
+        )
+        tension = ReflectionTension.objects.create(
+            user=self.user, module=self.module,
+            tension_label='Test tension',
+            left_pole='L', right_pole='R',
+            grounding_quote='q', selected_position=3,
+        )
+        ts = timezone.now()
+        for kind, pk in (
+            ('rag_feedback', progress.pk),
+            ('dtp_narrative', progress.pk),
+            ('peer_synthesis', progress.pk),
+            ('rtm_position', tension.pk),
+        ):
+            AIArtefactProvenance.objects.create(
+                artefact_kind=kind, artefact_pk=str(pk),
+                user=self.user, module=self.module,
+                model_name='gemini-2.5-flash',
+                generated_at=ts,
+            )
+        return progress, tension
+
+    def test_tab5_renders_data_attrs_on_all_ai_containers(self):
+        """All 4 populated AI rendering surfaces in tab5 carry the
+        expected data-ai-* attributes (RAG completed-state, DTP, peer,
+        per-tension RTM card)."""
+        progress, tension = self._seed_progress_with_all_ai_outputs()
+        resp = self.client.get(
+            reverse('modules:detail', kwargs={'code': 'TZ'}) + '?tab=reflection'
+        )
+        self.assertEqual(resp.status_code, 200)
+        content = resp.content.decode('utf-8')
+        # Containers identified by kind attribute.
+        for kind in ('rag_feedback', 'dtp_narrative', 'peer_synthesis', 'rtm_position'):
+            self.assertIn(f'data-ai-artefact-kind="{kind}"', content,
+                          f'Missing kind={kind} data-attr on tab5.')
+        self.assertIn('data-ai-model="gemini-2.5-flash"', content)
+
+    def test_tab5_renders_generated_at_row_inside_existing_panels(self):
+        """The new 'Generated at' row appears inside the existing XAI
+        panel grids (RAG + DTP). The peer NEW panel also surfaces it."""
+        self._seed_progress_with_all_ai_outputs()
+        resp = self.client.get(
+            reverse('modules:detail', kwargs={'code': 'TZ'}) + '?tab=reflection'
+        )
+        content = resp.content.decode('utf-8')
+        # Generated at appears at least 3 times — once per panel that
+        # has a provenance row attached (RAG completed-state, DTP, peer).
+        self.assertGreaterEqual(
+            content.count('>Generated at<'), 3,
+            'Generated at row should appear in at least 3 XAI panels.',
+        )
+
+    def test_tab5_peer_synthesis_new_xai_panel_rendered(self):
+        """Commit 2b adds an XAI panel for peer synthesis. Confirm the
+        new disclosure copy (heading + Limited Risk wording) appears."""
+        self._seed_progress_with_all_ai_outputs()
+        resp = self.client.get(
+            reverse('modules:detail', kwargs={'code': 'TZ'}) + '?tab=reflection'
+        )
+        content = resp.content.decode('utf-8')
+        self.assertIn('How this synthesis was generated', content)
+        self.assertIn('Peer synthesis surfaces patterns across the cohort', content)
+        self.assertIn('peer reflections are anonymised', content)
+
+
+class PrivacyDashboardProvenanceMarkersTest(TestCase):
+    """The 4 summary cards on the privacy dashboard render upgraded
+    data-attrs (kind + model + latest timestamp) but NOT per-artefact
+    id (D2b-4 — counts not single artefacts)."""
+
+    def setUp(self):
+        from apps.users.models import TeacherProfile
+        self.user = User.objects.create_user(username='priv_prov', password='x')
+        TeacherProfile.objects.create(
+            user=self.user,
+            subject_area='mathematics', grade_level='primary',
+            ai_experience='none',
+            ai_disclosure_acknowledged_at=timezone.now(),
+        )
+        self.client = Client()
+        self.client.force_login(self.user)
+
+    def _seed_one_per_kind(self):
+        from apps.modules.models import (
+            Module, UserModuleProgress, ReflectionTension,
+        )
+        from apps.compliance.models import AIArtefactProvenance
+        module = Module.objects.create(
+            code='PV', title='Priv prov', description='t',
+            order_index=960, unesco_aspect='ethics',
+            proficiency_level='Acquire', is_published=True,
+        )
+        progress = UserModuleProgress.objects.create(
+            user=self.user, module=module,
+            reflection_dtp='d',
+            reflection_rag_feedback='r',
+            started_at=timezone.now(),
+        )
+        tension = ReflectionTension.objects.create(
+            user=self.user, module=module,
+            tension_label='t', left_pole='L', right_pole='R',
+            grounding_quote='q', selected_position=2,
+        )
+        for kind, pk in (
+            ('rtm_position', tension.pk),
+            ('dtp_narrative', progress.pk),
+            ('rag_feedback', progress.pk),
+        ):
+            AIArtefactProvenance.objects.create(
+                artefact_kind=kind, artefact_pk=str(pk),
+                user=self.user, module=module,
+                model_name='gemini-2.5-flash',
+                generated_at=timezone.now(),
+            )
+
+    def test_privacy_dashboard_summary_cards_have_kind_and_model_attrs(self):
+        self._seed_one_per_kind()
+        resp = self.client.get(reverse('compliance:privacy_dashboard'))
+        self.assertEqual(resp.status_code, 200)
+        content = resp.content.decode('utf-8')
+        for kind in ('rtm_position', 'dtp_narrative', 'rag_feedback'):
+            self.assertIn(f'data-ai-artefact-kind="{kind}"', content,
+                          f'Missing kind={kind} on privacy dashboard summary.')
+        self.assertIn('data-ai-model="gemini-2.5-flash"', content)
+
+    def test_privacy_dashboard_summary_cards_omit_per_artefact_id(self):
+        """D2b-4 invariant: summary cards represent counts, NOT single
+        artefacts. data-ai-artefact-id must NOT appear on these cards."""
+        self._seed_one_per_kind()
+        resp = self.client.get(reverse('compliance:privacy_dashboard'))
+        content = resp.content.decode('utf-8')
+        self.assertNotIn(
+            'data-ai-artefact-id=', content,
+            'Per-artefact id must not appear on summary cards.',
+        )

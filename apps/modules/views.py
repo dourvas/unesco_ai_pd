@@ -650,6 +650,39 @@ class ModuleDetailView(LoginRequiredMixin, DetailView):
         else:
             print(f"⚠️ DTP not in DB: progress={progress}, reflection_dtp={bool(progress.reflection_dtp) if progress else None}")
 
+        # C.3 commit 2b — AI provenance prefetch. Build a per-(kind, pk)
+        # lookup so the template can render data-attrs + "Generated at"
+        # rows without hitting the DB per artefact (N+1 guard).
+        from apps.compliance.models import AIArtefactProvenance
+        provenance_rows = AIArtefactProvenance.objects.filter(
+            user=user,
+        ).filter(
+            # Tab5 surfaces artefacts scoped to this module + user. Use
+            # an OR query because rag_position/rag_query carry module_id;
+            # the per-progress kinds (rag_feedback/dtp_narrative/peer_synthesis)
+            # use progress.pk as artefact_pk which is already user-scoped.
+            module=module,
+        )
+        provenance_lookup = {
+            (p.artefact_kind, p.artefact_pk): p for p in provenance_rows
+        }
+        # Attach to the per-progress fields if present.
+        if progress is not None:
+            progress.rag_feedback_provenance = provenance_lookup.get(
+                ('rag_feedback', str(progress.pk))
+            )
+            progress.dtp_narrative_provenance = provenance_lookup.get(
+                ('dtp_narrative', str(progress.pk))
+            )
+            progress.peer_synthesis_provenance = provenance_lookup.get(
+                ('peer_synthesis', str(progress.pk))
+            )
+        # Attach to each saved tension (RTM positions).
+        for tension in saved_tensions:
+            tension.provenance = provenance_lookup.get(
+                ('rtm_position', str(tension.pk))
+            )
+
         context.update({
             'current_tab': current_tab,
             'progress': progress,
@@ -664,7 +697,7 @@ class ModuleDetailView(LoginRequiredMixin, DetailView):
             'dispute_rtm': dispute_rtm,
             'dispute_dtp': dispute_dtp,
         })
-        
+
         return context
 
 @login_required
