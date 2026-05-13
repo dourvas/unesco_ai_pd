@@ -29,6 +29,60 @@
 
 ---
 
+## Τρέχουσα κατάσταση (snapshot — 2026-05-12)
+
+Bird's-eye view. Αυτό το block ενημερώνεται σε κάθε session-end. Τα detail sections (§2, §3) δίνουν depth· εδώ είναι το at-a-glance index για να ξέρει το επόμενο παράθυρο πού στεκόμαστε.
+
+### Code-bearing work — DONE
+
+| Phase | Status | Reference |
+|---|---|---|
+| **A.** Module content (M1-M15) + RAG ingest + browser tests | ✅ Complete | §3 Phase A |
+| **B.** Validation & Cleanup | ⚠️ Partial — B.2 (video badges) + B.4 (Edit Profile via C.2.1) done· B.1 (Content Validation Matrix) + B.3 (code cleanup) trickling | §3 Phase B |
+| **C.** Onboarding + EU AI Act + GDPR | ✅ **Code-bearing complete** — 15 commits, 214 tests pass | §2.8, §3 Phase C |
+
+**Phase C breakdown:**
+
+  - **C.2.0–C.2.5b** — AI Disclosure modal + middleware + onboarding 4-step flow + AILST T0/T1/T2 administration + Epilogue placeholder + Confirm interstitial
+  - **C.4** — Privacy Dashboard (per-consent revoke + GDPR Art. 15 JSON export + Art. 17 anonymisation)
+  - **C.1** — AI Impact Assessment (EU AI Act Article 50(1) transparency notice)
+  - **C.6 (in-phase, not the pre-prod one)** — Sequential prerequisite gates (TD-012 + TD-013)
+  - **C.3** — Machine-readable AI markers (EU AI Act Article 50(2)) — `AIArtefactProvenance` model + forward-write hooks + export mirror (`export_version` v1→v2) + HTML data-attrs σε 9 rendering sites + `Generated at` row σε υπάρχοντα XAI panels + νέο peer XAI panel + page-level JSON-LD + reusable `{% ai_provenance %}` + `{% ai_provenance_jsonld %}` template tags
+  - **CP-11** wipe script: READY (operational, executed σε §3.C.6 pre-production sequence)
+
+### Code-bearing work — REMAINING
+
+| Item | Effort | Reference |
+|---|---|---|
+| **C.2 Step 2** — Career Stage RAG personalisation | ~50-80 LOC, single commit | §3.C.2 Step 2, §3.C.x |
+| **Phase D** — Pilot Readiness Features (TCS, Position Confirmation Analytics, DTP-XAI extension, Dashboard UNESCO Matrix 5×3 + RTM Heatmap) | Multi-session | §3 Phase D |
+| **Phase E** — Multi-agent refactor (RAG/RTM/DTP/Peer agent abstractions + shared infra) | Multi-session | §3 Phase E |
+| **Phase F** — Multimodal reflection (voice input + image input) | Multi-session | §3 Phase F |
+| **Phase G** — Full PROODOS Epilogue (Stage 0..3 + Gemini dialogue + Learning Portrait PDF — TD-011) | Multi-session | §3 Phase G |
+| **Phase H** — Closing flow (T2a immediate post-test + Certificate + T2b delayed post-test 4-6 weeks later) | Multi-session | §3 Phase H |
+| **Phase I** — Dissertation writing | External (John) | §3 Phase I |
+
+### Pre-production tasks (post-all-phases — executed once before pilot launch)
+
+These are **operational tasks, NOT in-phase code-bearing work**. They run after every code-bearing phase is complete (or at minimum the platform is feature-frozen for the pilot) AND immediately before participant recruitment. They are NOT Phase C blockers. The code is ready; what's missing is the timing trigger (IRB approval + final code freeze).
+
+| Step | Trigger | Reference |
+|---|---|---|
+| **C.5** — IRB-driven copy revision (mint `V2_IRB_REVISED` constants σε `apps/compliance/copy.py`, bump 3 version pins, re-deploy + re-ack staff) | IHU IRB feedback arrives (CP 7 + CP 10) | §3.C.5 |
+| **C.6 (pre-prod)** — Pre-pilot operational sequence (backup → `backfill_ai_provenance --commit` → CP-11 wipe → re-ack staff → smoke test → pilot recruitment) | All phases complete + C.5 applied + IRB approved | §3.C.6 |
+
+### Tech debt summary
+
+| State | TDs |
+|---|---|
+| **Resolved** | TD-008 (consent revoke clear ack), TD-012 (sequential gate), TD-013 (Epilogue M15 gate), **TD-017 (machine-readable markers — closed in C.3 this session)** |
+| **Active deferred to post-pilot Phase G/H or beyond** | TD-001, TD-002, TD-003, TD-004, TD-009, TD-010, TD-011, TD-014, TD-015, TD-016, **TD-018 (per-artefact dispute deep-links)**, **TD-019 (peer dispute UX)** |
+| **Convenience-when-possible** | TD-005 (cp1253 encoding), TD-006 (.gitignore ephemerals), TD-007 (M1 placeholder squash) |
+
+Full TD register: `proodos_files/TECH_DEBT_LOG.md`.
+
+---
+
 ## 2. Τι έχει ολοκληρωθεί
 
 ### 2.1 Modules (περιεχόμενο, RAG ingest, browser-tested)
@@ -356,9 +410,11 @@ The original NOT DONE status block + the 5 open design questions are kept below 
 
 ---
 
-#### C.5 — Post-IRB updates checklist
+#### C.5 — Post-IRB updates checklist (PRE-PRODUCTION TASK)
 
-**Status:** Awaiting IHU IRB feedback (CP 7 + CP 10). When feedback arrives, apply this checklist in one focused session.
+**Status:** ⏸ **Pre-production deployment task — NOT a Phase C blocker.** Executed once, after every code-bearing phase (A-I) is complete (or at minimum the platform is feature-frozen for the pilot) and when IHU IRB feedback (CP 7 + CP 10) has arrived. Until then, the existing v1 copy carries `v1_pre_irb` markers + "Will be revised after IHU IRB review" wording — kept easy-to-grep.
+
+When IRB feedback arrives, apply this checklist in one focused session.
 
 | Change | File / location | Action |
 |---|---|---|
@@ -376,20 +432,23 @@ The original NOT DONE status block + the 5 open design questions are kept below 
 
 ---
 
-#### C.6 — Pre-pilot operational checklist
+#### C.6 — Pre-pilot operational checklist (PRE-PRODUCTION TASK)
 
-**Status:** READY. Run immediately before participant recruitment.
+**Status:** ⏸ **Pre-production deployment task — NOT a Phase C blocker.** Scripts and tests are READY. Executed once, after every code-bearing phase (A-I) is complete, C.5 IRB-driven copy revision has been applied, and immediately before participant recruitment.
 
 | Step | Command / Action | Risk |
 |---|---|---|
 | 1. Fresh DB backup | `pg_dump unesco_ai_teacher_pd > pre_pilot_wipe_<date>.sql` at repo root | None — read-only |
-| 2. Dry-run wipe | `python scripts/cp11_wipe_test_users.py` | None — read-only; prints user list + cascade footprint |
-| 3. Confirm output | Eyeball the list. Staff accounts must NOT appear in the deletion list. | Low |
-| 4. Execute wipe | `python scripts/cp11_wipe_test_users.py --commit`, type `YES` when prompted | Destructive — backup at step 1 is the safety net |
-| 5. Re-ack staff | `python scripts/pre_deploy_c20_acknowledge_staff.py --commit` | None — idempotent; staff already had ack rows but cascade may have touched the FK targets |
-| 6. Verify clean state | Visit `/admin/auth/user/` — only staff + superuser rows should appear | None |
-| 7. Smoke test new-user flow | Register a fresh user, walk through Step 1 → 2 → 3 → Confirm → AILST T0 | None |
-| 8. Pilot recruitment | Begin inviting participants | — |
+| 2. **C.3 backfill** (provenance for any staff/test artefacts that pre-date the forward-write hooks) | `python manage.py backfill_ai_provenance` (dry-run) then `python manage.py backfill_ai_provenance --commit`, type `YES` | None — idempotent (get_or_create); skips orphan `rag_queries` rows automatically |
+| 3. Dry-run wipe | `python scripts/cp11_wipe_test_users.py` | None — read-only; prints user list + cascade footprint |
+| 4. Confirm output | Eyeball the list. Staff accounts must NOT appear in the deletion list. | Low |
+| 5. Execute wipe | `python scripts/cp11_wipe_test_users.py --commit`, type `YES` when prompted | Destructive — backup at step 1 is the safety net |
+| 6. Re-ack staff | `python scripts/pre_deploy_c20_acknowledge_staff.py --commit` | None — idempotent; staff already had ack rows but cascade may have touched the FK targets |
+| 7. Verify clean state | Visit `/admin/auth/user/` — only staff + superuser rows should appear | None |
+| 8. Smoke test new-user flow | Register a fresh user, walk through Step 1 → 2 → 3 → Confirm → AILST T0 | None |
+| 9. Pilot recruitment | Begin inviting participants | — |
+
+**Ordering note:** the C.3 backfill (step 2) MUST run BEFORE the CP-11 wipe (step 5). CP-11 cascade-clears the 19 non-staff `rag_queries` rows; running backfill after the wipe would leave only staff + orphan rows in scope, and would leave the interim window (between deploy and wipe) with inconsistent provenance during staff testing. See `proodos_files/audit_rag_queries_provenance_20260512.md` §5 and `TECH_DEBT_LOG.md` TD-017 (resolved block) for the operational rationale.
 
 The CP-11 wipe script is at `scripts/cp11_wipe_test_users.py`. Core logic exposed as `wipe_non_staff_users()` for direct test invocation. Both `--dry-run` (default) and interactive YES confirmation are built in.
 
