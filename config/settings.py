@@ -34,6 +34,9 @@ INSTALLED_APPS = [
     'apps.ailst',
     # Phase C C.2.5 — PROODOS Epilogue stub (2026-05)
     'apps.epilogue',
+    # Phase E commit 1 — agent layer (BaseAIAgent + RAGFeedbackAgent live
+    # alongside rag_query_system.py; monolith still serves traffic).
+    'apps.agents',
 ]
 
 MIDDLEWARE = [
@@ -163,6 +166,37 @@ AI_DISCLOSURE_CURRENT_VERSION = 'v1_pre_irb'
 # /about/ai-act-compliance/. Versioned in lockstep with the AI
 # Disclosure consent so that IRB review touches both together.
 AI_IMPACT_ASSESSMENT_CURRENT_VERSION = 'v1_pre_irb'
+
+# ============================================================
+# Phase E commit 1 — agent audit logger
+# ============================================================
+# Structured JSON records for every agent.generate.* event and every
+# agent.cost record. Goes to stdout in DEBUG so `manage.py runserver`
+# shows it inline; in production this can be redirected to a file by
+# wrapping the gunicorn/uwsgi process. The formatter emits one-line
+# JSON for downstream analysis pipelines (dissertation telemetry).
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'agents_json': {
+            '()': 'apps.agents.shared.audit.JSONFormatter',
+        },
+    },
+    'handlers': {
+        'agents_console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'agents_json',
+        },
+    },
+    'loggers': {
+        'agents.audit': {
+            'handlers': ['agents_console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+    },
+}
 
 # ============================================================
 # Phase C C.2.2 — Step 3 research consent version pin
