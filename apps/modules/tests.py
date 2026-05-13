@@ -404,25 +404,41 @@ class AIProvenanceWriteHookTest(TestCase):
         )
 
     def test_rag_feedback_save_writes_provenance(self):
-        """mark_tab_complete reflection path with non-empty rag_feedback
-        in kwargs creates a matching provenance row. Mocks
-        process_reflection to bypass the live Gemini call.
+        """mark_tab_complete reflection path produces a rag_feedback
+        provenance row.
+
+        Phase E commit 2: this test was migrated from patching
+        apps.modules.views.process_reflection (now unused at the view
+        layer) to patching RAGFeedbackAgent's LLMClient and
+        _search_similar_chunks. Same pattern as
+        apps/agents/tests/test_rag_feedback.py — exercises the real
+        agent _persist + _record_provenance paths inside the view's
+        request lifecycle, which strengthens CP-9 end-to-end coverage
+        rather than weakening it.
         """
-        from unittest.mock import patch
+        from unittest.mock import MagicMock, patch
+        from apps.agents.rag_feedback import RAGFeedbackAgent
+        from apps.agents.shared.llm_client import GenerationResult
         from apps.compliance.models import AIArtefactProvenance
 
         progress = self._make_progress()
-
-        # Mock process_reflection at the views.py import site to return
-        # an artefact that triggers the rag_feedback write path. The
-        # 350-word reflection text passes the 300-800 word validator.
         reflection_text = ('I reflected on my classroom teaching practice today and '
                            'considered new approaches to AI literacy support. '
-                           ) * 22  # ~352 words
-        with patch('apps.modules.views.process_reflection', return_value={
-            'query_id': 1, 'feedback': 'Mocked AI feedback markdown.',
-            'peer_synthesis': None,
-        }):
+                           ) * 22  # ~352 words — passes the 300-800 validator
+
+        mock_client = MagicMock()
+        mock_client.embed.return_value = [0.1] * 768
+        mock_client.generate.return_value = GenerationResult(
+            text='Mocked AI feedback markdown.',
+            model='gemini-2.5-flash',
+            tokens_estimate=100,
+            cost_eur_estimate=0.0000279,
+        )
+
+        with patch('apps.agents.rag_feedback.get_llm_client',
+                   return_value=mock_client), \
+             patch.object(RAGFeedbackAgent, '_search_similar_chunks',
+                          return_value=[]):
             resp = self.client.post(
                 reverse('modules:mark_tab_complete',
                         kwargs={'code': 'MZ', 'tab_name': 'reflection'}),
@@ -510,36 +526,17 @@ class AIProvenanceWriteHookTest(TestCase):
             'Expected dtp_narrative provenance row.',
         )
 
-    def test_peer_synthesis_inline_save_writes_provenance(self):
-        """mark_tab_complete reflection path with peer_synthesis in
-        rag_result writes a provenance row inside the inline atomic
-        block (the second atomic call from C.3 commit 2a)."""
-        from unittest.mock import patch
-        from apps.compliance.models import AIArtefactProvenance
-
-        progress = self._make_progress()
-        reflection_text = ('I reflected on my classroom teaching practice today and '
-                           'considered new approaches to AI literacy support. '
-                           ) * 22
-        with patch('apps.modules.views.process_reflection', return_value={
-            'query_id': 1, 'feedback': 'rag feedback',
-            'peer_synthesis': 'Mocked peer synthesis markdown.',
-        }):
-            resp = self.client.post(
-                reverse('modules:mark_tab_complete',
-                        kwargs={'code': 'MZ', 'tab_name': 'reflection'}),
-                data=json.dumps({'reflection_text': reflection_text}),
-                content_type='application/json',
-            )
-        self.assertEqual(resp.status_code, 200, msg=resp.content)
-        self.assertTrue(
-            AIArtefactProvenance.objects.filter(
-                artefact_kind='peer_synthesis',
-                artefact_pk=str(progress.pk),
-                user=self.user,
-            ).exists(),
-            'Expected peer_synthesis provenance row from inline save.',
-        )
+    # Phase E commit 2: test_peer_synthesis_inline_save_writes_provenance
+    # was removed here. Investigation found it exercised a code path that
+    # had been dead since `peer_synthesis = None` was hardcoded in
+    # rag_query_system.py:559-560 — process_reflection has never returned
+    # a real peer_synthesis value in production. The test passed pre-cutover
+    # only because its mock injected a synthetic peer_synthesis into the
+    # rag_result dict, re-animating dead code. The inline save block at
+    # views.py:965-984 is scheduled for removal in commit 7 alongside the
+    # PeerSynthesisAgent migration, at which point the live async path
+    # (extract_peer_synthesis_view, which DOES write peer_synthesis
+    # provenance — see views.py:2216) becomes the sole writer.
 
     def test_store_rag_query_writes_provenance_in_same_atomic(self):
         """store_rag_query (raw-SQL) writes an AIArtefactProvenance row

@@ -37,7 +37,18 @@ from .models import ReflectionTension
 
 # Import RAG system
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
-from rag_query_system import process_reflection
+from rag_query_system import process_reflection  # noqa: F401 — kept until commit 9 deletes the monolith; RTM/DTP/Peer paths still import from it
+
+# Phase E commit 2 — RAG cutover.
+# RAGFeedbackAgent now owns: embed -> retrieve -> generate -> rag_queries
+# INSERT -> reflection_rag_feedback save -> BOTH provenance rows, all in
+# one transaction.atomic. This strengthens CP-9: today's two separate
+# atomic blocks (store_rag_query's INSERT+'rag_query' provenance, and
+# views.py:895's progress.save()+'rag_feedback' provenance) collapse
+# into one. The previous architecture allowed a window between them
+# where a failure left the system inconsistent (rag_queries row logged
+# but no feedback on progress). The agent makes that window impossible.
+from apps.agents.rag_feedback import RAGFeedbackAgent
 
 
 class ModuleListView(LoginRequiredMixin, ListView):
@@ -792,63 +803,64 @@ def mark_tab_complete(request, code, tab_name):
             
             # ============================================================
             # 🔥 RAG FEEDBACK GENERATION + PEER SYNTHESIS
+            # Phase E commit 2: RAGFeedbackAgent owns the full pipeline
+            # in one atomic block (see import-site comment for the CP-9
+            # strengthening rationale). Peer synthesis is still served by
+            # the async endpoint extract_peer_synthesis_view; rag_result
+            # stays None for the peer key so the downstream check
+            # `if rag_result and 'peer_synthesis' in rag_result` is a
+            # graceful no-op here.
             # ============================================================
+            feedback = None
+            rag_result = None
             try:
-                # Get teacher profile
                 teacher_profile = TeacherProfile.objects.get(user=request.user)
-                
-                # Build teacher context
                 teacher_context = {
                     'name': teacher_profile.first_name or request.user.first_name,
                     'full_name': teacher_profile.full_name,
                     'subject': teacher_profile.get_subject_area_display(),
                     'grade_level': teacher_profile.get_grade_level_display(),
                     'experience': teacher_profile.get_teaching_years_display(),
-                    'enable_peer_synthesis': True  # ← NEW: Enable peer synthesis
+                    'enable_peer_synthesis': True,
                 }
-                
-                # Process reflection through RAG system
-                print(f"\n🔮 Processing reflection for user {request.user.id}...")
-                rag_result = process_reflection(
+
+                output = RAGFeedbackAgent().generate(
+                    user=request.user,
+                    module=module,
+                    save_target=progress,
+                    save_field='reflection_rag_feedback',
                     reflection_text=reflection_text,
                     teacher_context=teacher_context,
-                    user_id=request.user.id,
-                    module_id=module.id
+                    module_id=module.id,
                 )
-                
-                # Check for errors and convert markdown to HTML
-                if 'error' in rag_result:
-                    print(f"❌ RAG error: {rag_result['error']}")
-                    feedback = None
-                else:
-                    # Convert main feedback markdown to HTML
-                    raw_feedback = rag_result.get('feedback', '')
-                    if raw_feedback:
-                        feedback = markdown.markdown(
-                            raw_feedback,
-                            extensions=['extra', 'nl2br']
-                        )
-                        print(f"✅ RAG feedback generated + converted to HTML ({len(feedback)} chars)")
-                    else:
-                        feedback = None
-                
+                feedback = output.get('feedback_html')
+                rag_result = output
+
             except Exception as e:
-                print(f"❌ RAG system error: {e}")
+                # Behaviour parity with the monolith: any failure (embed,
+                # retrieve, Gemini, INSERT, provenance) leaves feedback as
+                # None. The reflection tab still completes; the user just
+                # doesn't see RAG output. The agent's atomic.atomic block
+                # ensures no half-written rag_queries row survives.
+                print(f"❌ RAG agent error: {e}")
                 import traceback
                 traceback.print_exc()
-                feedback = None
-                rag_result = None  # Ensure it's None on error
-            
+
             kwargs = {
                 'reflection_text': reflection_text,
-                'rag_feedback': feedback
+                # rag_feedback kwarg kept for behaviour parity: the agent
+                # has already saved progress.reflection_rag_feedback, but
+                # mark_tab_complete also assigns it (same HTML, redundant
+                # write). Dropping the kwarg would make mark_tab_complete
+                # overwrite the agent's value with '' (its kwarg default).
+                'rag_feedback': feedback,
             }
             # ← NEW: Store reflection in peer_reflections for future users
             try:
-                from rag_query_system import embed_query
+                from apps.agents.shared.embedding import embed_query
                 import psycopg2
                 from django.conf import settings
-                
+
                 # Get embedding
                 reflection_embedding = embed_query(reflection_text)
                 
@@ -886,23 +898,18 @@ def mark_tab_complete(request, code, tab_name):
             kwargs = {}
         
         # Mark tab complete.
-        # Phase C C.3 commit 2a — CP-9 invariant: wrap save + provenance
-        # write in one transaction.atomic. mark_tab_complete calls
-        # progress.save() internally, so any state set on the instance
-        # (including reflection_rag_feedback from kwargs) is persisted in
-        # the same transaction as the provenance row. If the provenance
-        # write raises, both rollback.
+        # Phase E commit 2 — the 'rag_feedback' provenance write that
+        # used to live in this atomic block (originally added in Phase C
+        # C.3 commit 2a) is now produced by RAGFeedbackAgent inside its
+        # own generate() atomic. The agent writes BOTH provenance rows
+        # ('rag_query' for the rag_queries telemetry, 'rag_feedback' for
+        # the user-visible HTML on progress) together — strictly stronger
+        # than the previous two-block pattern. mark_tab_complete keeps
+        # its own atomic for the tab-state transitions (reflection_text,
+        # reflection_completed, completion_percentage); those concerns
+        # remain separate from AI artefact storage.
         with transaction.atomic():
             next_tab = progress.mark_tab_complete(tab_name, **kwargs)
-            if tab_name == 'reflection' and kwargs.get('rag_feedback'):
-                record_ai_provenance(
-                    artefact_kind='rag_feedback',
-                    artefact_pk=progress.pk,
-                    user=progress.user,
-                    module=progress.module,
-                    model_name=PROVENANCE_MODEL_NAME,
-                    generated_at=timezone.now(),
-                )
 
         # Phase C C.2.4 + C.2.5 — post-module feature redirects.
         # After a module's progress.completed_at is freshly set we ask
