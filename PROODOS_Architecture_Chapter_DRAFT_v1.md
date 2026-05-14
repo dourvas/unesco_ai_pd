@@ -1,0 +1,247 @@
+# Multi-Agent Architecture for Trustworthy AI in Teacher Professional Development
+
+*Doctoral dissertation, International Hellenic University, Department of Information and Electronic Engineering*
+
+*Architecture chapter — Draft v1 (2026-05-14)*
+
+---
+
+## §1. Introduction
+
+PROODOS is an online professional development platform for K–12 teachers that integrates artificial intelligence into the reflective practice of educators. Built on Django 6.0.1 with a PostgreSQL 18 backend and the Gemini 2.5 Flash large language model, the system delivers fifteen modules of structured content aligned with the UNESCO AI Competency Framework for Teachers [CITE: UNESCO 2024, AICF], and supports each teacher's learning through four AI-mediated features: retrieval-grounded feedback on reflections, extraction of pedagogical tensions, longitudinal trajectory analysis across reflections, and cross-disciplinary peer synthesis.
+
+This chapter describes the architecture that supports these features. The architecture is not the contribution of the dissertation in isolation; the contribution is the integration of pedagogical theory with AI architecture in a way that makes specific claims about trustworthy AI in teacher professional development empirically defensible. Three properties of the platform make this integration consequential. First, PROODOS is a *triple-purpose artefact*: it is at once a dissertation deliverable, a research instrument generating data for the doctoral study, and an operational educational system through which teachers actually learn. The architecture must therefore satisfy three audiences — academic reviewers, research data analysts, and end-user teachers — without compromising on any one of them. Second, the architecture is required to operate within an explicit cost constraint: the marginal compute cost per teacher across the full fifteen-module programme must remain below €1, including all retrieval, generation, and persistence operations. This constraint is not an engineering preference but a research-ethics consideration, since it determines whether the architecture can be defended as a deployable contribution to teacher professional development in resource-constrained educational systems rather than an artefact reserved for institutions with effectively unlimited AI budgets. Third, the architecture must enforce a set of invariants — provenance writing, atomicity of artefact persistence, audit logging — *by construction*, not by convention, because the EU AI Act Article 50(2) machine-readable-content requirement and the GDPR Article 15 right of access are legal obligations that have to hold even when the development team is no longer paying daily attention to them [CITE: EU AI Act 2024]; [CITE: GDPR Article 15].
+
+The chapter proceeds as follows. §2 establishes the theoretical commitments that the architecture honours: the UNESCO competency framework, the Reflective Professional Engineering view of prompt engineering [CITE: Dourvas, Kokkonis, Kontogiannis 2025], the AI-TPACK construct for teacher knowledge integration [CITE: Celik 2023, AI-TPACK], the Backward Design framework that shapes module structure [CITE: Wiggins & McTighe 2005], and the reflective-practitioner tradition from which the platform's pedagogy descends [CITE: Schön 1983]. §3 provides a high-level overview of the deployed system. §4 describes the multi-agent design that organises the AI features. §5 details the architectural mechanisms that support the dissertation's trustworthy-AI claims. §6 explains how failure modes are surfaced to users honestly, completing the trustworthy-AI argument. §7 lists current limitations and notes the chapter's methodological scope.
+
+The platform is currently in pre-pilot state. Recruitment will engage approximately 110 K–12 teachers in the Greek educational system. Claims made in this chapter are scaled accordingly: the architecture is justified at pilot scale and is not claimed as an enterprise-grade or globally-deployable artefact.
+
+## §2. Theoretical anchoring
+
+The platform's architecture is shaped by five theoretical commitments. Each commitment constrains particular architectural choices, and the constraints together explain why the system takes the form it does rather than alternative forms that would also have been functionally adequate.
+
+### §2.1 UNESCO AI Competency Framework for Teachers
+
+The UNESCO AI Competency Framework for Teachers [CITE: UNESCO 2024, AICF] articulates teacher AI competence as a matrix of five Aspects (human-centred mindset, ethics of AI, AI foundations and applications, AI pedagogy, and AI for professional learning) intersected with three Proficiency Levels (Acquire, Deepen, Create). The platform operationalises this matrix through fifteen modules: five modules anchor the Acquire level, five anchor the Deepen level, and five anchor the Create level, with each module foregrounding one Aspect while drawing connections to the others. The architecture supports the framework rather than dictating to it. Module content is authored against the framework; the AI pipeline serves the module rather than constraining what can be taught. This is significant because alternative architectural choices — for example, training a single model on competency labels and routing teacher reflections through that model — would have inverted the relationship and made the framework an artefact of the system rather than its anchor.
+
+### §2.2 Prompt Engineering as Reflective Professional Practice
+
+The RPE framework [CITE: Dourvas, Kokkonis, Kontogiannis 2025] reconceptualises prompt engineering away from the prevailing instrumental framing (a technical skill of formulating effective AI inputs) and toward a framing as reflective professional practice in the Schönian tradition [CITE: Schön 1983]. The teacher who prompts an AI system is, on this account, engaged in the same reflective moves that characterise expert teaching: situating the problem, drawing on tacit pedagogical knowledge, revising the framing in light of system response, and integrating the AI's output into a wider professional judgement. The reflective phase of each PROODOS module — TAB5, where teachers write 300–800-word reflections after engaging with module content and assessments — embodies this framing directly. The reflection prompts elicit reasoning about the teacher's classroom situation; the AI's response is itself an object of reflection; and the platform's tools for surfacing tensions and synthesising peers extend rather than replace the teacher's own meaning-making. The dual-entry-point distinction described in §4.2 below has its primary justification here: an architecture that committed every AI output to the record would foreclose the deliberative space that reflective practice requires.
+
+### §2.3 AI-TPACK
+
+Celik's AI-TPACK construct [CITE: Celik 2023, AI-TPACK] adapts Mishra and Koehler's TPACK framework to capture teacher knowledge integration with AI specifically, distinguishing technological, pedagogical, content, and ethical knowledge in their AI-mediated forms. The architecture exposes AI capabilities at differentiated cognitive levels across the fifteen modules so that early-Acquire teachers encounter AI as a tool they observe and critique, mid-Deepen teachers encounter AI as a collaborator in lesson design, and Create-level teachers encounter AI as a domain object they can shape through prompt engineering and orchestration. The four AI features described in §4 operate at all three levels but inflect their tone and depth to match the module's place in the AI-TPACK progression.
+
+### §2.4 Backward Design
+
+The fifteen modules are structured according to Wiggins and McTighe's Backward Design principles [CITE: Wiggins & McTighe 2005]: each module begins from a stated learning outcome, then derives the assessment of that outcome, and only then arranges the content that prepares teachers for the assessment. The architecture's TAB structure (TAB1 Introduction, TAB2 Main Content, TAB3 Activity, TAB4 Assessment, TAB5 Reflection) is not arbitrary; it sequences the teacher's encounter with the module from orientation through application to consolidated reflection in the same order that backward design specifies. The AI features cluster in TAB5 by design: the reflection phase is where the teacher's understanding of the module's learning outcome is most directly elicited, and it is the phase where AI mediation contributes most to consolidation.
+
+### §2.5 Reflective Practice and the Human-in-the-Loop Framing
+
+The reflective-practitioner tradition that descends from Schön anchors the platform's stance on AI authority. The system makes no claim that the AI's output supersedes the teacher's professional judgement, and the architecture is designed to make this stance explicit at the level of code. Two distinct architectural commitments embody two distinct stances on how human agency interacts with AI output. The first stance treats the AI's output as a committed claim that becomes part of the record at the moment of generation; teacher response to such output takes the form of dispute, mediated through the human-in-the-loop interface. The second stance treats the AI's output as a proposal whose entry into the record awaits an affirmative human action; teacher response to such output takes the form of ratification, modification, or discard. The architecture supports both stances and is explicit about which stance applies to which AI feature. §4.2 describes the corresponding code-level distinction in detail.
+
+The theoretical commitments above are not decorative; they appear in the architectural choices traced through the rest of the chapter. Where a design decision could have gone differently, the theory it honours is identified.
+
+## §3. System overview
+
+PROODOS is a Django 6.0.1 application backed by a PostgreSQL 18 database with the pgvector extension for embedding-based retrieval, served behind a standard WSGI deployment, and consuming the Gemini 2.5 Flash large language model for all generative operations and Gemini embedding models for vector retrieval. The platform is deployed at pilot scale on a single application server with database co-location; horizontal scaling is not currently required and is not a focus of the architecture.
+
+### §3.1 Module organisation
+
+The fifteen modules are organised as one Django model (`Module`) with auxiliary models for the five TABs, teacher progress, reflection text, AI-generated artefacts, and provenance records. Each TAB has a fixed pedagogical role established in §2.4. The teacher progresses through modules sequentially; module unlock depends on completion of the immediately prior module and on satisfaction of a small number of gates defined by the platform's compliance layer (described in §5). Within a module, TABs unlock sequentially as the teacher engages with each phase.
+
+### §3.2 The reflection pipeline
+
+The reflection phase (TAB5) is the locus of AI mediation. After the teacher submits a reflection of between 300 and 800 words, four AI features operate in sequence and produce four distinct artefacts:
+
+- **Retrieval-augmented feedback** consults the platform's vector store of fifteen modules' worth of pedagogical material and frames an AI response of approximately 250–300 words as collegial dialogue between fellow educators. The response is rendered to the teacher in HTML.
+- **Reflective Tension Mapper extraction** asks the language model to identify two pedagogical tensions implicit in the reflection, each grounded in a verbatim quote from the teacher's own text. The two tensions are presented to the teacher, who places themselves on a five-point spectrum between the poles of each tension; only after the teacher submits these positions is anything persisted to the research record.
+- **Developmental Trajectory Predictor** compares the teacher's current reflection against their most recent prior reflection from a different module. It produces a similarity signal, a thematic shift analysis, and a sixty-word descriptive narrative of the teacher's developmental movement.
+- **Peer Synthesis** retrieves similar reflections from teachers in *other* subject areas — cross-disciplinary by design — and generates a synthesis (200–250 words) that connects pedagogical themes across subjects.
+
+These four features collectively occupy approximately three to five seconds of AI compute per submitted reflection on production hardware. They are dispatched as a sequence of asynchronous HTTP endpoints invoked from the reflection page after the teacher submits, so that latency does not block the immediate submission acknowledgement.
+
+### §3.3 Cost discipline
+
+The platform's marginal compute cost per teacher across all fifteen modules is constrained to remain below €1. This is achieved through three architectural choices. First, retrieval is performed locally against pgvector with dimension-reduced embeddings (768-dimensional vectors rather than the model's native 3072), bringing per-query embedding cost into the order of a hundredth of a euro-cent. Second, the language model is configured for analytic-style outputs at low temperature (0.3–0.4) and bounded `max_output_tokens` (1000–2500 depending on feature), keeping per-call generation cost predictable. Third, all four AI features per reflection together produce a worst-case spend on the order of three to five euro-cents per submission, multiplied by approximately fifteen reflections over the programme, yielding a per-teacher total well within the €1 envelope. Cost transparency at the architectural level is described further in §5.4.
+
+### §3.4 Data flow
+
+A reflection submission triggers the following data flow. The teacher's text is persisted to a progress record; a vector embedding is generated and the embedding plus the text are written to a peer-reflection corpus that future cross-disciplinary searches will consult; the retrieval-augmented feedback feature embeds the reflection text against the vector store, retrieves the five most similar pedagogical chunks, and constructs a Gemini prompt that produces the feedback. Concurrently, the asynchronous endpoints fire the remaining three features. Each feature produces an artefact (or fails honestly; see §6) and writes a corresponding provenance record. The full sequence yields one row in the research telemetry table, four progress-record updates (rendered feedback, peer synthesis text, RTM tensions, DTP narrative), and between three and five provenance records, all written within their respective atomic transaction scopes.
+
+## §4. Multi-agent design
+
+The four AI features described in §3.2 are not procedural functions called in sequence from the view layer. They are organised as named agent classes inheriting from a common abstract base class, with shared infrastructure for the cross-cutting concerns of provenance writing, cost tracking, audit logging, and database access. This section describes the design.
+
+### §4.1 Hierarchy
+
+The agent layer is structured as a tiered class hierarchy.
+
+```
+BaseAIAgent (abstract, ABCMeta)
+│   Two public entry points: generate() and extract()
+│
+└── ResearchInstrumentAgent (marker class)
+    ├── RAGFeedbackAgent
+    ├── RTMAgent
+    ├── DTPAgent
+    └── PeerSynthesisAgent
+```
+
+`BaseAIAgent` is an abstract class enforced through Python's ABCMeta machinery. Direct instantiation raises a runtime error; subclasses become instantiable only after implementing the abstract method `_do_generate`. The class establishes the contracts that every agent honours: a transaction-atomic public method for committed artefact production, a separate public method for ephemeral suggestion production, hooks for persistence and provenance writing, and integration with cost tracking and audit logging. The next subsection elaborates the dual public-method design.
+
+`ResearchInstrumentAgent` is an intermediate parent class with no method body of its own. It serves three purposes. First, its docstring articulates the contract for agents whose outputs become part of the research corpus, distinguishing them from cross-cutting service agents that operate on other agents' outputs. Second, its name allows cross-cutting code (administrative dashboards, audit aggregators, future explainability features) to filter agents by `isinstance` membership. Third, it reserves a position in the hierarchy for the future agents that subsequent phases of the platform will add without restructuring the class tree. The marker-class pattern is sometimes criticised as introducing empty abstractions, but in this design the class carries explicit conceptual content, even when its method body remains empty, and the future-extension role is concrete rather than speculative.
+
+### §4.2 Dual entry points: two stances on human-in-the-loop AI
+
+`BaseAIAgent` exposes two public methods through which agents present their outputs. The first, `generate`, opens a database transaction, invokes the agent's `_do_generate` to produce the AI output, persists the output to a designated target (typically the teacher's module-progress record), writes a corresponding provenance record, and closes the transaction atomically. The second, `extract`, runs the same `_do_generate` but performs no persistence and writes no provenance; the return value passes back to the caller, who is responsible for any subsequent action.
+
+These two methods correspond to two distinct architectural stances on how human agency interacts with AI output. Under the `generate` stance, the AI's output is treated as a committed claim that enters the record at the moment of generation. Subsequent disagreement with the output takes the form of *dispute*: a human-in-the-loop interface allows the teacher to flag the output as incorrect, providing reasons that themselves enter the record alongside the original output. This stance is appropriate when the output is the primary artefact and its production is the agent's contribution to the teacher's learning — retrieval-augmented feedback and developmental-trajectory narratives fit this stance.
+
+Under the `extract` stance, the AI's output is treated as a proposal whose entry into the record awaits an affirmative human action. The teacher receives the proposal, considers it, and through a subsequent action — a positioning task, a save click, an edit — ratifies it, modifies it, or discards it. Persistence and provenance writing happen at the moment of ratification, owned by the human-facing endpoint that handles the ratification action rather than by the agent that produced the proposal. This stance is appropriate when the AI's role is to surface possibilities that the teacher will then deliberate upon — pedagogical-tension extraction in RTM is the canonical case.
+
+The distinction is not a special case for the RTM feature. It articulates two complementary stances on a question that the trustworthy-AI literature has handled inconsistently: at what point does AI output become part of what the system has committed to? The `generate`/`extract` split makes the platform's answer explicit at the level of code, and the split applies prospectively to future features. Voice transcription in a planned multimodal phase is expected to use `extract` (the teacher reviews the transcription before save). Open-ended dialogue in the planned post-programme epilogue is expected to use `extract` (each AI turn is a proposal that the teacher's next turn ratifies or redirects).
+
+Subclasses that use only `extract` (no committed artefact at AI-generation time) override the `generate` method to raise a descriptive error pointing the caller to the appropriate persistence-owning endpoint. This guard is conservative: a future maintainer who accidentally invokes the wrong method receives a clear redirection rather than a silent semantic drift.
+
+### §4.3 The four agents
+
+#### §4.3.1 RAGFeedbackAgent
+
+The retrieval-augmented feedback agent receives a teacher's reflection text together with the teacher's pedagogical context (subject area, grade level, years of experience), retrieves the five chunks of UNESCO-framework material most similar to the reflection, and prompts the language model to generate a response of approximately 250–300 words framed as collegial dialogue. The pedagogical aim is explicitly *not* evaluation: the response avoids directive language ("you should", "you must"), frames its observations as a colleague's reading rather than an assessor's judgement, and offers two open questions inviting further reflection rather than prescribing next steps. The prompt structure operationalises the reflective-practitioner stance described in §2.5: the AI participates in the teacher's reflective practice as a more-experienced peer might, scaffolding without supplanting.
+
+Architecturally, the agent uses `generate` and produces two provenance records per call: one for the research-telemetry row capturing the embedding, retrieval, and generation metadata, and one for the user-facing feedback rendered to HTML and persisted to the teacher's progress record. The two records share a single atomic transaction, so the system can never produce a feedback row without its telemetry counterpart, nor vice versa.
+
+#### §4.3.2 RTMAgent
+
+The Reflective Tension Mapper agent surfaces pedagogical tensions implicit in the teacher's reflection. A pedagogical tension, in the platform's operational definition, is a meaningful opposition between two educational values, approaches, or concerns that the teacher's reflection brings into contact without explicit resolution. The agent prompts the language model to identify exactly two such tensions, each labelled briefly, each with left- and right-pole descriptions grounded in the teacher's own wording, and each anchored to a verbatim quote drawn from the reflection. Quote grounding is enforced through a four-rule validation pass: minimum quote length, presence of three or more significant words in the original text, bounded label length, and minimum pole length. Tensions failing validation are discarded, and the agent returns either one or two validated tensions, or nothing at all if no candidate survives validation.
+
+The agent uses `extract`. The validated tensions are returned to the teacher, who is invited to place themselves on a five-point scale between the poles of each tension and optionally to add a comment. Only at the moment the teacher submits these positions is persistence and provenance writing performed — by a separate view endpoint, not by the agent itself. The architectural separation honours the reflective-practitioner commitment of §2.5: the AI's extraction is a proposal; what enters the record is the teacher's positioning, with the AI-extracted labels and quotes preserved alongside as audit context.
+
+#### §4.3.3 DTPAgent
+
+The Developmental Trajectory Predictor agent operates across reflections rather than within a single reflection. Given the teacher's current reflection and their most recent prior reflection from a different module, the agent embeds both reflections, computes the cosine similarity between the resulting vectors, maps the similarity score to one of three continuity buckets (high, moderate, significant), extracts thematic shifts between the two reflections through a structured language-model call, and produces a sixty-word descriptive narrative of the teacher's developmental movement. The narrative is deliberately descriptive rather than evaluative: it observes shifts without scoring them.
+
+DTPAgent is the platform's first multi-call orchestration agent. A single invocation produces two embedding calls and two language-model calls, with cost tracking at the granularity of each individual call. Failure modes are handled with graded responses: an embedding failure aborts the whole orchestration with a clear error, but a theme-extraction failure or a narrative-generation failure each degrade gracefully to safe defaults so that the composite output is still meaningful. The agent uses `generate`: the composite artefact (similarity score, continuity label, thematic shift, narrative) is JSON-serialised and persisted to the teacher's progress record together with a single provenance record covering the composite.
+
+#### §4.3.4 PeerSynthesisAgent
+
+The peer-synthesis agent contributes the platform's most directly collegial AI feature. Given the teacher's reflection, the agent embeds it, retrieves the two most similar reflections from teachers in *other* subject areas (cross-disciplinary by construction), and prompts the language model to produce a synthesis (200–250 words) that names a pedagogical theme connecting the reflections, draws a cross-specialty connection, and extracts a transferable insight applicable to the current teacher's subject. The retrieved peer reflections are anonymised in the prompt; the synthesis names only subject areas, never identifiers.
+
+The agent distinguishes three failure modes through three distinct exception classes. A custom exception, `NoPeerReflectionsAvailable`, is raised when the cross-disciplinary retrieval returns nothing — operationally normal for the first teacher in a cohort or for a niche subject. A `RuntimeError` is raised when the language-model call or the embedding call fails. Any other exception, raised inside the transaction-atomic persistence block, indicates a database-side failure. The view layer that calls the agent catches each exception class with a distinct user-facing message: "No peer reflections found", "Peer synthesis temporarily unavailable", and "Synthesis could not be saved. Please try again." The semantic precision matters: the three failures correspond to three distinct teacher situations, and conflating them into a single generic error would damage the trust calibration that §5 and §6 establish as central trustworthy-AI concerns.
+
+### §4.4 Shared infrastructure
+
+The agent classes draw on a small set of shared utilities. A language-model client wrapper abstracts the underlying Gemini SDK and exposes a uniform interface for embedding generation, text generation, and cost accounting; the wrapper supports both the current and the previous SDK versions, allowing the platform to migrate without surface-level disruption. An embedding helper exposes the standalone embed-text operation for callers outside the agent classes. A JSON-repair helper applies a small set of recovery operations to language-model responses that are *almost* but not quite valid JSON — markdown fence stripping, brace boundary detection, escape-character normalisation — and is shared between RTMAgent and DTPAgent. A cost-tracker module records token counts and euro-equivalent estimates for every language-model invocation and emits the records through the audit logger. An audit-logger module wraps Python's standard logging with a JSON-formatted handler that produces machine-parseable records suitable for downstream research analysis. A database helper exposes the application's single supported pattern for raw-SQL operations, joining the request's transaction scope through the Django connection.
+
+The infrastructure is intentionally minimal. Each utility addresses a concern that recurred in two or more agents, and each utility is kept small enough to read in a single sitting. Larger abstractions were considered and rejected at the design stage: the platform's scale (~110 pilot teachers) does not warrant a service-bus architecture or a workflow engine, and adopting one would have introduced operational complexity disproportionate to the value it would deliver.
+
+### §4.5 [PLACEHOLDER — to be completed in Phase D.3]
+
+> **Expected content:** The XAI Service Agent. This section will describe the first member of a parallel hierarchy under a new `ServiceAgent` parent class, distinguished from the `ResearchInstrumentAgent` family by its role: an XAIAgent operates on the outputs of other agents, generating natural-language explanations of why the consuming agent produced what it did. The DTP XAI narrative is expected to be the first concrete instance.
+>
+> **Author handoff note:** Cross-reference §4.1 (hierarchy reservation of `ServiceAgent`) and §5.1 (provenance commitments). Explain the explanation-of-explanation provenance question explicitly: does an XAIAgent's output need its own provenance record alongside the explanation it produces? The likely answer is yes, but the dissertation argument for that answer should be made here. Connect to the EU AI Act Article 13 transparency requirements and to recent literature on natural-language explanation in education-facing AI.
+>
+> **Cross-references:** §4.1, §4.2 (`generate` vs `extract` for explanations), §5.1.
+
+### §4.6 [PLACEHOLDER — to be completed in Phase F]
+
+> **Expected content:** Multimodal Reflection Agents. This section will describe agent classes that accept non-text reflection inputs — voice recordings transcribed to text, classroom-artefact images analysed multimodally — and route them through the same downstream feature pipeline that text reflections feed.
+>
+> **Author handoff note:** Voice transcription is expected to use `extract` (the teacher reviews the transcription before it persists); image analysis may use either depending on whether the multimodal output is itself the persisted artefact or a proposal. Explain the inclusion argument: multimodal input lowers cognitive load for teachers whose first-language disfluency or expressive preferences make text-only reflection cognitively expensive. Connect to Mayer's multimedia learning principles [CITE: Mayer 2009] and to the literature critique that AI-mediated PD is text-heavy.
+>
+> **Cross-references:** §4.2 (entry-point selection), §6 (failure modes for transcription confidence below threshold).
+
+### §4.7 [PLACEHOLDER — to be completed in Phase G]
+
+> **Expected content:** The Epilogue Dialogue Agent. This section will describe an agent supporting the post-programme dialogue stage of PROODOS, in which a teacher who has completed all fifteen modules engages in extended natural-language conversation with the AI to articulate a personal "Learning Portrait" — a structured summary of their developmental trajectory through the programme.
+>
+> **Author handoff note:** The agent is expected to use `extract` because each AI turn in the dialogue is a proposal that the teacher's next turn ratifies, redirects, or rejects. The architectural challenge is multi-turn state management: dialogue history must inform subsequent turns without inflating prompt cost. Connect to the Backward Design framework (the Learning Portrait is the post-programme summative assessment of the programme as a whole) and to the trustworthy-AI commitment that the teacher's voice, not the AI's, is the authoritative source for what the Learning Portrait records.
+>
+> **Cross-references:** §2.4 (Backward Design at the programme scale), §4.2 (extract stance), §5.1 (per-turn provenance considerations).
+
+## §5. Trustworthy AI guarantees
+
+The dissertation's trustworthy-AI claims rest on a small number of properties that the architecture supports by construction. This section describes each.
+
+### §5.1 Provenance by construction
+
+Every AI-generated artefact that enters the persistent record carries a corresponding provenance record — a row in the `AIArtefactProvenance` table that captures the artefact's kind, primary key, generating user, generating module, model identifier, generation timestamp, and an optional prompt hash. The provenance record is written inside the same database transaction as the artefact it describes, and the writing is performed by `BaseAIAgent.generate` itself rather than by the calling code. This places the provenance commitment at the level of the base class: no subclass can produce a persisted artefact without writing the corresponding provenance, because the base class's transaction-atomic flow makes the two writes inseparable.
+
+The architectural choice satisfies a specific legal obligation. The EU AI Act Article 50(2) requires that AI-generated content be marked in machine-readable form so that downstream systems and human auditors can identify it as AI-generated [CITE: EU AI Act 2024]. The provenance table is the platform's implementation of that requirement; the by-construction commitment ensures that the implementation cannot drift out of compliance through ordinary maintenance. The GDPR Article 15 right of access [CITE: GDPR Article 15] is supported through the same table: when a teacher exercises their data-access right, the export aggregates the teacher's reflections, AI artefacts, and the provenance records that describe each artefact, producing a machine-readable record of every AI interaction the platform has had with that teacher.
+
+### §5.2 Atomicity
+
+Persistence of an AI artefact and writing of the artefact's provenance record happen inside one `transaction.atomic` block. If either write fails — a database-side error, a constraint violation, a concurrent-modification rollback — the entire transaction rolls back, and the system is left in a state where neither the artefact nor its provenance exists. This is the platform's CP-9 invariant: *no AI output without provenance, no provenance without AI output*. The invariant is significant for two reasons. First, half-saved artefacts would corrupt the research record: a teacher might see an artefact rendered on their screen that does not exist in the database, or the database might hold provenance for an artefact whose content was never written. Second, the invariant supports the trustworthy-AI claim that the system's record of what it has produced is reliable. A reviewer or auditor inspecting the database can trust that the provenance table is a complete inventory of AI activity, neither missing entries nor containing phantoms.
+
+The invariant was strengthened during the platform's development at one specific site. The original retrieval-augmented-feedback path performed the artefact write and the provenance write in two separate transaction-atomic blocks, with a window between them in which a failure would have left the system inconsistent — a research-telemetry row recorded for an AI feedback that the teacher never received, or vice versa. The agent-class refactor collapsed the two blocks into one. The strengthening was the only strict tightening of the CP-9 invariant produced by the refactor; the other three feature paths were already CP-9-compliant before the refactor, and the refactor preserved their compliance unchanged. The numerical balance — one strengthening of four cutovers — matters for the chapter's honesty: the architecture supports CP-9 enforcement, and the refactor's contribution to CP-9 was real at one site and absent at the others.
+
+### §5.3 Audit trail
+
+Every agent invocation emits a structured JSON log record that captures the agent class name, the kind of artefact produced, the language-model identifier, the token count and euro-equivalent cost for each language-model call (multi-call agents emit one record per call), the duration, and the agent's lifecycle phase (start, complete, cost, fail). The records flow through Python's standard logging infrastructure to a dedicated handler that produces one record per line in machine-parseable form. The downstream analysis pipeline that supports the doctoral study consumes these records directly for the per-feature cost analysis, the per-module engagement analysis, and the failure-rate analysis that the dissertation will report.
+
+The audit trail supports research reproducibility in a specific sense: the dissertation's claims about the platform's behaviour can be cross-checked against the audit records, which are tamper-evident in the operational sense (they live in a separate log stream from the database) even if not cryptographically tamper-proof. This is an honest framing: the audit trail is a research-instrument design choice, not a security guarantee.
+
+### §5.4 Cost transparency
+
+Every language-model invocation produces a cost record. The cost records are emitted alongside the other audit records and are aggregated daily into per-feature and per-teacher summaries. The architectural commitment is that no AI invocation produces output without a paired cost record. This makes the €1-per-teacher constraint introduced in §3.3 verifiable at the level of architectural enforcement rather than at the level of after-the-fact estimation. The constraint can be checked at any point during the pilot by aggregating the cost records, and exceedances would be detectable within hours rather than at the end of the pilot.
+
+The architectural commitment also serves a broader ethical position. Cost transparency in AI deployment is most commonly framed as a commercial concern, but in educational contexts it is also a research-ethics concern: an AI-mediated PD platform that could not be deployed without an institutional AI budget approaching that of a university would not be a contribution to teacher professional development as a field. The €1 constraint and the architectural enforcement together make the platform's cost story defensible at scale beyond the pilot.
+
+### §5.5 [PLACEHOLDER — to be completed in Phase D.1]
+
+> **Expected content:** The Trust Calibration Score. This section will describe an aggregated per-teacher metric that combines dispute frequency, peer-synthesis acceptance, RTM positioning patterns, and DTP narrative agreement into an empirically-grounded measure of how well the teacher's trust in the system's outputs is calibrated to the system's actual reliability.
+>
+> **Author handoff note:** The TCS is a research instrument first, a teacher-facing feature only in aggregate. Be careful about the dissertation framing — claim what the score measures, claim it as an exploratory measure, and connect to recent literature on trust calibration in human-AI collaboration [CITE: e.g. Lee & See 2004; Bansal et al. 2019]. Avoid claiming the score is itself a validated psychometric instrument; it is the platform's operational proxy for calibration patterns that the dissertation will analyse.
+>
+> **Cross-references:** §5.3 (audit records as TCS inputs), §6 (failure-mode handling as a TCS dimension).
+
+### §5.6 [PLACEHOLDER — to be completed in Phase D.2]
+
+> **Expected content:** Position Confirmation Analytics. This section will describe the analytics pipeline that processes the RTM positioning data submitted by teachers to surface patterns in epistemic positioning across modules, across subject areas, and across the cohort.
+>
+> **Author handoff note:** This section connects the RTM `extract` stance described in §4.3.2 to the research data it produces. Explain the distinction between data about *what* the teacher reflected and data about *how the teacher positioned themselves* in the tension space — the latter is the contribution of RTM and the value the dissertation can analyse longitudinally. Connect to literature on epistemic beliefs in teacher PD [CITE: e.g. Hofer & Pintrich 2002].
+>
+> **Cross-references:** §4.3.2 (RTM agent), §5.3 (audit records).
+
+### §5.7 [PLACEHOLDER — to be completed in Phase D.4]
+
+> **Expected content:** The UNESCO 5×3 Dashboard and the RTM Heatmap. This section will describe the analytic dashboards that visualise the cohort's progression through the UNESCO competency matrix and the RTM positioning distribution.
+>
+> **Author handoff note:** The dashboard is for the researcher (John) primarily, not for participating teachers. Be explicit about this scope. Connect to the UNESCO framework described in §2.1 (the dashboard is the framework's visualisation, not a separate construct) and to the pilot evaluation strategy.
+>
+> **Cross-references:** §2.1, §5.6.
+
+## §6. Failure mode handling
+
+The trustworthy-AI argument advanced in §5 rests on a further commitment that this section makes explicit: when something goes wrong, the platform tells the teacher what went wrong with sufficient precision to support an informed response. The commitment is not trivial. The original implementation of the developmental-trajectory feature, prior to the agent refactor, tolerated database-side failures during persistence by logging the failure and proceeding to serve the AI output to the teacher anyway. The teacher would see a developmental-trajectory narrative rendered on screen; they would not see that the system had failed to persist it. On their next visit to the module, the narrative would be absent without explanation. The behaviour was a long-standing antipattern, not a deliberate design, and it had been there since before the refactor began. The agent-class architecture made it structurally impossible to preserve. Under the new design, the agent owns the persistence atomic; if persistence fails, the agent raises, the calling view layer catches the exception, and the teacher sees an honest message ("DTP analysis could not be saved. Please try again.") rather than a phantom result.
+
+The peer-synthesis agent extends the same commitment to three-way semantic precision. As §4.3.4 established, the agent distinguishes three failure modes through three distinct exception classes. The view layer catches each separately and surfaces a corresponding user-facing message. The teacher who sees "No peer reflections found" learns something true about the state of the platform's corpus — they are the first teacher to engage with their subject area on this question, or the corpus contains only same-subject neighbours and the cross-disciplinary search has therefore returned empty. The teacher who sees "Peer synthesis temporarily unavailable" learns something true about the language model's responsiveness in the current moment, and may reasonably retry. The teacher who sees "Synthesis could not be saved. Please try again." learns that the AI side completed successfully but the database side did not, and may also reasonably retry. The three messages map to three distinct teacher responses; collapsing them into a generic error would deprive the teacher of the information they would need to respond appropriately.
+
+The commitment connects directly to the trustworthy-AI argument advanced in §5. A system that hides its failures from users teaches users to expect the visible state of the interface to correspond to the actual state of the database, and breaks that expectation silently in cases where the correspondence fails. Over time, users who have been thus taught will misattribute failures to themselves ("I must have done something wrong"), to the wrong subsystem ("the peer feature seems unreliable"), or to luck ("I think it just sometimes doesn't work"). None of these attributions support calibrated trust. Honest failure messaging, by contrast, gives the user the information they need to form an accurate mental model of the system's behaviour, including its failure modes. The architectural commitment is therefore in service of trust calibration, which the planned Phase D.1 instrument (§5.5) will measure.
+
+The agent-class architecture does not catch every conceivable failure with this precision. A network partition between the application server and the language-model API will surface as a generic transient error; a malformed request from the teacher's browser will produce a 400 response without per-feature precision; a complete database outage will produce an opaque 500 from Django before the agent layer is reached. The honest-failure commitment applies within the agent layer's scope: the four feature-specific failure modes that the agents themselves can distinguish are surfaced with the precision they deserve. Beyond that scope, the platform falls back to the standard web-framework conventions, and the dissertation's claim about failure handling is correspondingly bounded.
+
+## §7. Limitations and current scope
+
+This chapter describes the architecture as deployed at the conclusion of the platform's pre-pilot development. Several features anticipated for the pilot or for post-pilot extension are not yet implemented; their architectural placeholders appear in §4.5–§4.7 and §5.5–§5.7. The limitations below characterise the scope of what the chapter can currently claim.
+
+### §7.1 Pilot scale and generalisation
+
+The platform serves approximately 110 K–12 teachers in the Greek educational system. Architectural choices are justified at this scale and are not claimed as appropriate for larger deployments without further engineering work. Multi-tenancy, horizontal scaling, internationalisation beyond the current English–Greek bilingual content, and accessibility beyond the platform's WCAG 2.2 AA target are all out of current scope. Generalisation of the dissertation's empirical findings to other systems is an empirical question to be addressed in subsequent work, not a property the architecture itself can guarantee.
+
+### §7.2 Generative explainability not yet implemented
+
+The platform's current explainability surface is template-driven: the user interface renders provenance information (model identifier, generation timestamp, retrieval sources where applicable) inside dedicated panels on each AI output. Generative explainability — natural-language explanations that an XAI agent produces in response to a user's query about why a specific AI output took the form it did — is not yet implemented. The architecture reserves a hierarchical position for this feature (§4.5 placeholder), and the EU AI Act Article 13 transparency requirements that motivate it remain partially supported through the template-driven surface.
+
+### §7.3 Modality limited to text
+
+The platform currently accepts reflection input only as text. Voice and image input are anticipated for a subsequent phase (§4.6 placeholder), motivated by inclusion concerns relating to teachers whose expressive preferences make text-only reflection cognitively expensive. The current architecture's text-only commitment is therefore a known accessibility limitation, not a claimed feature.
+
+### §7.4 No post-programme dialogue
+
+The platform's current trajectory ends with the final module's reflection. A planned post-programme dialogue agent (§4.7 placeholder) will support the construction of a teacher-articulated "Learning Portrait" through extended natural-language conversation. The dissertation's longitudinal claims are currently bounded to the fifteen-module sequence and the data collected within it.
+
+### §7.5 Methodology note
+
+The architecture described in this chapter reached its current form through an iterative refactoring process documented separately from this chapter. The full engineering record of the refactor — including design decisions and their evolution across eleven revisions, the eleven commits that implemented the architecture, the audits that validated its completion, and the seven distinct architectural contributions the refactor produced — is preserved as `proodos_files/PHASE_E_DESIGN_PROPOSAL_v11.md` in the platform's source repository. That document and the corresponding git history are available to reviewers as supplementary material. This chapter presents the architecture in its current form; the engineering record presents how the form was reached. The two documents are intentionally separated: the dissertation chapter is concerned with what the architecture supports and why; the engineering record is concerned with how the architecture came to be. Neither document subsumes the other, and a reviewer interested in the iterative process is referred to the engineering record rather than asked to reconstruct it from the chapter.
