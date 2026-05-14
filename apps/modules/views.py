@@ -2247,21 +2247,42 @@ def extract_peer_synthesis_view(request, code):
 @require_POST
 def extract_dtp_view(request, code):
     """
-    Async DTP endpoint - called by frontend after feedback is displayed.
+    Async DTP endpoint — called by frontend after feedback is displayed.
     Only activates from M2+ (requires previous reflection in rag_queries).
+
+    Phase E commit 6 — DTP cutover. Replaces the monolith compute_dtp
+    call plus the views.py-side tolerant save block with
+    DTPAgent().generate(), which owns the persistence atomic by contract.
+
+    Primary verdict: PRESERVATION of CP-9 atomic scope (pre-decided by
+    commit 5 diagnostic). Secondary tightening surfaced during cutover:
+    the previous tolerant try/except at this view returned success=True
+    even when the save+provenance atomic failed, showing the user a DTP
+    result that did not persist. The agent's atomic ownership makes
+    that silent-failure path structurally impossible — save failures
+    now honestly report success=False. UX strictly improves; behaviour
+    differs only on infrastructure errors (DB down, FK violation,
+    integrity error) where the new behaviour is correct.
     """
-    from rag_query_system import compute_dtp
-    
+    # Phase E commit 6 — lazy import preserved (the monolith path also
+    # imported lazily). RuntimeError catch below handles embed failures
+    # (agent contract from commit 5); all other failures bubble to a
+    # tighter error path per the secondary-tightening framing above.
+    from apps.agents.dtp import DTPAgent
+
     module = get_object_or_404(Module, code=code)
-    
+
     try:
         data = json.loads(request.body)
         current_reflection = data.get('reflection_text', '')
-        
+
         if not current_reflection:
             return JsonResponse({'success': False, 'message': 'No reflection text'})
-        
-        # Find most recent previous reflection from a DIFFERENT module
+
+        # Find most recent previous reflection from a DIFFERENT module.
+        # Raw psycopg2 (idiom #2) preserved here — the rag_queries table
+        # lives outside Django migrations and DB-idiom unification is
+        # deferred to commit 10.
         import psycopg2
         from django.conf import settings
         conn = psycopg2.connect(
@@ -2281,46 +2302,64 @@ def extract_dtp_view(request, code):
             ORDER BY rq.created_at DESC
             LIMIT 1;
         """, (request.user.id, module.id))
-        
+
         row = cursor.fetchone()
         conn.close()
-        
+
         if not row:
             return JsonResponse({'success': False, 'message': 'No previous reflection found'})
-        
-        previous_reflection, previous_module_code = row
-        
-        # Compute DTP
-        dtp_result = compute_dtp(
-            previous_reflection_text=previous_reflection,
-            current_reflection_text=current_reflection,
-            previous_module=previous_module_code,
-            current_module=module.code
-        )
-        
-        if dtp_result:
-            # Save DTP result to database. CP-9 invariant: save +
-            # provenance in one atomic block.
-            try:
-                progress = UserModuleProgress.objects.get(user=request.user, module=module)
-                with transaction.atomic():
-                    progress.reflection_dtp = json.dumps(dtp_result)
-                    progress.save()
-                    record_ai_provenance(
-                        artefact_kind='dtp_narrative',
-                        artefact_pk=progress.pk,
-                        user=progress.user,
-                        module=progress.module,
-                        model_name=PROVENANCE_MODEL_NAME,
-                        generated_at=timezone.now(),
-                    )
-            except Exception as e:
-                print(f"⚠️ Could not save DTP: {e}")
 
-            return JsonResponse({'success': True, 'dtp': dtp_result})
-        else:
-            return JsonResponse({'success': False, 'message': 'DTP computation failed'})
-    
+        previous_reflection, previous_module_code = row
+
+        # Fetch progress before invoking the agent — required as
+        # save_target. DoesNotExist falls through to the outer
+        # except (same as monolith's behaviour where progress.get
+        # was inside the inner try).
+        progress = UserModuleProgress.objects.get(user=request.user, module=module)
+
+        # DTPAgent owns the full atomic block (CP-9 preserved). Two
+        # distinct error paths, distinguished deliberately:
+        #
+        #   - RuntimeError -> embed failed at the LLM client. This is
+        #     operationally distinct from a DB save failure (it means
+        #     Gemini could not produce an embedding for either
+        #     reflection), and matches the monolith's silent
+        #     None-return path. Surface as same-degrade: user sees
+        #     "DTP computation failed", no DTP card rendered.
+        #
+        #   - Any other Exception -> the save+provenance atomic
+        #     rolled back. Per the agent contract, this means no
+        #     'dtp_narrative' provenance row exists, so serving the
+        #     composite to the user would violate the CP-9 invariant
+        #     ("no AI output without provenance"). Report honestly.
+        try:
+            dtp_result = DTPAgent().generate(
+                user=request.user,
+                module=module,
+                save_target=progress,
+                save_field='reflection_dtp',
+                previous_reflection_text=previous_reflection,
+                current_reflection_text=current_reflection,
+                previous_module=previous_module_code,
+                current_module=module.code,
+            )
+        except RuntimeError as e:
+            print(f"⚠️ DTP embed failed: {e}")
+            return JsonResponse({
+                'success': False,
+                'message': 'DTP computation failed',
+            })
+        except Exception as e:
+            print(f"❌ DTP save/provenance failed: {e}")
+            import traceback
+            traceback.print_exc()
+            return JsonResponse({
+                'success': False,
+                'message': 'DTP analysis could not be saved. Please try again.',
+            })
+
+        return JsonResponse({'success': True, 'dtp': dtp_result})
+
     except Exception as e:
         print(f"❌ DTP view error: {e}")
         import traceback
