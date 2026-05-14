@@ -954,41 +954,22 @@ def mark_tab_complete(request, code, tab_name):
             response_data['ailst_redirect_url'] = epilogue_redirect_url
             response_data['ailst_redirect_label'] = 'Continue to PROODOS Epilogue'
         
-        # Add feedback and peer synthesis to response if this is reflection
-        # Add feedback, peer synthesis, and RTM tensions to response
+        # Add feedback to response if this is reflection.
+        #
+        # Phase E commit 7 — the inline peer-synthesis block that
+        # previously sat below this `if feedback:` clause was removed.
+        # It had been dead since rag_query_system.process_reflection
+        # hardcoded `peer_synthesis = None` (line 559-560 of the
+        # monolith — a decision predating Phase E). After commit 2's
+        # RAG cutover, `rag_result` is RAGFeedbackAgent's output dict
+        # which has never carried a 'peer_synthesis' key, making the
+        # block doubly dead. The live writer is the async endpoint
+        # `extract_peer_synthesis_view`, which calls PeerSynthesisAgent
+        # after commit 8.
         if tab_name == 'reflection':
             if feedback:
                 response_data['feedback'] = feedback
-            
-            # Add peer synthesis if available
-            # Add peer synthesis if available
-            if rag_result and 'peer_synthesis' in rag_result and rag_result['peer_synthesis']:
-                try:
-                    peer_synthesis_html = markdown.markdown(
-                        rag_result['peer_synthesis'],
-                        extensions=['extra', 'nl2br']
-                    )
-                    response_data['peer_synthesis'] = peer_synthesis_html
-                    print(f"✅ Peer synthesis added to response ({len(peer_synthesis_html)} chars)")
 
-                    # 🆕 Save peer synthesis to database. CP-9 invariant
-                    # (Phase C C.3 commit 2a): save + provenance in one
-                    # atomic block.
-                    with transaction.atomic():
-                        progress.reflection_peer_synthesis = peer_synthesis_html
-                        progress.save(update_fields=['reflection_peer_synthesis'])
-                        record_ai_provenance(
-                            artefact_kind='peer_synthesis',
-                            artefact_pk=progress.pk,
-                            user=progress.user,
-                            module=progress.module,
-                            model_name=PROVENANCE_MODEL_NAME,
-                            generated_at=timezone.now(),
-                        )
-                    print(f"✅ Peer synthesis saved to database")
-                except Exception as e:
-                    print(f"⚠️ Error converting peer synthesis to HTML: {e}")
-                   
         return JsonResponse(response_data)
     
     except ValueError as e:
