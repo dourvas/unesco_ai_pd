@@ -2098,21 +2098,30 @@ def get_tensions(request, code):
 @require_POST
 def extract_tensions_view(request, code):
     """
-    Async RTM endpoint - called by frontend after feedback is displayed.
+    Async RTM endpoint — called by frontend after feedback is displayed.
     Separates RTM extraction from main reflection submission for better UX.
+
+    Phase E commit 4 — RTM cutover. Replaces the monolith call to
+    rag_query_system.extract_tensions with RTMAgent().extract(). The
+    persistence side (save_tensions endpoint) is intentionally
+    unchanged — see the cutover-message paragraph for why this is
+    preservation, not strengthening.
     """
-    from rag_query_system import extract_tensions
-    from .models import ReflectionTension
-    
+    # Phase E commit 4 — lazy import preserved for parity with the
+    # original (the monolith path also imported lazily); RTMAgent is
+    # imported lazily here so this view module's import time is not
+    # affected by the agent subsystem.
+    from apps.agents.rtm import RTMAgent
+
     module = get_object_or_404(Module, code=code)
-    
+
     try:
         data = json.loads(request.body)
         reflection_text = data.get('reflection_text', '')
-        
+
         if not reflection_text:
             return JsonResponse({'tensions': None, 'message': 'No reflection text'})
-        
+
         # Build teacher context
         try:
             from apps.users.models import TeacherProfile
@@ -2127,9 +2136,12 @@ def extract_tensions_view(request, code):
             }
         except Exception:
             teacher_context = {'subject': 'Unknown'}
-        
-        tensions = extract_tensions(reflection_text, teacher_context)
-        
+
+        tensions = RTMAgent().extract(
+            reflection_text=reflection_text,
+            teacher_context=teacher_context,
+        )
+
         if tensions:
             return JsonResponse({'success': True, 'tensions': tensions})
         else:
