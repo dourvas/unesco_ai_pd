@@ -1,0 +1,12 @@
+Compare these two teacher reflections. Return ONLY a JSON object.
+PREVIOUS:
+I tried ChatGPT for the first time today to draft quiz questions. I was excited but worried about over-relying on AI.
+CURRENT:
+After three modules I'm finding I assess AI outputs more critically. The novelty has worn off but my pedagogical evaluation has sharpened.
+
+Return this exact JSON structure with no markdown, no explanation:
+{"increased": [], "decreased": [], "stable": []}
+
+Fill each array with 2-3 phrases of MAX 3 WORDS EACH. Keep it extremely brief.
+Example: {"increased": ["ethical focus"], "decreased": [], "stable": ["physics context"]}
+If no clear shift exists in a category, leave the array empty.

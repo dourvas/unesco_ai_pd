@@ -75,31 +75,24 @@ _CHUNKS = [
 
 
 class RAGPromptParityTest(TestCase):
-    """Layer-1 invariant: agent's prompt == monolith's prompt."""
+    """Layer-1 invariant: agent's prompt == frozen monolith snapshot.
 
-    def test_build_prompt_matches_monolith_generate_feedback(self):
-        # Capture the prompt the monolith would have sent to Gemini.
-        import rag_query_system as monolith
+    Pre-commit-9 this test invoked the live monolith to compute the
+    expected prompt. Commit 9 deleted rag_query_system.py, so the
+    expected string is now loaded from prompt_fixtures/rag_feedback.txt
+    — a byte-identical snapshot captured the moment before deletion.
+    Future prompt drift in RAGFeedbackAgent._build_prompt produces a
+    visible diff against the fixture. Updating the fixture is an
+    explicit, reviewable commit (no silent prompt drift possible).
+    """
 
-        captured = {}
-
-        def fake_generate_content(**kwargs):
-            captured['contents'] = kwargs.get('contents')
-            response = MagicMock()
-            response.candidates = [MagicMock()]
-            response.text = 'mock'
-            return response
-
-        with patch.object(monolith, 'NEW_GENAI_API', True), \
-             patch.object(monolith, 'client') as mock_client:
-            mock_client.models.generate_content = fake_generate_content
-            monolith.generate_feedback(_REFLECTION, _CONTEXT, _CHUNKS)
-
-        monolith_prompt = captured['contents']
+    def test_build_prompt_matches_frozen_monolith_snapshot(self):
+        from apps.agents.tests._fixtures import load_prompt_fixture
+        expected = load_prompt_fixture('rag_feedback')
         agent_prompt = RAGFeedbackAgent._build_prompt(
             _REFLECTION, _CONTEXT, _CHUNKS,
         )
-        self.assertEqual(monolith_prompt, agent_prompt)
+        self.assertEqual(agent_prompt, expected)
 
     def test_build_prompt_contains_teacher_name_and_chunks(self):
         prompt = RAGFeedbackAgent._build_prompt(_REFLECTION, _CONTEXT, _CHUNKS)

@@ -1,0 +1,31 @@
+Reflection:
+I tried using ChatGPT to help differentiate quadratic equations questions for my mixed-ability classroom. Some students wanted harder problems while others struggled with the basics. The AI generated reasonable variants but the assessment alignment to my learning objectives was inconsistent.
+IMPORTANT RULES:
+1. Return EXACTLY 2 tensions, no more, no less.
+2. Do NOT use quotes or apostrophes inside the JSON string values.
+3. Do NOT use escaped characters like \" or \' in your response.
+4. Keep left_pole and right_pole SHORT (max 8 words each).
+5. Keep grounding_quote SHORT (max 15 words).
+
+- Keep ALL field values SHORT: label max 6 words, poles max 8 words each, grounding_quote max 10 words
+
+Return JSON in this exact format:
+
+{
+  "tensions": [
+    {
+      "label": "Short label max 6 words",
+      "left_pole": "Max 8 words",
+      "right_pole": "Max 8 words",
+      "grounding_quote": "Max 10 words from reflection"
+    },
+    {
+      "label": "...",
+      "left_pole": "...",
+      "right_pole": "...",
+      "grounding_quote": "..."
+    }
+  ]
+}
+
+If no meaningful tension is identifiable, return: {"tensions": []}

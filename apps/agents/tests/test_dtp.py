@@ -146,39 +146,27 @@ class DTPDevelopmentSignalTest(SimpleTestCase):
 
 
 class DTPPromptParityTest(SimpleTestCase):
-    """Layer-1 invariant: each agent prompt == monolith prompt."""
+    """Layer-1 invariant: each agent prompt == frozen monolith snapshot.
 
-    def test_themes_prompt_matches_monolith(self):
-        import rag_query_system as monolith
+    Pre-commit-9 both expected prompts came from live calls to
+    rag_query_system.extract_development_themes /
+    generate_development_narrative. Commit 9 deleted both; the
+    byte-identical snapshots live at prompt_fixtures/dtp_themes.txt
+    and prompt_fixtures/dtp_narrative.txt. The narrative fixture
+    preserves the trailing-space quirk after "exactly 60 words." —
+    a §11 monolith oddity now forever frozen in test fixtures (the
+    quirk itself was deleted with the parent function).
+    """
 
-        captured = {}
-
-        def fake_generate_content(**kwargs):
-            captured['contents'] = kwargs.get('contents')
-            response = MagicMock()
-            response.text = '{"increased": [], "decreased": [], "stable": []}'
-            return response
-
-        with patch.object(monolith, 'NEW_GENAI_API', True), \
-             patch.object(monolith, 'client') as mock_client:
-            mock_client.models.generate_content = fake_generate_content
-            monolith.extract_development_themes(_PREV, _CURR)
-
-        monolith_prompt = captured['contents']
+    def test_themes_prompt_matches_frozen_monolith_snapshot(self):
+        from apps.agents.tests._fixtures import load_prompt_fixture
+        expected = load_prompt_fixture('dtp_themes')
         agent_prompt = DTPAgent._build_themes_prompt(_PREV, _CURR)
-        self.assertEqual(monolith_prompt, agent_prompt)
+        self.assertEqual(agent_prompt, expected)
 
-    def test_narrative_prompt_matches_monolith(self):
-        import rag_query_system as monolith
-
-        captured = {}
-
-        def fake_generate_content(**kwargs):
-            captured['contents'] = kwargs.get('contents')
-            response = MagicMock()
-            response.text = 'Across these modules, your reflection demonstrates...'
-            return response
-
+    def test_narrative_prompt_matches_frozen_monolith_snapshot(self):
+        from apps.agents.tests._fixtures import load_prompt_fixture
+        expected = load_prompt_fixture('dtp_narrative')
         signal = {
             'similarity': 0.78, 'continuity_label': 'Moderate',
             'continuity_description': (
@@ -187,15 +175,8 @@ class DTPPromptParityTest(SimpleTestCase):
             ),
         }
         themes = {'increased': ['ethical focus'], 'decreased': [], 'stable': ['differentiation']}
-
-        with patch.object(monolith, 'NEW_GENAI_API', True), \
-             patch.object(monolith, 'client') as mock_client:
-            mock_client.models.generate_content = fake_generate_content
-            monolith.generate_development_narrative(signal, themes, 'M1', 'M2')
-
-        monolith_prompt = captured['contents']
         agent_prompt = DTPAgent._build_narrative_prompt(signal, themes, 'M1', 'M2')
-        self.assertEqual(monolith_prompt, agent_prompt)
+        self.assertEqual(agent_prompt, expected)
 
 
 class DTPLayer0BoilerplateTest(SimpleTestCase):

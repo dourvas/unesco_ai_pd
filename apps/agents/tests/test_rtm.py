@@ -65,34 +65,20 @@ class RTMGenerateBlockedTest(SimpleTestCase):
 
 
 class RTMPromptParityTest(SimpleTestCase):
-    """Layer-1 invariant: agent's prompt == monolith's prompt."""
+    """Layer-1 invariant: agent's prompt == frozen monolith snapshot.
 
-    def test_build_prompt_matches_monolith_extract_tensions(self):
-        """The monolith builds user_message inline inside
-        extract_tensions and sends it as `contents=user_message`. We
-        intercept that call and compare against the agent's
-        _build_prompt output."""
-        import rag_query_system as monolith
+    Pre-commit-9 the expected prompt came from a live call to
+    rag_query_system.extract_tensions. Commit 9 deleted that function;
+    the byte-identical snapshot now lives at prompt_fixtures/rtm.txt
+    (captured the moment before deletion). Future drift in
+    RTMAgent._build_prompt fails this test against the fixture.
+    """
 
-        captured = {}
-
-        def fake_generate_content(**kwargs):
-            captured['contents'] = kwargs.get('contents')
-            # Return a valid-looking tension JSON so the monolith path
-            # completes without raising.
-            response = MagicMock()
-            response.candidates = [MagicMock()]
-            response.text = '{"tensions": []}'
-            return response
-
-        with patch.object(monolith, 'NEW_GENAI_API', True), \
-             patch.object(monolith, 'client') as mock_client:
-            mock_client.models.generate_content = fake_generate_content
-            monolith.extract_tensions(_REFLECTION, _CONTEXT)
-
-        monolith_prompt = captured['contents']
+    def test_build_prompt_matches_frozen_monolith_snapshot(self):
+        from apps.agents.tests._fixtures import load_prompt_fixture
+        expected = load_prompt_fixture('rtm')
         agent_prompt = RTMAgent._build_prompt(_REFLECTION, _CONTEXT)
-        self.assertEqual(monolith_prompt, agent_prompt)
+        self.assertEqual(agent_prompt, expected)
 
     def test_build_prompt_layer0_boilerplate(self):
         """Layer-0 (post-commit-2 invariant): assert exact-string

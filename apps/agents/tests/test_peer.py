@@ -91,29 +91,21 @@ class PeerHierarchyTest(SimpleTestCase):
 
 
 class PeerPromptParityTest(SimpleTestCase):
-    """Layer-1 invariant: agent prompt == monolith prompt."""
+    """Layer-1 invariant: agent prompt == frozen monolith snapshot.
 
-    def test_build_prompt_matches_monolith(self):
-        import rag_query_system as monolith
+    Pre-commit-9 the expected prompt came from a live call to
+    rag_query_system.synthesize_peer_insight. Commit 9 deleted that
+    function; the byte-identical snapshot lives at
+    prompt_fixtures/peer.txt.
+    """
 
-        captured = {}
-
-        def fake_generate_content(**kwargs):
-            captured['contents'] = kwargs.get('contents')
-            response = MagicMock()
-            response.text = 'mock synthesis'
-            return response
-
-        with patch.object(monolith, 'NEW_GENAI_API', True), \
-             patch.object(monolith, 'client') as mock_client:
-            mock_client.models.generate_content = fake_generate_content
-            monolith.synthesize_peer_insight(_REFLECTION, _CONTEXT, _PEER_ROWS)
-
-        monolith_prompt = captured['contents']
+    def test_build_prompt_matches_frozen_monolith_snapshot(self):
+        from apps.agents.tests._fixtures import load_prompt_fixture
+        expected = load_prompt_fixture('peer')
         agent_prompt = PeerSynthesisAgent._build_prompt(
             _REFLECTION, _CONTEXT, _PEER_ROWS,
         )
-        self.assertEqual(monolith_prompt, agent_prompt)
+        self.assertEqual(agent_prompt, expected)
 
 
 class PeerLayer0BoilerplateTest(SimpleTestCase):

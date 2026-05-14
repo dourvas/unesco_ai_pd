@@ -9,7 +9,6 @@ from django.db import transaction
 from django.utils import timezone
 from datetime import datetime
 import json
-import sys
 import os
 import markdown
 import importlib
@@ -35,19 +34,16 @@ from .models import (
 from apps.users.models import TeacherProfile
 from .models import ReflectionTension
 
-# Import RAG system
-sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
-from rag_query_system import process_reflection  # noqa: F401 — kept until commit 9 deletes the monolith; RTM/DTP/Peer paths still import from it
-
-# Phase E commit 2 — RAG cutover.
-# RAGFeedbackAgent now owns: embed -> retrieve -> generate -> rag_queries
-# INSERT -> reflection_rag_feedback save -> BOTH provenance rows, all in
-# one transaction.atomic. This strengthens CP-9: today's two separate
-# atomic blocks (store_rag_query's INSERT+'rag_query' provenance, and
-# views.py:895's progress.save()+'rag_feedback' provenance) collapse
-# into one. The previous architecture allowed a window between them
-# where a failure left the system inconsistent (rag_queries row logged
-# but no feedback on progress). The agent makes that window impossible.
+# Phase E commit 9 — monolith deleted. The legacy
+# `from rag_query_system import process_reflection` and the
+# accompanying `sys.path.append` are gone. The RAG cutover at commit 2
+# (and the agent's CP-9 strengthening rationale documented there) now
+# lives entirely inside RAGFeedbackAgent:
+# RAGFeedbackAgent owns: embed -> retrieve -> generate -> rag_queries
+# INSERT -> reflection_rag_feedback save -> BOTH provenance rows, all
+# in one transaction.atomic. This collapsed two atomic blocks into one
+# — eliminating the inconsistency window where rag_queries was logged
+# but no feedback reached progress.
 from apps.agents.rag_feedback import RAGFeedbackAgent
 
 
