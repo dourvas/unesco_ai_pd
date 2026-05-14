@@ -2135,20 +2135,53 @@ def extract_tensions_view(request, code):
 @login_required
 @require_POST
 def extract_peer_synthesis_view(request, code):
-    from rag_query_system import search_peer_reflections, synthesize_peer_insight, embed_query
-    import markdown
-    
+    """
+    Async peer-synthesis endpoint — called by the frontend after
+    feedback is displayed. Returns a 200-250-word cross-disciplinary
+    insight grounded in similar reflections from teachers in OTHER
+    subject areas.
+
+    Phase E commit 8 — Peer cutover. Replaces the monolith trio
+    (embed_query + search_peer_reflections + synthesize_peer_insight)
+    with one call to PeerSynthesisAgent().generate(). The agent owns
+    embedding, pgvector similarity search, Gemini synthesis, markdown
+    -> HTML rendering, persistence to progress.reflection_peer_synthesis,
+    and the 'peer_synthesis' provenance row — all in one atomic block.
+
+    Verdict (pre-decided by commit 7 diagnostic): PRESERVATION of CP-9
+    atomic scope. The previous view already wrapped progress.save +
+    record_ai_provenance in a single transaction.atomic block
+    (views.py:2204-2215 pre-cutover). No inconsistency window existed;
+    no tolerant try/except hid save failures. The agent's generate()
+    atomic has identical scope. Pure call-site rewiring.
+
+    Three failure modes -> three exact user-facing messages
+    (v9 §8 contract — verbatim):
+      NoPeerReflectionsAvailable -> "No peer reflections found"
+      RuntimeError               -> "Peer synthesis temporarily unavailable"
+      anything else              -> "Synthesis could not be saved. Please try again."
+    """
+    # Phase E commit 8 — lazy imports for the agent and its exception
+    # class (matches the lazy-import pattern of the monolith path it
+    # replaces). NoPeerReflectionsAvailable lives in the agent module
+    # because it's part of the agent's failure-mode contract, not a
+    # cross-cutting concern.
+    from apps.agents.peer import (
+        NoPeerReflectionsAvailable,
+        PeerSynthesisAgent,
+    )
+
     module = get_object_or_404(Module, code=code)
     print(f"🔍 PEER SYNTHESIS VIEW CALLED - module={code}, user={request.user.id}")
-    
+
     try:
         data = json.loads(request.body)
         reflection_text = data.get('reflection_text', '')
         print(f"🔍 reflection_text length: {len(reflection_text)}")
-        
+
         if not reflection_text:
             return JsonResponse({'success': False})
-        
+
         # Build teacher context
         try:
             from apps.users.models import TeacherProfile
@@ -2162,67 +2195,76 @@ def extract_peer_synthesis_view(request, code):
         except Exception as ex:
             print(f"❌ Profile error: {ex}")
             teacher_context = {'subject': 'Unknown', 'enable_peer_synthesis': True}
-        
-        # Connect to DB
-        import psycopg2
-        from django.conf import settings
-        conn = psycopg2.connect(
-            dbname=settings.DATABASES['default']['NAME'],
-            user=settings.DATABASES['default']['USER'],
-            password=settings.DATABASES['default']['PASSWORD'],
-            host=settings.DATABASES['default']['HOST'],
-            port=settings.DATABASES['default']['PORT'],
+
+        # Fetch progress before invoking the agent — required as
+        # save_target. DoesNotExist falls through to the outer except
+        # (matches pre-cutover behaviour where progress.get was inside
+        # the same try block at line 2201-2203).
+        progress = UserModuleProgress.objects.get(
+            user=request.user, module=module,
         )
-        # print(f"✅ DB connected")
-        
-        query_embedding = embed_query(reflection_text)
-        peer_reflections = search_peer_reflections(
-            conn, query_embedding,
-            user_subject=teacher_context.get('subject', 'General'),
-            top_k=2
-        )
-        
-        if not peer_reflections:
-            print(f"⚠️ No peer reflections found")
-            conn.close()
-            return JsonResponse({'success': False, 'message': 'No peer reflections found'})
-        
-        print(f"✅ Found {len(peer_reflections)} peer reflections")
-        
-        peer_synthesis = synthesize_peer_insight(
-            reflection_text, teacher_context, peer_reflections
-        )
-        conn.close()
-        
-        if peer_synthesis:
-            peer_synthesis_html = markdown.markdown(
-                peer_synthesis, extensions=['extra', 'nl2br']
+
+        # PeerSynthesisAgent owns the full atomic block (CP-9 preserved
+        # exactly as pre-cutover). Three distinct exception types map
+        # to three user-facing messages — these strings are user-facing
+        # contract per v9 §8, not implementation detail. Do not
+        # paraphrase.
+        try:
+            PeerSynthesisAgent().generate(
+                user=request.user,
+                module=module,
+                save_target=progress,
+                save_field='reflection_peer_synthesis',
+                reflection_text=reflection_text,
+                teacher_context=teacher_context,
             )
-            progress = UserModuleProgress.objects.get(
-                user=request.user, module=module
-            )
-            # CP-9 invariant: save + provenance in one atomic block.
-            with transaction.atomic():
-                progress.reflection_peer_synthesis = peer_synthesis_html
-                progress.save(update_fields=['reflection_peer_synthesis'])
-                record_ai_provenance(
-                    artefact_kind='peer_synthesis',
-                    artefact_pk=progress.pk,
-                    user=progress.user,
-                    module=progress.module,
-                    model_name=PROVENANCE_MODEL_NAME,
-                    generated_at=timezone.now(),
-                )
-            print(f"✅ Peer synthesis saved ({len(peer_synthesis_html)} chars)")
-            return JsonResponse({'success': True, 'peer_synthesis': peer_synthesis_html})
-        else:
-            return JsonResponse({'success': False})
-    
+        except NoPeerReflectionsAvailable:
+            print("⚠️ No cross-specialty peer reflections found")
+            return JsonResponse({
+                'success': False,
+                'message': 'No peer reflections found',
+            })
+        except RuntimeError as e:
+            # Embed or Gemini failure. Distinct from save failure:
+            # the LLM side is unavailable, retry might succeed.
+            print(f"⚠️ Peer synthesis LLM failure: {e}")
+            return JsonResponse({
+                'success': False,
+                'message': 'Peer synthesis temporarily unavailable',
+            })
+        except Exception as e:
+            # Save/provenance failure. The agent's atomic rolled back,
+            # so no half-saved synthesis exists. Honest user message
+            # (same pattern as commit 6's DTP secondary tightening).
+            print(f"❌ Peer synthesis save/provenance failed: {e}")
+            import traceback
+            traceback.print_exc()
+            return JsonResponse({
+                'success': False,
+                'message': 'Synthesis could not be saved. Please try again.',
+            })
+
+        # Success path. The agent persisted the rendered HTML to
+        # progress.reflection_peer_synthesis (markdown -> HTML happens
+        # inside PeerSynthesisAgent._persist). Re-read to include in
+        # the response — keeps the response shape identical to
+        # pre-cutover.
+        progress.refresh_from_db()
+        peer_synthesis_html = progress.reflection_peer_synthesis
+        print(f"✅ Peer synthesis saved ({len(peer_synthesis_html)} chars)")
+        return JsonResponse({
+            'success': True,
+            'peer_synthesis': peer_synthesis_html,
+        })
+
     except Exception as e:
         print(f"❌ Async peer synthesis error: {e}")
         import traceback
         traceback.print_exc()
-        return JsonResponse({'success': False})
+        return JsonResponse({
+            'success': False,
+            'message': 'Synthesis could not be saved. Please try again.',
+        })
 
 @login_required
 @require_POST
