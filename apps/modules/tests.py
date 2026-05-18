@@ -329,6 +329,13 @@ class SequentialModuleGatingTest(TestCase):
 # AIArtefactProvenance row inside the same transaction.atomic block.
 # If the provenance write raises, the source-row save rolls back too.
 
+#
+# The four CHECK constraints below mirror the live rag_queries table.
+# They were originally absent from this simplified test DDL — which is
+# why a Phase E regression (RAGFeedbackAgent inserting processing_time_ms
+# = 0, rejected by the live `processing_time_positive` CHECK) passed the
+# test suite undetected. Keeping the test table faithful to the real
+# schema guards that class of bug.
 _RAG_QUERIES_DDL = """
 CREATE TABLE IF NOT EXISTS rag_queries (
     id SERIAL PRIMARY KEY,
@@ -347,7 +354,16 @@ CREATE TABLE IF NOT EXISTS rag_queries (
     processing_time_ms INTEGER,
     api_cost_eur NUMERIC(10,6),
     created_at TIMESTAMP DEFAULT NOW(),
-    updated_at TIMESTAMP DEFAULT NOW()
+    updated_at TIMESTAMP DEFAULT NOW(),
+    CONSTRAINT feedback_rating_range CHECK (
+        feedback_rating IS NULL
+        OR (feedback_rating >= 1 AND feedback_rating <= 5)),
+    CONSTRAINT tokens_positive CHECK (
+        generation_tokens IS NULL OR generation_tokens > 0),
+    CONSTRAINT cost_non_negative CHECK (
+        api_cost_eur IS NULL OR api_cost_eur >= 0),
+    CONSTRAINT processing_time_positive CHECK (
+        processing_time_ms IS NULL OR processing_time_ms > 0)
 );
 """
 

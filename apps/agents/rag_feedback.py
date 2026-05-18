@@ -21,6 +21,7 @@ than today.
 """
 
 import json
+import time
 from typing import Any, Optional
 
 import markdown
@@ -80,7 +81,9 @@ class RAGFeedbackAgent(ResearchInstrumentAgent):
             - chunks:           retrieved similarity rows
             - raw_feedback:     Gemini-generated markdown
             - gen_result:       GenerationResult with cost/token accounting
+            - processing_time_ms: wall-clock duration of the RAG work
         """
+        start_time = time.perf_counter()
         client = get_llm_client()
 
         embedding = client.embed(reflection_text)
@@ -107,6 +110,14 @@ class RAGFeedbackAgent(ResearchInstrumentAgent):
             raise RuntimeError("RAGFeedbackAgent: Gemini generation returned None")
 
         self._last_gen_result = gen_result
+        # Wall-clock processing time for the rag_queries telemetry row.
+        # The live table has CHECK (processing_time_ms IS NULL OR > 0);
+        # max(1, ...) keeps it positive even for a sub-millisecond run.
+        # Restores the timing the monolith recorded — Phase E dropped it
+        # and inserted a hardcoded 0, which the live CHECK rejects.
+        processing_time_ms = max(
+            1, round((time.perf_counter() - start_time) * 1000),
+        )
         return {
             'reflection_text': reflection_text,
             'teacher_context': teacher_context,
@@ -114,6 +125,7 @@ class RAGFeedbackAgent(ResearchInstrumentAgent):
             'chunks': chunks,
             'raw_feedback': gen_result.text,
             'gen_result': gen_result,
+            'processing_time_ms': processing_time_ms,
         }
 
     # ------------------------------------------------------------------
@@ -176,7 +188,7 @@ class RAGFeedbackAgent(ResearchInstrumentAgent):
                     len(output['chunks']),
                     output['raw_feedback'],
                     gen_result.tokens_estimate,
-                    0,  # processing_time_ms — computed externally if needed
+                    output['processing_time_ms'],
                     gen_result.cost_eur_estimate,
                 ),
             )
