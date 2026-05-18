@@ -1,113 +1,113 @@
 """
-DTPAgent — Developmental Trajectory Predictor.
+DTPAgent — Developmental Trajectory Predictor (redefined, D.3a).
 
-Phase E commit 5 — multi-step orchestration agent. Computes the
-developmental signal between a teacher's previous and current
-reflections (cosine similarity over Gemini embeddings) and produces
-a 60-word descriptive narrative grounded in the inferred thematic
-shifts. The composite artefact is persisted to
-UserModuleProgress.reflection_dtp as a JSON string.
+This is the redefined dual-signal DTP. It supersedes the Phase E
+monolith-parity DTP. Design and rationale:
+proodos_files/DTP_REDEFINITION_DESIGN_PROPOSAL_v1_20260518.md.
 
-Architectural notes (vs. RAG / RTM):
+What changed from the Phase E DTP
+---------------------------------
+The previous DTP compared the current reflection against the most
+recent reflection from any other module. Because the 15 modules span
+five UNESCO competency aspects, that comparison routinely crossed
+aspects and reported topic difference as developmental change — a
+construct-validity problem (design proposal §2).
 
-  - DTP is the first multi-Gemini-call agent (commits 1-3 each had a
-    single LLM call per _do_generate). Two distinct Gemini prompts
-    fire per generate(): theme extraction (max_output_tokens=1000,
-    temperature=0.3) and narrative generation (max_output_tokens=2000,
-    temperature=0.4). Two embed_query calls also fire (one per
-    reflection). The base class's _track_cost is overridden to no-op
-    because each Gemini sub-call records its own cost event inline —
-    this gives per-Gemini-call granularity for the dissertation's
-    cost-per-feature breakdown.
+The redefined DTP computes up to two independent signals:
 
-  - The artefact is a composite dict (similarity + label + description
-    + narrative + themes). Provenance is ONE row per generate() call,
-    keyed by ('dtp_narrative', progress.pk) — the default
-    _record_provenance suffices. The multi-call structure inside
-    _do_generate does NOT translate to multiple provenance rows; the
-    user-visible artefact is single.
+  Vertical Continuity Signal (VCS)
+      current reflection vs the teacher's reflection at the
+      immediately lower proficiency level of the same UNESCO aspect
+      (Deepen vs Acquire, Create vs Deepen). Isolates within-aspect
+      conceptual continuity / shift.
 
-  - Persistence: JSON-serialise the dict before writing to the
-    reflection_dtp TextField. _persist is overridden minimally to do
-    json.dumps(output) + setattr + save — matching the existing
-    views.py:2306 pattern byte-for-byte.
+  Temporal Shift Signal (TSS)
+      current reflection vs the reflection at the immediately
+      preceding module. A focus-continuity measure across the module
+      sequence.
 
-Failure-mode parity with rag_query_system.compute_dtp:
+Which signals exist is decided by the caller (extract_dtp_view): it
+passes only the comparison reflections that exist. An Acquire module
+has no VCS; the first module has neither (the view does not call the
+agent at all). See design proposal §5.
 
-  - If either embed_query returns None, the full call returns None
-    (no atomic block opened — _do_generate raises before _persist).
-  - If theme extraction raises or returns malformed JSON, themes
-    fall back to {"increased": [], "decreased": [], "stable": []}.
-    The composite still succeeds.
-  - If narrative generation raises or returns empty text, narrative
-    falls back to signal['continuity_description'] (the canned
-    sentence for the continuity bucket). The composite still
-    succeeds.
+Pilot scope
+-----------
+The redefined DTP is descriptive only. Each signal carries its raw
+cosine similarity (stored, not displayed) and its thematic shifts.
+There is NO three-category continuity label and NO thresholds — the
+label is a post-pilot research-analysis artefact (design proposal
+§7.4). A cosine similarity measures conceptual continuity, not the
+quality of development (design proposal §4.4).
 
-  This means generate() returns None only on embedding failure;
-  every other partial failure degrades gracefully with the same
-  monolith-side defaults. Tests verify each branch.
+Composite shape (persisted to UserModuleProgress.reflection_dtp as a
+JSON string):
 
-Bug-preservation contracts (verbatim from monolith):
+    {
+      "schema": "dtp_dual_v1",
+      "current_module": "M8",
+      "narrative": "<~60-word descriptive synthesis>",
+      "signals": {
+        "vertical": {"comparison_module": "M3",
+                     "similarity": 0.7421,
+                     "themes": {"increased_themes": [...],
+                                "decreased_themes": [...],
+                                "stable_themes": [...]}},
+        "temporal": {"comparison_module": "M7",
+                     "similarity": 0.6810,
+                     "themes": {...}}
+      }
+    }
 
-  - reflection sanitisation: prev[:400].replace('"', "'").replace('\\n', ' ')
-    Same for curr. The 400-char cap is a prompt-size budget.
-  - max_output_tokens=1000 for theme extraction (CP-9 commit 2a
-    discovered Gemini occasionally OOM-streams JSON if uncapped).
-  - max_output_tokens=2000 for narrative generation.
-  - max(0, count(open) - count(close)) wrappers in the JSON-repair
-    fallback for theme extraction — never negative brackets/braces.
+A signal key is absent when that signal is not available.
 
-Diagnostic for commit 6 (per v6 §8 #7):
-
-  Inspecting the existing DTP write path at
-  apps/modules/views.py:2306-2314 confirms NO inconsistency window
-  exists today. compute_dtp returns a dict (or None) with no DB
-  writes of its own; views.py wraps progress.save() and the
-  'dtp_narrative' provenance write in one transaction.atomic.
-
-  --> Commit 6 will be PRESERVATION, not strengthening.
-  Analogous to commit 4 (RTM). Documented here so commit 6's
-  message can adopt the same framing as commit 4.
+Agent contract (unchanged from Phase E)
+---------------------------------------
+DTPAgent uses generate() — it owns the save + provenance atomic block
+(CP-9). Provenance is one row per call, kind 'dtp_narrative', keyed by
+progress.pk. _do_generate raises RuntimeError on any embedding failure
+so the surrounding atomic rolls back. Each Gemini sub-call records its
+own cost event inline; _track_cost is overridden to a no-op.
 """
 
 import json
 import logging
+import re
 from typing import Any, Optional
 
 from apps.agents.research import ResearchInstrumentAgent
 from apps.agents.shared.cost_tracker import CostRecord, track as track_cost
 from apps.agents.shared.json_repair import clean_json_response
-from apps.agents.shared.llm_client import GenerationResult, get_llm_client
+from apps.agents.shared.llm_client import get_llm_client
 
 
-# Continuity-bucket thresholds — verbatim from monolith
-# compute_development_signal. The boundary values define a 3-bucket
-# ordinal scale; values are research artefacts and must not drift
-# without a separate methodology commit.
-DTP_HIGH_THRESHOLD = 0.85
-DTP_MODERATE_THRESHOLD = 0.70
-
-# Gemini call configurations — verbatim from monolith
+# Gemini call configurations — carried over from the Phase E DTP.
 DTP_THEME_TEMPERATURE = 0.3
 DTP_THEME_MAX_TOKENS = 1000
 DTP_NARRATIVE_TEMPERATURE = 0.4
 DTP_NARRATIVE_MAX_TOKENS = 2000
 
-# Prompt-budget cap for each reflection — first 400 chars only fit in
-# the theme-extraction prompt body. Larger context would inflate
-# Gemini latency without changing theme-detection quality.
+# Prompt-budget cap for each reflection in the theme-extraction prompt.
 DTP_REFLECTION_PROMPT_BUDGET = 400
+
+# Composite schema tag — distinguishes the redefined dual-signal
+# composite from the superseded Phase E single-signal shape.
+DTP_SCHEMA = 'dtp_dual_v1'
+
+# Descriptive fallback used when the narrative Gemini call fails or
+# returns nothing. It is itself a valid, non-evaluative user-facing
+# sentence (design proposal §4.4 — describe, do not evaluate).
+DTP_NARRATIVE_FALLBACK = (
+    'Across these modules, your reflection shows a mix of continuity '
+    'and shift in the themes noted below.'
+)
 
 
 class DTPAgent(ResearchInstrumentAgent):
-    """Developmental Trajectory Predictor.
+    """Developmental Trajectory Predictor — redefined dual-signal form.
 
     Public API: generate() (committed artefact path — DTP writes
     progress.reflection_dtp + 'dtp_narrative' provenance atomically).
-    Calling extract() would technically work (extract() is base-class
-    behaviour) but produces an unsaved composite; intended use is
-    generate().
 
     Provenance: one row per call, kind='dtp_narrative',
     artefact_pk=progress.pk. CP-7 idempotent on (kind, pk).
@@ -122,60 +122,91 @@ class DTPAgent(ResearchInstrumentAgent):
     def _do_generate(
         self,
         *,
-        previous_reflection_text: str,
         current_reflection_text: str,
-        previous_module: str = 'M1',
-        current_module: str = 'M2',
-    ) -> Optional[dict]:
-        """Run the full DTP pipeline: embed -> signal -> themes -> narrative.
+        current_module: str,
+        vertical_reflection_text: Optional[str] = None,
+        vertical_module: Optional[str] = None,
+        temporal_reflection_text: Optional[str] = None,
+        temporal_module: Optional[str] = None,
+    ) -> dict:
+        """Compute the dual-signal DTP composite.
 
-        Returns the composite dict (shape preserved from monolith
-        compute_dtp) on success, or None if embedding fails. Partial
-        failures inside theme / narrative steps degrade gracefully —
-        the composite still returns.
+        The caller passes the current reflection plus whichever
+        comparison reflections exist. At least one of the vertical /
+        temporal pairs must be supplied — the view does not invoke the
+        agent for the first module, which has neither.
+
+        Raises RuntimeError on any embedding failure so the surrounding
+        transaction.atomic from generate() rolls back (no provenance
+        row for a never-computed composite).
         """
         logger = logging.getLogger(__name__)
         client = get_llm_client()
 
-        # Step 1: embed both reflections. Raise on failure so the
-        # surrounding transaction.atomic from generate() rolls back —
-        # no provenance row for a never-computed signal. The caller
-        # (views.extract_dtp_view post-commit-6) wraps generate() in
-        # a try/except and gracefully degrades (no DTP card rendered).
-        emb_prev = client.embed(previous_reflection_text)
-        emb_curr = client.embed(current_reflection_text)
-        if emb_prev is None or emb_curr is None:
-            logger.warning('DTPAgent: embedding failed; aborting')
+        # Assemble the requested signals. The first element is the
+        # composite key ('vertical' / 'temporal').
+        requested = []
+        if vertical_reflection_text and vertical_module:
+            requested.append(
+                ('vertical', vertical_reflection_text, vertical_module)
+            )
+        if temporal_reflection_text and temporal_module:
+            requested.append(
+                ('temporal', temporal_reflection_text, temporal_module)
+            )
+        if not requested:
             raise RuntimeError(
-                'DTPAgent: embedding step returned None — aborting '
-                'composite generation so the atomic block rolls back.'
+                'DTPAgent: no comparison signal supplied — the caller '
+                'must pass at least one of the vertical / temporal pairs.'
             )
 
-        # Step 2: cosine signal
-        signal = self.compute_development_signal(emb_prev, emb_curr)
+        # Step 1: embed the current reflection once.
+        emb_current = client.embed(current_reflection_text)
+        if emb_current is None:
+            logger.warning('DTPAgent: current-reflection embedding failed')
+            raise RuntimeError(
+                'DTPAgent: embedding of the current reflection returned '
+                'None — aborting so the atomic block rolls back.'
+            )
 
-        # Step 3: theme extraction (Gemini call #1)
-        themes = self._extract_themes(
-            previous_reflection_text, current_reflection_text,
-        )
+        # Step 2: per signal — embed comparison, cosine similarity,
+        # theme extraction (one Gemini call per signal).
+        signals = {}
+        for kind, comparison_text, comparison_module in requested:
+            emb_comparison = client.embed(comparison_text)
+            if emb_comparison is None:
+                logger.warning(
+                    'DTPAgent: %s comparison embedding failed', kind,
+                )
+                raise RuntimeError(
+                    f'DTPAgent: embedding of the {kind} comparison '
+                    'reflection returned None — aborting so the atomic '
+                    'block rolls back.'
+                )
+            similarity = self._cosine_similarity(emb_current, emb_comparison)
+            # The comparison reflection is the earlier text ("previous"),
+            # the current reflection is the later text ("current").
+            themes = self._extract_themes(
+                comparison_text, current_reflection_text,
+            )
+            signals[kind] = {
+                'comparison_module': comparison_module,
+                'similarity': similarity,
+                'themes': {
+                    'increased_themes': themes.get('increased', []),
+                    'decreased_themes': themes.get('decreased', []),
+                    'stable_themes': themes.get('stable', []),
+                },
+            }
 
-        # Step 4: narrative generation (Gemini call #2)
-        narrative = self._generate_narrative(
-            signal, themes, previous_module, current_module,
-        )
+        # Step 3: one narrative synthesising every available signal.
+        narrative = self._generate_narrative(current_module, signals)
 
         return {
-            'previous_module': previous_module,
+            'schema': DTP_SCHEMA,
             'current_module': current_module,
-            'similarity': signal['similarity'],
-            'continuity_label': signal['continuity_label'],
-            'continuity_description': signal['continuity_description'],
             'narrative': narrative,
-            'themes': {
-                'increased_themes': themes.get('increased', []),
-                'decreased_themes': themes.get('decreased', []),
-                'stable_themes': themes.get('stable', []),
-            },
+            'signals': signals,
         }
 
     # ------------------------------------------------------------------
@@ -184,10 +215,8 @@ class DTPAgent(ResearchInstrumentAgent):
     def _persist(self, *, output: dict, save_target, save_field: Optional[str]) -> Any:
         """Write json.dumps(output) to save_target.<save_field>.
 
-        Overrides the default str-direct setattr because the artefact
-        is structured (dict) but the underlying field is TextField.
-        Matches views.py:2307 byte-identically:
-            progress.reflection_dtp = json.dumps(dtp_result)
+        The artefact is a structured dict; the underlying field
+        (UserModuleProgress.reflection_dtp) is a TextField.
         """
         if save_target is None or save_field is None:
             raise ValueError(
@@ -199,27 +228,25 @@ class DTPAgent(ResearchInstrumentAgent):
         return save_target.pk
 
     # ------------------------------------------------------------------
-    # Cost tracking — override default. Each Gemini sub-call records
-    # its own cost event inline; the composite output is not a
-    # GenerationResult so the default would be a silent no-op anyway,
-    # but we override explicitly to make intent clear.
+    # Cost tracking — override default. Each Gemini sub-call records its
+    # own cost event inline; the composite output is not a
+    # GenerationResult so the default would be a silent no-op anyway.
     # ------------------------------------------------------------------
     def _track_cost(self, *, output) -> None:
         return None
 
     # ==================================================================
-    # Public helpers — kept as static methods so tests can exercise
-    # them directly without instantiating the full agent.
+    # Signal computation
     # ==================================================================
     @staticmethod
-    def compute_development_signal(embedding1, embedding2) -> dict:
-        """Cosine similarity + continuity-bucket label/description.
+    def _cosine_similarity(embedding1, embedding2) -> float:
+        """Cosine similarity of two embedding vectors, rounded to 4 dp.
 
-        Mirrors rag_query_system.compute_development_signal verbatim.
-        The 0.85 / 0.70 thresholds and the three canned description
-        strings are research artefacts of the DTP methodology and
-        MUST not drift; constants live at module top so any future
-        methodology revision is one place to edit.
+        The continuity-bucket label / description that the Phase E DTP
+        derived from this value is intentionally removed: the redefined
+        DTP ships no thresholds and no label (design proposal §7.4).
+        The raw similarity is stored for the post-pilot calibration but
+        is not displayed to the teacher.
         """
         import numpy as np
 
@@ -228,45 +255,26 @@ class DTPAgent(ResearchInstrumentAgent):
         similarity = float(
             np.dot(v1, v2) / (np.linalg.norm(v1) * np.linalg.norm(v2))
         )
-
-        if similarity >= DTP_HIGH_THRESHOLD:
-            label = 'High'
-            description = (
-                'Your reflections show sustained focus on core pedagogical priorities.'
-            )
-        elif similarity >= DTP_MODERATE_THRESHOLD:
-            label = 'Moderate'
-            description = (
-                'Your pedagogical focus has evolved, showing deeper engagement '
-                'with instructional design.'
-            )
-        else:
-            label = 'Significant'
-            description = (
-                'Your reflection shows substantial evolution in how you '
-                'conceptualize AI in education.'
-            )
-
-        return {
-            'similarity': round(similarity, 4),
-            'continuity_label': label,
-            'continuity_description': description,
-        }
+        return round(similarity, 4)
 
     # ------------------------------------------------------------------
-    # Theme extraction (Gemini call #1)
+    # Theme extraction (one Gemini call per signal)
     # ------------------------------------------------------------------
     def _extract_themes(
         self,
         previous_reflection: str,
         current_reflection: str,
     ) -> dict:
-        """Gemini call #1: themes increased / decreased / stable.
+        """Gemini call: themes increased / decreased / stable.
 
         Returns a dict {'increased': [...], 'decreased': [...],
-        'stable': [...]}. On any failure (Gemini error, JSON parse
-        even after repair, malformed shape), returns the empty-themes
-        default so the composite call still produces a narrative.
+        'stable': [...]}. On any failure (Gemini error, JSON parse even
+        after repair, malformed shape), returns the empty-themes default
+        so the composite call still produces a narrative.
+
+        The prompt is unchanged from the Phase E DTP — a generic
+        two-reflection thematic-shift extractor — so it is reused
+        verbatim for both the vertical and the temporal signal.
         """
         logger = logging.getLogger(__name__)
         prompt = self._build_themes_prompt(previous_reflection, current_reflection)
@@ -282,8 +290,7 @@ class DTPAgent(ResearchInstrumentAgent):
             return self._empty_themes()
 
         # Per-Gemini-call cost event — emits 'agent.cost' so the
-        # dissertation can report cost-per-LLM-call not just cost-per-
-        # agent-call.
+        # dissertation can report cost-per-LLM-call.
         track_cost(CostRecord(
             agent=type(self).__name__,
             model=gen_result.model,
@@ -315,25 +322,18 @@ class DTPAgent(ResearchInstrumentAgent):
                 return self._empty_themes()
 
     # ------------------------------------------------------------------
-    # Narrative generation (Gemini call #2)
+    # Narrative generation (one Gemini call for the whole composite)
     # ------------------------------------------------------------------
-    def _generate_narrative(
-        self,
-        signal: dict,
-        themes: dict,
-        previous_module: str,
-        current_module: str,
-    ) -> str:
-        """Gemini call #2: 60-word descriptive paragraph.
+    def _generate_narrative(self, current_module: str, signals: dict) -> str:
+        """One Gemini call: a ~60-word descriptive synthesis of every
+        available signal.
 
-        Falls back to signal['continuity_description'] (the canned
-        bucket sentence) on any failure. The fallback is itself a
-        valid user-facing string, so the composite always has a
-        meaningful narrative.
+        The structured prompt makes the model analyse each signal
+        separately before synthesising (chain-of-thought scaffold); only
+        the <synthesis> block is kept. Falls back to a canned descriptive
+        sentence on any failure, so the composite always has a narrative.
         """
-        prompt = self._build_narrative_prompt(
-            signal, themes, previous_module, current_module,
-        )
+        prompt = self._build_narrative_prompt(current_module, signals)
 
         client = get_llm_client()
         gen_result = client.generate(
@@ -343,7 +343,7 @@ class DTPAgent(ResearchInstrumentAgent):
             max_output_tokens=DTP_NARRATIVE_MAX_TOKENS,
         )
         if gen_result is None or not gen_result.text.strip():
-            return signal['continuity_description']
+            return DTP_NARRATIVE_FALLBACK
 
         track_cost(CostRecord(
             agent=type(self).__name__,
@@ -353,16 +353,31 @@ class DTPAgent(ResearchInstrumentAgent):
             artefact_kind=self.artefact_kind,
         ))
 
-        return gen_result.text.strip()
+        return self._parse_synthesis(gen_result.text)
+
+    @staticmethod
+    def _parse_synthesis(text: str) -> str:
+        """Extract the <synthesis>...</synthesis> block from the model
+        response. Falls back to the whole stripped text if the tag is
+        absent, and to the canned descriptive sentence if nothing
+        usable remains."""
+        match = re.search(
+            r'<synthesis>(.*?)</synthesis>', text, re.DOTALL | re.IGNORECASE,
+        )
+        if match:
+            inner = match.group(1).strip()
+            if inner:
+                return inner
+        stripped = text.strip()
+        return stripped or DTP_NARRATIVE_FALLBACK
 
     # ------------------------------------------------------------------
-    # Prompt builders — byte-identical to monolith
+    # Prompt builders
     # ------------------------------------------------------------------
     @staticmethod
     def _build_themes_prompt(prev_text: str, curr_text: str) -> str:
         """Theme-extraction prompt. Sanitisation: trim to 400 chars,
-        " -> ', literal \\n -> space. Mirrors
-        rag_query_system.extract_development_themes verbatim."""
+        " -> ', literal \\n -> space. Unchanged from the Phase E DTP."""
         prev_clean = (
             prev_text[:DTP_REFLECTION_PROMPT_BUDGET]
             .replace('"', "'")
@@ -387,42 +402,77 @@ Example: {{"increased": ["ethical focus"], "decreased": [], "stable": ["physics 
 If no clear shift exists in a category, leave the array empty."""
 
     @staticmethod
-    def _build_narrative_prompt(
-        signal: dict,
-        themes: dict,
-        previous_module: str,
-        current_module: str,
-    ) -> str:
-        """Narrative prompt. Mirrors
-        rag_query_system.generate_development_narrative verbatim.
-        Note the monolith fills `increased` / `decreased` variables
-        but never references them in the rendered prompt — only
-        `stable` makes it into the prompt body. Preserved here to
-        keep prompt-parity tests stable; flagged as a monolith
-        quirk in §11 of v7 (candidate for commit 9 cleanup)."""
-        increased = ', '.join(themes.get('increased', [])) or 'none noted'  # noqa: F841 — preserved for parity
-        decreased = ', '.join(themes.get('decreased', [])) or 'none noted'  # noqa: F841 — preserved for parity
-        stable = ', '.join(themes.get('stable', [])) or 'none noted'
-        return f"""Write a 60-word neutral observation about a teacher's reflective development.
+    def _build_narrative_prompt(current_module: str, signals: dict) -> str:
+        """Structured dual-signal narrative prompt (design proposal §7.2).
 
-Facts:
-- Modules compared: {previous_module} to {current_module}
-- Continuity level: {signal['continuity_label']}
-- {signal['continuity_description']}
-- Stable themes: {stable}
+        The model analyses each available signal in its own tagged block
+        and then synthesises; only <synthesis> is surfaced to the
+        teacher. The prompt is descriptive, not evaluative (design
+        proposal §4.4): it asks for continuity and shift, never quality.
 
-Write a complete paragraph of exactly 60 words. 
-Start with: "Across these modules, your reflection demonstrates"
-Do not use bullet points. Write in plain prose only."""
+        The vertical block is omitted when no VCS is available (Acquire
+        modules), so the prompt is well-formed with a single signal too.
+        """
+        blocks = []
+        analysis_tags = []
+
+        vertical = signals.get('vertical')
+        if vertical:
+            blocks.append(
+                'VERTICAL comparison — same UNESCO competency, earlier '
+                f"proficiency level (module {vertical['comparison_module']}) "
+                f'vs the current module ({current_module}):\n'
+                f"  increased: {DTPAgent._theme_line(vertical['themes']['increased_themes'])}\n"
+                f"  decreased: {DTPAgent._theme_line(vertical['themes']['decreased_themes'])}\n"
+                f"  stable: {DTPAgent._theme_line(vertical['themes']['stable_themes'])}"
+            )
+            analysis_tags.append(
+                '<vertical_analysis>one sentence on the vertical '
+                'comparison</vertical_analysis>'
+            )
+
+        temporal = signals.get('temporal')
+        if temporal:
+            blocks.append(
+                'TEMPORAL comparison — the immediately preceding module '
+                f"(module {temporal['comparison_module']}) vs the current "
+                f'module ({current_module}):\n'
+                f"  increased: {DTPAgent._theme_line(temporal['themes']['increased_themes'])}\n"
+                f"  decreased: {DTPAgent._theme_line(temporal['themes']['decreased_themes'])}\n"
+                f"  stable: {DTPAgent._theme_line(temporal['themes']['stable_themes'])}"
+            )
+            analysis_tags.append(
+                '<temporal_analysis>one sentence on the temporal '
+                'comparison</temporal_analysis>'
+            )
+
+        comparisons = '\n\n'.join(blocks)
+        analysis_format = '\n'.join(analysis_tags)
+        return (
+            "You are describing a teacher's reflective development across "
+            'modules. Describe only what changed; do not judge whether it '
+            'is good or bad.\n\n'
+            f'{comparisons}\n\n'
+            'Reason about each comparison separately, then synthesise. '
+            'Respond in exactly this format:\n'
+            f'{analysis_format}\n'
+            '<synthesis>One paragraph of about 60 words, plain prose, no '
+            'bullet points. Start with "Across these modules, your '
+            'reflection". Describe continuity and shift only — do not '
+            'evaluate quality.</synthesis>'
+        )
 
     # ------------------------------------------------------------------
     # Helpers (private)
     # ------------------------------------------------------------------
     @staticmethod
+    def _theme_line(themes_list) -> str:
+        """Render a theme list for the narrative prompt body."""
+        return ', '.join(themes_list) if themes_list else 'none noted'
+
+    @staticmethod
     def _strip_markdown_fences(text: str) -> str:
-        """Same markdown-fence stripper RTM uses, inlined for parity
-        with the monolith DTP path (the monolith does this inline
-        rather than calling a shared helper)."""
+        """Strip ```json fences from a model response."""
         if '```json' in text:
             return text.split('```json')[-1].split('```')[0].strip()
         if text.startswith('```'):

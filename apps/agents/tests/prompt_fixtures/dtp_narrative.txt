@@ -1,11 +1,16 @@
-Write a 60-word neutral observation about a teacher's reflective development.
+You are describing a teacher's reflective development across modules. Describe only what changed; do not judge whether it is good or bad.
 
-Facts:
-- Modules compared: M1 to M2
-- Continuity level: Moderate
-- Your pedagogical focus has evolved, showing deeper engagement with instructional design.
-- Stable themes: differentiation
+VERTICAL comparison — same UNESCO competency, earlier proficiency level (module M3) vs the current module (M8):
+  increased: ethical focus
+  decreased: none noted
+  stable: mathematics context
 
-Write a complete paragraph of exactly 60 words. 
-Start with: "Across these modules, your reflection demonstrates"
-Do not use bullet points. Write in plain prose only.
+TEMPORAL comparison — the immediately preceding module (module M7) vs the current module (M8):
+  increased: assessment design
+  decreased: novelty
+  stable: none noted
+
+Reason about each comparison separately, then synthesise. Respond in exactly this format:
+<vertical_analysis>one sentence on the vertical comparison</vertical_analysis>
+<temporal_analysis>one sentence on the temporal comparison</temporal_analysis>
+<synthesis>One paragraph of about 60 words, plain prose, no bullet points. Start with "Across these modules, your reflection". Describe continuity and shift only — do not evaluate quality.</synthesis>

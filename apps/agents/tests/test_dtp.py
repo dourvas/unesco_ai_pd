@@ -1,18 +1,15 @@
-"""DTPAgent parity + multi-call cost tests vs the monolith compute_dtp.
+"""DTPAgent tests — redefined dual-signal DTP (D.3a).
 
-Two-layer invariant from PHASE_E_DESIGN_PROPOSAL_v5 §5 (inherits v2):
-  (1) Prompt-identical with rag_query_system per Gemini sub-call
-  (2) Behaviour-identical given mocked Gemini outputs
+The DTP was redefined from the Phase E monolith-parity single-signal
+form into two independent signals: a Vertical Continuity Signal (VCS,
+within-aspect, one proficiency level down) and a Temporal Shift Signal
+(TSS, against the immediately preceding module). See
+proodos_files/DTP_REDEFINITION_DESIGN_PROPOSAL_v1_20260518.md.
 
-Plus the contract checks specific to commit 5 (DTP is the first
-multi-Gemini-call agent):
-  - 2 'agent.cost' events per generate() (theme + narrative)
-  - Embedding failure -> None
-  - Theme JSON parse failure -> empty themes default (composite still
-    completes with the canned continuity_description as narrative)
-  - Narrative empty -> fallback to continuity_description
-  - JSON repair fallback for theme extraction (max(0, ...) wrappers)
-  - clean_json_response invoked via the agent's import site
+These tests use mocked Gemini calls. They verify plumbing, composite
+shape, prompts, cost events and failure modes — NOT the quality of the
+generated narrative. Live-output verification with real Gemini calls
+is a separate, tracked step (design proposal §12).
 """
 
 import json
@@ -22,54 +19,107 @@ from django.contrib.auth.models import User
 from django.test import SimpleTestCase, TestCase
 
 from apps.agents.dtp import (
-    DTP_HIGH_THRESHOLD,
-    DTP_MODERATE_THRESHOLD,
+    DTP_NARRATIVE_FALLBACK,
     DTP_NARRATIVE_MAX_TOKENS,
     DTP_NARRATIVE_TEMPERATURE,
+    DTP_REFLECTION_PROMPT_BUDGET,
+    DTP_SCHEMA,
     DTP_THEME_MAX_TOKENS,
     DTP_THEME_TEMPERATURE,
     DTPAgent,
 )
 from apps.agents.research import ResearchInstrumentAgent
 from apps.agents.shared.llm_client import GenerationResult
+from apps.agents.tests._fixtures import load_prompt_fixture
 from apps.compliance.models import AIArtefactProvenance
 from apps.modules.models import Module, UserModuleProgress
 
 
-_PREV = (
-    "I tried ChatGPT for the first time today to draft quiz questions. "
-    "I was excited but worried about over-relying on AI."
-)
-_CURR = (
+# _VERTICAL is byte-identical to the old test file's _PREV, and
+# _CURRENT to the old _CURR — this keeps the unchanged dtp_themes.txt
+# fixture valid (the theme-extraction prompt did not change).
+_CURRENT = (
     "After three modules I'm finding I assess AI outputs more critically. "
     "The novelty has worn off but my pedagogical evaluation has sharpened."
 )
+_VERTICAL = (
+    "I tried ChatGPT for the first time today to draft quiz questions. "
+    "I was excited but worried about over-relying on AI."
+)
+_TEMPORAL = (
+    "This module pushed me to think about fairness when an AI tool grades "
+    "student work, and who is accountable for an unfair outcome."
+)
+
+# Canonical input for the frozen narrative-prompt fixture
+# (prompt_fixtures/dtp_narrative.txt). Regenerating the fixture requires
+# re-running DTPAgent._build_narrative_prompt with exactly this input.
+_FIXTURE_CURRENT_MODULE = 'M8'
+_FIXTURE_SIGNALS = {
+    'vertical': {
+        'comparison_module': 'M3',
+        'similarity': 0.7421,
+        'themes': {
+            'increased_themes': ['ethical focus'],
+            'decreased_themes': [],
+            'stable_themes': ['mathematics context'],
+        },
+    },
+    'temporal': {
+        'comparison_module': 'M7',
+        'similarity': 0.6810,
+        'themes': {
+            'increased_themes': ['assessment design'],
+            'decreased_themes': ['novelty'],
+            'stable_themes': [],
+        },
+    },
+}
 
 
-# ----------------------------------------------------------------------
-# Helpers — multi-call Gemini mocks.
-# ----------------------------------------------------------------------
-def _gen_result(text: str, tokens: int = 100, cost: float = 0.0000279):
+def _gen_result(text, tokens=100, cost=0.0000279):
     return GenerationResult(
         text=text, model='gemini-2.5-flash',
         tokens_estimate=tokens, cost_eur_estimate=cost,
     )
 
 
-def _mock_llm_for_full_run(theme_json: str, narrative_text: str):
-    """LLMClient mock that returns:
-      - embed: a fixed 768-d vector on every call
-      - generate: side_effect that alternates theme then narrative
-    """
+def _theme_json(increased=None, decreased=None, stable=None):
+    return json.dumps({
+        'increased': increased or [],
+        'decreased': decreased or [],
+        'stable': stable or [],
+    })
+
+
+# A well-formed structured narrative response (the <synthesis> block is
+# what the agent keeps; the analysis blocks are chain-of-thought scaffold).
+_NARRATIVE_RESPONSE = (
+    '<vertical_analysis>The competency framing held steady.</vertical_analysis>\n'
+    '<temporal_analysis>Focus moved toward ethics.</temporal_analysis>\n'
+    '<synthesis>Across these modules, your reflection sustains a subject '
+    'framing while shifting attention toward the ethical dimensions of '
+    'AI use in your teaching.</synthesis>'
+)
+_SYNTHESIS_TEXT = (
+    'Across these modules, your reflection sustains a subject framing '
+    'while shifting attention toward the ethical dimensions of AI use '
+    'in your teaching.'
+)
+
+
+def _mock_llm(generate_results, embed_vector=None):
+    """LLMClient mock: a fixed embedding vector for every embed() call,
+    and a fixed sequence of GenerationResults for generate()."""
     mock = MagicMock()
-    mock.embed.return_value = [0.1] * 768
-    mock.generate.side_effect = [
-        _gen_result(theme_json),
-        _gen_result(narrative_text),
-    ]
+    mock.embed.return_value = embed_vector if embed_vector is not None else [0.1] * 768
+    mock.generate.side_effect = list(generate_results)
     return mock
 
 
+# ----------------------------------------------------------------------
+# Hierarchy and constants
+# ----------------------------------------------------------------------
 class DTPHierarchyTest(SimpleTestCase):
     def test_inherits_from_research_instrument_agent(self):
         self.assertTrue(issubclass(DTPAgent, ResearchInstrumentAgent))
@@ -80,279 +130,246 @@ class DTPHierarchyTest(SimpleTestCase):
     def test_model_name(self):
         self.assertEqual(DTPAgent.model_name, 'gemini-2.5-flash')
 
-    def test_constants_match_monolith(self):
-        """Continuity thresholds and Gemini-call parameters are
-        research artefacts — must not drift without a methodology
-        commit. These values come from rag_query_system.compute_
-        development_signal / extract_development_themes / generate_
-        development_narrative."""
-        self.assertEqual(DTP_HIGH_THRESHOLD, 0.85)
-        self.assertEqual(DTP_MODERATE_THRESHOLD, 0.70)
+
+class DTPConstantsTest(SimpleTestCase):
+    """Gemini-call parameters carry over from the Phase E DTP. The
+    continuity thresholds do NOT: the redefined DTP ships no thresholds
+    and no label (design proposal §7.4)."""
+
+    def test_gemini_call_constants(self):
         self.assertEqual(DTP_THEME_TEMPERATURE, 0.3)
         self.assertEqual(DTP_THEME_MAX_TOKENS, 1000)
         self.assertEqual(DTP_NARRATIVE_TEMPERATURE, 0.4)
         self.assertEqual(DTP_NARRATIVE_MAX_TOKENS, 2000)
+        self.assertEqual(DTP_REFLECTION_PROMPT_BUDGET, 400)
+
+    def test_schema_tag(self):
+        self.assertEqual(DTP_SCHEMA, 'dtp_dual_v1')
+
+    def test_no_continuity_thresholds(self):
+        """The redefinition removed the 0.85 / 0.70 thresholds; the
+        module must not expose them (design proposal §7.4)."""
+        import apps.agents.dtp as dtp_module
+        self.assertFalse(hasattr(dtp_module, 'DTP_HIGH_THRESHOLD'))
+        self.assertFalse(hasattr(dtp_module, 'DTP_MODERATE_THRESHOLD'))
 
 
-class DTPDevelopmentSignalTest(SimpleTestCase):
-    """Pure-function tests on the cosine signal — no mocks needed."""
+# ----------------------------------------------------------------------
+# Cosine similarity (pure function)
+# ----------------------------------------------------------------------
+class DTPCosineSimilarityTest(SimpleTestCase):
+    """_cosine_similarity returns a rounded cosine and nothing else —
+    no label, no bucketing (design proposal §7.4)."""
 
-    def _vec_with_similarity(self, target_similarity: float):
-        """Return two unit-length 2-d vectors whose dot product equals
-        target_similarity exactly. Used to hit each branch boundary."""
+    @staticmethod
+    def _vec_with_similarity(target):
         import math
-        theta = math.acos(target_similarity)
-        v1 = [1.0, 0.0]
-        v2 = [math.cos(theta), math.sin(theta)]
-        return v1, v2
+        theta = math.acos(target)
+        return [1.0, 0.0], [math.cos(theta), math.sin(theta)]
 
-    def test_high_continuity_branch(self):
+    def test_returns_cosine_similarity(self):
         v1, v2 = self._vec_with_similarity(0.90)
-        out = DTPAgent.compute_development_signal(v1, v2)
-        self.assertEqual(out['continuity_label'], 'High')
-        self.assertIn('sustained focus', out['continuity_description'])
+        self.assertAlmostEqual(DTPAgent._cosine_similarity(v1, v2), 0.90, places=4)
 
-    def test_moderate_continuity_branch(self):
-        v1, v2 = self._vec_with_similarity(0.78)
-        out = DTPAgent.compute_development_signal(v1, v2)
-        self.assertEqual(out['continuity_label'], 'Moderate')
-        self.assertIn('evolved', out['continuity_description'])
-
-    def test_significant_continuity_branch(self):
-        v1, v2 = self._vec_with_similarity(0.50)
-        out = DTPAgent.compute_development_signal(v1, v2)
-        self.assertEqual(out['continuity_label'], 'Significant')
-        self.assertIn('substantial evolution', out['continuity_description'])
-
-    def test_boundary_at_high_threshold_inclusive(self):
-        """0.85 exactly is 'High' (>= comparison)."""
-        v1, v2 = self._vec_with_similarity(0.85)
-        out = DTPAgent.compute_development_signal(v1, v2)
-        self.assertEqual(out['continuity_label'], 'High')
-
-    def test_boundary_at_moderate_threshold_inclusive(self):
-        """0.70 exactly is 'Moderate'."""
-        v1, v2 = self._vec_with_similarity(0.70)
-        out = DTPAgent.compute_development_signal(v1, v2)
-        self.assertEqual(out['continuity_label'], 'Moderate')
+    def test_identical_vectors_score_one(self):
+        vec = [0.1] * 16
+        self.assertEqual(DTPAgent._cosine_similarity(vec, vec), 1.0)
 
     def test_similarity_rounded_to_4_decimals(self):
-        v1, v2 = self._vec_with_similarity(0.50)
-        out = DTPAgent.compute_development_signal(v1, v2)
-        # Round-trip via str to count decimal places.
-        s = f"{out['similarity']:.6f}"
-        # Last two digits should be zero (4-decimal precision).
-        self.assertEqual(s[-2:], '00')
+        v1, v2 = self._vec_with_similarity(0.5)
+        result = DTPAgent._cosine_similarity(v1, v2)
+        self.assertEqual(result, round(result, 4))
 
 
-class DTPPromptParityTest(SimpleTestCase):
-    """Layer-1 invariant: each agent prompt == frozen monolith snapshot.
+# ----------------------------------------------------------------------
+# Theme-extraction prompt — unchanged from the Phase E DTP
+# ----------------------------------------------------------------------
+class DTPThemesPromptTest(SimpleTestCase):
+    """The theme-extraction prompt is a generic two-reflection thematic
+    extractor; it is unchanged, so the dtp_themes.txt fixture still
+    holds."""
 
-    Pre-commit-9 both expected prompts came from live calls to
-    rag_query_system.extract_development_themes /
-    generate_development_narrative. Commit 9 deleted both; the
-    byte-identical snapshots live at prompt_fixtures/dtp_themes.txt
-    and prompt_fixtures/dtp_narrative.txt. The narrative fixture
-    preserves the trailing-space quirk after "exactly 60 words." —
-    a §11 monolith oddity now forever frozen in test fixtures (the
-    quirk itself was deleted with the parent function).
-    """
-
-    def test_themes_prompt_matches_frozen_monolith_snapshot(self):
-        from apps.agents.tests._fixtures import load_prompt_fixture
+    def test_themes_prompt_matches_frozen_snapshot(self):
         expected = load_prompt_fixture('dtp_themes')
-        agent_prompt = DTPAgent._build_themes_prompt(_PREV, _CURR)
-        self.assertEqual(agent_prompt, expected)
-
-    def test_narrative_prompt_matches_frozen_monolith_snapshot(self):
-        from apps.agents.tests._fixtures import load_prompt_fixture
-        expected = load_prompt_fixture('dtp_narrative')
-        signal = {
-            'similarity': 0.78, 'continuity_label': 'Moderate',
-            'continuity_description': (
-                'Your pedagogical focus has evolved, showing deeper engagement '
-                'with instructional design.'
-            ),
-        }
-        themes = {'increased': ['ethical focus'], 'decreased': [], 'stable': ['differentiation']}
-        agent_prompt = DTPAgent._build_narrative_prompt(signal, themes, 'M1', 'M2')
-        self.assertEqual(agent_prompt, expected)
-
-
-class DTPLayer0BoilerplateTest(SimpleTestCase):
-    """Layer-0 (commit-2 invariant): exact-string assertions for
-    boilerplate prone to escape / wording drift."""
+        actual = DTPAgent._build_themes_prompt(_VERTICAL, _CURRENT)
+        self.assertEqual(actual, expected)
 
     def test_themes_prompt_layer0(self):
-        prompt = DTPAgent._build_themes_prompt(_PREV, _CURR)
+        prompt = DTPAgent._build_themes_prompt(_VERTICAL, _CURRENT)
         self.assertIn('PREVIOUS:', prompt)
         self.assertIn('CURRENT:', prompt)
-        self.assertIn(
-            '{"increased": [], "decreased": [], "stable": []}', prompt,
-        )
+        self.assertIn('{"increased": [], "decreased": [], "stable": []}', prompt)
         self.assertIn('Fill each array with 2-3 phrases of MAX 3 WORDS EACH.', prompt)
-        self.assertIn(
-            '{"increased": ["ethical focus"], "decreased": [], "stable": ["physics context"]}',
-            prompt,
-        )
-
-    def test_narrative_prompt_layer0(self):
-        signal = {
-            'continuity_label': 'High',
-            'continuity_description': 'Test description for layer-0 test.',
-        }
-        themes = {'increased': [], 'decreased': [], 'stable': ['x']}
-        prompt = DTPAgent._build_narrative_prompt(signal, themes, 'M3', 'M4')
-        self.assertIn(
-            'Write a complete paragraph of exactly 60 words.', prompt,
-        )
-        self.assertIn(
-            'Start with: "Across these modules, your reflection demonstrates"',
-            prompt,
-        )
-        self.assertIn('Do not use bullet points. Write in plain prose only.', prompt)
-        # Module-pair interpolation
-        self.assertIn('Modules compared: M3 to M4', prompt)
 
     def test_themes_prompt_sanitises_400_char_cap(self):
         long_text = 'x' * 600 + 'AFTER_CAP'
-        prompt = DTPAgent._build_themes_prompt(long_text, _CURR)
-        # The 'AFTER_CAP' marker is past the 400-char budget and
-        # must not appear in the prompt.
+        prompt = DTPAgent._build_themes_prompt(long_text, _CURRENT)
         self.assertNotIn('AFTER_CAP', prompt)
 
     def test_themes_prompt_quote_and_newline_sanitisation(self):
         text = 'She said "AI is helpful"\nthen continued reflecting.'
-        prompt = DTPAgent._build_themes_prompt(text, _CURR)
-        # " -> '
+        prompt = DTPAgent._build_themes_prompt(text, _CURRENT)
         self.assertIn("She said 'AI is helpful'", prompt)
-        # \n -> space (the literal newline character)
         self.assertNotIn("'AI is helpful'\nthen", prompt)
 
 
-class DTPJsonRepairContractTest(SimpleTestCase):
-    """Per v5 §5 Layer-0 rule, patch at agent import site."""
+# ----------------------------------------------------------------------
+# Narrative prompt — the redefined structured dual-signal prompt
+# ----------------------------------------------------------------------
+class DTPNarrativePromptTest(SimpleTestCase):
+
+    def test_narrative_prompt_matches_frozen_snapshot(self):
+        expected = load_prompt_fixture('dtp_narrative')
+        actual = DTPAgent._build_narrative_prompt(
+            _FIXTURE_CURRENT_MODULE, _FIXTURE_SIGNALS,
+        )
+        self.assertEqual(actual, expected)
+
+    def test_narrative_prompt_layer0(self):
+        prompt = DTPAgent._build_narrative_prompt(
+            _FIXTURE_CURRENT_MODULE, _FIXTURE_SIGNALS,
+        )
+        self.assertIn('Describe only what changed', prompt)
+        self.assertIn('do not evaluate quality', prompt)
+        self.assertIn('<synthesis>', prompt)
+        self.assertIn('</synthesis>', prompt)
+        self.assertIn('Across these modules, your reflection', prompt)
+        self.assertIn('VERTICAL comparison', prompt)
+        self.assertIn('TEMPORAL comparison', prompt)
+        self.assertIn('current module (M8)', prompt)
+
+    def test_narrative_prompt_temporal_only_omits_vertical_block(self):
+        """With no VCS available (an Acquire module), the prompt has
+        only the temporal block and only the temporal analysis tag."""
+        signals = {'temporal': _FIXTURE_SIGNALS['temporal']}
+        prompt = DTPAgent._build_narrative_prompt('M2', signals)
+        self.assertNotIn('VERTICAL comparison', prompt)
+        self.assertNotIn('<vertical_analysis>', prompt)
+        self.assertIn('TEMPORAL comparison', prompt)
+        self.assertIn('<temporal_analysis>', prompt)
+        self.assertIn('<synthesis>', prompt)
+
+
+# ----------------------------------------------------------------------
+# Theme JSON repair
+# ----------------------------------------------------------------------
+class DTPThemeJsonRepairTest(SimpleTestCase):
 
     def test_clean_json_response_invoked_for_theme_step(self):
         from apps.agents.shared.json_repair import (
             clean_json_response as real_clean,
         )
-
-        mock_client = MagicMock()
-        mock_client.embed.return_value = [0.1] * 768
-        # Theme returns fenced JSON (needs cleanup); narrative is plain.
-        mock_client.generate.side_effect = [
+        mock_client = _mock_llm([
             _gen_result('```json\n{"increased":[],"decreased":[],"stable":[]}\n```'),
-            _gen_result('Narrative text here.'),
-        ]
+            _gen_result(_NARRATIVE_RESPONSE),
+        ])
         with patch('apps.agents.dtp.get_llm_client', return_value=mock_client), \
              patch('apps.agents.dtp.clean_json_response',
                    wraps=real_clean) as spy:
             DTPAgent()._do_generate(
-                previous_reflection_text=_PREV,
-                current_reflection_text=_CURR,
+                current_reflection_text=_CURRENT,
+                current_module='M2',
+                temporal_reflection_text=_TEMPORAL,
+                temporal_module='M1',
             )
         spy.assert_called()
 
     def test_theme_json_repair_fallback_on_unbalanced_braces(self):
-        """When themes response is truncated, the JSON repair fallback
-        kicks in. Verifies the max(0, ...) wrappers don't crash."""
         truncated = '{"increased": ["focus"], "decreased": [], "stable":'
-
-        mock_client = MagicMock()
-        mock_client.embed.return_value = [0.1] * 768
-        mock_client.generate.side_effect = [
-            _gen_result(truncated),
-            _gen_result('Narrative text.'),
-        ]
+        mock_client = _mock_llm([_gen_result(truncated)])
         with patch('apps.agents.dtp.get_llm_client', return_value=mock_client):
-            agent = DTPAgent()
-            themes = agent._extract_themes(_PREV, _CURR)
-        # Repair adds closing brackets/braces — best-effort recovery.
-        # Either we recovered something or we fell back to empty.
+            themes = DTPAgent()._extract_themes(_TEMPORAL, _CURRENT)
         self.assertIn('increased', themes)
         self.assertIn('decreased', themes)
         self.assertIn('stable', themes)
 
 
-class DTPMultiCallCostTrackingTest(TestCase):
-    """One generate() = two 'agent.cost' events (theme + narrative).
-
-    DTP is the test case for per-Gemini-call cost granularity. Future
-    Peer Synthesis (commit 7) follows the same pattern."""
+# ----------------------------------------------------------------------
+# Cost tracking — one cost event per Gemini sub-call
+# ----------------------------------------------------------------------
+class DTPCostTrackingTest(TestCase):
 
     @classmethod
     def setUpTestData(cls):
-        cls.user = User.objects.create_user('dtp_user', password='pw')
+        cls.user = User.objects.create_user('dtp_cost_user', password='pw')
         cls.module = Module.objects.create(
-            code='AGDTP', title='DTP agent test',
-            description='t', order_index=995,
-            unesco_aspect='ethics', proficiency_level='Acquire',
-            is_published=True,
+            code='AGDTPC', title='DTP cost test', description='t',
+            order_index=990, unesco_aspect='ethics',
+            proficiency_level='Deepen', is_published=True,
         )
 
-    def _make_progress(self):
+    def _progress(self):
         return UserModuleProgress.objects.create(
             user=self.user, module=self.module,
         )
 
-    def test_two_cost_events_per_generate(self):
-        progress = self._make_progress()
-        mock_client = _mock_llm_for_full_run(
-            theme_json='{"increased":[],"decreased":[],"stable":[]}',
-            narrative_text='Narrative paragraph.',
-        )
+    def _cost_events(self, cm):
+        return [r for r in cm.records if r.getMessage() == 'agent.cost']
+
+    def test_three_cost_events_for_dual_signal(self):
+        """Both signals available: two theme calls + one narrative call."""
+        progress = self._progress()
+        mock_client = _mock_llm([
+            _gen_result(_theme_json()),       # vertical themes
+            _gen_result(_theme_json()),       # temporal themes
+            _gen_result(_NARRATIVE_RESPONSE),  # narrative
+        ])
         with patch('apps.agents.dtp.get_llm_client', return_value=mock_client), \
              self.assertLogs('agents.audit', level='INFO') as cm:
             DTPAgent().generate(
                 user=self.user, module=self.module,
                 save_target=progress, save_field='reflection_dtp',
-                previous_reflection_text=_PREV,
-                current_reflection_text=_CURR,
-                previous_module='M1', current_module='M2',
+                current_reflection_text=_CURRENT, current_module='M8',
+                vertical_reflection_text=_VERTICAL, vertical_module='M3',
+                temporal_reflection_text=_TEMPORAL, temporal_module='M7',
             )
+        self.assertEqual(len(self._cost_events(cm)), 3)
 
-        cost_events = [
-            r for r in cm.records if r.getMessage() == 'agent.cost'
-        ]
-        self.assertEqual(
-            len(cost_events), 2,
-            'DTP should emit exactly two agent.cost events per '
-            'generate(): one for theme extraction, one for narrative.',
-        )
-        # Both events must carry the correct model and agent.
-        for record in cost_events:
-            self.assertEqual(record.agent, 'DTPAgent')
-            self.assertEqual(record.model, 'gemini-2.5-flash')
-            self.assertEqual(record.artefact_kind, 'dtp_narrative')
+    def test_two_cost_events_for_single_signal(self):
+        """Only the temporal signal: one theme call + one narrative call."""
+        progress = self._progress()
+        mock_client = _mock_llm([
+            _gen_result(_theme_json()),       # temporal themes
+            _gen_result(_NARRATIVE_RESPONSE),  # narrative
+        ])
+        with patch('apps.agents.dtp.get_llm_client', return_value=mock_client), \
+             self.assertLogs('agents.audit', level='INFO') as cm:
+            DTPAgent().generate(
+                user=self.user, module=self.module,
+                save_target=progress, save_field='reflection_dtp',
+                current_reflection_text=_CURRENT, current_module='M2',
+                temporal_reflection_text=_TEMPORAL, temporal_module='M1',
+            )
+        self.assertEqual(len(self._cost_events(cm)), 2)
 
 
+# ----------------------------------------------------------------------
+# Failure modes
+# ----------------------------------------------------------------------
 class DTPFailureModesTest(TestCase):
+
     @classmethod
     def setUpTestData(cls):
         cls.user = User.objects.create_user('dtp_fail_user', password='pw')
         cls.module = Module.objects.create(
-            code='AGDTP2', title='DTP fail test',
-            description='t', order_index=994,
-            unesco_aspect='ethics', proficiency_level='Acquire',
-            is_published=True,
+            code='AGDTPF', title='DTP fail test', description='t',
+            order_index=991, unesco_aspect='ethics',
+            proficiency_level='Deepen', is_published=True,
         )
 
-    def _make_progress(self):
+    def _progress(self):
         return UserModuleProgress.objects.create(
             user=self.user, module=self.module,
         )
 
-    def test_embedding_failure_raises_and_rolls_back(self):
-        """CP-9 invariant: if either embed_query returns None,
-        _do_generate raises RuntimeError so the surrounding atomic
-        rolls back. No provenance row, no progress.reflection_dtp
-        mutation. Matches RAGFeedbackAgent's embedding-failure
-        contract for symmetry."""
+    def test_current_embedding_failure_raises_and_rolls_back(self):
+        """CP-9: if the current-reflection embed returns None,
+        _do_generate raises so the atomic rolls back — reflection_dtp
+        untouched, no provenance row."""
         mock_client = MagicMock()
-        mock_client.embed.return_value = None  # Both embeds fail.
+        mock_client.embed.return_value = None
 
-        progress = self._make_progress()
+        progress = self._progress()
         progress.reflection_dtp = '__untouched__'
         progress.save(update_fields=['reflection_dtp'])
         before = AIArtefactProvenance.objects.count()
@@ -362,147 +379,132 @@ class DTPFailureModesTest(TestCase):
                 DTPAgent().generate(
                     user=self.user, module=self.module,
                     save_target=progress, save_field='reflection_dtp',
-                    previous_reflection_text=_PREV,
-                    current_reflection_text=_CURR,
+                    current_reflection_text=_CURRENT, current_module='M8',
+                    temporal_reflection_text=_TEMPORAL, temporal_module='M7',
                 )
 
-        # CP-9: progress.reflection_dtp untouched, no provenance row.
         progress.refresh_from_db()
         self.assertEqual(progress.reflection_dtp, '__untouched__')
         self.assertEqual(AIArtefactProvenance.objects.count(), before)
 
-    def test_theme_extraction_returns_empty_default_on_gemini_none(self):
-        """When the theme Gemini call returns None, themes default to
-        the empty shape and the composite still completes."""
+    def test_comparison_embedding_failure_raises(self):
+        """If a comparison-reflection embed returns None, the call
+        raises RuntimeError (atomic rollback)."""
         mock_client = MagicMock()
-        mock_client.embed.return_value = [0.1] * 768
-        mock_client.generate.side_effect = [
-            None,  # Theme call fails
-            _gen_result('Narrative text.'),
-        ]
-        progress = self._make_progress()
+        # First embed (current) succeeds, second (comparison) fails.
+        mock_client.embed.side_effect = [[0.1] * 768, None]
+
+        progress = self._progress()
+        with patch('apps.agents.dtp.get_llm_client', return_value=mock_client):
+            with self.assertRaises(RuntimeError):
+                DTPAgent().generate(
+                    user=self.user, module=self.module,
+                    save_target=progress, save_field='reflection_dtp',
+                    current_reflection_text=_CURRENT, current_module='M8',
+                    temporal_reflection_text=_TEMPORAL, temporal_module='M7',
+                )
+
+    def test_theme_extraction_empty_default_on_gemini_none(self):
+        """When a theme Gemini call returns None, that signal's themes
+        default to empty and the composite still completes."""
+        progress = self._progress()
+        mock_client = _mock_llm([
+            None,                              # temporal themes call fails
+            _gen_result(_NARRATIVE_RESPONSE),  # narrative
+        ])
         with patch('apps.agents.dtp.get_llm_client', return_value=mock_client):
             result = DTPAgent().generate(
                 user=self.user, module=self.module,
                 save_target=progress, save_field='reflection_dtp',
-                previous_reflection_text=_PREV,
-                current_reflection_text=_CURR,
+                current_reflection_text=_CURRENT, current_module='M2',
+                temporal_reflection_text=_TEMPORAL, temporal_module='M1',
             )
-        self.assertEqual(result['themes']['increased_themes'], [])
-        self.assertEqual(result['themes']['stable_themes'], [])
+        themes = result['signals']['temporal']['themes']
+        self.assertEqual(themes['increased_themes'], [])
+        self.assertEqual(themes['decreased_themes'], [])
+        self.assertEqual(themes['stable_themes'], [])
 
-    def test_narrative_falls_back_to_continuity_description_on_gemini_none(self):
-        """When the narrative Gemini call returns None, narrative
-        falls back to signal['continuity_description']."""
-        mock_client = MagicMock()
-        mock_client.embed.return_value = [0.1] * 768
-        mock_client.generate.side_effect = [
-            _gen_result('{"increased":[],"decreased":[],"stable":[]}'),
-            None,  # Narrative call fails
-        ]
-        progress = self._make_progress()
+    def test_narrative_falls_back_when_gemini_returns_none(self):
+        """When the narrative Gemini call returns None, the narrative
+        falls back to the canned descriptive sentence."""
+        progress = self._progress()
+        mock_client = _mock_llm([
+            _gen_result(_theme_json()),  # temporal themes
+            None,                        # narrative call fails
+        ])
         with patch('apps.agents.dtp.get_llm_client', return_value=mock_client):
             result = DTPAgent().generate(
                 user=self.user, module=self.module,
                 save_target=progress, save_field='reflection_dtp',
-                previous_reflection_text=_PREV,
-                current_reflection_text=_CURR,
+                current_reflection_text=_CURRENT, current_module='M2',
+                temporal_reflection_text=_TEMPORAL, temporal_module='M1',
             )
-        # The fallback is the bucket-specific canned sentence.
-        self.assertIn(result['narrative'], (
-            'Your reflections show sustained focus on core pedagogical priorities.',
-            'Your pedagogical focus has evolved, showing deeper engagement '
-            'with instructional design.',
-            'Your reflection shows substantial evolution in how you '
-            'conceptualize AI in education.',
-        ))
-
-    def test_narrative_falls_back_on_empty_text(self):
-        """Empty/whitespace narrative -> same fallback."""
-        mock_client = MagicMock()
-        mock_client.embed.return_value = [0.1] * 768
-        mock_client.generate.side_effect = [
-            _gen_result('{"increased":[],"decreased":[],"stable":[]}'),
-            _gen_result('   '),  # Empty narrative
-        ]
-        progress = self._make_progress()
-        with patch('apps.agents.dtp.get_llm_client', return_value=mock_client):
-            result = DTPAgent().generate(
-                user=self.user, module=self.module,
-                save_target=progress, save_field='reflection_dtp',
-                previous_reflection_text=_PREV,
-                current_reflection_text=_CURR,
-            )
-        self.assertNotEqual(result['narrative'], '')
+        self.assertEqual(result['narrative'], DTP_NARRATIVE_FALLBACK)
 
 
-class DTPEndToEndTest(TestCase):
-    """Behaviour-identical with mocked Gemini: composite shape +
-    persistence + provenance — all as today's views.py path produces."""
+# ----------------------------------------------------------------------
+# Composite shape, persistence and provenance
+# ----------------------------------------------------------------------
+class DTPCompositeShapeTest(TestCase):
+    """Behaviour-identical with mocked Gemini: the dual-signal composite
+    shape, JSON persistence and the single provenance row."""
 
     @classmethod
     def setUpTestData(cls):
         cls.user = User.objects.create_user('dtp_e2e_user', password='pw')
         cls.module = Module.objects.create(
-            code='AGDTP3', title='DTP end-to-end test',
-            description='t', order_index=993,
-            unesco_aspect='ethics', proficiency_level='Acquire',
-            is_published=True,
+            code='AGDTPE', title='DTP end-to-end test', description='t',
+            order_index=992, unesco_aspect='ai_foundations',
+            proficiency_level='Deepen', is_published=True,
         )
 
-    def _make_progress(self):
+    def _progress(self):
         return UserModuleProgress.objects.create(
             user=self.user, module=self.module,
         )
 
-    def test_full_generate_persists_json_and_writes_provenance(self):
-        progress = self._make_progress()
-        mock_client = _mock_llm_for_full_run(
-            theme_json=json.dumps({
-                'increased': ['ethical focus'],
-                'decreased': ['novelty hype'],
-                'stable': ['mathematics context'],
-            }),
-            narrative_text=(
-                'Across these modules, your reflection demonstrates a deepening '
-                'engagement with the ethical dimensions of AI in your teaching, '
-                'while sustaining your subject-specific framing in mathematics. '
-                'The novelty of AI tools appears to have given way to a more '
-                'measured pedagogical evaluation, which is a meaningful shift '
-                'in how you situate AI within your classroom practice.'
-            ),
-        )
-
+    def test_dual_signal_composite_shape_and_persistence(self):
+        progress = self._progress()
+        mock_client = _mock_llm([
+            _gen_result(_theme_json(increased=['ethical focus'])),    # vertical
+            _gen_result(_theme_json(decreased=['novelty'])),          # temporal
+            _gen_result(_NARRATIVE_RESPONSE),                         # narrative
+        ])
         with patch('apps.agents.dtp.get_llm_client', return_value=mock_client):
             result = DTPAgent().generate(
                 user=self.user, module=self.module,
                 save_target=progress, save_field='reflection_dtp',
-                previous_reflection_text=_PREV,
-                current_reflection_text=_CURR,
-                previous_module='M1', current_module='M4',
+                current_reflection_text=_CURRENT, current_module='M8',
+                vertical_reflection_text=_VERTICAL, vertical_module='M3',
+                temporal_reflection_text=_TEMPORAL, temporal_module='M7',
             )
 
-        # Composite shape parity with monolith compute_dtp return
-        self.assertIn('previous_module', result)
-        self.assertIn('current_module', result)
-        self.assertIn('similarity', result)
-        self.assertIn('continuity_label', result)
-        self.assertIn('continuity_description', result)
-        self.assertIn('narrative', result)
+        # Top-level composite shape.
+        self.assertEqual(result['schema'], DTP_SCHEMA)
+        self.assertEqual(result['current_module'], 'M8')
+        self.assertEqual(result['narrative'], _SYNTHESIS_TEXT)
+        self.assertEqual(sorted(result['signals'].keys()), ['temporal', 'vertical'])
+
+        # Each signal carries comparison_module, similarity, themes.
+        vertical = result['signals']['vertical']
+        self.assertEqual(vertical['comparison_module'], 'M3')
+        self.assertIsInstance(vertical['similarity'], float)
         self.assertEqual(
-            sorted(result['themes'].keys()),
+            sorted(vertical['themes'].keys()),
             ['decreased_themes', 'increased_themes', 'stable_themes'],
         )
-        self.assertEqual(result['previous_module'], 'M1')
-        self.assertEqual(result['current_module'], 'M4')
+        self.assertEqual(vertical['themes']['increased_themes'], ['ethical focus'])
+        self.assertEqual(
+            result['signals']['temporal']['comparison_module'], 'M7',
+        )
 
         # Persistence: progress.reflection_dtp holds the JSON dump.
         progress.refresh_from_db()
-        self.assertIsNotNone(progress.reflection_dtp)
         round_tripped = json.loads(progress.reflection_dtp)
-        self.assertEqual(round_tripped['current_module'], 'M4')
+        self.assertEqual(round_tripped['current_module'], 'M8')
+        self.assertEqual(round_tripped['schema'], DTP_SCHEMA)
 
-        # Provenance row exists, keyed by ('dtp_narrative', progress.pk).
+        # One provenance row, keyed by ('dtp_narrative', progress.pk).
         self.assertTrue(
             AIArtefactProvenance.objects.filter(
                 artefact_kind='dtp_narrative',
@@ -512,30 +514,44 @@ class DTPEndToEndTest(TestCase):
             ).exists()
         )
 
-    def test_persist_field_overwrite_preserves_atomic_invariant(self):
-        """Re-running generate() on the same progress row replaces the
-        reflection_dtp content. The 'dtp_narrative' provenance row is
-        get_or_create-d on (kind, pk), so the count stays at 1."""
-        progress = self._make_progress()
+    def test_temporal_only_composite_has_no_vertical_signal(self):
+        """An Acquire module supplies only the temporal signal; the
+        composite then carries no 'vertical' key (design proposal §5)."""
+        progress = self._progress()
+        mock_client = _mock_llm([
+            _gen_result(_theme_json()),        # temporal themes
+            _gen_result(_NARRATIVE_RESPONSE),  # narrative
+        ])
+        with patch('apps.agents.dtp.get_llm_client', return_value=mock_client):
+            result = DTPAgent().generate(
+                user=self.user, module=self.module,
+                save_target=progress, save_field='reflection_dtp',
+                current_reflection_text=_CURRENT, current_module='M2',
+                temporal_reflection_text=_TEMPORAL, temporal_module='M1',
+            )
+        self.assertEqual(list(result['signals'].keys()), ['temporal'])
+        self.assertNotIn('vertical', result['signals'])
 
-        def _run_with(theme_json):
-            mock = _mock_llm_for_full_run(theme_json, 'Narrative text.')
-            with patch('apps.agents.dtp.get_llm_client', return_value=mock):
+    def test_provenance_idempotent_on_rerun(self):
+        """Re-running generate() replaces the composite but the
+        'dtp_narrative' provenance row stays a single row (CP-7)."""
+        progress = self._progress()
+
+        def _run():
+            mock_client = _mock_llm([
+                _gen_result(_theme_json()),
+                _gen_result(_NARRATIVE_RESPONSE),
+            ])
+            with patch('apps.agents.dtp.get_llm_client', return_value=mock_client):
                 DTPAgent().generate(
                     user=self.user, module=self.module,
                     save_target=progress, save_field='reflection_dtp',
-                    previous_reflection_text=_PREV,
-                    current_reflection_text=_CURR,
+                    current_reflection_text=_CURRENT, current_module='M2',
+                    temporal_reflection_text=_TEMPORAL, temporal_module='M1',
                 )
 
-        _run_with('{"increased":["a"],"decreased":[],"stable":[]}')
-        _run_with('{"increased":["b"],"decreased":[],"stable":[]}')
-
-        progress.refresh_from_db()
-        latest = json.loads(progress.reflection_dtp)
-        self.assertEqual(latest['themes']['increased_themes'], ['b'])
-
-        # Idempotent provenance: still exactly one row.
+        _run()
+        _run()
         self.assertEqual(
             AIArtefactProvenance.objects.filter(
                 artefact_kind='dtp_narrative',

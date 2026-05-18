@@ -516,14 +516,8 @@
                 <h3 class="card-title text-lg text-green-900">📈 Reflective Development Signal</h3>
                 <div class="badge badge-success">Longitudinal Analysis</div>
             </div>
-            <div class="text-sm text-gray-600 mb-3">
-                <strong>Comparison:</strong> <span id="dtp-comparison"></span>
-            </div>
-            <div class="alert alert-success text-sm mb-4">
-                <strong id="dtp-continuity-label"></strong>
-            </div>
             <p class="text-gray-800 mb-4" id="dtp-narrative"></p>
-            <div id="dtp-themes-container"></div>
+            <div id="dtp-signals-container" class="space-y-3"></div>
             
             <!-- HITL DTP — live state -->
             <div id="dtp-xai-hitl-live" class="hidden mt-4 border-t border-base-300 pt-3">
@@ -600,25 +594,29 @@
                 <h3 class="card-title text-lg text-green-900">📈 Reflective Development Signal</h3>
                 <div class="badge badge-success">Longitudinal Analysis</div>
             </div>
-            <div class="text-sm text-gray-600 mb-3">
-                <strong>Comparison:</strong> 
-                <span id="dtp-comparison">{% if reflection_dtp %}{{ reflection_dtp.previous_module }} → {{ reflection_dtp.current_module }}{% endif %}</span>
-            </div>
-            <div class="alert alert-success text-sm mb-4">
-                <strong id="dtp-continuity-label">{% if reflection_dtp %}{{ reflection_dtp.continuity_label }} — {{ reflection_dtp.continuity_description }}{% endif %}</strong>
-            </div>
             <p class="text-gray-800 mb-4" id="dtp-narrative">{% if reflection_dtp %}{{ reflection_dtp.narrative }}{% endif %}</p>
-            <div id="dtp-themes-container">
-                {% if reflection_dtp and reflection_dtp.themes %}
-                    {% if reflection_dtp.themes.increased_themes %}
-                    <div class="badge badge-success gap-1 mr-1">↑ {{ reflection_dtp.themes.increased_themes|join:", " }}</div>
-                    {% endif %}
-                    {% if reflection_dtp.themes.decreased_themes %}
-                    <div class="badge badge-warning gap-1 mr-1">↓ {{ reflection_dtp.themes.decreased_themes|join:", " }}</div>
-                    {% endif %}
-                    {% if reflection_dtp.themes.stable_themes %}
-                    <div class="badge badge-info gap-1 mr-1">= {{ reflection_dtp.themes.stable_themes|join:", " }}</div>
-                    {% endif %}
+            <div id="dtp-signals-container" class="space-y-3">
+                {% if reflection_dtp.signals.vertical %}
+                <div class="bg-base-100 border border-base-300 rounded-lg p-3">
+                    <div class="text-sm font-semibold text-green-900 mb-1">Within the same competency area</div>
+                    <div class="text-xs text-gray-600 mb-2">Comparison: {{ reflection_dtp.signals.vertical.comparison_module }} → {{ reflection_dtp.current_module }}</div>
+                    {% with t=reflection_dtp.signals.vertical.themes %}
+                    {% if t.increased_themes %}<div class="badge badge-success gap-1 mr-1">↑ {{ t.increased_themes|join:", " }}</div>{% endif %}
+                    {% if t.decreased_themes %}<div class="badge badge-warning gap-1 mr-1">↓ {{ t.decreased_themes|join:", " }}</div>{% endif %}
+                    {% if t.stable_themes %}<div class="badge badge-info gap-1 mr-1">= {{ t.stable_themes|join:", " }}</div>{% endif %}
+                    {% endwith %}
+                </div>
+                {% endif %}
+                {% if reflection_dtp.signals.temporal %}
+                <div class="bg-base-100 border border-base-300 rounded-lg p-3">
+                    <div class="text-sm font-semibold text-green-900 mb-1">Since your previous module</div>
+                    <div class="text-xs text-gray-600 mb-2">Comparison: {{ reflection_dtp.signals.temporal.comparison_module }} → {{ reflection_dtp.current_module }}</div>
+                    {% with t=reflection_dtp.signals.temporal.themes %}
+                    {% if t.increased_themes %}<div class="badge badge-success gap-1 mr-1">↑ {{ t.increased_themes|join:", " }}</div>{% endif %}
+                    {% if t.decreased_themes %}<div class="badge badge-warning gap-1 mr-1">↓ {{ t.decreased_themes|join:", " }}</div>{% endif %}
+                    {% if t.stable_themes %}<div class="badge badge-info gap-1 mr-1">= {{ t.stable_themes|join:", " }}</div>{% endif %}
+                    {% endwith %}
+                </div>
                 {% endif %}
             </div>
             <div class="divider my-3"></div>
@@ -648,9 +646,9 @@
                 <span class="font-semibold text-base-content/60">Model</span>
                 <span>Gemini 2.5 Flash</span>
                 <span class="font-semibold text-base-content/60">Input</span>
-                <span>Your current reflection + your previous module reflection</span>
+                <span>Your current reflection, compared with up to two earlier reflections — one within the same UNESCO competency area, one from your previous module</span>
                 <span class="font-semibold text-base-content/60">Logic</span>
-                <span>Longitudinal thematic mapping — the model compared concepts, concerns, and language across both reflections to describe change over time</span>
+                <span>Two separate comparisons. Each maps which concepts, concerns and language increased, decreased or stayed stable; the model then describes continuity and shift across them</span>
                 <span class="font-semibold text-base-content/60">Intent</span>
                 <span>Help you observe how your thinking about AI is evolving across modules</span>
                 {% ai_provenance for=progress.dtp_narrative_provenance %}
@@ -1653,42 +1651,50 @@ window.extractDTPAsync = async function(reflectionText) {
     }
 };
 
-window.renderDTPCard = function(signal) {
-    document.getElementById('dtp-comparison').textContent = 
-        `${signal.previous_module} → ${signal.current_module}`;
-    document.getElementById('dtp-continuity-label').textContent = 
-        `Thematic Continuity: ${signal.continuity_label} — ${signal.continuity_description}`;
-    document.getElementById('dtp-narrative').textContent = signal.narrative;
-    renderDTPThemes(signal.themes);
-    
+window.renderDTPCard = function(dtp) {
+    document.getElementById('dtp-narrative').textContent = dtp.narrative || '';
+    renderDTPSignals(dtp);
+
     // Εμφάνιση HITL
     const dtpHitl = document.getElementById('dtp-xai-hitl-live');
     if (dtpHitl) dtpHitl.classList.remove('hidden');
 };
 
-function renderDTPThemes(themes) {
-    const container = document.getElementById('dtp-themes-container');
+function renderDTPSignals(dtp) {
+    const container = document.getElementById('dtp-signals-container');
+    if (!container) return;
     container.innerHTML = '';
-    
-    const sections = [
-        { key: 'increased_themes', label: '• Increased emphasis on:', color: 'text-green-800' },
-        { key: 'decreased_themes', label: '• Decreased focus on:', color: 'text-red-700' },
-        { key: 'stable_themes', label: '• Stable priorities:', color: 'text-gray-700' }
+
+    const signals = dtp.signals || {};
+    const panels = [
+        { key: 'vertical', heading: 'Within the same competency area' },
+        { key: 'temporal', heading: 'Since your previous module' }
     ];
-    
-    sections.forEach(({ key, label, color }) => {
-        const items = themes[key];
-        if (items && items.length > 0) {
-            const div = document.createElement('div');
-            div.className = 'mb-3';
-            div.innerHTML = `
-                <div class="font-semibold ${color} mb-1">${label}</div>
-                <ul class="list-disc list-inside ml-4 text-gray-600">
-                    ${items.map(t => `<li>${t}</li>`).join('')}
-                </ul>
-            `;
-            container.appendChild(div);
-        }
+    const badgeSpecs = [
+        { k: 'increased_themes', cls: 'badge-success', mark: '↑ ' },
+        { k: 'decreased_themes', cls: 'badge-warning', mark: '↓ ' },
+        { k: 'stable_themes',    cls: 'badge-info',    mark: '= ' }
+    ];
+
+    panels.forEach(({ key, heading }) => {
+        const sig = signals[key];
+        if (!sig) return;
+        const themes = sig.themes || {};
+        let badgeHtml = '';
+        badgeSpecs.forEach(({ k, cls, mark }) => {
+            const items = themes[k];
+            if (items && items.length > 0) {
+                badgeHtml += `<div class="badge ${cls} gap-1 mr-1">${mark}${items.join(', ')}</div>`;
+            }
+        });
+        const div = document.createElement('div');
+        div.className = 'bg-base-100 border border-base-300 rounded-lg p-3';
+        div.innerHTML = `
+            <div class="text-sm font-semibold text-green-900 mb-1">${heading}</div>
+            <div class="text-xs text-gray-600 mb-2">Comparison: ${sig.comparison_module} → ${dtp.current_module}</div>
+            ${badgeHtml}
+        `;
+        container.appendChild(div);
     });
 }  
 // ============================================================
