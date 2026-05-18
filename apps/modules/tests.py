@@ -650,3 +650,68 @@ class AIProvenanceWriteHookTest(TestCase):
             0,
             'CP-9 invariant: no provenance row created when the write raised.',
         )
+
+
+# ============================================================================
+# D.3a — DTP redefinition: Module.get_vertical_predecessor
+# ============================================================================
+
+
+class VerticalPredecessorTest(TestCase):
+    """Module.get_vertical_predecessor resolves the same-aspect module one
+    UNESCO proficiency level down — the pairing used by the DTP Vertical
+    Continuity Signal. A Deepen module pairs with its Acquire counterpart,
+    a Create module with its Deepen counterpart, and an Acquire module (the
+    base of an aspect column) has no vertical predecessor. See
+    proodos_files/DTP_REDEFINITION_DESIGN_PROPOSAL_v1_20260518.md.
+    """
+
+    @classmethod
+    def setUpTestData(cls):
+        # One full aspect column (ai_foundations) plus a Deepen module in
+        # a different aspect, to verify pairing stays within the aspect.
+        seeds = (
+            ('VP_A', 'ai_foundations', 'Acquire', 301),
+            ('VP_D', 'ai_foundations', 'Deepen',  302),
+            ('VP_C', 'ai_foundations', 'Create',  303),
+            ('VP_OTHER_D', 'ethics',   'Deepen',  304),
+        )
+        for code, aspect, level, order_index in seeds:
+            Module.objects.create(
+                code=code,
+                title=f'Test {code}',
+                description=f'Test description for {code}',
+                order_index=order_index,
+                unesco_aspect=aspect,
+                proficiency_level=level,
+                is_published=True,
+            )
+
+    def test_deepen_module_pairs_with_its_acquire_counterpart(self):
+        deepen = Module.objects.get(code='VP_D')
+        self.assertEqual(deepen.get_vertical_predecessor().code, 'VP_A')
+
+    def test_create_module_pairs_with_its_deepen_counterpart(self):
+        # A Create module pairs one level down (Deepen), not with Acquire.
+        create = Module.objects.get(code='VP_C')
+        self.assertEqual(create.get_vertical_predecessor().code, 'VP_D')
+
+    def test_acquire_module_has_no_vertical_predecessor(self):
+        acquire = Module.objects.get(code='VP_A')
+        self.assertIsNone(acquire.get_vertical_predecessor())
+
+    def test_predecessor_stays_within_the_same_aspect(self):
+        # VP_OTHER_D is a Deepen module of a different aspect; the
+        # ai_foundations Create module must not pair with it.
+        create = Module.objects.get(code='VP_C')
+        self.assertEqual(
+            create.get_vertical_predecessor().unesco_aspect, 'ai_foundations',
+        )
+
+    def test_unpublished_predecessor_is_excluded(self):
+        # If the lower-level module is unpublished, no predecessor is
+        # returned — consistent with get_previous_module's is_published
+        # filter.
+        Module.objects.filter(code='VP_A').update(is_published=False)
+        deepen = Module.objects.get(code='VP_D')
+        self.assertIsNone(deepen.get_vertical_predecessor())

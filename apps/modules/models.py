@@ -114,6 +114,29 @@ class Module(models.Model):
             order_index__lt=self.order_index,
             is_published=True
         ).order_by('-order_index').first()
+
+    def get_vertical_predecessor(self):
+        """Return the module one UNESCO proficiency level below this one
+        within the same aspect, or None when this module is at the base
+        (Acquire) level.
+
+        Used by the DTP Vertical Continuity Signal: a Deepen module pairs
+        with its Acquire counterpart, a Create module with its Deepen
+        counterpart. Acquire modules have no vertical predecessor. See
+        proodos_files/DTP_REDEFINITION_DESIGN_PROPOSAL_v1_20260518.md.
+        """
+        proficiency_order = ('Acquire', 'Deepen', 'Create')
+        try:
+            level_index = proficiency_order.index(self.proficiency_level)
+        except ValueError:
+            return None
+        if level_index == 0:
+            return None
+        return Module.objects.filter(
+            unesco_aspect=self.unesco_aspect,
+            proficiency_level=proficiency_order[level_index - 1],
+            is_published=True,
+        ).first()
     
     @property
     def completion_rate(self):
