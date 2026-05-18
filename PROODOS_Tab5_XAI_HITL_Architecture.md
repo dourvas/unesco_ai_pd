@@ -104,19 +104,19 @@ A second variant of the panel appears in the saved-tensions display section of t
 
 ### 3.3 DTP Panel (Developmental Trajectory Predictor)
 
-**Nature of output:** A longitudinal signal comparing the teacher's current reflection (in the module they have just completed) to their previous reflection (in the immediately prior module), describing the thematic change between the two. The signal includes a continuity label, a narrative description, and a thematic breakdown (increased themes, decreased themes, stable themes).
+**Nature of output:** A longitudinal, dual-signal output. Redefined in Phase D.3a (see `proodos_files/DTP_REDEFINITION_DESIGN_PROPOSAL_v1_20260518.md`), the DTP compares the teacher's current reflection against up to two earlier reflections: the reflection at the same UNESCO competency aspect one proficiency level lower (the Vertical Continuity Signal) and the reflection at the immediately preceding module (the Temporal Shift Signal). For each available signal the panel shows the modules compared and a thematic breakdown (increased, decreased, and stable themes); a single narrative synthesises both. The pilot DTP shows no continuity label — the earlier three-category label (high / moderate / significant) is deferred to a post-pilot calibration, and each signal's raw similarity is stored but not displayed.
 
-**Transparency disclosure (verbatim from `templates/modules/tabs/tab5_reflection.html` around lines 627–652):**
+**Transparency disclosure (verbatim from `templates/modules/tabs/tab5_reflection.html`):**
 
   - **Model.** Gemini 2.5 Flash.
-  - **Input.** Your current reflection + your previous module reflection.
-  - **Logic.** Longitudinal thematic mapping — the model compared concepts, concerns, and language across both reflections to describe change over time.
+  - **Input.** Your current reflection, compared with up to two earlier reflections — one within the same UNESCO competency area, one from your previous module.
+  - **Logic.** Two separate comparisons. Each maps which concepts, concerns and language increased, decreased or stayed stable; the model then describes continuity and shift across them.
   - **Intent.** Help you observe how your thinking about AI is evolving across modules.
   - **Generated at.** Per-artefact timestamp.
   - **Warning line.** "This signal describes what changed — it does not evaluate whether the change is positive or negative. Growth is not always linear."
   - **Regulatory line.** "EU AI Act — Limited Risk: Developmental signals are descriptive, not predictive. No conclusions are drawn about your future performance."
 
-**Design rationale:** The "Longitudinal thematic mapping" label is deliberate. The phrase signals to the teacher that the system compares *meaning*, not mere word frequency — a distinction that increases the perceived validity of the signal and reduces the risk that the teacher will attempt to game the reflection process by inserting or removing target keywords. The explicit non-evaluative framing is grounded in Mezirow's (1991) transformative learning theory, in which change in meaning structures is the substantive learning outcome, and any particular *direction* of change cannot be presumed normatively superior in advance: a teacher whose AI-adoption enthusiasm decreases after a module on ethical risks is not regressing, they are reasoning more carefully. The disclosure refuses the evaluative inference that the framing might otherwise invite.
+**Design rationale:** The redefinition addressed a construct-validity problem in the earlier DTP, which compared the current reflection against the most recent reflection from any other module and so routinely compared reflections on different UNESCO competency aspects — reporting topic difference as developmental change. The Vertical Continuity Signal holds the competency aspect constant; the Temporal Shift Signal is named for what it measures rather than presented as a developmental claim. The decision to show no continuity label during the pilot is itself a transparency commitment: a cosine-similarity threshold has no theoretically universal value, so presenting a graded label before the thresholds are calibrated against data would assert a precision the instrument does not yet have. The explicit non-evaluative framing — retained from the earlier panel and reinforced here — is grounded in Mezirow's (1991) transformative learning theory, in which change in meaning structures is the substantive learning outcome and no particular *direction* of change can be presumed normatively superior: a teacher whose AI-adoption enthusiasm decreases after a module on ethical risks is not regressing, they are reasoning more carefully. The signals describe conceptual continuity and shift, never the quality of the teacher's development.
 
 ### 3.4 Peer Synthesis Panel (added in Phase C C.3 commit 2b)
 
