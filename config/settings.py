@@ -4,8 +4,18 @@ Django settings for config project.
 
 from pathlib import Path
 
+from dotenv import load_dotenv
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Load environment variables from the project-root .env so the Django
+# process (runserver, manage.py test, manage.py shell) sees GEMINI_API_KEY
+# and other secrets. The standalone ingest scripts already call
+# load_dotenv(); the Django startup did not, so runserver never saw the
+# .env file. Existing OS environment variables take precedence (the
+# python-dotenv default — override=False).
+load_dotenv(BASE_DIR / '.env')
 
 # Quick-start development settings - unsuitable for production
 SECRET_KEY = 'django-insecure-sx*zgjka*(ev+pi)qw)rj*vz%+z9ex!*6y4j7ope^5icxfp4#u'
