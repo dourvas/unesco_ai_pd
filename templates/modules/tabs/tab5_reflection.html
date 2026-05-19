@@ -919,6 +919,51 @@
                 </div>
             </div>
         </details>
+
+        {# TD-019 — peer synthesis usefulness feedback. A usefulness signal, #}
+        {# NOT the RAG/RTM/DTP alignment rating (see AIOutputDispute docstring). #}
+        {% if dispute_peer %}
+        <div class="px-1 mt-1">
+            <p class="text-xs text-success">✓ You rated this as <strong>{{ dispute_peer.rating }}</strong>.{% if dispute_peer.comment %} "{{ dispute_peer.comment }}"{% endif %}</p>
+        </div>
+        {% else %}
+        <div class="flex items-center gap-3 px-1" id="peer-rating-container">
+            <span class="text-xs text-base-content/50">Did you find this synthesis useful for your reflection?</span>
+            <div class="flex gap-1">
+                <button onclick="submitDispute('peer', 'yes', this)"
+                        class="btn btn-xs btn-ghost gap-1 dispute-btn" data-feature="peer" data-rating="yes">
+                    👍 Yes, useful
+                </button>
+                <button onclick="submitDispute('peer', 'partial', this)"
+                        class="btn btn-xs btn-ghost gap-1 dispute-btn" data-feature="peer" data-rating="partial">
+                    🤔 Somewhat
+                </button>
+                <button onclick="submitDispute('peer', 'no', this)"
+                        class="btn btn-xs btn-ghost gap-1 dispute-btn" data-feature="peer" data-rating="no">
+                    👎 Not really
+                </button>
+            </div>
+        </div>
+        {% endif %}
+        <!-- Comment form (hidden until 🤔 or 👎; no reason dropdown — usefulness, not alignment) -->
+        <div id="peer-dispute-form" class="hidden mt-2 px-1">
+            <div class="bg-base-100 border border-base-300 rounded-lg p-3 space-y-2">
+                <textarea id="peer-comment"
+                          class="textarea textarea-xs textarea-bordered w-full h-16 text-xs"
+                          maxlength="300"
+                          placeholder="What would have made it more useful? (optional, max 300 characters)"></textarea>
+                <div class="flex gap-2">
+                    <button onclick="submitDisputeWithComment('peer')"
+                            class="btn btn-xs btn-primary">Submit feedback</button>
+                    <button onclick="cancelDispute('peer')"
+                            class="btn btn-xs btn-ghost">Cancel</button>
+                </div>
+            </div>
+        </div>
+        <!-- Acknowledgment (hidden until submitted) -->
+        <div id="peer-dispute-ack" class="hidden px-1 mt-1">
+            <p class="text-xs text-success">✓ Thank you — your feedback has been recorded and will help improve PROODOS.</p>
+        </div>
     </div>
 </div>
 {% endif %}

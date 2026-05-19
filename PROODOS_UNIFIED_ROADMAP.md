@@ -80,8 +80,8 @@ These are **operational tasks, NOT in-phase code-bearing work**. They run after 
 
 | State | TDs |
 |---|---|
-| **Resolved** | TD-008 (consent revoke clear ack), TD-012 (sequential gate), TD-013 (Epilogue M15 gate), TD-017 (machine-readable markers — closed in C.3), **TD-005 (cp1253 encoding — closed in Phase E commit 1.5 via `manage.py` UTF-8 stdio guard, 2026-05-13)** |
-| **Active deferred to post-pilot Phase G/H or beyond** | TD-001, TD-002, TD-003, TD-004, TD-009, TD-010, TD-011, TD-014, TD-015, TD-016, **TD-018 (per-artefact dispute deep-links)**, **TD-019 (peer dispute UX)**, **TD-020 (post-hoc career-stage exploratory analysis — 2026-05-13)** |
+| **Resolved** | TD-008 (consent revoke clear ack), TD-012 (sequential gate), TD-013 (Epilogue M15 gate), TD-017 (machine-readable markers — closed in C.3), TD-005 (cp1253 encoding — closed in Phase E commit 1.5 via `manage.py` UTF-8 stdio guard, 2026-05-13), **TD-019 (peer synthesis dispute UX — redefined as a usefulness signal and resolved, 2026-05-19)** |
+| **Active deferred to post-pilot Phase G/H or beyond** | TD-001, TD-002, TD-003, TD-004, TD-009, TD-010, TD-011, TD-014, TD-015, TD-016, **TD-018 (per-artefact dispute deep-links)**, **TD-020 (post-hoc career-stage exploratory analysis — 2026-05-13)** |
 | **Convenience-when-possible** | TD-006 (.gitignore ephemerals), TD-007 (M1 placeholder squash) |
 
 Full TD register: `proodos_files/TECH_DEBT_LOG.md`.

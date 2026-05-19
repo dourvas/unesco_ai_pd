@@ -617,7 +617,15 @@ class ModuleDetailView(LoginRequiredMixin, DetailView):
         except AIOutputDispute.DoesNotExist:
             dispute_dtp = None
 
-                
+        # Peer synthesis carries a usefulness signal, not an alignment
+        # rating (TD-019) — loaded the same way, displayed on the peer card.
+        try:
+            dispute_peer = AIOutputDispute.objects.get(
+                user=user, module=module, feature_type='peer')
+        except AIOutputDispute.DoesNotExist:
+            dispute_peer = None
+
+
         # 🆕 DTP: Check if user has a previous reflection (for M2+ button)
         previous_reflection_exists = False
         try:
@@ -709,6 +717,7 @@ class ModuleDetailView(LoginRequiredMixin, DetailView):
             'dispute_rag': dispute_rag,
             'dispute_rtm': dispute_rtm,
             'dispute_dtp': dispute_dtp,
+            'dispute_peer': dispute_peer,
             'ai_provenance_jsonld_list': ai_provenance_jsonld_list,
         })
 
@@ -2684,7 +2693,9 @@ def save_ai_dispute(request, code):
     Research instrument for AI Alignment measurement.
 
     Accepts:
-        feature_type: 'rag' | 'rtm' | 'dtp'
+        feature_type: 'rag' | 'rtm' | 'dtp' | 'peer'
+            (rag/rtm/dtp = AI alignment rating; peer = usefulness signal —
+            see AIOutputDispute docstring, TD-019)
         rating: 'yes' | 'no' | 'partial'
         reason: optional categorisation
         comment: optional free text (max 300 chars)
@@ -2706,7 +2717,7 @@ def save_ai_dispute(request, code):
         comment = (data.get('comment', '') or '').strip()[:300] or None
 
         # Validate feature_type
-        valid_features = ['rag', 'rtm', 'dtp']
+        valid_features = ['rag', 'rtm', 'dtp', 'peer']
         if feature_type not in valid_features:
             return JsonResponse({
                 'success': False,

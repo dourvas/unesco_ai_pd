@@ -731,3 +731,97 @@ class VerticalPredecessorTest(TestCase):
         Module.objects.filter(code='VP_A').update(is_published=False)
         deepen = Module.objects.get(code='VP_D')
         self.assertIsNone(deepen.get_vertical_predecessor())
+
+
+# ============================================================================
+# TD-019 — peer synthesis usefulness feedback
+# ============================================================================
+
+
+class PeerDisputeFeedbackTest(TestCase):
+    """save_ai_dispute must accept feature_type='peer'.
+
+    TD-019 (redefined 2026-05-19): peer synthesis carries a usefulness
+    signal — structurally a third feature_type on AIOutputDispute, but a
+    different construct from the rag/rtm/dtp alignment instrument (see the
+    AIOutputDispute docstring). These tests cover the new feature_type at
+    the save endpoint: acceptance, persistence, optional comment, and the
+    one-row-per-user/module uniqueness the model enforces.
+    """
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.module = Module.objects.create(
+            code='PD1', title='Peer dispute test module',
+            description='Test', order_index=970,
+            unesco_aspect='ethics', proficiency_level='Acquire',
+            is_published=True,
+        )
+
+    def setUp(self):
+        self.client = Client()
+        self.user = User.objects.create_user(
+            username='peer_dispute_user', password='pw',
+        )
+        # A complete, disclosure-acknowledged profile so the onboarding /
+        # AI-disclosure middleware does not redirect the POST.
+        TeacherProfile.objects.create(
+            user=self.user,
+            ai_disclosure_acknowledged_at=timezone.now(),
+            profile_completed=True,
+            research_consent=True,
+        )
+        self.client.force_login(self.user)
+
+    def _post_dispute(self, payload):
+        return self.client.post(
+            reverse('modules:save_ai_dispute', kwargs={'code': 'PD1'}),
+            data=json.dumps(payload),
+            content_type='application/json',
+        )
+
+    def test_peer_usefulness_rating_is_accepted_and_saved(self):
+        from apps.modules.models import AIOutputDispute
+
+        resp = self._post_dispute({'feature_type': 'peer', 'rating': 'yes'})
+
+        self.assertEqual(resp.status_code, 200, msg=resp.content)
+        self.assertTrue(resp.json().get('success'), msg=resp.content)
+        self.assertTrue(
+            AIOutputDispute.objects.filter(
+                user=self.user, module=self.module,
+                feature_type='peer', rating='yes',
+            ).exists(),
+            "Expected a peer AIOutputDispute row.",
+        )
+
+    def test_peer_rating_with_comment_persists(self):
+        from apps.modules.models import AIOutputDispute
+
+        resp = self._post_dispute({
+            'feature_type': 'peer', 'rating': 'no',
+            'comment': 'Other subjects did not connect to mine.',
+        })
+
+        self.assertTrue(resp.json().get('success'), msg=resp.content)
+        dispute = AIOutputDispute.objects.get(
+            user=self.user, module=self.module, feature_type='peer',
+        )
+        self.assertEqual(dispute.rating, 'no')
+        self.assertEqual(
+            dispute.comment, 'Other subjects did not connect to mine.',
+        )
+
+    def test_peer_rating_is_unique_per_user_and_module(self):
+        """A second peer rating updates the existing row (update_or_create
+        on the unique_together) — it does not create a duplicate."""
+        from apps.modules.models import AIOutputDispute
+
+        self._post_dispute({'feature_type': 'peer', 'rating': 'partial'})
+        self._post_dispute({'feature_type': 'peer', 'rating': 'yes'})
+
+        rows = AIOutputDispute.objects.filter(
+            user=self.user, module=self.module, feature_type='peer',
+        )
+        self.assertEqual(rows.count(), 1, "Expected exactly one peer row.")
+        self.assertEqual(rows.first().rating, 'yes', "Row should be updated.")

@@ -380,21 +380,18 @@ That work is >100 LOC of dispute infrastructure not strictly required for Articl
 
 ## TD-019 — Peer synthesis dispute UX
 
-**Status:** Active. Defer to post-pilot Phase G/H.
-**Where:** `apps/modules/models.py::AIOutputDispute.FEATURE_CHOICES`, `templates/modules/tabs/tab5_reflection.html` peer synthesis card (~L819-830), `apps/modules/views.py::save_ai_dispute`.
+**Status:** Resolved (redefined) — 2026-05-19.
+**Where:** `apps/modules/models.py::AIOutputDispute`, `templates/modules/tabs/tab5_reflection.html` peer synthesis card, `apps/modules/views.py::save_ai_dispute`, `apps/modules/tests.py::PeerDisputeFeedbackTest`.
 
-The existing `AIOutputDispute` model carries `FEATURE_CHOICES = [('rag', …), ('rtm', …), ('dtp', …)]` — three feature types. The dispute UX (`submitDispute(feature, rating)` buttons) is wired on the RAG, RTM, and DTP rendering surfaces in `tab5_reflection.html`. **Peer synthesis has neither a `('peer', 'Peer Synthesis')` choice nor a dispute UI**, despite being a substantively similar Gemini-generated output.
+Discovered during C.3 commit 2b pre-implementation verification (2026-05-12): `AIOutputDispute` carried `FEATURE_CHOICES = [('rag',…),('rtm',…),('dtp',…)]` and the dispute UX was wired only on the RAG/RTM/DTP surfaces — peer synthesis had neither a choice nor a UI.
 
-Discovered during C.3 commit 2b pre-implementation verification (2026-05-12). The C.3 piece adds a new XAI disclosure panel for peer synthesis (parity with RAG/RTM/DTP — Option C in `C3_DESIGN_PROPOSAL_AI_MARKERS.md` §D10), but the dispute UX gap is left as this TD because closing it requires:
+**Redefinition (2026-05-19).** When TD-019 was scoped for D.1 (the perceived-relevance research profile), a construct-validity review changed its shape. RAG/RTM/DTP each make a claim about the teacher's *own* reflection, so a relevance rating is a clean AI-alignment signal. Peer synthesis makes no claim about the teacher — it aggregates anonymised peer reflections — so a relevance rating there would conflate "the AI synthesised well" with "the cohort happened to be relevant to me". A peer rating is therefore **not** added to the D.1 alignment instrument. Instead, peer synthesis gets a distinct, honestly-named **usefulness** question ("Did you find this synthesis useful?"), kept out of the D.1 profile.
 
-  - schema migration to add `('peer', 'Peer Synthesis')` to `FEATURE_CHOICES` (and to the DB CHECK constraint if present);
-  - new HITL button row in `tab5_reflection.html` mirroring the RAG dispute UX (L765-797 area);
-  - test coverage for the new feature_type;
-  - decision on whether the existing `unique_together = (user, module, feature_type)` index extends sensibly to peer synthesis (one peer-synthesis dispute per user per module: yes, fine).
+**Resolved by** (2 commits, 2026-05-19):
+  - `('peer', 'Peer Synthesis')` added to `FEATURE_CHOICES`; the `AIOutputDispute` docstring now documents the two distinct constructs sharing the table; metadata-only migration `0014` (Django choices create no DB CHECK constraint — `sqlmigrate` confirmed a no-op).
+  - `save_ai_dispute` whitelist extended to `'peer'`; `dispute_peer` loaded into the TAB5 context; a usefulness HITL block added to the peer synthesis card (no `reason` dropdown — the existing alignment-flavoured reasons do not fit usefulness); `PeerDisputeFeedbackTest` (3 tests).
 
-**Effort estimate:** ~80-100 LOC + migration + 2-3 tests.
-
-**Resolved at:** post-pilot Phase G/H, once the pilot answers whether participants want per-feature dispute granularity for peer synthesis.
+The D.1 perceived-relevance aggregation must whitelist `rag/rtm/dtp` only — peer rows are a separate construct.
 
 ---
 
