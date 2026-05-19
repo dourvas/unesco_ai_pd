@@ -705,6 +705,7 @@ class ModuleDetailView(LoginRequiredMixin, DetailView):
             'saved_tensions': saved_tensions,
             'previous_reflection_exists': previous_reflection_exists,
             'reflection_dtp': reflection_dtp,
+            'reflection_dtp_xai': progress.reflection_dtp_xai if progress else None,
             'dispute_rag': dispute_rag,
             'dispute_rtm': dispute_rtm,
             'dispute_dtp': dispute_dtp,
@@ -2408,6 +2409,74 @@ def extract_dtp_view(request, code):
         import traceback
         traceback.print_exc()
         return JsonResponse({'success': False, 'message': str(e)})
+
+@login_required
+@require_POST
+def extract_dtp_xai_view(request, code):
+    """
+    Async XAI endpoint — D.3b. Called by the frontend immediately after
+    the DTP card is rendered. Loads the stored DTP composite and invokes
+    XAIAgent().generate() to produce a domain-driven explanation of why
+    the teacher's developmental signal looks as it does.
+
+    The XAIAgent operates only on the stored composite (explanation
+    faithfulness) — it does not see the reflection text. See
+    proodos_files/DTP_XAI_NARRATIVE_DESIGN_PROPOSAL_v1_20260519.md.
+    """
+    from apps.agents.xai import XAIAgent
+
+    module = get_object_or_404(Module, code=code)
+
+    try:
+        progress = UserModuleProgress.objects.get(user=request.user, module=module)
+
+        if not progress.reflection_dtp:
+            return JsonResponse({'success': False, 'message': 'No DTP signal to explain'})
+
+        composite = json.loads(progress.reflection_dtp)
+        if composite.get('schema') != 'dtp_dual_v1':
+            # Pre-D.3a composite — the dual-signal XAI does not apply.
+            return JsonResponse({
+                'success': False,
+                'message': 'DTP composite is not in the dual-signal format',
+            })
+
+        # The UNESCO competency aspect of the current module — a fact
+        # about the module, used for the domain-driven explanation.
+        aspect_label = module.get_unesco_aspect_display()
+
+        # XAIAgent owns the save + provenance atomic block (CP-9). Its
+        # _do_generate never raises (a Gemini failure degrades to a
+        # fallback); any exception here is a DB-side failure of the
+        # atomic, so the explanation must not be served.
+        try:
+            explanation = XAIAgent().generate(
+                user=request.user,
+                module=module,
+                save_target=progress,
+                save_field='reflection_dtp_xai',
+                dtp_composite=composite,
+                aspect_label=aspect_label,
+            )
+        except Exception as e:
+            print(f"❌ XAI save/provenance failed: {e}")
+            import traceback
+            traceback.print_exc()
+            return JsonResponse({
+                'success': False,
+                'message': 'Explanation could not be saved. Please try again.',
+            })
+
+        return JsonResponse({'success': True, 'xai': explanation})
+
+    except UserModuleProgress.DoesNotExist:
+        return JsonResponse({'success': False, 'message': 'No progress record'})
+    except Exception as e:
+        print(f"❌ XAI view error: {e}")
+        import traceback
+        traceback.print_exc()
+        return JsonResponse({'success': False, 'message': str(e)})
+
 
 @login_required
 @require_http_methods(["POST"])
