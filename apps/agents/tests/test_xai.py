@@ -124,7 +124,11 @@ class XAIPromptTest(SimpleTestCase):
 
     def test_temporal_only_omits_vertical_block(self):
         """An Acquire module supplies only the temporal signal; the
-        prompt then has no vertical-comparison block."""
+        prompt then has no vertical-comparison block for the teacher.
+
+        The embedded worked example always carries one vertical-style
+        block, so the test counts: a temporal-only module adds no
+        second one, whereas the full dual-signal fixture does."""
         composite = {
             'current_module': 'M2',
             'signals': {
@@ -132,7 +136,11 @@ class XAIPromptTest(SimpleTestCase):
             },
         }
         prompt = XAIAgent._build_prompt(composite, 'Ethics')
-        self.assertNotIn('Within the same UNESCO competency area', prompt)
+        # Only the example's vertical block — none for the teacher.
+        self.assertEqual(prompt.count('earlier proficiency level'), 1)
+        # The dual-signal fixture adds a second (the teacher's own).
+        full = XAIAgent._build_prompt(_FIXTURE_COMPOSITE, _FIXTURE_ASPECT)
+        self.assertEqual(full.count('earlier proficiency level'), 2)
         self.assertIn('immediately preceding module', prompt)
         self.assertIn('<explanation>', prompt)
 

@@ -70,6 +70,49 @@ XAI_FALLBACK = (
     'not a decline.'
 )
 
+# A worked example embedded in the prompt. Controlling an LLM's register
+# with a concrete model answer is more reliable than accumulating
+# negative rules: a banned phrase named in a rule can itself prime the
+# model to use it (observed in live output — the explicitly banned
+# 'natural evolution' still surfaced). The example uses a different
+# competency area and modules so the model learns the tone, not the
+# content (design proposal §5.2).
+_XAI_EXAMPLE = (
+    '--- EXAMPLE (for register only — do not reuse its content) ---\n'
+    'Signal given:\n'
+    'Within the same UNESCO competency area (Ethics of AI), comparing '
+    'the earlier proficiency level (module M4) with the current module '
+    '(M9):\n'
+    '  themes given more emphasis: data privacy, consent in classrooms\n'
+    '  themes given less emphasis: abstract fairness principles\n'
+    '  themes held steady: student wellbeing\n\n'
+    'Comparing the immediately preceding module (module M8) with the '
+    'current module (M9):\n'
+    '  themes given more emphasis: consent in classrooms\n'
+    '  themes given less emphasis: regulatory frameworks\n'
+    '  themes held steady: student wellbeing\n\n'
+    'Good response:\n'
+    '<reasoning>Vertical M4 to M9: privacy and consent into focus, '
+    'abstract fairness to the background, student wellbeing steady. '
+    'Temporal M8 to M9: consent into focus, regulatory frameworks to '
+    'the background, wellbeing steady. Report the moves only; no '
+    'evaluation, no added causes.</reasoning>\n'
+    '<explanation>Your reflective writing has changed where it places '
+    'its attention. Comparing your earlier work in the same competency '
+    'area with your current module, data privacy and obtaining consent '
+    'in classroom settings are now in the foreground of your '
+    'reflection, while more abstract fairness principles appear less '
+    'often. Student wellbeing stays a steady presence throughout. '
+    'Comparing your current module with the one immediately before it, '
+    'consent in the classroom is again in focus, while regulatory '
+    'frameworks have moved to the background. A theme appearing less is '
+    'a change in where your reflection is pointing — not a sign that '
+    'you understand it less well, and equally not a sign of progress. '
+    'It simply records which ideas your writing engaged with most '
+    'directly in each module.</explanation>\n'
+    '--- END EXAMPLE ---'
+)
+
 
 class XAIAgent(ServiceAgent):
     """Explains a teacher's DTP composite in domain-driven language.
@@ -168,6 +211,10 @@ class XAIAgent(ServiceAgent):
         model reasons in a <reasoning> block and gives the
         teacher-facing text in an <explanation> block; only the latter
         is surfaced.
+
+        A worked example (`_XAI_EXAMPLE`) is embedded to fix the
+        register by demonstration rather than by a long list of banned
+        words — see that constant's note.
         """
         current_module = dtp_composite.get('current_module', '')
         signals = dtp_composite.get('signals', {})
@@ -198,28 +245,20 @@ class XAIAgent(ServiceAgent):
             'platform computed; explain only that — do not add causes, '
             'do not re-interpret, and do not evaluate whether the '
             'teacher has improved or worsened.\n\n'
-            'Rules:\n'
+            'Three rules:\n'
             '- Speak in pedagogical and competency terms, never in '
             'numbers or technical mechanics.\n'
             '- A theme appearing with less emphasis is a shift of '
             'reflective attention — not a decline or loss of competence, '
             'and equally not progress, advancement, improvement, or '
-            'growing sophistication. Describe where attention moved, '
-            'never whether the teacher has become better, worse, or '
-            'more advanced.\n'
-            '- Do not frame the teacher as doing more, better, or more '
-            'deeply. Avoid comparative intensifiers such as "even '
-            'greater", "increasingly", "sharper", "deeper", "stronger", '
-            'and "more critical". A theme is simply in focus or in the '
-            'background; the teacher is not "more" anything.\n'
-            '- Do not qualify the shift with evaluative words such as '
-            '"valuable", "positive", "healthy", "rich", or "natural '
-            'evolution". A shift of emphasis simply is; it carries no '
-            'merit.\n'
-            '- Describe only the themes named in the comparisons below. '
-            'Introduce no concept that is not there — in particular, '
-            'make no claim about how deeply or how well the teacher '
-            'uses, integrates, or applies AI tools.\n\n'
+            'growing sophistication.\n'
+            '- Describe only the themes named in the comparisons; '
+            'introduce no other concept and add no cause.\n\n'
+            'The example below shows the register expected: descriptive, '
+            'non-evaluative, tied to the named themes. Match its tone, '
+            'not its content.\n\n'
+            f'{_XAI_EXAMPLE}\n\n'
+            'Now explain the actual signal below, in the same register.\n\n'
             f'{comparisons}\n\n'
             'Respond in exactly this format:\n'
             '<reasoning>Brief notes on what the comparisons show.'

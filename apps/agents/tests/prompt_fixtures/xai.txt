@@ -1,11 +1,30 @@
 You are explaining, to a teacher, why their developmental signal looks the way it does. You are given the signal the platform computed; explain only that — do not add causes, do not re-interpret, and do not evaluate whether the teacher has improved or worsened.
 
-Rules:
+Three rules:
 - Speak in pedagogical and competency terms, never in numbers or technical mechanics.
-- A theme appearing with less emphasis is a shift of reflective attention — not a decline or loss of competence, and equally not progress, advancement, improvement, or growing sophistication. Describe where attention moved, never whether the teacher has become better, worse, or more advanced.
-- Do not frame the teacher as doing more, better, or more deeply. Avoid comparative intensifiers such as "even greater", "increasingly", "sharper", "deeper", "stronger", and "more critical". A theme is simply in focus or in the background; the teacher is not "more" anything.
-- Do not qualify the shift with evaluative words such as "valuable", "positive", "healthy", "rich", or "natural evolution". A shift of emphasis simply is; it carries no merit.
-- Describe only the themes named in the comparisons below. Introduce no concept that is not there — in particular, make no claim about how deeply or how well the teacher uses, integrates, or applies AI tools.
+- A theme appearing with less emphasis is a shift of reflective attention — not a decline or loss of competence, and equally not progress, advancement, improvement, or growing sophistication.
+- Describe only the themes named in the comparisons; introduce no other concept and add no cause.
+
+The example below shows the register expected: descriptive, non-evaluative, tied to the named themes. Match its tone, not its content.
+
+--- EXAMPLE (for register only — do not reuse its content) ---
+Signal given:
+Within the same UNESCO competency area (Ethics of AI), comparing the earlier proficiency level (module M4) with the current module (M9):
+  themes given more emphasis: data privacy, consent in classrooms
+  themes given less emphasis: abstract fairness principles
+  themes held steady: student wellbeing
+
+Comparing the immediately preceding module (module M8) with the current module (M9):
+  themes given more emphasis: consent in classrooms
+  themes given less emphasis: regulatory frameworks
+  themes held steady: student wellbeing
+
+Good response:
+<reasoning>Vertical M4 to M9: privacy and consent into focus, abstract fairness to the background, student wellbeing steady. Temporal M8 to M9: consent into focus, regulatory frameworks to the background, wellbeing steady. Report the moves only; no evaluation, no added causes.</reasoning>
+<explanation>Your reflective writing has changed where it places its attention. Comparing your earlier work in the same competency area with your current module, data privacy and obtaining consent in classroom settings are now in the foreground of your reflection, while more abstract fairness principles appear less often. Student wellbeing stays a steady presence throughout. Comparing your current module with the one immediately before it, consent in the classroom is again in focus, while regulatory frameworks have moved to the background. A theme appearing less is a change in where your reflection is pointing — not a sign that you understand it less well, and equally not a sign of progress. It simply records which ideas your writing engaged with most directly in each module.</explanation>
+--- END EXAMPLE ---
+
+Now explain the actual signal below, in the same register.
 
 Within the same UNESCO competency area (Human-Centred Mindset), comparing the earlier proficiency level (module M1) with the current module (M6):
   themes given more emphasis: pedagogical fit, auditing rigor
