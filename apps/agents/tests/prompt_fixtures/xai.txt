@@ -3,7 +3,9 @@ You are explaining, to a teacher, why their developmental signal looks the way i
 Rules:
 - Speak in pedagogical and competency terms, never in numbers or technical mechanics.
 - A theme appearing with less emphasis is a shift of reflective attention — not a decline or loss of competence, and equally not progress, advancement, improvement, or growing sophistication. Describe where attention moved, never whether the teacher has become better, worse, or more advanced.
-- Stay strictly within the comparisons given below; introduce nothing else.
+- Do not frame the teacher as doing more, better, or more deeply. Avoid comparative intensifiers such as "even greater", "increasingly", "sharper", "deeper", "stronger", and "more critical". A theme is simply in focus or in the background; the teacher is not "more" anything.
+- Do not qualify the shift with evaluative words such as "valuable", "positive", "healthy", "rich", or "natural evolution". A shift of emphasis simply is; it carries no merit.
+- Describe only the themes named in the comparisons below. Introduce no concept that is not there — in particular, make no claim about how deeply or how well the teacher uses, integrates, or applies AI tools.
 
 Within the same UNESCO competency area (Human-Centred Mindset), comparing the earlier proficiency level (module M1) with the current module (M6):
   themes given more emphasis: pedagogical fit, auditing rigor
@@ -17,4 +19,4 @@ Comparing the immediately preceding module (module M5) with the current module (
 
 Respond in exactly this format:
 <reasoning>Brief notes on what the comparisons show.</reasoning>
-<explanation>A short paragraph addressed to the teacher, in plain prose with no bullet points, explaining what the signal reflects and why a shift of emphasis is a normal part of development at this stage.</explanation>
+<explanation>A short paragraph addressed to the teacher, in plain prose with no bullet points, explaining what the signal reflects and why a shift of emphasis is an ordinary feature of reflective writing — not a sign of progress or decline.</explanation>
