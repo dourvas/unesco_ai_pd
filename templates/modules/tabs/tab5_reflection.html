@@ -605,9 +605,9 @@
                     <div class="text-sm font-semibold text-green-900 mb-1">Within the same competency area</div>
                     <div class="text-xs text-gray-600 mb-2">Comparison: {{ reflection_dtp.signals.vertical.comparison_module }} → {{ reflection_dtp.current_module }}</div>
                     {% with t=reflection_dtp.signals.vertical.themes %}
-                    {% if t.increased_themes %}<div class="badge badge-success gap-1 mr-1">↑ {{ t.increased_themes|join:", " }}</div>{% endif %}
-                    {% if t.decreased_themes %}<div class="badge badge-warning gap-1 mr-1">↓ {{ t.decreased_themes|join:", " }}</div>{% endif %}
-                    {% if t.stable_themes %}<div class="badge badge-info gap-1 mr-1">= {{ t.stable_themes|join:", " }}</div>{% endif %}
+                    {% if t.increased_themes %}<div class="badge badge-ghost gap-1 mr-1">Came into focus: {{ t.increased_themes|join:", " }}</div>{% endif %}
+                    {% if t.decreased_themes %}<div class="badge badge-ghost gap-1 mr-1">Moved to the background: {{ t.decreased_themes|join:", " }}</div>{% endif %}
+                    {% if t.stable_themes %}<div class="badge badge-ghost gap-1 mr-1">Held steady: {{ t.stable_themes|join:", " }}</div>{% endif %}
                     {% endwith %}
                 </div>
                 {% endif %}
@@ -616,9 +616,9 @@
                     <div class="text-sm font-semibold text-green-900 mb-1">Since your previous module</div>
                     <div class="text-xs text-gray-600 mb-2">Comparison: {{ reflection_dtp.signals.temporal.comparison_module }} → {{ reflection_dtp.current_module }}</div>
                     {% with t=reflection_dtp.signals.temporal.themes %}
-                    {% if t.increased_themes %}<div class="badge badge-success gap-1 mr-1">↑ {{ t.increased_themes|join:", " }}</div>{% endif %}
-                    {% if t.decreased_themes %}<div class="badge badge-warning gap-1 mr-1">↓ {{ t.decreased_themes|join:", " }}</div>{% endif %}
-                    {% if t.stable_themes %}<div class="badge badge-info gap-1 mr-1">= {{ t.stable_themes|join:", " }}</div>{% endif %}
+                    {% if t.increased_themes %}<div class="badge badge-ghost gap-1 mr-1">Came into focus: {{ t.increased_themes|join:", " }}</div>{% endif %}
+                    {% if t.decreased_themes %}<div class="badge badge-ghost gap-1 mr-1">Moved to the background: {{ t.decreased_themes|join:", " }}</div>{% endif %}
+                    {% if t.stable_themes %}<div class="badge badge-ghost gap-1 mr-1">Held steady: {{ t.stable_themes|join:", " }}</div>{% endif %}
                     {% endwith %}
                 </div>
                 {% endif %}
@@ -1702,9 +1702,9 @@ function renderDTPSignals(dtp) {
         { key: 'temporal', heading: 'Since your previous module' }
     ];
     const badgeSpecs = [
-        { k: 'increased_themes', cls: 'badge-success', mark: '↑ ' },
-        { k: 'decreased_themes', cls: 'badge-warning', mark: '↓ ' },
-        { k: 'stable_themes',    cls: 'badge-info',    mark: '= ' }
+        { k: 'increased_themes', cls: 'badge-ghost', mark: 'Came into focus: ' },
+        { k: 'decreased_themes', cls: 'badge-ghost', mark: 'Moved to the background: ' },
+        { k: 'stable_themes',    cls: 'badge-ghost', mark: 'Held steady: ' }
     ];
 
     panels.forEach(({ key, heading }) => {
