@@ -216,6 +216,34 @@ alternatives: folding it into the `reflection_dtp` JSON (conflates two agents'
 artefacts); a dedicated `xai_narratives` table (over-built while the XAIAgent
 explains only the DTP — revisit if it becomes cross-agent).
 
+### 6.5 Prompt strategy — register control by worked example
+*(settled during live verification, 2026-05-19)*
+
+The XAIAgent's non-evaluation is enforced not by a list of forbidden words but
+by a single embedded **worked example** (few-shot). Two findings during live
+verification drove this:
+
+- **Negative rules prime the banned phrase.** Iterative tightening first added
+  explicit prohibitions ("do not say *valuable*, *natural evolution*, …").
+  Live output still surfaced the explicitly banned phrase *natural evolution* —
+  naming a phrase inside a prohibition can itself make the model more likely to
+  produce it. Accumulating bans is therefore an unreliable lever for register.
+- **A model answer fixes the register by demonstration.** The prompt embeds one
+  `<reasoning>`/`<explanation>` pair on a *different* competency area and
+  modules (Ethics of AI, M4/M8/M9), so the model learns the tone — descriptive
+  shift-of-attention language, the symmetric non-evaluation sentence, no
+  invented cause — without copying the content. The rule set is reduced to
+  three essentials (domain terms; the non-evaluation principle; no concept or
+  cause beyond the named themes); the worked example carries the rest.
+
+Gemini 2.5 thinking is **disabled** for this call (`thinking_budget=0`). The
+prompt already carries its own `<reasoning>` chain-of-thought scaffold; the
+model's hidden thinking would duplicate it and, because thinking tokens count
+against the output budget, truncate the visible answer before the
+`<explanation>` block was reached. As a defence in depth, the parser degrades
+to the canned fallback when a `<reasoning>` tag is present without an
+`<explanation>`, so a truncated scaffold is never surfaced to the teacher.
+
 ---
 
 ## 7. Mechanism and architectural placement
@@ -260,20 +288,28 @@ implies regression.
 
 ## 9. Open points
 
+**Resolved during implementation / live verification (2026-05-19):**
+
+- **Presentation — collapsed or visible.** Settled: the explanation renders
+  *expanded* by default, as a "💡 Why this signal looks this way" block within
+  the DTP card (both the in-progress and completed states). The static
+  "🔍 How this signal was generated" method-disclosure panel sits below it —
+  the explanation complements the method disclosure, it does not replace it.
+- **D.3a themes-panel reframe** — done. The evaluative ↑/↓/warning encoding on
+  the DTP theme groups was replaced with neutral attention-shift language
+  ("Came into focus / Moved to the background / Held steady").
+- **Prompt sample-review.** Done. The prompt was reviewed against real
+  generated samples on M6; this drove the §6.5 prompt strategy (worked example,
+  thinking disabled). The fixture is frozen at the reviewed prompt.
+- **Explanation length budget.** Settled empirically — generated explanations
+  run to roughly one short paragraph (~150 words); no hard cap is imposed,
+  `max_output_tokens` is 3000 with thinking disabled.
+
+**Still open / deferred:**
+
 - **Dispute / HITL surface for the explanation.** The `generate()` stance is
   "AI commits, human disputes". Whether the explanation gets its own dispute
-  surface (as RAG / RTM / DTP do) is deferred — decide after the core feature
-  works.
-- **Presentation — collapsed or visible.** Whether the explanation shows
-  expanded by default or inside the existing `<details>` panel. Relevant to the
-  §2.2 misreading risk (an explanation only helps if read); decide with the
-  themes-panel reframe.
-- **D.3a themes-panel reframe** — a small presentation follow-up (§8); to be
-  scoped as its own short commit.
-- **Prompt sample-review.** As in D.3a §7.2, the XAIAgent prompt is reviewed
-  against real generated samples before its fixture is frozen, to confirm the
-  explanation stays faithful and non-evaluative.
-- **Explanation length budget** — set empirically during implementation.
+  surface (as RAG / RTM / DTP do) is deferred — decide after pilot feedback.
 
 ---
 
@@ -303,20 +339,29 @@ The live D.3a verification produced this DTP composite for a teacher at M6
   *general reliability, mind reading, sole accuracy*; stable themes
   *AI context*.
 
-The XAIAgent, reading only this composite, would produce a faithful,
-domain-driven explanation along these lines:
+The XAIAgent, reading only this composite, produced — on live verification at
+M6, with the §6.5 prompt — this explanation:
 
-> "This signal compares your M6 reflection with two earlier ones. Within the
-> same competency area — Human-Centred Mindset — your writing has moved its
-> emphasis from the technical framing of AI toward pedagogical fit and the
-> auditing of tools, while your attention to human judgment and critical
-> thinking has stayed constant. Themes such as technical focus appearing less
-> prominently is a movement of reflective attention, not a loss: at the Deepen
-> level of a human-centred competency, this shift is the expected direction.
-> The same pattern holds against your previous module."
+> "Your reflective writing has changed where it places its attention. Comparing
+> your earlier work in the same competency area with your current module, your
+> reflection now gives more emphasis to pedagogical fit, the impact on
+> learning, and rigorous auditing. Themes such as LLM mechanics and the
+> fundamental nature of AI appear less often. Teacher oversight and tool
+> evaluation remain a steady presence. Comparing your current module with the
+> one immediately before it, pedagogical fit, tool auditing, and deliberate
+> evaluation are again in focus. Themes like the assumption of mind-reading,
+> implicit trust in tools, and general reliability have moved to the
+> background. A theme appearing less is a change in where your reflection is
+> pointing — not a sign that you understand it less well, and equally not a
+> sign of progress. It simply records which ideas your writing engaged with
+> most directly in each module."
 
-The explanation names the competency aspect, frames the decreased themes as
-attention-movement, and draws nothing the composite does not contain.
+The explanation names the competency movement, frames every decreased theme as
+attention-movement, closes with the symmetric non-evaluation sentence, and
+draws nothing the composite does not contain. (The theme labels above differ
+slightly from the composite stated earlier in §11 because theme extraction is
+itself an LLM step and non-deterministic across runs; the live XAI
+verification ran on a fresh DTP composite.)
 
 ---
 
@@ -330,8 +375,16 @@ attention-movement, and draws nothing the composite does not contain.
 - §6.2 — entry point `generate()`.
 - §6.3 — its own provenance row, `artefact_kind='xai_narrative'`.
 - §6.4 — stored in a new `UserModuleProgress.reflection_dtp_xai` field.
+- §6.5 — register controlled by an embedded worked example, not a ban list;
+  Gemini thinking disabled for the call.
+
+**Settled during live verification (§9):**
+
+- Presentation — explanation expanded by default; method-disclosure panel kept.
+- D.3a themes-panel reframe — done (neutral attention-shift language).
+- Prompt sample-review — done; drove the §6.5 strategy; fixture frozen.
+- Explanation length — empirically ~one short paragraph; no hard cap.
 
 **Open / deferred:**
 
-- §9 — dispute surface for the explanation; collapsed-vs-visible presentation;
-  the D.3a themes-panel reframe; prompt sample-review; length budget.
+- §9 — dispute / HITL surface for the explanation (decide after pilot feedback).
