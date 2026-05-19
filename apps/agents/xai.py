@@ -53,7 +53,13 @@ from apps.agents.shared.llm_client import get_llm_client
 
 
 XAI_TEMPERATURE = 0.4
-XAI_MAX_TOKENS = 2000
+XAI_MAX_TOKENS = 3000
+# The prompt carries its own <reasoning> chain-of-thought scaffold, so the
+# model's hidden thinking is redundant. Disabling it (budget 0) keeps the
+# whole token budget for the visible <reasoning>/<explanation> response;
+# leaving it on let thinking tokens truncate the answer before the
+# <explanation> block was reached.
+XAI_THINKING_BUDGET = 0
 
 # Safe, non-evaluative fallback used when the Gemini call fails or
 # returns nothing. It is itself a valid user-facing sentence.
@@ -106,6 +112,7 @@ class XAIAgent(ServiceAgent):
             model=self.model_name,
             temperature=XAI_TEMPERATURE,
             max_output_tokens=XAI_MAX_TOKENS,
+            thinking_budget=XAI_THINKING_BUDGET,
         )
         if gen_result is None or not gen_result.text.strip():
             logger.warning('XAIAgent: Gemini returned nothing; using fallback')
@@ -135,14 +142,21 @@ class XAIAgent(ServiceAgent):
     def _parse_explanation(text: str) -> str:
         """Extract the <explanation>...</explanation> block — the
         teacher-facing text. The <reasoning> block is a chain-of-thought
-        scaffold and is discarded. Falls back to the whole stripped
-        text, then to the canned fallback."""
+        scaffold and is never surfaced.
+
+        If no usable <explanation> block is present but the text carries a
+        <reasoning> tag, the response was truncated or malformed before the
+        explanation was produced — surfacing it would leak the raw scaffold
+        to the teacher, so the canned fallback is used instead. Plain text
+        with no tags at all is still trusted as the explanation."""
         match = re.search(
             r'<explanation>(.*?)</explanation>', text,
             re.DOTALL | re.IGNORECASE,
         )
         if match and match.group(1).strip():
             return match.group(1).strip()
+        if re.search(r'<reasoning\b', text, re.IGNORECASE):
+            return XAI_FALLBACK
         return text.strip() or XAI_FALLBACK
 
     @staticmethod

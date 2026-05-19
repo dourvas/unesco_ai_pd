@@ -125,12 +125,21 @@ class LLMClient:
         model: str = DEFAULT_MODEL,
         temperature: Optional[float] = None,
         max_output_tokens: Optional[int] = None,
+        thinking_budget: Optional[int] = None,
     ) -> Optional[GenerationResult]:
         """Generate text with Gemini. Return GenerationResult or None.
 
         None signals API failure — the monolith returns None on errors and
         callers check for that; we preserve the contract verbatim so the
         strangler-step prompt-and-behaviour parity tests stay green.
+
+        thinking_budget: pass 0 to disable Gemini 2.5 model thinking, so the
+        whole `max_output_tokens` budget is available for the visible
+        response. Agents that use an explicit in-response reasoning scaffold
+        (e.g. XAIAgent's <reasoning> block) should disable thinking — the
+        model's hidden thinking would otherwise duplicate that scaffold and
+        consume the token budget, truncating the visible answer. Only the
+        NEW google.genai SDK supports this; ignored on the OLD SDK.
         """
         try:
             if self._new_api:
@@ -140,6 +149,10 @@ class LLMClient:
                     config_kwargs['max_output_tokens'] = max_output_tokens
                 if temperature is not None:
                     config_kwargs['temperature'] = temperature
+                if thinking_budget is not None:
+                    config_kwargs['thinking_config'] = genai_types.ThinkingConfig(
+                        thinking_budget=thinking_budget,
+                    )
                 config = (
                     genai_types.GenerateContentConfig(**config_kwargs)
                     if config_kwargs

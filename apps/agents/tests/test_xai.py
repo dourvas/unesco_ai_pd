@@ -157,6 +157,20 @@ class XAIParseTest(SimpleTestCase):
     def test_falls_back_to_canned_when_empty(self):
         self.assertEqual(XAIAgent._parse_explanation('   '), XAI_FALLBACK)
 
+    def test_truncated_reasoning_scaffold_is_not_leaked(self):
+        """A response cut off inside the <reasoning> block (no
+        <explanation> reached) must not surface the raw scaffold to the
+        teacher — it degrades to the canned fallback."""
+        truncated = (
+            '<reasoning>The signal indicates a developmental shift in the '
+            "teacher's focus. Comparing M1 to M6, there is a clear increase "
+            'in attention on the practical pedagogical application, and '
+            'comparing M'
+        )
+        self.assertEqual(
+            XAIAgent._parse_explanation(truncated), XAI_FALLBACK,
+        )
+
 
 # ----------------------------------------------------------------------
 # generate() — persistence, provenance, cost, fallback
