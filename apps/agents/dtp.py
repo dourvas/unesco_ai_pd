@@ -458,8 +458,10 @@ If no clear shift exists in a category, leave the array empty."""
             f'{analysis_format}\n'
             '<synthesis>One paragraph of about 60 words, plain prose, no '
             'bullet points. Start with "Across these modules, your '
-            'reflection". Describe continuity and shift only — do not '
-            'evaluate quality.</synthesis>'
+            'reflection". Describe continuity and shift only. Do not '
+            'frame the change as improvement, progress, advancement, or '
+            'growing sophistication, nor as decline — describe what '
+            'shifted, not whether the teacher is better or worse.</synthesis>'
         )
 
     # ------------------------------------------------------------------

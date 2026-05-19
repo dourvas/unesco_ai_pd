@@ -111,8 +111,8 @@ class XAIPromptTest(SimpleTestCase):
         prompt = XAIAgent._build_prompt(_FIXTURE_COMPOSITE, _FIXTURE_ASPECT)
         # Non-evaluative instruction.
         self.assertIn('do not evaluate whether the', prompt)
-        # Attention-movement reframing.
-        self.assertIn('movement of', prompt)
+        # Symmetric non-evaluation — no decline AND no progress framing.
+        self.assertIn('growing sophistication', prompt)
         # Domain-driven instruction (no numbers).
         self.assertIn('never in numbers', prompt)
         # Structured output tag.

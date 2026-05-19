@@ -13,4 +13,4 @@ TEMPORAL comparison — the immediately preceding module (module M7) vs the curr
 Reason about each comparison separately, then synthesise. Respond in exactly this format:
 <vertical_analysis>one sentence on the vertical comparison</vertical_analysis>
 <temporal_analysis>one sentence on the temporal comparison</temporal_analysis>
-<synthesis>One paragraph of about 60 words, plain prose, no bullet points. Start with "Across these modules, your reflection". Describe continuity and shift only — do not evaluate quality.</synthesis>
+<synthesis>One paragraph of about 60 words, plain prose, no bullet points. Start with "Across these modules, your reflection". Describe continuity and shift only. Do not frame the change as improvement, progress, advancement, or growing sophistication, nor as decline — describe what shifted, not whether the teacher is better or worse.</synthesis>

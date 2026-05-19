@@ -230,7 +230,7 @@ class DTPNarrativePromptTest(SimpleTestCase):
             _FIXTURE_CURRENT_MODULE, _FIXTURE_SIGNALS,
         )
         self.assertIn('Describe only what changed', prompt)
-        self.assertIn('do not evaluate quality', prompt)
+        self.assertIn('not whether the teacher is better or worse', prompt)
         self.assertIn('<synthesis>', prompt)
         self.assertIn('</synthesis>', prompt)
         self.assertIn('Across these modules, your reflection', prompt)
