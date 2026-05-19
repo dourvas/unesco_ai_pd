@@ -679,9 +679,20 @@ class ReflectionTension(models.Model):
 class AIOutputDispute(models.Model):
     """
     Human-in-the-Loop feedback on AI outputs in TAB5.
-    Records teacher disputes/ratings for RAG, RTM, and DTP outputs.
 
-    Research instrument: measures AI alignment per feature, module, subject.
+    Two distinct constructs share this table — keep them apart in analysis:
+
+    - 'rag', 'rtm', 'dtp' — the **AI alignment instrument**. Each of these
+      AI outputs makes a claim about the teacher's own reflection, so the
+      rating ('yes'/'partial'/'no' relevant) is a proxy for whether the AI
+      read the teacher correctly. Only these three feed the D.1 perceived-
+      relevance profile; the D.1 aggregation must whitelist them explicitly.
+    - 'peer' — a **usefulness signal**, not part of the alignment
+      instrument. Peer synthesis makes no claim about the teacher; it
+      aggregates anonymised peer reflections. The rating here answers
+      "did you find this synthesis useful?" — a different construct
+      (TD-019, redefined 2026-05-19). Excluded from the D.1 profile.
+
     EU AI Act: operationalises meaningful human oversight requirement.
     """
 
@@ -689,6 +700,8 @@ class AIOutputDispute(models.Model):
         ('rag', 'RAG Feedback'),
         ('rtm', 'Reflective Tension Mapper'),
         ('dtp', 'Developmental Trajectory Predictor'),
+        # Usefulness signal, not alignment — see class docstring (TD-019).
+        ('peer', 'Peer Synthesis'),
     ]
 
     RATING_CHOICES = [
