@@ -522,6 +522,30 @@
                 <div class="text-sm font-semibold text-green-900 mb-1">💡 Why this signal looks this way</div>
                 <p class="text-sm text-gray-700" id="dtp-xai-text"></p>
             </div>
+            <div class="divider my-3"></div>
+            <details class="group mb-2">
+                <summary class="flex items-center gap-2 cursor-pointer list-none text-xs text-base-content/50 hover:text-base-content/70 transition-colors px-1">
+                    <span class="group-open:hidden">▶</span>
+                    <span class="hidden group-open:inline">▼</span>
+                    <span>🔍 How this signal was generated</span>
+                </summary>
+                <div class="mt-2 bg-base-100 border border-base-300 rounded-lg p-4 text-xs space-y-2">
+                    <div class="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5">
+                        <span class="font-semibold text-base-content/60">Model</span>
+                        <span>Gemini 2.5 Flash</span>
+                        <span class="font-semibold text-base-content/60">Input</span>
+                        <span>Your current reflection, compared with up to two earlier reflections — one within the same UNESCO competency area, one from your previous module</span>
+                        <span class="font-semibold text-base-content/60">Logic</span>
+                        <span>Two separate comparisons. Each maps which concepts, concerns and language increased, decreased or stayed stable; the model then describes continuity and shift across them</span>
+                        <span class="font-semibold text-base-content/60">Intent</span>
+                        <span>Help you observe how your thinking about AI is evolving across modules</span>
+                    </div>
+                    <div class="border-t border-base-300 pt-2 mt-2 space-y-1">
+                        <p class="text-base-content/60">⚠️ This signal describes what changed — it does not evaluate whether the change is positive or negative. Growth is not always linear.</p>
+                        <p class="text-base-content/50">🇪🇺 <strong>EU AI Act — Limited Risk:</strong> Developmental signals are descriptive, not predictive. No conclusions are drawn about your future performance.</p>
+                    </div>
+                </div>
+            </details>
             
             <!-- HITL DTP — live state -->
             <div id="dtp-xai-hitl-live" class="hidden mt-4 border-t border-base-300 pt-3">
