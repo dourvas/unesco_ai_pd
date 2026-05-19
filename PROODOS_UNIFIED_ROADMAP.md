@@ -29,9 +29,10 @@
 
 ---
 
-## Τρέχουσα κατάσταση (snapshot — 2026-05-14)
+## Τρέχουσα κατάσταση (snapshot — 2026-05-19)
 
-*Latest update (2026-05-14): **Phase E COMPLETE** — 11 commits, monolith deleted, 316 tests green, hierarchy of 4 agents under `apps/agents/` with two public entry points (`generate()` for "AI commits, human disputes" + `extract()` for "AI proposes, human ratifies"). Seven distinct architectural improvements delivered (atomic strengthening at one site + dual entry points + cost tracking 1/4→4/4 + DB-idiom unification + dead-code findings + silent-failure antipattern exposure + pre-deletion audits as complementary safety). See §3 Phase E for the full retrospective + §4.3 for the closed parked-idea entry.*
+*Latest update (2026-05-19): **Phase D.3 COMPLETE** — the DTP sub-track delivered in two parts. **D.3a** redefined the Developmental Trajectory Predictor from a single cross-aspect comparison into a dual-signal model (Vertical Continuity Signal + Temporal Shift Signal), descriptive-only, no thresholds/labels in the pilot. **D.3b** added the `XAIAgent` — the first concrete `ServiceAgent` — producing a faithful, domain-driven natural-language explanation of the DTP composite. Both committed and live-verified on M6. Canonical docs: `proodos_files/DTP_REDEFINITION_DESIGN_PROPOSAL_v1_20260518.md` and `proodos_files/DTP_XAI_NARRATIVE_DESIGN_PROPOSAL_v1_20260519.md`. See §3 Phase D for the full breakdown. Phase D now has D.1 (TCS), D.2 (Position Confirmation Analytics), D.4 (Dashboard) remaining.*
+*Earlier (2026-05-14): **Phase E COMPLETE** — 11 commits, monolith deleted, 316 tests green, hierarchy of 4 agents under `apps/agents/` with two public entry points (`generate()` for "AI commits, human disputes" + `extract()` for "AI proposes, human ratifies"). Seven distinct architectural improvements delivered (atomic strengthening at one site + dual entry points + cost tracking 1/4→4/4 + DB-idiom unification + dead-code findings + silent-failure antipattern exposure + pre-deletion audits as complementary safety). See §3 Phase E for the full retrospective + §4.3 for the closed parked-idea entry.*
 *Earlier (2026-05-13): Phase F.5 (TAB5 Visual Redesign) added to remaining work as a parked entry awaiting Phase F.1+F.2 functional completion. See §3 Phase F.5 for the full addendum content.*
 
 Bird's-eye view. Αυτό το block ενημερώνεται σε κάθε session-end. Τα detail sections (§2, §3) δίνουν depth· εδώ είναι το at-a-glance index για να ξέρει το επόμενο παράθυρο πού στεκόμαστε.
@@ -44,6 +45,7 @@ Bird's-eye view. Αυτό το block ενημερώνεται σε κάθε sess
 | **B.** Validation & Cleanup | ⚠️ Partial — B.2 (video badges) + B.4 (Edit Profile via C.2.1) done· B.1 (Content Validation Matrix) + B.3 (code cleanup) trickling | §3 Phase B |
 | **C.** Onboarding + EU AI Act + GDPR | ✅ **100% code-bearing complete** — 15 commits, 214 tests pass. Career Stage Step 2 gap closed by Option A decision 2026-05-13 (deferred to post-pilot research direction — TD-020). | §2.8, §3 Phase C |
 | **E.** Multi-agent refactor | ✅ **100% complete (2026-05-14)** — 11 commits, monolith deleted, 316 tests pass. Four named agents under `apps/agents/` (`RAGFeedbackAgent`, `RTMAgent`, `DTPAgent`, `PeerSynthesisAgent`) all inheriting from `BaseAIAgent` with two public entry points (`generate()` + `extract()`) and shared infrastructure (LLM client, cost tracker, audit logger, unified DB helper). Seven distinct architectural improvements delivered. | §3 Phase E |
+| **D.3** DTP sub-track (D.3a redefinition + D.3b XAI narrative) | ✅ **Complete (2026-05-19)** — D.3a redefined the DTP into a dual-signal model (Vertical Continuity + Temporal Shift), descriptive-only. D.3b added the `XAIAgent` — first concrete `ServiceAgent` under a new `ServiceAgent` parent — a faithful, domain-driven explanation of the DTP composite. Live-verified on M6; agent suite 123 tests pass. D.1/D.2/D.4 still remaining. | §3 Phase D |
 
 **Phase C breakdown:**
 
@@ -58,7 +60,7 @@ Bird's-eye view. Αυτό το block ενημερώνεται σε κάθε sess
 
 | Item | Effort | Reference |
 |---|---|---|
-| **Phase D** — Pilot Readiness Features (TCS, Position Confirmation Analytics, DTP-XAI extension, Dashboard UNESCO Matrix 5×3 + RTM Heatmap). Now builds on the clean agent architecture from Phase E; D.3 introduces `ServiceAgent` parent + `XAIAgent` first concrete (reserved slot already in the hierarchy). | Multi-session | §3 Phase D |
+| **Phase D** — Pilot Readiness Features. **D.3 done** (see DONE table). Remaining: **D.1** Trust Calibration Score (TCS), **D.2** Position Confirmation Analytics, **D.4** Dashboard UNESCO Matrix 5×3 + RTM Heatmap. | Multi-session | §3 Phase D |
 | **Phase F** — Multimodal reflection (voice input + image input). New agents extend the `BaseAIAgent` hierarchy via `extract()` (voice transcription user-ratifies before save). | Multi-session | §3 Phase F |
 | **Phase F.5** — TAB5 Visual Redesign (parked; awaits F.1 + F.2 functional completion) | Single focused arc post-F | §3 Phase F.5 |
 | **Phase G** — Full PROODOS Epilogue (Stage 0..3 + Gemini dialogue + Learning Portrait PDF — TD-011) | Multi-session | §3 Phase G |
@@ -519,11 +521,39 @@ The CP-11 wipe script is at `scripts/cp11_wipe_test_users.py`. Core logic expose
 
 **Αρχείο αναφοράς:** `RTM_REDESIGN_PATCH_APR2026.md` (περιγραφή του flag) — *θα διαγραφεί αλλά το περιεχόμενο είναι στο 2.4 του παρόντος*.
 
-#### D.3 — DTP XAI narrative
-- Επέκταση του DTP prompt με attribution + counterfactual hint
-- "Η πορεία σου δείχνει αυτό το pattern γιατί στα M3/M8 έδειξες..."
+#### D.3 — DTP redefinition + XAI narrative — ✅ COMPLETE (2026-05-19)
 
-**Αρχείο αναφοράς:** `DTP_Documentation_Mar2026.docx` — current DTP spec (γιατί η επέκταση πρέπει να σέβεται το pattern detection principle).
+Delivered in two parts. The original D.3 sketch — "extend the DTP prompt with
+an attribution + counterfactual hint" — was superseded: live use exposed a
+construct-validity flaw in the DTP's single cross-aspect comparison, so D.3
+became a redefinition first, then the explanation layer on top.
+
+**D.3a — DTP redefinition (dual-signal).** The DTP was redefined from one
+cross-aspect comparison into two signals:
+- **Vertical Continuity Signal (VCS)** — same UNESCO aspect, one proficiency
+  level down (e.g. a Deepen module vs the matching Acquire module).
+- **Temporal Shift Signal (TSS)** — vs the immediately preceding module.
+
+Non-uniform by design: Acquire modules (M1–M5) carry the TSS only; M1 carries
+neither. Descriptive-only — no thresholds, labels, or scores in the pilot.
+Stored as a `dtp_dual_v1` composite. Canonical doc:
+`proodos_files/DTP_REDEFINITION_DESIGN_PROPOSAL_v1_20260518.md`.
+
+**D.3b — DTP XAI narrative.** A new `ServiceAgent` parent under `BaseAIAgent`
+and the first concrete `XAIAgent`, which explains the stored DTP composite in
+faithful, domain-driven natural language (UNESCO-competency / pedagogical
+terms, never cosine numbers). `generate()` persists to
+`UserModuleProgress.reflection_dtp_xai` with its own `xai_narrative` provenance
+row. The DTP themes panel was reframed to neutral attention-shift language; the
+prompt register is fixed by an embedded worked example, with Gemini thinking
+disabled to prevent truncation. Canonical doc:
+`proodos_files/DTP_XAI_NARRATIVE_DESIGN_PROPOSAL_v1_20260519.md`.
+
+Both parts committed and live-verified on M6; agent suite 123 tests pass. The
+`ServiceAgent` parent slot the Phase E hierarchy reserved is now filled.
+
+*(The earlier reference `DTP_Documentation_Mar2026.docx` is superseded by the
+two design proposals above.)*
 
 #### D.4 — Dashboard UNESCO Matrix 5×3 + RTM Heatmap
 - UI work, ανεξάρτητο από content
@@ -564,7 +594,7 @@ apps/agents/
 └── tests/               102 agent-suite tests + 5 frozen prompt fixtures
 ```
 
-Future agents (Epilogue Q&A in Phase G, Multimodal voice/image in Phase F, `XAIAgent` under a new `ServiceAgent` parent in Phase D.3) extend this hierarchy without modifying it.
+Future agents (Epilogue Q&A in Phase G, Multimodal voice/image in Phase F) extend this hierarchy without modifying it. The `XAIAgent`, under a new `ServiceAgent` parent, was added this way in Phase D.3b (2026-05-19) — the first agent on the service-agent branch, alongside the existing research-instrument branch.
 
 #### E.2 — Commit-by-commit summary
 
