@@ -407,6 +407,33 @@ Türkmen, G. (2025). The review of studies on explainable artificial intelligenc
 
 ---
 
+## 12. Εμπιστοσύνη, υπερ-εξάρτηση & reactivity — Στήριξη για το D.1
+
+Προστέθηκε 2026-05-19 για το **D.1 (AI Output Relevance Profile)** — το researcher-facing analytic πάνω στα ratings σχετικότητας που δίνουν οι εκπαιδευτικοί στα AI outputs (RAG/RTM/DTP). Όλες οι αναφορές επαληθεύτηκαν με αναζήτηση (2026-05-19). Σχεδιαστικό αρχείο: `D1_AI_RELEVANCE_PROFILE_DESIGN_PROPOSAL_v1_20260519.md`.
+
+### 12.1 — Trust calibration ως δι-αξονικό construct (Lee & See, 2004)
+Θεμελιώδης εργασία (~4.000+ citations). Ορίζει το *appropriate trust* ως **calibration**: αντιστοίχιση της εμπιστοσύνης του χρήστη με την **πραγματική ικανότητα** του αυτοματισμού — overtrust → misuse, distrust → disuse.
+
+*Ρόλος για το D.1 — ο πιο κρίσιμος.* Τεκμηριώνει γιατί ο όρος «Trust Calibration Score» του roadmap **απορρίπτεται**: το calibration χρειάζεται δύο άξονες (εμπιστοσύνη ΚΑΙ ground-truth αξιοπιστία)· το PROODOS έχει μόνο τον πρώτο, άρα μετράει *αντιληπτή σχετικότητα*, όχι calibration. Ίδια λογική construct-validity με τον επαναπροσδιορισμό του DTP (D.3a).
+
+Lee, J. D., & See, K. A. (2004). Trust in automation: Designing for appropriate reliance. *Human Factors, 46*(1), 50–80. https://doi.org/10.1518/hfes.46.1.50_30392
+
+### 12.2 — Υπερ-εξάρτηση από το AI (Buçinca, Malaya & Gajos, 2021)
+Ορίζει το **overreliance** ως αποδοχή πρότασης AI ακόμη κι όταν είναι λανθασμένη, και τεκμηριώνει trade-off ανάμεσα σε υποκειμενική εμπιστοσύνη και πραγματική απόδοση ομάδας ανθρώπου–AI.
+
+*Ρόλος για το D.1.* Στηρίζει ότι το rating «δέχομαι/απορρίπτω» είναι σήμα *reliance*, όχι ορθότητας — και ότι η αντιληπτή σχετικότητα δεν ισοδυναμεί με καλή κρίση.
+
+Buçinca, Z., Malaya, M. B., & Gajos, K. Z. (2021). To trust or to think: Cognitive forcing functions can reduce overreliance on AI in AI-assisted decision-making. *Proceedings of the ACM on Human-Computer Interaction, 5*(CSCW1), Article 188. https://doi.org/10.1145/3449287
+
+### 12.3 — Measurement reactivity (Paradis & Sutkin, 2017)
+Η measurement reactivity ως ειδική περίπτωση του Hawthorne effect: η επίγνωση της μέτρησης — και η ανατροφοδότηση σχετικά μ' αυτήν — αλλάζει τη συμπεριφορά του μετρούμενου. Σύσταση: αποφυγή feedback που αποκαλύπτει τη φύση της μέτρησης.
+
+*Ρόλος για το D.1.* Τεκμηριώνει την απόφαση το profile να είναι **researcher-facing only** — να μην εμφανίζεται στον εκπαιδευτικό· αλλιώς το `AIOutputDispute` instrument μολύνεται (ο εκπαιδευτικός βαθμολογεί στρατηγικά ένα ορατό σκορ).
+
+Paradis, E., & Sutkin, G. (2017). Beyond a good story: From Hawthorne Effect to reactivity in health professions education research. *Medical Education, 51*, 31–39. https://doi.org/10.1111/medu.13122
+
+---
+
 ## Project Context (ιστορικό snapshot — Απρίλιος 2026)
 
 > Το παρακάτω μπλοκ είναι snapshot **Απριλίου 2026**. Για την τρέχουσα κατάσταση φάσεων — Phase E (multi-agent refactor) ολοκληρωμένη, Phase D σε εξέλιξη (D.3a DTP redefinition done) — δες το `git log` και τα design proposals στο `proodos_files/`.
