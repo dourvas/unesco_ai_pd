@@ -289,6 +289,11 @@ class UserModuleProgress(models.Model):
 
     reflection_peer_synthesis = models.TextField(null=True, blank=True)
     reflection_dtp = models.TextField(blank=True, null=True)
+
+    # D.3b — the XAIAgent natural-language explanation of the DTP
+    # composite above. Written by XAIAgent.generate(); see
+    # proodos_files/DTP_XAI_NARRATIVE_DESIGN_PROPOSAL_v1_20260519.md.
+    reflection_dtp_xai = models.TextField(blank=True, null=True)
     
     class Meta:
         unique_together = ('user', 'module')

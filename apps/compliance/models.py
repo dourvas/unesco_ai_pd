@@ -142,6 +142,7 @@ class AIArtefactProvenance(models.Model):
     ARTEFACT_KIND_CHOICES = [
         ('rtm_position', 'RTM tension position'),
         ('dtp_narrative', 'DTP developmental trajectory narrative'),
+        ('xai_narrative', 'DTP XAI explanation narrative'),
         ('rag_feedback', 'RAG reflection feedback'),
         ('peer_synthesis', 'Peer reflection synthesis'),
         ('rag_query', 'Raw rag_queries telemetry row'),
