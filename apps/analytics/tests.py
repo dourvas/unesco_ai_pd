@@ -13,7 +13,12 @@ from django.urls import reverse
 from django.utils import timezone
 
 from apps.analytics import services
-from apps.modules.models import AIOutputDispute, Module, UserModuleProgress
+from apps.modules.models import (
+    AIOutputDispute,
+    Module,
+    ReflectionTension,
+    UserModuleProgress,
+)
 from apps.users.models import TeacherProfile
 
 
@@ -172,3 +177,84 @@ class RelevanceProfileViewTest(TestCase):
     def test_anonymous_user_is_redirected(self):
         resp = self.client.get(self.url)
         self.assertEqual(resp.status_code, 302)
+
+
+class EngagementDepthServiceTest(TestCase):
+    """D.2 — the engagement-depth aggregation over ReflectionTension.
+
+    Verifies the headline EDS (confirmed / total), the supporting
+    signals (comment-use rate, non-neutral rate, median time) and the
+    per-teacher grouping.
+    """
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.user_a = User.objects.create_user('eds_a', password='pw')
+        cls.user_b = User.objects.create_user('eds_b', password='pw')
+        TeacherProfile.objects.create(
+            user=cls.user_a, subject_area='mathematics',
+            ai_disclosure_acknowledged_at=timezone.now(),
+        )
+        TeacherProfile.objects.create(
+            user=cls.user_b, subject_area='science',
+            ai_disclosure_acknowledged_at=timezone.now(),
+        )
+        cls.m1 = Module.objects.create(
+            code='ED1', title='Engagement module 1', description='t',
+            order_index=950, unesco_aspect='ethics',
+            proficiency_level='Acquire', is_published=True,
+        )
+
+        def tension(user, label, position, confirmed, commented, time_ms):
+            return ReflectionTension.objects.create(
+                user=user, module=cls.m1, tension_label=label,
+                left_pole='L', right_pole='R', grounding_quote='q',
+                selected_position=position, position_confirmed=confirmed,
+                comment_used=commented, time_spent_ms=time_ms,
+            )
+
+        # user_a — 3 tensions: 2 confirmed (one non-neutral, one neutral),
+        # 1 not confirmed.
+        tension(cls.user_a, 'a-t1', 5, True, True, 4000)
+        tension(cls.user_a, 'a-t2', 3, True, False, 2000)
+        tension(cls.user_a, 'a-t3', 3, False, False, 500)
+        # user_b — 2 tensions, both confirmed and non-neutral.
+        tension(cls.user_b, 'b-t1', 4, True, False, 3000)
+        tension(cls.user_b, 'b-t2', 2, True, False, 1000)
+
+    def test_cohort_eds_headline(self):
+        depth = services.cohort_engagement_depth()
+        self.assertEqual(depth['total_tensions'], 5)
+        self.assertEqual(depth['confirmed'], 4)
+        self.assertEqual(depth['eds'], 0.8)
+
+    def test_cohort_supporting_signals(self):
+        depth = services.cohort_engagement_depth()
+        # 3 of the 4 confirmed tensions are off the neutral mid-point.
+        self.assertEqual(depth['non_neutral_rate'], 0.75)
+        # 1 of 5 tensions carried a comment.
+        self.assertEqual(depth['comment_use_rate'], 0.2)
+        self.assertEqual(depth['median_time_ms'], 2000)
+
+    def test_cohort_slices(self):
+        depth = services.cohort_engagement_depth()
+        self.assertEqual({m['module_code'] for m in depth['by_module']}, {'ED1'})
+        self.assertEqual(
+            {s['subject'] for s in depth['by_subject']},
+            {'mathematics', 'science'},
+        )
+
+    def test_per_teacher_engagement_depth(self):
+        profiles = services.per_teacher_engagement_depth()
+        by_name = {p['username']: p for p in profiles}
+
+        a = by_name['eds_a']
+        self.assertEqual(a['total'], 3)
+        self.assertEqual(a['confirmed'], 2)
+        self.assertEqual(a['eds'], 0.667)
+        # One of the two confirmed tensions is non-neutral.
+        self.assertEqual(a['non_neutral_rate'], 0.5)
+
+        b = by_name['eds_b']
+        self.assertEqual(b['eds'], 1.0)
+        self.assertEqual(b['non_neutral_rate'], 1.0)

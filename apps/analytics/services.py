@@ -19,9 +19,15 @@ only the alignment one:
 Nothing here mutates data or calls an LLM; it is pure ORM aggregation.
 """
 
-from django.db.models import Count
+import statistics
 
-from apps.modules.models import AIOutputDispute, UserModuleProgress
+from django.db.models import Count, Q
+
+from apps.modules.models import (
+    AIOutputDispute,
+    ReflectionTension,
+    UserModuleProgress,
+)
 
 
 # Only these feed the relevance profile — 'peer' is a different
@@ -201,3 +207,139 @@ def peer_usefulness_summary():
         qs.exclude(comment__isnull=True).exclude(comment='').count()
     )
     return counts
+
+
+# ======================================================================
+# D.2 — Engagement Depth (Position Confirmation Analytics)
+#
+# Read-only aggregations over apps.modules.ReflectionTension. The
+# Engagement Depth Score (EDS) is the proportion of RTM tensions a
+# teacher actively engaged with — position_confirmed is set true only
+# for a tension whose slider the teacher touched (the RTM auto-saves
+# every tension at the neutral default with position_confirmed false).
+# EDS separates surface engagement (the RTM step completed, nothing
+# touched) from deep engagement. Researcher-facing; design:
+# proodos_files/D2_ENGAGEMENT_DEPTH_DESIGN_PROPOSAL_v1_20260520.md.
+# ======================================================================
+
+# The neutral mid-point of the RTM 1-5 positioning slider; also the
+# auto-save default. A confirmed tension resting here is engaged but
+# neutral — see non_neutral_rate.
+RTM_NEUTRAL_POSITION = 3
+
+
+def _rate(numerator, denominator):
+    """A descriptive proportion rounded to 3 dp, or None when the
+    denominator is zero (so the template shows 'no data', not 0%)."""
+    return round(numerator / denominator, 3) if denominator else None
+
+
+def _median_ms(values):
+    """Median of the non-null millisecond values, rounded; None if the
+    set is empty. time_spent_ms is frontend-reported and nullable."""
+    vals = [v for v in values if v is not None]
+    return round(statistics.median(vals)) if vals else None
+
+
+def cohort_engagement_depth():
+    """Cohort-wide RTM engagement-depth aggregation.
+
+    Returns a dict with:
+      - total_tensions / confirmed / eds — the headline confirmation rate
+      - comment_use_rate — share of tensions carrying an optional comment
+      - non_neutral_rate — among confirmed tensions, the share placed
+        off the neutral mid-point
+      - median_time_ms — median RTM-card interaction time
+      - by_module / by_subject — [ {..., total, confirmed, eds} ]
+    """
+    qs = ReflectionTension.objects.all()
+    total = qs.count()
+    confirmed = qs.filter(position_confirmed=True).count()
+    confirmed_non_neutral = (
+        qs.filter(position_confirmed=True)
+        .exclude(selected_position=RTM_NEUTRAL_POSITION)
+        .count()
+    )
+
+    by_module = [
+        {
+            'module_code': row['module__code'],
+            'module_title': row['module__title'],
+            'total': row['total'],
+            'confirmed': row['confirmed'],
+            'eds': _rate(row['confirmed'], row['total']),
+        }
+        for row in qs.values('module__code', 'module__title').annotate(
+            total=Count('id'),
+            confirmed=Count('id', filter=Q(position_confirmed=True)),
+        ).order_by('module__code')
+    ]
+
+    by_subject = [
+        {
+            'subject': row['user__teacher_profile__subject_area'] or 'Unknown',
+            'total': row['total'],
+            'confirmed': row['confirmed'],
+            'eds': _rate(row['confirmed'], row['total']),
+        }
+        for row in qs.values(
+            'user__teacher_profile__subject_area',
+        ).annotate(
+            total=Count('id'),
+            confirmed=Count('id', filter=Q(position_confirmed=True)),
+        ).order_by('user__teacher_profile__subject_area')
+    ]
+
+    return {
+        'total_tensions': total,
+        'confirmed': confirmed,
+        'eds': _rate(confirmed, total),
+        'comment_use_rate': _rate(qs.filter(comment_used=True).count(), total),
+        'non_neutral_rate': _rate(confirmed_non_neutral, confirmed),
+        'median_time_ms': _median_ms(
+            qs.values_list('time_spent_ms', flat=True),
+        ),
+        'by_module': by_module,
+        'by_subject': by_subject,
+    }
+
+
+def per_teacher_engagement_depth():
+    """One engagement-depth profile per teacher who has RTM data.
+
+    Returns a list, sorted by username, of:
+      {user_id, username, total, confirmed, eds, comment_use_rate,
+       non_neutral_rate, median_time_ms}
+    """
+    qs = ReflectionTension.objects.all()
+
+    teachers = {}
+    for row in qs.values('user_id', 'user__username').annotate(
+        total=Count('id'),
+        confirmed=Count('id', filter=Q(position_confirmed=True)),
+        commented=Count('id', filter=Q(comment_used=True)),
+        confirmed_non_neutral=Count(
+            'id',
+            filter=Q(position_confirmed=True)
+            & ~Q(selected_position=RTM_NEUTRAL_POSITION),
+        ),
+    ):
+        teachers[row['user_id']] = {
+            'user_id': row['user_id'],
+            'username': row['user__username'],
+            'total': row['total'],
+            'confirmed': row['confirmed'],
+            'eds': _rate(row['confirmed'], row['total']),
+            'comment_use_rate': _rate(row['commented'], row['total']),
+            'non_neutral_rate': _rate(
+                row['confirmed_non_neutral'], row['confirmed'],
+            ),
+        }
+
+    times = {}
+    for user_id, ms in qs.values_list('user_id', 'time_spent_ms'):
+        times.setdefault(user_id, []).append(ms)
+    for user_id, entry in teachers.items():
+        entry['median_time_ms'] = _median_ms(times.get(user_id, []))
+
+    return sorted(teachers.values(), key=lambda d: d['username'].lower())
