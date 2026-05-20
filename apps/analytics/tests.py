@@ -138,9 +138,10 @@ class RelevanceProfileServiceTest(TestCase):
         self.assertEqual(summary['relevance_rate'], 0.5)
 
 
-class RelevanceProfileViewTest(TestCase):
-    """The D.1 staff view: staff-gated, renders, keeps the peer panel
-    visibly separate from the relevance profile."""
+class ResearchAnalyticsViewTest(TestCase):
+    """The staff analytics dashboard: staff-gated, renders both the D.1
+    relevance-profile and the D.2 engagement-depth sections, and keeps
+    the peer panel visibly separate from the relevance profile."""
 
     def setUp(self):
         self.client = Client()
@@ -152,13 +153,15 @@ class RelevanceProfileViewTest(TestCase):
         TeacherProfile.objects.create(
             user=self.staff, ai_disclosure_acknowledged_at=timezone.now(),
         )
-        self.url = reverse('analytics:ai_relevance_profile')
+        self.url = reverse('analytics:dashboard')
 
-    def test_staff_user_can_view_the_profile(self):
+    def test_staff_user_can_view_the_dashboard(self):
         self.client.force_login(self.staff)
         resp = self.client.get(self.url)
         self.assertEqual(resp.status_code, 200)
+        # Both Phase D sections render on the one page.
         self.assertContains(resp, 'AI Output Relevance Profile')
+        self.assertContains(resp, 'Engagement Depth')
         # The peer usefulness panel is present and flagged as separate.
         self.assertContains(resp, 'usefulness signal')
 

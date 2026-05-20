@@ -1,0 +1,373 @@
+{% extends 'base.html' %}
+
+{% comment %}
+PROODOS Research Analytics — researcher-facing, staff-only.
+Two sections: D.1 AI Output Relevance Profile, D.2 Engagement Depth.
+Never linked from a teacher-facing page (measurement-reactivity guard).
+{% endcomment %}
+
+{% block title %}PROODOS Research Analytics{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8 max-w-6xl">
+
+    <h1 class="text-2xl font-bold mb-1">PROODOS Research Analytics</h1>
+    <p class="text-sm text-base-content/60 mb-4">
+        Phase D — researcher-facing analytics over data the platform
+        already collects.
+    </p>
+
+    <div class="alert alert-info text-sm mb-6">
+        <span>
+            <strong>Researcher-facing.</strong> These analytics are
+            descriptive, not evaluative — they measure how teachers
+            received the AI and how they engaged with the reflection
+            tools, not teacher competence. They are staff-only by
+            design: showing them to teachers would bias the underlying
+            instruments (measurement reactivity).
+        </span>
+    </div>
+
+    {# ============================================================ #}
+    {# SECTION 1 — D.1 AI Output Relevance Profile                  #}
+    {# ============================================================ #}
+    <div class="border-b-2 border-primary/30 mb-4 mt-2">
+        <h2 class="text-xl font-bold text-primary">1 &middot; AI Output Relevance Profile</h2>
+        <p class="text-xs text-base-content/50 mb-2">
+            Perceived relevance of the RAG / RTM / DTP outputs, from
+            teachers' human-in-the-loop ratings.
+        </p>
+    </div>
+
+    <h3 class="text-lg font-semibold mb-2">Cohort — perceived relevance by feature</h3>
+    <p class="text-xs text-base-content/50 mb-2">
+        {{ cohort.totals.ratings }} rating(s) from
+        {{ cohort.totals.teachers }} teacher(s).
+    </p>
+    <div class="overflow-x-auto mb-6">
+        <table class="table table-sm table-zebra">
+            <thead>
+                <tr>
+                    <th>Feature</th>
+                    <th class="text-center">Relevant</th>
+                    <th class="text-center">Partially</th>
+                    <th class="text-center">Not relevant</th>
+                    <th class="text-center">Total</th>
+                    <th class="text-center">Relevance rate</th>
+                    <th class="w-40">Distribution</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in cohort_feature_rows %}
+                <tr>
+                    <td class="font-medium">{{ row.label }}</td>
+                    <td class="text-center text-success">{{ row.counts.yes }}</td>
+                    <td class="text-center text-warning">{{ row.counts.partial }}</td>
+                    <td class="text-center text-error">{{ row.counts.no }}</td>
+                    <td class="text-center">{{ row.counts.total }}</td>
+                    <td class="text-center">
+                        {% if row.counts.relevance_rate is not None %}
+                            {{ row.counts.relevance_rate }}
+                        {% else %}<span class="text-base-content/40">—</span>{% endif %}
+                    </td>
+                    <td>
+                        {% if row.counts.total %}
+                        <div class="flex h-3 rounded overflow-hidden">
+                            <div class="bg-success" style="width: {% widthratio row.counts.yes row.counts.total 100 %}%"></div>
+                            <div class="bg-warning" style="width: {% widthratio row.counts.partial row.counts.total 100 %}%"></div>
+                            <div class="bg-error" style="width: {% widthratio row.counts.no row.counts.total 100 %}%"></div>
+                        </div>
+                        {% else %}<span class="text-base-content/40 text-xs">no data</span>{% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <h3 class="text-lg font-semibold mb-2">By module</h3>
+    <p class="text-xs text-base-content/50 mb-2">Each cell: relevance rate (n = ratings).</p>
+    <div class="overflow-x-auto mb-6">
+        <table class="table table-sm table-zebra">
+            <thead>
+                <tr>
+                    <th>Module</th>
+                    <th class="text-center">RAG</th>
+                    <th class="text-center">RTM</th>
+                    <th class="text-center">DTP</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for m in cohort.by_module %}
+                <tr>
+                    <td class="font-medium">{{ m.module_code }} — {{ m.module_title }}</td>
+                    {% for feat in m.cells %}
+                    <td class="text-center">
+                        {% if feat.total %}
+                            {{ feat.relevance_rate }}
+                            <span class="text-base-content/40 text-xs">(n={{ feat.total }})</span>
+                        {% else %}<span class="text-base-content/40">—</span>{% endif %}
+                    </td>
+                    {% endfor %}
+                </tr>
+                {% empty %}
+                <tr><td colspan="4" class="text-base-content/40">No ratings yet.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <h3 class="text-lg font-semibold mb-2">By subject area</h3>
+    <div class="overflow-x-auto mb-6">
+        <table class="table table-sm table-zebra">
+            <thead>
+                <tr>
+                    <th>Subject</th>
+                    <th class="text-center">RAG</th>
+                    <th class="text-center">RTM</th>
+                    <th class="text-center">DTP</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for s in cohort.by_subject %}
+                <tr>
+                    <td class="font-medium">{{ s.subject }}</td>
+                    {% for feat in s.cells %}
+                    <td class="text-center">
+                        {% if feat.total %}
+                            {{ feat.relevance_rate }}
+                            <span class="text-base-content/40 text-xs">(n={{ feat.total }})</span>
+                        {% else %}<span class="text-base-content/40">—</span>{% endif %}
+                    </td>
+                    {% endfor %}
+                </tr>
+                {% empty %}
+                <tr><td colspan="4" class="text-base-content/40">No ratings yet.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <h3 class="text-lg font-semibold mb-2">Why outputs were marked partial / not relevant</h3>
+    <div class="overflow-x-auto mb-6">
+        <table class="table table-sm table-zebra max-w-md">
+            <thead><tr><th>Reason</th><th class="text-center">Count</th></tr></thead>
+            <tbody>
+                {% for reason, n in cohort.reasons.items %}
+                <tr><td>{{ reason }}</td><td class="text-center">{{ n }}</td></tr>
+                {% empty %}
+                <tr><td colspan="2" class="text-base-content/40">No partial / not-relevant ratings yet.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <h3 class="text-lg font-semibold mb-2">Per-teacher profiles</h3>
+    <p class="text-xs text-base-content/50 mb-2">
+        Each feature cell: relevant / partially / not relevant.
+        Coverage = modules rated / modules completed.
+    </p>
+    <div class="overflow-x-auto mb-6">
+        <table class="table table-sm table-zebra">
+            <thead>
+                <tr>
+                    <th>Teacher</th>
+                    <th class="text-center">RAG</th>
+                    <th class="text-center">RTM</th>
+                    <th class="text-center">DTP</th>
+                    <th class="text-center">Coverage</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for t in teachers %}
+                <tr>
+                    <td class="font-medium">{{ t.username }}</td>
+                    {% for feat in t.cells %}
+                    <td class="text-center">
+                        {% if feat.total %}
+                            <span class="text-success">{{ feat.yes }}</span> /
+                            <span class="text-warning">{{ feat.partial }}</span> /
+                            <span class="text-error">{{ feat.no }}</span>
+                        {% else %}<span class="text-base-content/40">—</span>{% endif %}
+                    </td>
+                    {% endfor %}
+                    <td class="text-center">{{ t.rated_modules }} / {{ t.completed_modules }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="5" class="text-base-content/40">No teacher has rated yet.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="card bg-base-200 border border-base-300 mb-10">
+        <div class="card-body">
+            <h3 class="text-lg font-semibold">Peer synthesis — usefulness signal</h3>
+            <p class="text-xs text-base-content/60 mb-2">
+                Reported separately, and <strong>not</strong> part of the
+                relevance profile above. Peer synthesis makes no claim
+                about the teacher's own reflection, so its rating is a
+                usefulness signal — a different construct (TD-019).
+            </p>
+            <div class="overflow-x-auto">
+                <table class="table table-sm max-w-md">
+                    <tbody>
+                        <tr><td>Found useful</td><td class="text-center text-success">{{ peer.yes }}</td></tr>
+                        <tr><td>Somewhat</td><td class="text-center text-warning">{{ peer.partial }}</td></tr>
+                        <tr><td>Not really</td><td class="text-center text-error">{{ peer.no }}</td></tr>
+                        <tr class="font-medium"><td>Total</td><td class="text-center">{{ peer.total }}</td></tr>
+                        <tr><td>With a written comment</td><td class="text-center">{{ peer.with_comment }}</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    {# ============================================================ #}
+    {# SECTION 2 — D.2 Engagement Depth                             #}
+    {# ============================================================ #}
+    <div class="border-b-2 border-primary/30 mb-4 mt-2">
+        <h2 class="text-xl font-bold text-primary">2 &middot; Engagement Depth</h2>
+        <p class="text-xs text-base-content/50 mb-2">
+            How actively teachers engaged with the RTM tensions — a
+            tension counts as engaged only when the teacher moved its
+            slider. This separates surface engagement (the step was
+            completed, nothing touched) from deep engagement.
+        </p>
+    </div>
+
+    <div class="stats stats-vertical sm:stats-horizontal shadow mb-6">
+        <div class="stat">
+            <div class="stat-title">Engagement Depth Score</div>
+            <div class="stat-value text-primary">
+                {% if engagement.eds is not None %}{{ engagement.eds }}{% else %}—{% endif %}
+            </div>
+            <div class="stat-desc">
+                {{ engagement.confirmed }} of {{ engagement.total_tensions }} tensions engaged
+            </div>
+        </div>
+        <div class="stat">
+            <div class="stat-title">Non-neutral rate</div>
+            <div class="stat-value text-lg">
+                {% if engagement.non_neutral_rate is not None %}{{ engagement.non_neutral_rate }}{% else %}—{% endif %}
+            </div>
+            <div class="stat-desc">of engaged tensions placed off neutral</div>
+        </div>
+        <div class="stat">
+            <div class="stat-title">Comment-use rate</div>
+            <div class="stat-value text-lg">
+                {% if engagement.comment_use_rate is not None %}{{ engagement.comment_use_rate }}{% else %}—{% endif %}
+            </div>
+            <div class="stat-desc">tensions with an optional comment</div>
+        </div>
+        <div class="stat">
+            <div class="stat-title">Median interaction time</div>
+            <div class="stat-value text-lg">
+                {% if engagement.median_time_ms is not None %}{{ engagement.median_time_ms }} ms{% else %}—{% endif %}
+            </div>
+            <div class="stat-desc">per RTM tension</div>
+        </div>
+    </div>
+
+    <h3 class="text-lg font-semibold mb-2">Engagement depth by module</h3>
+    <div class="overflow-x-auto mb-6">
+        <table class="table table-sm table-zebra">
+            <thead>
+                <tr>
+                    <th>Module</th>
+                    <th class="text-center">Tensions</th>
+                    <th class="text-center">Engaged</th>
+                    <th class="text-center">EDS</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for m in engagement.by_module %}
+                <tr>
+                    <td class="font-medium">{{ m.module_code }} — {{ m.module_title }}</td>
+                    <td class="text-center">{{ m.total }}</td>
+                    <td class="text-center">{{ m.confirmed }}</td>
+                    <td class="text-center">
+                        {% if m.eds is not None %}{{ m.eds }}{% else %}<span class="text-base-content/40">—</span>{% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="4" class="text-base-content/40">No RTM data yet.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <h3 class="text-lg font-semibold mb-2">Engagement depth by subject area</h3>
+    <div class="overflow-x-auto mb-6">
+        <table class="table table-sm table-zebra">
+            <thead>
+                <tr>
+                    <th>Subject</th>
+                    <th class="text-center">Tensions</th>
+                    <th class="text-center">Engaged</th>
+                    <th class="text-center">EDS</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for s in engagement.by_subject %}
+                <tr>
+                    <td class="font-medium">{{ s.subject }}</td>
+                    <td class="text-center">{{ s.total }}</td>
+                    <td class="text-center">{{ s.confirmed }}</td>
+                    <td class="text-center">
+                        {% if s.eds is not None %}{{ s.eds }}{% else %}<span class="text-base-content/40">—</span>{% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="4" class="text-base-content/40">No RTM data yet.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <h3 class="text-lg font-semibold mb-2">Per-teacher engagement depth</h3>
+    <p class="text-xs text-base-content/50 mb-2">
+        EDS = engaged tensions / total. Non-neutral = engaged tensions
+        placed off the neutral mid-point.
+    </p>
+    <div class="overflow-x-auto mb-8">
+        <table class="table table-sm table-zebra">
+            <thead>
+                <tr>
+                    <th>Teacher</th>
+                    <th class="text-center">Tensions</th>
+                    <th class="text-center">Engaged</th>
+                    <th class="text-center">EDS</th>
+                    <th class="text-center">Non-neutral</th>
+                    <th class="text-center">Comment use</th>
+                    <th class="text-center">Median time</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for t in engagement_teachers %}
+                <tr>
+                    <td class="font-medium">{{ t.username }}</td>
+                    <td class="text-center">{{ t.total }}</td>
+                    <td class="text-center">{{ t.confirmed }}</td>
+                    <td class="text-center">
+                        {% if t.eds is not None %}{{ t.eds }}{% else %}<span class="text-base-content/40">—</span>{% endif %}
+                    </td>
+                    <td class="text-center">
+                        {% if t.non_neutral_rate is not None %}{{ t.non_neutral_rate }}{% else %}<span class="text-base-content/40">—</span>{% endif %}
+                    </td>
+                    <td class="text-center">
+                        {% if t.comment_use_rate is not None %}{{ t.comment_use_rate }}{% else %}<span class="text-base-content/40">—</span>{% endif %}
+                    </td>
+                    <td class="text-center">
+                        {% if t.median_time_ms is not None %}{{ t.median_time_ms }} ms{% else %}<span class="text-base-content/40">—</span>{% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="7" class="text-base-content/40">No teacher has RTM data yet.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+</div>
+{% endblock %}

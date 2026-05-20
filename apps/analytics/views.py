@@ -1,8 +1,10 @@
 """
-D.1 — AI Output Relevance Profile: the staff-only analytics view.
+The PROODOS Research Analytics dashboard — staff-only.
 
-Renders the perceived-relevance profile aggregated by services.py.
-Design: proodos_files/D1_AI_RELEVANCE_PROFILE_DESIGN_PROPOSAL_v1_20260519.md.
+One page with the Phase D researcher-facing analytics: the D.1 AI
+Output Relevance Profile and the D.2 Engagement Depth sections. Designs:
+proodos_files/D1_AI_RELEVANCE_PROFILE_DESIGN_PROPOSAL_v1_20260519.md and
+proodos_files/D2_ENGAGEMENT_DEPTH_DESIGN_PROPOSAL_v1_20260520.md.
 """
 
 from django.contrib.admin.views.decorators import staff_member_required
@@ -19,20 +21,18 @@ def _cells(features):
 
 
 @staff_member_required
-def ai_relevance_profile_view(request):
-    """The AI Output Relevance Profile — researcher-facing (D.1).
+def research_analytics_view(request):
+    """The PROODOS Research Analytics dashboard — researcher-facing.
 
-    Staff-only by design. The profile is derived from teachers' own
-    AIOutputDispute ratings; showing it back to teachers would
-    contaminate that instrument through measurement reactivity (design
-    proposal section 4). `staff_member_required` keeps it on the
-    researcher side — it is never linked from a teacher-facing page.
+    Staff-only by design. The analytics are derived from teachers' own
+    ratings and engagement telemetry; showing them back to teachers
+    would contaminate those instruments through measurement reactivity
+    (D.1 §4, D.2 §4). `staff_member_required` keeps the page on the
+    researcher side — it is never linked from a teacher-facing surface.
     """
+    # --- D.1: AI Output Relevance Profile -----------------------------
     cohort = services.cohort_relevance_profile()
     teachers = services.per_teacher_relevance_profiles()
-
-    # Shape the feature-keyed aggregates into ordered lists for the
-    # three-column tables.
     cohort_feature_rows = [
         {
             'feature': f,
@@ -53,5 +53,8 @@ def ai_relevance_profile_view(request):
         'cohort_feature_rows': cohort_feature_rows,
         'teachers': teachers,
         'peer': services.peer_usefulness_summary(),
+        # --- D.2: Engagement Depth ------------------------------------
+        'engagement': services.cohort_engagement_depth(),
+        'engagement_teachers': services.per_teacher_engagement_depth(),
     }
-    return render(request, 'analytics/ai_relevance_profile.html', context)
+    return render(request, 'analytics/research_analytics.html', context)
