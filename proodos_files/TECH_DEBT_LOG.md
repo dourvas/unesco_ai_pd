@@ -419,6 +419,28 @@ These are framed as **post-hoc exploratory** questions, NOT as primary research 
 
 ---
 
+## TD-021 — Teacher dashboard duplicates the Modules menu
+
+**Status:** Active. Defer to a focused UX pass (candidate: alongside Phase F.5 TAB5 redesign, or post-pilot).
+**Where:** `apps/users/views.py::dashboard`, `templates/home.html`, the Modules navigation menu.
+
+**Problem.** The teacher dashboard (`/dashboard/`, rendering `home.html`) builds `modules_with_progress` — every published module with its per-module completion percentage — and displays it. This is the same information the Modules navigation menu already presents. The dashboard, as it stands, is a second module list, not a distinct surface. Raised by John, 2026-05-20.
+
+**Constraint — what it cannot become.** The dashboard must NOT be turned into a "personal evolution" view (per-teacher DTP curve + RTM tension trajectories). That view is, by an explicit April 2026 design decision, the PROODOS Epilogue's Stage 0 — the "Personal Evolution Dashboard"; the Epilogue patch notes state that building it in a second place would be an architectural mistake. The Epilogue owns developmental *evolution*; the teacher dashboard must not duplicate it.
+
+**Forward path — options to weigh in the UX pass:**
+  - **(a) Per-teacher UNESCO 5×3 progress matrix.** Re-present the dashboard as the teacher's own competency-grid progress (5 aspects × 3 levels), reusing the visual component built for D.4's cohort matrix at the individual grain. A genuinely different presentation from the Modules menu's flat list, and — being completion-structure, not developmental-evolution — it does not collide with the Epilogue.
+  - **(b) Slim the dashboard** to a landing / orientation surface (next action, announcements, links) and drop the redundant module list.
+  - **(c) Remove the dashboard** and route `/dashboard/` to the Modules menu.
+
+Decision deferred; needs a short design note (grounded in the learning-analytics-dashboard literature) before implementation.
+
+**Dependencies:** D.4's UNESCO-matrix visual component (option a would reuse it).
+
+**Resolved at:** a dedicated UX pass — see status line.
+
+---
+
 ## TD entry conventions
 
 When adding a new entry:
