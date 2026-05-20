@@ -183,6 +183,21 @@ class ResearchAnalyticsViewTest(TestCase):
         resp = self.client.get(self.url)
         self.assertEqual(resp.status_code, 302)
 
+    def test_filter_bar_renders(self):
+        self.client.force_login(self.staff)
+        resp = self.client.get(self.url)
+        self.assertContains(resp, 'All subjects')
+        self.assertContains(resp, 'research-consenting teachers')
+
+    def test_view_accepts_filter_params(self):
+        self.client.force_login(self.staff)
+        resp = self.client.get(
+            self.url, {'subject': 'mathematics', 'start': '2026-01-01'},
+        )
+        self.assertEqual(resp.status_code, 200)
+        # An active filter surfaces the "Filters active" notice.
+        self.assertContains(resp, 'Filters active')
+
 
 class EngagementDepthServiceTest(TestCase):
     """D.2 — the engagement-depth aggregation over ReflectionTension.

@@ -17,7 +17,7 @@ Never linked from a teacher-facing page (measurement-reactivity guard).
         already collects.
     </p>
 
-    <div class="alert alert-info text-sm mb-6">
+    <div class="alert alert-info text-sm mb-4">
         <span>
             <strong>Researcher-facing.</strong> These analytics are
             descriptive, not evaluative — they measure how teachers
@@ -27,6 +27,44 @@ Never linked from a teacher-facing page (measurement-reactivity guard).
             instruments (measurement reactivity).
         </span>
     </div>
+
+    {# ============================================================ #}
+    {# Filter bar — date range + subject. Consent restriction is    #}
+    {# unconditional (services._scope) and noted to the researcher. #}
+    {# ============================================================ #}
+    <form method="get" class="card bg-base-200 border border-base-300 mb-6">
+        <div class="card-body py-3">
+            <div class="flex flex-wrap items-end gap-3">
+                <div>
+                    <label class="text-xs text-base-content/60 block mb-1">From</label>
+                    <input type="date" name="start" value="{{ filter_form.start }}"
+                           class="input input-sm input-bordered">
+                </div>
+                <div>
+                    <label class="text-xs text-base-content/60 block mb-1">To</label>
+                    <input type="date" name="end" value="{{ filter_form.end }}"
+                           class="input input-sm input-bordered">
+                </div>
+                <div>
+                    <label class="text-xs text-base-content/60 block mb-1">Subject</label>
+                    <select name="subject" class="select select-sm select-bordered">
+                        <option value="">All subjects</option>
+                        {% for value, label in subject_choices %}
+                        <option value="{{ value }}" {% if value == filter_form.subject %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-sm btn-primary">Apply</button>
+                {% if filter_form.active %}
+                <a href="{% url 'analytics:dashboard' %}" class="btn btn-sm btn-ghost">Clear</a>
+                {% endif %}
+            </div>
+            <p class="text-xs text-base-content/50 mt-2">
+                All sections below count only research-consenting teachers.
+                {% if filter_form.active %}<strong class="text-primary">Filters active</strong> — figures reflect the selected window / subject; with a small consenting cohort, narrow filters can leave cells with very few data points.{% endif %}
+            </p>
+        </div>
+    </form>
 
     {# ============================================================ #}
     {# SECTION 1 — D.1 AI Output Relevance Profile                  #}
