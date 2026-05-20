@@ -31,7 +31,8 @@
 
 ## Τρέχουσα κατάσταση (snapshot — 2026-05-20)
 
-*Latest update (2026-05-20, Phase F kickoff): **Phase F scoped to voice-only.** F.2 (image input) removed from Phase F. Rationale: the TAB5 reflection is prospective — all four parts ask what the teacher learned and what they will do, before any AI-integrated lesson has been taught — so no classroom artefact exists at reflection time for an image upload to attach to. The F.2 pitch ("show me what you tried, don't just describe it") presupposes retrospective reflection on completed practice, which TAB5 is not; and the Mayer multimedia-learning justification concerned how learning content is presented to learners, not the reflection-input modality. Image-based reflection is re-filed as a candidate for Phase G (Epilogue), where reflection is retrospective and a real artefact exists. Phase F is now F.1 (voice) only; the F.5 redesign trigger updated accordingly.*
+*Latest update (2026-05-20, Phase F redesign pivot): **Phase F redefined — TAB5 redesign with voice.** Two decisions after the voice-only scoping: (1) F.1b (server-side transcription agent) cancelled — a live Web Speech API test was satisfactory, so no server path, no toggle, no Platform Settings page, no second migration. (2) The per-part four-microphone build hit a Web Speech API multi-session reliability wall, so F.1 (voice) and the parked F.5 (TAB5 redesign) merge: Phase F becomes a single piece of work — rebuild TAB5 as a four-screen wizard in the magazine style (TAB1/TAB2 family) with voice built in, one microphone per screen (which sidesteps the multi-session problem). Backend untouched — no migration, no new endpoint, the submit/RAG/RTM/DTP pipeline unchanged; it is a rewrite of `tab5_reflection.html` plus a ~2-line view change for modality tracking. The `reflection_input_modality` field (F.1a commit 1) stays valid. Canonical doc: `proodos_files/F_TAB5_REDESIGN_DESIGN_PROPOSAL_v1_20260520.md` (draft, awaiting review); supersedes the F.1 voice proposal.*
+*Earlier (2026-05-20, Phase F kickoff): **Phase F scoped to voice-only.** F.2 (image input) removed from Phase F. Rationale: the TAB5 reflection is prospective — all four parts ask what the teacher learned and what they will do, before any AI-integrated lesson has been taught — so no classroom artefact exists at reflection time for an image upload to attach to. The F.2 pitch ("show me what you tried, don't just describe it") presupposes retrospective reflection on completed practice, which TAB5 is not; and the Mayer multimedia-learning justification concerned how learning content is presented to learners, not the reflection-input modality. Image-based reflection is re-filed as a candidate for Phase G (Epilogue), where reflection is retrospective and a real artefact exists. Phase F is now F.1 (voice) only; the F.5 redesign trigger updated accordingly.*
 *Earlier (2026-05-20, Phase D complete): **Phase D COMPLETE** — D.4 (the cohort dashboard) landed and Phase D is now fully done (D.1+D.2+D.3+D.4). D.4 added two cohort visualisations to the `/analytics/` dashboard — a UNESCO 5×3 completion matrix and a 16×15 RTM coverage heatmap; the dashboard was also made consent-restricted with date/subject filters. Analytics suite 24 tests pass. Canonical doc: `proodos_files/D4_DASHBOARD_DESIGN_PROPOSAL_v1_20260520.md`. A related observation — the teacher dashboard duplicates the Modules menu — is logged as TD-021 for a later UX pass. Remaining code-bearing work: Phase F, F.5, G, H.*
 *Earlier (2026-05-20, later): **Phase D.2 COMPLETE** — Engagement Depth. A second section on the `/analytics/` dashboard reports the Engagement Depth Score (EDS) — the share of RTM tensions a teacher actively engaged with (`position_confirmed` telemetry), separating surface from deep engagement, the basis for the "beyond completion rates" dissertation argument. Researcher-facing, read-only, no migration; analytics suite 14 tests pass. Canonical doc: `proodos_files/D2_ENGAGEMENT_DEPTH_DESIGN_PROPOSAL_v1_20260520.md`. Phase D now has only D.4 remaining.*
 *Earlier (2026-05-20): **Phase D.1 COMPLETE** — the AI Output Relevance Profile. A new `apps/analytics/` app aggregates the `AIOutputDispute` ratings teachers give on the RAG/RTM/DTP outputs into a researcher-facing, staff-only perceived-relevance profile (cohort + per-teacher). The roadmap's "Trust Calibration Score" name was rejected on construct-validity grounds (no reliability ground-truth axis); peer is excluded as a separate construct (TD-019). Read-only, no migration; 10 tests pass. Canonical doc: `proodos_files/D1_AI_RELEVANCE_PROFILE_DESIGN_PROPOSAL_v1_20260519.md`. Phase D now has D.2 and D.4 remaining.*
@@ -67,8 +68,7 @@ Bird's-eye view. Αυτό το block ενημερώνεται σε κάθε sess
 
 | Item | Effort | Reference |
 |---|---|---|
-| **Phase F** — Multimodal reflection (voice input). New agents extend the `BaseAIAgent` hierarchy via `extract()` (voice transcription user-ratifies before save). Image input removed 2026-05-20 — re-filed as a Phase G candidate. | Multi-session | §3 Phase F |
-| **Phase F.5** — TAB5 Visual Redesign (parked; awaits F.1 functional completion) | Single focused arc post-F | §3 Phase F.5 |
+| **Phase F** — TAB5 redesign: a four-screen wizard in the magazine style (TAB1/TAB2 family) with voice input (Web Speech API) built in. Merges the former F.1 (voice) and F.5 (TAB5 redesign); F.2 and F.1b cancelled. Frontend-only — `tab5_reflection.html` rewrite + ~2-line view change. | Multi-session | §3 Phase F |
 | **Phase G** — Full PROODOS Epilogue (Stage 0..3 + Gemini dialogue + Learning Portrait PDF — TD-011) | Multi-session | §3 Phase G |
 | **Phase H** — Closing flow (T2a immediate post-test + Certificate + T2b delayed post-test 4-6 weeks later) | Multi-session | §3 Phase H |
 | **Phase I** — Dissertation writing | External (John) | §3 Phase I |
@@ -702,11 +702,11 @@ These seven form the architecture chapter of the dissertation. The numerical bal
 
 ---
 
-### Phase F — Multimodal Reflection (voice)
+### Phase F — TAB5 Redesign (4-screen wizard + magazine + voice)
 
-**Στόχος:** Επέκταση του TAB5 reflection input από text σε text + φωνή.
+**Στόχος:** Επανασχεδιασμός του TAB5 ως four-screen wizard στο magazine style (οικογένεια TAB1/TAB2), με voice input ενσωματωμένο.
 
-**Scope note (2026-05-20, Phase F kickoff).** Το Phase F αρχικά περιλάμβανε και image input (F.2 παρακάτω). Αφαιρέθηκε στο kickoff: το TAB5 reflection είναι προοπτικό — και τα τέσσερα parts (Key Insights, Application, Concerns, Action Plan) ρωτούν τι έμαθε ο εκπαιδευτικός και τι θα κάνει, *πριν* διδάξει το μάθημα με AI — οπότε δεν υπάρχει classroom artefact τη στιγμή του αναστοχασμού για να συνδεθεί ένα image upload. Η image-based reflection ανήκει σε αναδρομικό context· re-filed ως υποψήφιο στοιχείο του Phase G (Epilogue). Βλ. §3 Phase G.
+**Redefinition note (2026-05-20).** Το Phase F ξεκίνησε ως «multimodal reflection» (voice + image). Κατέληξε, μέσα από διαδοχικές αποφάσεις του kickoff, σε ένα ενιαίο κομμάτι: τον επανασχεδιασμό του TAB5. Σύνοψη: **F.2 (image)** αφαιρέθηκε — το TAB5 reflection είναι προοπτικό, δεν υπάρχει artefact να συνδεθεί (re-filed ως Phase G candidate). **F.1b (server-side transcription agent)** ακυρώθηκε — το Web Speech API ήταν ικανοποιητικό σε live test, οπότε δεν χρειάζεται server path / toggle / Platform Settings / δεύτερη migration. **F.1 (voice) και F.5 (TAB5 redesign) συγχωνεύονται** — η υλοποίηση τεσσάρων μικροφώνων σε μία σελίδα χτύπησε σε multi-session αναξιοπιστία του Web Speech API· ένα μικρόφωνο ανά οθόνη (wizard) το παρακάμπτει. **Canonical doc:** `proodos_files/F_TAB5_REDESIGN_DESIGN_PROPOSAL_v1_20260520.md` — υπερισχύει του παρακάτω F.1–F.4 breakdown, που διατηρείται για ιστορικό.
 
 #### F.1 — Voice input
 - Web Speech API integration στο reflection form
@@ -725,7 +725,7 @@ These seven form the architecture chapter of the dissertation. The numerical bal
 #### F.4 — Δικαίωση για τη διατριβή
 Άμεση απάντηση σε critique της literature ότι το AI-mediated PD είναι text-heavy. (Σημείωση: η αρχική επίκληση των αρχών πολυμεσικής μάθησης του Mayer τεκμηρίωνε το image input — οι αρχές αυτές περιγράφουν πώς παρουσιάζεται το μαθησιακό υλικό στον μαθητή, όχι το modality υποβολής αναστοχασμού, οπότε δεν στήριζαν στην πραγματικότητα το F.2. Η δικαίωση του F.1 στηρίζεται σε cognitive load reduction / inclusive design.)
 
-**Canonical doc:** `proodos_files/F1_VOICE_INPUT_DESIGN_PROPOSAL_v1_20260520.md` — design proposal for F.1 (two transcription paths behind a staff eval toggle, Web-Speech-first sequencing, modality tracking, Article 50 position). Reviewed 2026-05-20; all design decisions recorded (see §11). One open item: final wording of the voice-input user notice awaits John's sign-off.
+**Canonical doc:** `proodos_files/F_TAB5_REDESIGN_DESIGN_PROPOSAL_v1_20260520.md` — the TAB5 redesign proposal (four-screen wizard + magazine + voice), draft awaiting review. It supersedes `F1_VOICE_INPUT_DESIGN_PROPOSAL_v1_20260520.md` (the earlier voice-only proposal, kept for history; its F.1b / toggle / server-path content is cancelled).
 
 **Αρχεία αναφοράς:**
 - `tab5_reflection.html` — current text-only form
@@ -733,11 +733,10 @@ These seven form the architecture chapter of the dissertation. The numerical bal
 
 ---
 
-#### F.5 — TAB5 Visual Redesign
+#### F.5 — TAB5 Visual Redesign — MERGED INTO PHASE F (2026-05-20)
 
-**Status:** ⏸ Parked — awaits Phase F functional completion (F.1 voice + F.2 image).
-**Trigger to start:** F.1 + F.2 functionally complete.
-**Date added:** 2026-05-13.
+**Status:** Merged. F.5 is no longer a separate parked entry — it became Phase F itself. The per-part voice build hit a Web Speech API multi-session wall, which made the redesign and voice inseparable: a four-screen wizard (one microphone per screen) is both the redesign and the fix. See the canonical doc above and the Redefinition note at the top of §3 Phase F. The problem statement and design anchors below are retained as input to that redesign.
+**Date added:** 2026-05-13. **Merged:** 2026-05-20.
 
 **Problem statement.** The current TAB5 reflection page is functional but visually old-fashioned. The pain point is overall visual era, not specific structural issues (panels, density, flow). DaisyUI cards with hard-edged borders (`border-2 border-blue-200`), pastel background fills (`bg-blue-50`, `bg-yellow-50`, `bg-green-50`), emoji-prefixed titles (💡 Part 1, 📝 Reflection), DaisyUI `badge` counters for word targets, and a stacked `<form>` layout with no spatial differentiation between reflection-input and AI-output zones together produce a 2020-era admin-UI register. The page reads as "fill out a form", not "reflect and converse with an intelligent system".
 

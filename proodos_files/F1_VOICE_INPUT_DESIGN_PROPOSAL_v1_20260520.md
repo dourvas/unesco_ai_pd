@@ -2,7 +2,7 @@
 
 - **Phase:** F (Multimodal Reflection), sub-track F.1
 - **Date:** 2026-05-20
-- **Status:** Reviewed — design decisions recorded 2026-05-20
+- **Status:** SUPERSEDED (2026-05-20) by `F_TAB5_REDESIGN_DESIGN_PROPOSAL_v1_20260520.md`. Phase F merged the voice work into the TAB5 redesign; this document is kept for history. Its F.1b / toggle / server-path / Platform Settings content is cancelled. The voice-input decisions that carried forward (Web Speech API, modality tracking, Article 50 position) are restated in the superseding proposal.
 - **Canonical roadmap entry:** `PROODOS_UNIFIED_ROADMAP.md` §3 Phase F
 
 ## 1. Scope and decisions already taken
