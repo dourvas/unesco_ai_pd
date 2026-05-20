@@ -47,6 +47,8 @@ INSTALLED_APPS = [
     # Phase E commit 1 — agent layer (BaseAIAgent + RAGFeedbackAgent live
     # alongside rag_query_system.py; monolith still serves traffic).
     'apps.agents',
+    # Phase D — researcher-facing analytics layer (D.1 relevance profile).
+    'apps.analytics',
 ]
 
 MIDDLEWARE = [
