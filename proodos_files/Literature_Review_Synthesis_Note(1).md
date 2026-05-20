@@ -434,6 +434,22 @@ Paradis, E., & Sutkin, G. (2017). Beyond a good story: From Hawthorne Effect to 
 
 ---
 
+## 13. Engagement — Στήριξη για το D.2
+
+Προστέθηκε 2026-05-20 για το **D.2 (Engagement Depth / Position Confirmation Analytics)** — το researcher-facing analytic που μετράει πόσο ενεργά εμπλέκεται ο εκπαιδευτικός με τις εντάσεις του RTM. Σχεδιαστικό αρχείο: `D2_ENGAGEMENT_DEPTH_DESIGN_PROPOSAL_v1_20260520.md`.
+
+### 13.1 — Το construct του engagement (Fredricks, Blumenfeld & Paris, 2004)
+Η κανονική εργασία-ανασκόπηση για το school engagement (*Review of Educational Research*). Ορίζει το engagement ως **πολυδιάστατο construct** με τρεις όψεις: **behavioural** (συμμετοχή, προσπάθεια στο έργο), **emotional**, **cognitive**.
+
+*Ρόλος για το D.2.* Το EDS (Engagement Depth Score) είναι δείκτης **behavioural engagement** — έμπρακτη εμπλοκή με το έργο τοποθέτησης του RTM, σε αντιδιαστολή με την απλή *ολοκλήρωση* («beyond completion rates»). Τεκμηριώνει ρητά ότι το EDS μετρά τη συμπεριφορική, όχι τη γνωστική όψη — και άρα δεν υπερ-διεκδικεί.
+
+Fredricks, J. A., Blumenfeld, P. C., & Paris, A. H. (2004). School engagement: Potential of the concept, state of the evidence. *Review of Educational Research, 74*(1), 59–109. https://doi.org/10.3102/00346543074001059
+
+### 13.2 — Measurement reactivity (Paradis & Sutkin, 2017)
+Βλ. §12.3. Η ίδια αναφορά στηρίζει και για το D.2 την απόφαση το EDS να είναι researcher-facing only: το `position_confirmed` είναι behavioural telemetry, και αν το σκορ γινόταν ορατό στον εκπαιδευτικό θα μετατρεπόταν σε στόχο προς βελτιστοποίηση (επιδεικτικό άγγιγμα sliders).
+
+---
+
 ## Project Context (ιστορικό snapshot — Απρίλιος 2026)
 
 > Το παρακάτω μπλοκ είναι snapshot **Απριλίου 2026**. Για την τρέχουσα κατάσταση φάσεων — Phase E (multi-agent refactor) ολοκληρωμένη, Phase D σε εξέλιξη (D.3a DTP redefinition done) — δες το `git log` και τα design proposals στο `proodos_files/`.
