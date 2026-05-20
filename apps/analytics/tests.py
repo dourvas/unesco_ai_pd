@@ -354,3 +354,85 @@ class AnalyticsFilterTest(TestCase):
         depth = services.cohort_engagement_depth()
         # The non-consenting teacher's tension is excluded.
         self.assertEqual(depth['total_tensions'], 1)
+
+
+class DashboardServiceTest(TestCase):
+    """D.4 — the UNESCO 5x3 completion matrix and the RTM coverage
+    heatmap. Both consent-restricted."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.m1 = Module.objects.create(
+            code='DSH1', title='Dashboard module 1', description='t',
+            order_index=971, unesco_aspect='human_centered',
+            proficiency_level='Acquire', is_published=True,
+        )
+        cls.m2 = Module.objects.create(
+            code='DSH2', title='Dashboard module 2', description='t',
+            order_index=972, unesco_aspect='ethics',
+            proficiency_level='Deepen', is_published=True,
+        )
+
+        def teacher(username, subject, consent):
+            user = User.objects.create_user(username, password='pw')
+            TeacherProfile.objects.create(
+                user=user, subject_area=subject, research_consent=consent,
+                ai_disclosure_acknowledged_at=timezone.now(),
+            )
+            return user
+
+        cls.t1 = teacher('dsh_t1', 'mathematics', True)
+        cls.t2 = teacher('dsh_t2', 'science', True)
+        cls.t3 = teacher('dsh_t3', 'mathematics', False)
+
+        # t1 completed m1; t3 (non-consenting) also completed m1.
+        UserModuleProgress.objects.create(
+            user=cls.t1, module=cls.m1, completed_at=timezone.now(),
+        )
+        UserModuleProgress.objects.create(
+            user=cls.t3, module=cls.m1, completed_at=timezone.now(),
+        )
+
+        def tension(user, module, label):
+            ReflectionTension.objects.create(
+                user=user, module=module, tension_label=label,
+                left_pole='L', right_pole='R', grounding_quote='q',
+                selected_position=3,
+            )
+
+        tension(cls.t1, cls.m1, 'd-t1')
+        tension(cls.t2, cls.m2, 'd-t2')
+        tension(cls.t3, cls.m1, 'd-t3')  # non-consenting — excluded
+
+    def _cell(self, matrix, aspect, level_index):
+        row = next(r for r in matrix['rows'] if r['aspect'] == aspect)
+        return row['cells'][level_index]
+
+    def test_unesco_matrix_completion_rate(self):
+        matrix = services.cohort_unesco_matrix()
+        # 2 consenting teachers form the denominator (t3 excluded).
+        self.assertEqual(matrix['total_teachers'], 2)
+        cell = self._cell(matrix, 'human_centered', 0)  # Acquire column
+        self.assertEqual(cell['module_code'], 'DSH1')
+        self.assertEqual(cell['completed'], 1)  # only t1; t3 not consenting
+        self.assertEqual(cell['rate'], 0.5)
+
+    def test_unesco_matrix_uncompleted_cell(self):
+        matrix = services.cohort_unesco_matrix()
+        cell = self._cell(matrix, 'ethics', 1)  # Deepen column
+        self.assertEqual(cell['module_code'], 'DSH2')
+        self.assertEqual(cell['completed'], 0)
+        self.assertEqual(cell['rate'], 0.0)
+
+    def test_rtm_heatmap_coverage_counts(self):
+        heatmap = services.cohort_rtm_heatmap()
+        rows = {r['subject']: r for r in heatmap['rows']}
+        maths = {c['module_code']: c['count'] for c in rows['mathematics']['cells']}
+        science = {c['module_code']: c['count'] for c in rows['science']['cells']}
+        self.assertEqual(maths['DSH1'], 1)   # t1; t3 excluded (no consent)
+        self.assertEqual(science['DSH2'], 1)  # t2
+        self.assertEqual(maths['DSH2'], 0)
+
+    def test_rtm_heatmap_has_all_sixteen_subject_rows(self):
+        heatmap = services.cohort_rtm_heatmap()
+        self.assertEqual(len(heatmap['rows']), 16)

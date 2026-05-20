@@ -28,13 +28,16 @@ Nothing here mutates data or calls an LLM; it is pure ORM aggregation.
 
 import statistics
 
+from django.contrib.auth.models import User
 from django.db.models import Count, Q
 
 from apps.modules.models import (
     AIOutputDispute,
+    Module,
     ReflectionTension,
     UserModuleProgress,
 )
+from apps.users.models import TeacherProfile
 
 
 # Only these feed the relevance profile — 'peer' is a different
@@ -397,3 +400,144 @@ def per_teacher_engagement_depth(filters=None):
         entry['median_time_ms'] = _median_ms(times.get(user_id, []))
 
     return sorted(teachers.values(), key=lambda d: d['username'].lower())
+
+
+# ======================================================================
+# D.4 — Dashboard: UNESCO Matrix + RTM Heatmap
+#
+# Two cohort-level visualisations over data the platform already holds.
+# The UNESCO matrix shows module completion across the 5x3 competency
+# grid; the RTM heatmap shows where the RTM instrument has coverage
+# across subjects x modules. Researcher-facing; design:
+# proodos_files/D4_DASHBOARD_DESIGN_PROPOSAL_v1_20260520.md.
+# ======================================================================
+
+# Aspect / level orders derived from the Module model so the matrix
+# stays in step with the schema.
+ASPECT_LABELS = dict(Module._meta.get_field('unesco_aspect').choices)
+ASPECT_ORDER = list(ASPECT_LABELS)
+LEVEL_ORDER = [c[0] for c in Module._meta.get_field('proficiency_level').choices]
+
+
+def cohort_unesco_matrix(filters=None):
+    """The UNESCO 5x3 competency matrix of cohort module completion.
+
+    Each of the 15 cells is one module; the value is the cohort
+    completion rate — consenting teachers who completed it over all
+    consenting teachers. The matrix is *cumulative*: consent and the
+    subject filter apply, but the date filter does NOT narrow it
+    (date-windowing a standing state is incoherent — design §4).
+
+    Returns:
+      {levels: [...], total_teachers: int,
+       rows: [ {aspect, aspect_label,
+                cells: [ {module_code, module_title, completed, total,
+                          rate} | None ]} ]}
+    """
+    filters = filters or {}
+    subject = filters.get('subject')
+
+    # Denominator — consenting teachers, optionally of one subject.
+    teacher_qs = User.objects.filter(teacher_profile__research_consent=True)
+    if subject:
+        teacher_qs = teacher_qs.filter(teacher_profile__subject_area=subject)
+    total_teachers = teacher_qs.count()
+
+    # Completed-teacher count per module (consent + optional subject;
+    # cumulative — not date-narrowed).
+    progress = UserModuleProgress.objects.filter(
+        completed_at__isnull=False,
+        user__teacher_profile__research_consent=True,
+    )
+    if subject:
+        progress = progress.filter(
+            user__teacher_profile__subject_area=subject,
+        )
+    completed_by_module = {
+        row['module_id']: row['n']
+        for row in progress.values('module_id').annotate(
+            n=Count('user', distinct=True),
+        )
+    }
+
+    by_cell = {
+        (m.unesco_aspect, m.proficiency_level): m
+        for m in Module.objects.filter(is_published=True)
+    }
+
+    rows = []
+    for aspect in ASPECT_ORDER:
+        cells = []
+        for level in LEVEL_ORDER:
+            module = by_cell.get((aspect, level))
+            if module is None:
+                cells.append(None)
+                continue
+            completed = completed_by_module.get(module.id, 0)
+            cells.append({
+                'module_code': module.code,
+                'module_title': module.title,
+                'completed': completed,
+                'total': total_teachers,
+                'rate': _rate(completed, total_teachers),
+            })
+        rows.append({
+            'aspect': aspect,
+            'aspect_label': ASPECT_LABELS[aspect],
+            'cells': cells,
+        })
+
+    return {
+        'levels': list(LEVEL_ORDER),
+        'rows': rows,
+        'total_teachers': total_teachers,
+    }
+
+
+def cohort_rtm_heatmap(filters=None):
+    """The RTM coverage heatmap — subjects x modules.
+
+    Each cell counts the distinct consenting teachers of that subject
+    with at least one ReflectionTension on that module. Fully scoped
+    (consent + subject + date). At pilot scale this is a coverage map,
+    not a comparative measure (design §7).
+
+    Returns:
+      {modules: [code, ...], max_count: int,
+       rows: [ {subject, subject_label,
+                cells: [ {module_code, count} ]} ]}
+    """
+    qs = _scope(ReflectionTension.objects.all(), filters)
+
+    counts = {}
+    for row in qs.values(
+        'user__teacher_profile__subject_area', 'module__code',
+    ).annotate(n=Count('user', distinct=True)):
+        subject = row['user__teacher_profile__subject_area'] or 'Unknown'
+        counts[(subject, row['module__code'])] = row['n']
+
+    module_codes = list(
+        Module.objects.filter(is_published=True)
+        .order_by('order_index')
+        .values_list('code', flat=True)
+    )
+
+    rows = [
+        {
+            'subject': value,
+            'subject_label': label,
+            'cells': [
+                {'module_code': code, 'count': counts.get((value, code), 0)}
+                for code in module_codes
+            ],
+        }
+        for value, label in TeacherProfile._meta.get_field(
+            'subject_area',
+        ).choices
+    ]
+
+    return {
+        'modules': module_codes,
+        'rows': rows,
+        'max_count': max(counts.values(), default=0),
+    }
