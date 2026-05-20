@@ -32,6 +32,9 @@ urlpatterns = [
     # 7. PROODOS Epilogue (post-M15, pre-T2) — Phase C C.2.5
     path('epilogue/', include('apps.epilogue.urls', namespace='epilogue')),
 
+    # 8. Researcher-facing analytics (D.1 relevance profile) — staff-only
+    path('analytics/', include('apps.analytics.urls', namespace='analytics')),
+
 ]
 
 # Serve media and static files in development

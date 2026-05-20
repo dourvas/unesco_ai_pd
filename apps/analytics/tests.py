@@ -8,7 +8,8 @@ relevance profile and surface only in peer_usefulness_summary().
 """
 
 from django.contrib.auth.models import User
-from django.test import TestCase
+from django.test import Client, TestCase
+from django.urls import reverse
 from django.utils import timezone
 
 from apps.analytics import services
@@ -130,3 +131,44 @@ class RelevanceProfileServiceTest(TestCase):
         self.assertEqual(summary['no'], 1)
         self.assertEqual(summary['total'], 2)
         self.assertEqual(summary['relevance_rate'], 0.5)
+
+
+class RelevanceProfileViewTest(TestCase):
+    """The D.1 staff view: staff-gated, renders, keeps the peer panel
+    visibly separate from the relevance profile."""
+
+    def setUp(self):
+        self.client = Client()
+        self.staff = User.objects.create_user(
+            'analytics_staff', password='pw', is_staff=True,
+        )
+        # A disclosure-acknowledged profile so the AI-disclosure
+        # middleware does not redirect the staff request.
+        TeacherProfile.objects.create(
+            user=self.staff, ai_disclosure_acknowledged_at=timezone.now(),
+        )
+        self.url = reverse('analytics:ai_relevance_profile')
+
+    def test_staff_user_can_view_the_profile(self):
+        self.client.force_login(self.staff)
+        resp = self.client.get(self.url)
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, 'AI Output Relevance Profile')
+        # The peer usefulness panel is present and flagged as separate.
+        self.assertContains(resp, 'usefulness signal')
+
+    def test_non_staff_user_is_redirected(self):
+        non_staff = User.objects.create_user(
+            'analytics_plain', password='pw', is_staff=False,
+        )
+        TeacherProfile.objects.create(
+            user=non_staff, ai_disclosure_acknowledged_at=timezone.now(),
+        )
+        self.client.force_login(non_staff)
+        resp = self.client.get(self.url)
+        # staff_member_required bounces a non-staff user — not a 200.
+        self.assertEqual(resp.status_code, 302)
+
+    def test_anonymous_user_is_redirected(self):
+        resp = self.client.get(self.url)
+        self.assertEqual(resp.status_code, 302)

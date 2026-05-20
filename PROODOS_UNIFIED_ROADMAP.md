@@ -29,9 +29,10 @@
 
 ---
 
-## Τρέχουσα κατάσταση (snapshot — 2026-05-19)
+## Τρέχουσα κατάσταση (snapshot — 2026-05-20)
 
-*Latest update (2026-05-19): **Phase D.3 COMPLETE** — the DTP sub-track delivered in two parts. **D.3a** redefined the Developmental Trajectory Predictor from a single cross-aspect comparison into a dual-signal model (Vertical Continuity Signal + Temporal Shift Signal), descriptive-only, no thresholds/labels in the pilot. **D.3b** added the `XAIAgent` — the first concrete `ServiceAgent` — producing a faithful, domain-driven natural-language explanation of the DTP composite. Both committed and live-verified on M6. Canonical docs: `proodos_files/DTP_REDEFINITION_DESIGN_PROPOSAL_v1_20260518.md` and `proodos_files/DTP_XAI_NARRATIVE_DESIGN_PROPOSAL_v1_20260519.md`. See §3 Phase D for the full breakdown. Phase D now has D.1 (TCS), D.2 (Position Confirmation Analytics), D.4 (Dashboard) remaining.*
+*Latest update (2026-05-20): **Phase D.1 COMPLETE** — the AI Output Relevance Profile. A new `apps/analytics/` app aggregates the `AIOutputDispute` ratings teachers give on the RAG/RTM/DTP outputs into a researcher-facing, staff-only perceived-relevance profile (cohort + per-teacher). The roadmap's "Trust Calibration Score" name was rejected on construct-validity grounds (no reliability ground-truth axis); peer is excluded as a separate construct (TD-019). Read-only, no migration; 10 tests pass. Canonical doc: `proodos_files/D1_AI_RELEVANCE_PROFILE_DESIGN_PROPOSAL_v1_20260519.md`. Phase D now has D.2 and D.4 remaining.*
+*Earlier (2026-05-19): **Phase D.3 COMPLETE** — the DTP sub-track delivered in two parts. **D.3a** redefined the Developmental Trajectory Predictor from a single cross-aspect comparison into a dual-signal model (Vertical Continuity Signal + Temporal Shift Signal), descriptive-only, no thresholds/labels in the pilot. **D.3b** added the `XAIAgent` — the first concrete `ServiceAgent` — producing a faithful, domain-driven natural-language explanation of the DTP composite. Both committed and live-verified on M6. Canonical docs: `proodos_files/DTP_REDEFINITION_DESIGN_PROPOSAL_v1_20260518.md` and `proodos_files/DTP_XAI_NARRATIVE_DESIGN_PROPOSAL_v1_20260519.md`. See §3 Phase D for the full breakdown. Phase D now has D.1 (TCS), D.2 (Position Confirmation Analytics), D.4 (Dashboard) remaining.*
 *Earlier (2026-05-14): **Phase E COMPLETE** — 11 commits, monolith deleted, 316 tests green, hierarchy of 4 agents under `apps/agents/` with two public entry points (`generate()` for "AI commits, human disputes" + `extract()` for "AI proposes, human ratifies"). Seven distinct architectural improvements delivered (atomic strengthening at one site + dual entry points + cost tracking 1/4→4/4 + DB-idiom unification + dead-code findings + silent-failure antipattern exposure + pre-deletion audits as complementary safety). See §3 Phase E for the full retrospective + §4.3 for the closed parked-idea entry.*
 *Earlier (2026-05-13): Phase F.5 (TAB5 Visual Redesign) added to remaining work as a parked entry awaiting Phase F.1+F.2 functional completion. See §3 Phase F.5 for the full addendum content.*
 
@@ -45,7 +46,8 @@ Bird's-eye view. Αυτό το block ενημερώνεται σε κάθε sess
 | **B.** Validation & Cleanup | ⚠️ Partial — B.2 (video badges) + B.4 (Edit Profile via C.2.1) done· B.1 (Content Validation Matrix) + B.3 (code cleanup) trickling | §3 Phase B |
 | **C.** Onboarding + EU AI Act + GDPR | ✅ **100% code-bearing complete** — 15 commits, 214 tests pass. Career Stage Step 2 gap closed by Option A decision 2026-05-13 (deferred to post-pilot research direction — TD-020). | §2.8, §3 Phase C |
 | **E.** Multi-agent refactor | ✅ **100% complete (2026-05-14)** — 11 commits, monolith deleted, 316 tests pass. Four named agents under `apps/agents/` (`RAGFeedbackAgent`, `RTMAgent`, `DTPAgent`, `PeerSynthesisAgent`) all inheriting from `BaseAIAgent` with two public entry points (`generate()` + `extract()`) and shared infrastructure (LLM client, cost tracker, audit logger, unified DB helper). Seven distinct architectural improvements delivered. | §3 Phase E |
-| **D.3** DTP sub-track (D.3a redefinition + D.3b XAI narrative) | ✅ **Complete (2026-05-19)** — D.3a redefined the DTP into a dual-signal model (Vertical Continuity + Temporal Shift), descriptive-only. D.3b added the `XAIAgent` — first concrete `ServiceAgent` under a new `ServiceAgent` parent — a faithful, domain-driven explanation of the DTP composite. Live-verified on M6; agent suite 123 tests pass. D.1/D.2/D.4 still remaining. | §3 Phase D |
+| **D.3** DTP sub-track (D.3a redefinition + D.3b XAI narrative) | ✅ **Complete (2026-05-19)** — D.3a redefined the DTP into a dual-signal model (Vertical Continuity + Temporal Shift), descriptive-only. D.3b added the `XAIAgent` — first concrete `ServiceAgent` under a new `ServiceAgent` parent — a faithful, domain-driven explanation of the DTP composite. Live-verified on M6; agent suite 123 tests pass. | §3 Phase D |
+| **D.1** AI Output Relevance Profile | ✅ **Complete (2026-05-20)** — new `apps/analytics/` app: a researcher-facing, staff-only aggregation of the `AIOutputDispute` ratings into a perceived-relevance profile (cohort + per-teacher, by feature/module/subject). "Trust Calibration Score" rejected on construct-validity grounds; peer excluded as a separate construct (TD-019). Read-only, no migration; 10 tests pass. D.2/D.4 still remaining. | §3 Phase D |
 
 **Phase C breakdown:**
 
@@ -60,7 +62,7 @@ Bird's-eye view. Αυτό το block ενημερώνεται σε κάθε sess
 
 | Item | Effort | Reference |
 |---|---|---|
-| **Phase D** — Pilot Readiness Features. **D.3 done** (see DONE table). Remaining: **D.1** Trust Calibration Score (TCS), **D.2** Position Confirmation Analytics, **D.4** Dashboard UNESCO Matrix 5×3 + RTM Heatmap. | Multi-session | §3 Phase D |
+| **Phase D** — Pilot Readiness Features. **D.1 + D.3 done** (see DONE table). Remaining: **D.2** Position Confirmation Analytics, **D.4** Dashboard UNESCO Matrix 5×3 + RTM Heatmap. | Multi-session | §3 Phase D |
 | **Phase F** — Multimodal reflection (voice input + image input). New agents extend the `BaseAIAgent` hierarchy via `extract()` (voice transcription user-ratifies before save). | Multi-session | §3 Phase F |
 | **Phase F.5** — TAB5 Visual Redesign (parked; awaits F.1 + F.2 functional completion) | Single focused arc post-F | §3 Phase F.5 |
 | **Phase G** — Full PROODOS Epilogue (Stage 0..3 + Gemini dialogue + Learning Portrait PDF — TD-011) | Multi-session | §3 Phase G |
@@ -508,11 +510,25 @@ The CP-11 wipe script is at `scripts/cp11_wipe_test_users.py`. Core logic expose
 
 **Στόχος:** Features που πολλαπλασιάζουν την ερευνητική αξία χωρίς νέο περιεχόμενο.
 
-#### D.1 — Trust Calibration Score (TCS)
-- Σύνθετο score από RAG/RTM/DTP/Peer ratings
-- Aggregation logic στο `rag_query_system.py`
-- Dashboard view ανά εκπαιδευτικό
-- Νέα ερευνητική μεταβλητή
+#### D.1 — AI Output Relevance Profile — ✅ COMPLETE (2026-05-20)
+
+The roadmap's original "Trust Calibration Score" framing was rejected on
+construct-validity grounds: trust calibration needs a ground-truth reliability
+axis the platform lacks (Lee & See, 2004), so what the data supports is
+*perceived relevance*, not calibration. D.1 became the **AI Output Relevance
+Profile** — a researcher-facing aggregation of the `AIOutputDispute` ratings
+teachers already give on the RAG / RTM / DTP outputs.
+
+- New `apps/analytics/` app — the researcher-facing analytics layer, shared
+  home for D.1 and (later) D.2. Owns no models; read-only aggregation only.
+- `services.py` — cohort and per-teacher perceived-relevance distributions,
+  reason breakdown, coverage indicator. Whitelists rag/rtm/dtp; peer is
+  excluded as a different construct (TD-019), reported separately.
+- A `staff_member_required` view at `/analytics/ai-relevance/` — never linked
+  from a teacher-facing page (measurement-reactivity guard).
+
+Descriptive, not evaluative; no model, no migration. Canonical doc:
+`proodos_files/D1_AI_RELEVANCE_PROFILE_DESIGN_PROPOSAL_v1_20260519.md`.
 
 #### D.2 — Position Confirmation Analytics
 - SQL queries για Engagement Depth Score (EDS) με βάση το RTM `position_confirmed` flag
