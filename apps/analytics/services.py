@@ -16,6 +16,13 @@ only the alignment one:
     Reported by peer_usefulness_summary(), never mixed into the
     profile. The alignment queries whitelist ALIGNMENT_FEATURES.
 
+Every aggregation is scoped by `_scope()` to the research-consenting
+population (`research_consent=True`) and, optionally, to a `created_at`
+date range and a single subject area — the page-level filters of the
+staff analytics dashboard. Restricting to consenting teachers is
+unconditional: the dashboard is a research instrument and reports only
+the population whose data may be used for research.
+
 Nothing here mutates data or calls an LLM; it is pure ORM aggregation.
 """
 
@@ -44,6 +51,34 @@ FEATURE_LABELS = {
 }
 
 
+def _scope(qs, filters):
+    """Restrict an analytics queryset to the consenting research
+    population, and optionally to a `created_at` date range and a
+    single subject area.
+
+    The `research_consent=True` restriction is unconditional — the
+    analytics dashboard reports only the consented population. `filters`
+    is a dict (or None) that may carry 'start' / 'end' (`date` objects)
+    and 'subject' (a `TeacherProfile.subject_area` value); each is
+    applied only when present and truthy.
+
+    Both querysets this is used on — AIOutputDispute and
+    ReflectionTension — expose `user` and `created_at`, so the same
+    helper scopes D.1 and D.2 identically.
+    """
+    qs = qs.filter(user__teacher_profile__research_consent=True)
+    filters = filters or {}
+    if filters.get('start'):
+        qs = qs.filter(created_at__date__gte=filters['start'])
+    if filters.get('end'):
+        qs = qs.filter(created_at__date__lte=filters['end'])
+    if filters.get('subject'):
+        qs = qs.filter(
+            user__teacher_profile__subject_area=filters['subject'],
+        )
+    return qs
+
+
 def _empty_counts():
     """A fresh {rating: 0} tally for the three rating values."""
     return {r: 0 for r in RATINGS}
@@ -68,8 +103,10 @@ def _finalise(counts):
 # ----------------------------------------------------------------------
 # Cohort-level profile
 # ----------------------------------------------------------------------
-def cohort_relevance_profile():
+def cohort_relevance_profile(filters=None):
     """Cohort-wide perceived-relevance distributions.
+
+    `filters` is the optional date-range / subject scope (see _scope).
 
     Returns a dict with:
       - by_feature: {feature: {yes, partial, no, total, relevance_rate}}
@@ -78,7 +115,10 @@ def cohort_relevance_profile():
       - reasons:    {reason_code: count} for partial/no ratings
       - totals:     {ratings, teachers}
     """
-    qs = AIOutputDispute.objects.filter(feature_type__in=ALIGNMENT_FEATURES)
+    qs = _scope(
+        AIOutputDispute.objects.filter(feature_type__in=ALIGNMENT_FEATURES),
+        filters,
+    )
 
     by_feature = {f: _empty_counts() for f in ALIGNMENT_FEATURES}
     for row in qs.values('feature_type', 'rating').annotate(n=Count('id')):
@@ -140,8 +180,10 @@ def cohort_relevance_profile():
 # ----------------------------------------------------------------------
 # Per-teacher profiles
 # ----------------------------------------------------------------------
-def per_teacher_relevance_profiles():
+def per_teacher_relevance_profiles(filters=None):
     """One perceived-relevance profile per teacher who has rated.
+
+    `filters` is the optional date-range / subject scope (see _scope).
 
     Returns a list, sorted by username, of:
       {user_id, username, features: {feature: {...}}, reasons: {...},
@@ -151,8 +193,14 @@ def per_teacher_relevance_profiles():
     indicator: how many modules the teacher rated against how many they
     completed. The denominator is approximate — not every module emits
     every feature — so it is reported as context, not a precise rate.
+    completed_modules is a cumulative count for the teacher; it is not
+    narrowed by the date filter (module completion is a standing state,
+    not an event within the window).
     """
-    qs = AIOutputDispute.objects.filter(feature_type__in=ALIGNMENT_FEATURES)
+    qs = _scope(
+        AIOutputDispute.objects.filter(feature_type__in=ALIGNMENT_FEATURES),
+        filters,
+    )
 
     teachers = {}
     for row in qs.values(
@@ -189,16 +237,18 @@ def per_teacher_relevance_profiles():
 # ----------------------------------------------------------------------
 # Peer usefulness — separate construct (TD-019)
 # ----------------------------------------------------------------------
-def peer_usefulness_summary():
+def peer_usefulness_summary(filters=None):
     """The peer-synthesis usefulness signal — reported apart from the
     relevance profile because it is a different construct (TD-019).
+
+    `filters` is the optional date-range / subject scope (see _scope).
 
     Returns {yes, partial, no, total, relevance_rate, with_comment}.
     'relevance_rate' here is the proportion who found the synthesis
     useful; the field name is shared with the alignment tallies only
     for template uniformity.
     """
-    qs = AIOutputDispute.objects.filter(feature_type='peer')
+    qs = _scope(AIOutputDispute.objects.filter(feature_type='peer'), filters)
     counts = _empty_counts()
     for row in qs.values('rating').annotate(n=Count('id')):
         counts[row['rating']] = row['n']
@@ -241,8 +291,10 @@ def _median_ms(values):
     return round(statistics.median(vals)) if vals else None
 
 
-def cohort_engagement_depth():
+def cohort_engagement_depth(filters=None):
     """Cohort-wide RTM engagement-depth aggregation.
+
+    `filters` is the optional date-range / subject scope (see _scope).
 
     Returns a dict with:
       - total_tensions / confirmed / eds — the headline confirmation rate
@@ -252,7 +304,7 @@ def cohort_engagement_depth():
       - median_time_ms — median RTM-card interaction time
       - by_module / by_subject — [ {..., total, confirmed, eds} ]
     """
-    qs = ReflectionTension.objects.all()
+    qs = _scope(ReflectionTension.objects.all(), filters)
     total = qs.count()
     confirmed = qs.filter(position_confirmed=True).count()
     confirmed_non_neutral = (
@@ -304,14 +356,16 @@ def cohort_engagement_depth():
     }
 
 
-def per_teacher_engagement_depth():
+def per_teacher_engagement_depth(filters=None):
     """One engagement-depth profile per teacher who has RTM data.
+
+    `filters` is the optional date-range / subject scope (see _scope).
 
     Returns a list, sorted by username, of:
       {user_id, username, total, confirmed, eds, comment_use_rate,
        non_neutral_rate, median_time_ms}
     """
-    qs = ReflectionTension.objects.all()
+    qs = _scope(ReflectionTension.objects.all(), filters)
 
     teachers = {}
     for row in qs.values('user_id', 'user__username').annotate(

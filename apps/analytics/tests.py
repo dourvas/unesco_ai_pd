@@ -7,6 +7,8 @@ load-bearing construct guard — that 'peer' rows are excluded from the
 relevance profile and surface only in peer_usefulness_summary().
 """
 
+from datetime import timedelta
+
 from django.contrib.auth.models import User
 from django.test import Client, TestCase
 from django.urls import reverse
@@ -261,3 +263,79 @@ class EngagementDepthServiceTest(TestCase):
         b = by_name['eds_b']
         self.assertEqual(b['eds'], 1.0)
         self.assertEqual(b['non_neutral_rate'], 1.0)
+
+
+class AnalyticsFilterTest(TestCase):
+    """The _scope filter: the unconditional research-consent restriction,
+    and the optional date-range and subject filters — applied uniformly
+    to the D.1 and D.2 aggregations."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.module = Module.objects.create(
+            code='FLT', title='Filter test module', description='t',
+            order_index=960, unesco_aspect='ethics',
+            proficiency_level='Acquire', is_published=True,
+        )
+
+        def teacher(username, subject, consent):
+            user = User.objects.create_user(username, password='pw')
+            TeacherProfile.objects.create(
+                user=user, subject_area=subject, research_consent=consent,
+                ai_disclosure_acknowledged_at=timezone.now(),
+            )
+            return user
+
+        cls.maths = teacher('flt_maths', 'mathematics', True)
+        cls.science = teacher('flt_science', 'science', True)
+        cls.noconsent = teacher('flt_noconsent', 'mathematics', False)
+
+    def _dispute(self, user, feature='rag', rating='yes'):
+        return AIOutputDispute.objects.create(
+            user=user, module=self.module, feature_type=feature,
+            rating=rating,
+        )
+
+    def test_consent_filter_excludes_non_consenting(self):
+        self._dispute(self.maths)
+        self._dispute(self.noconsent)
+        profile = services.cohort_relevance_profile()
+        # Only the consenting teacher's rating is counted.
+        self.assertEqual(profile['totals']['ratings'], 1)
+
+    def test_subject_filter_narrows_to_one_subject(self):
+        self._dispute(self.maths)
+        self._dispute(self.science)
+        profile = services.cohort_relevance_profile(
+            filters={'subject': 'mathematics'},
+        )
+        self.assertEqual(profile['totals']['ratings'], 1)
+
+    def test_date_filter_window(self):
+        self._dispute(self.maths)
+        old = self._dispute(self.science)
+        # Push the science rating two months back (created_at is
+        # auto_now_add, so it must be set with an UPDATE).
+        AIOutputDispute.objects.filter(pk=old.pk).update(
+            created_at=timezone.now() - timedelta(days=60),
+        )
+        last_week = (timezone.now() - timedelta(days=7)).date()
+        profile = services.cohort_relevance_profile(
+            filters={'start': last_week},
+        )
+        # Only the recent rating falls inside the window.
+        self.assertEqual(profile['totals']['ratings'], 1)
+
+    def test_consent_filter_applies_to_engagement_depth(self):
+        def tension(user, label):
+            ReflectionTension.objects.create(
+                user=user, module=self.module, tension_label=label,
+                left_pole='L', right_pole='R', grounding_quote='q',
+                selected_position=4, position_confirmed=True,
+            )
+
+        tension(self.maths, 't-consenting')
+        tension(self.noconsent, 't-noconsent')
+        depth = services.cohort_engagement_depth()
+        # The non-consenting teacher's tension is excluded.
+        self.assertEqual(depth['total_tensions'], 1)
