@@ -407,5 +407,91 @@ Never linked from a teacher-facing page (measurement-reactivity guard).
         </table>
     </div>
 
+    {# ============================================================ #}
+    {# SECTION 3 — D.4 UNESCO Competency Matrix 5x3                 #}
+    {# ============================================================ #}
+    <div class="border-b-2 border-primary/30 mb-4 mt-2">
+        <h2 class="text-xl font-bold text-primary">3 &middot; UNESCO Competency Matrix</h2>
+        <p class="text-xs text-base-content/50 mb-2">
+            Cohort module completion across the 5 aspects &times; 3 proficiency
+            levels — each cell is a module's completion rate over
+            {{ unesco_matrix.total_teachers }} consenting teacher(s).
+            {% if filter_form.start or filter_form.end %}
+            <strong>Note:</strong> completion is cumulative — the date filter
+            does not narrow this matrix.{% endif %}
+        </p>
+    </div>
+    <div class="overflow-x-auto mb-8">
+        <table class="table table-sm">
+            <thead>
+                <tr>
+                    <th>Aspect</th>
+                    {% for level in unesco_matrix.levels %}
+                    <th class="text-center">{{ level }}</th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in unesco_matrix.rows %}
+                <tr>
+                    <td class="font-medium">{{ row.aspect_label }}</td>
+                    {% for cell in row.cells %}
+                    <td class="text-center">
+                        {% if cell %}
+                        <div class="rounded p-1" style="background-color: rgba(34,197,94,{% if cell.rate %}{{ cell.rate }}{% else %}0{% endif %});">
+                            <div class="font-semibold">{{ cell.module_code }}</div>
+                            <div class="text-xs">
+                                {% if cell.rate is not None %}{{ cell.rate }}{% else %}—{% endif %}
+                                <span class="text-base-content/50">({{ cell.completed }}/{{ cell.total }})</span>
+                            </div>
+                        </div>
+                        {% else %}<span class="text-base-content/30">—</span>{% endif %}
+                    </td>
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {# ============================================================ #}
+    {# SECTION 4 — D.4 RTM Coverage Heatmap (16 subjects x 15 modules) #}
+    {# ============================================================ #}
+    <div class="border-b-2 border-primary/30 mb-4 mt-2">
+        <h2 class="text-xl font-bold text-primary">4 &middot; RTM Coverage Heatmap</h2>
+        <p class="text-xs text-base-content/50 mb-2">
+            Distinct consenting teachers with RTM data, by subject &times;
+            module. A coverage map — at pilot scale most cells are thin, so
+            read the counts, not the shading.
+        </p>
+    </div>
+    <div class="overflow-x-auto mb-8">
+        <table class="table table-xs">
+            <thead>
+                <tr>
+                    <th>Subject</th>
+                    {% for code in rtm_heatmap.modules %}
+                    <th class="text-center">{{ code }}</th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in rtm_heatmap.rows %}
+                <tr>
+                    <td class="font-medium whitespace-nowrap">{{ row.subject_label }}</td>
+                    {% for cell in row.cells %}
+                    <td class="text-center"
+                        {% if rtm_heatmap.max_count and cell.count %}style="background-color: rgba(59,130,246,{% widthratio cell.count rtm_heatmap.max_count 100 %}%);"{% endif %}>
+                        {% if cell.count %}{{ cell.count }}{% else %}<span class="text-base-content/20">·</span>{% endif %}
+                    </td>
+                    {% endfor %}
+                </tr>
+                {% empty %}
+                <tr><td class="text-base-content/40">No subjects configured.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
 </div>
 {% endblock %}

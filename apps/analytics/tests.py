@@ -161,9 +161,11 @@ class ResearchAnalyticsViewTest(TestCase):
         self.client.force_login(self.staff)
         resp = self.client.get(self.url)
         self.assertEqual(resp.status_code, 200)
-        # Both Phase D sections render on the one page.
+        # All four Phase D sections render on the one page.
         self.assertContains(resp, 'AI Output Relevance Profile')
         self.assertContains(resp, 'Engagement Depth')
+        self.assertContains(resp, 'UNESCO Competency Matrix')
+        self.assertContains(resp, 'RTM Coverage Heatmap')
         # The peer usefulness panel is present and flagged as separate.
         self.assertContains(resp, 'usefulness signal')
 

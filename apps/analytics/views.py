@@ -102,6 +102,9 @@ def research_analytics_view(request):
         # --- D.2: Engagement Depth ------------------------------------
         'engagement': services.cohort_engagement_depth(filters),
         'engagement_teachers': services.per_teacher_engagement_depth(filters),
+        # --- D.4: UNESCO matrix + RTM heatmap -------------------------
+        'unesco_matrix': services.cohort_unesco_matrix(filters),
+        'rtm_heatmap': services.cohort_rtm_heatmap(filters),
         # --- Filter bar -----------------------------------------------
         'filter_form': filter_form,
         'subject_choices': _subject_choices(),
