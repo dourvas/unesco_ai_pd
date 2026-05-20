@@ -294,6 +294,21 @@ class UserModuleProgress(models.Model):
     # composite above. Written by XAIAgent.generate(); see
     # proodos_files/DTP_XAI_NARRATIVE_DESIGN_PROPOSAL_v1_20260519.md.
     reflection_dtp_xai = models.TextField(blank=True, null=True)
+
+    # F.1 — input modality of this reflection (Phase F voice input).
+    # null = reflection created before F.1; see
+    # proodos_files/F1_VOICE_INPUT_DESIGN_PROPOSAL_v1_20260520.md.
+    REFLECTION_INPUT_MODALITY_CHOICES = [
+        ('text', 'Text'),
+        ('voice', 'Voice'),
+        ('mixed', 'Mixed'),
+    ]
+    reflection_input_modality = models.CharField(
+        max_length=10,
+        choices=REFLECTION_INPUT_MODALITY_CHOICES,
+        null=True,
+        blank=True,
+    )
     
     class Meta:
         unique_together = ('user', 'module')
