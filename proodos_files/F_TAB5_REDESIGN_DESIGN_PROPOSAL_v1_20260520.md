@@ -2,7 +2,7 @@
 
 - **Phase:** F (formerly split as F.1 voice + the parked F.5 TAB5 redesign — now merged)
 - **Date:** 2026-05-20
-- **Status:** IMPLEMENTED and verified end-to-end (2026-05-21). All four stages built plus the DTP-ordering fix. Commits: 1705e27 (F.1a field), ba289c0 (stage 1 wizard), 4132455 (stage 2 voice), a35d1ac (stage 3 magazine pass), 37e0aa9 (DTP ordering fix), 02720ef (stage 4 modality). The voice-input notice wording was approved 2026-05-21. Open: an optional design-refresh pass.
+- **Status:** COMPLETE — implemented and verified end-to-end (2026-05-21). The four stages, the DTP-ordering fix, a design-refresh pass and a post-submit results section-nav. Commits: 1705e27, ba289c0, 4132455, a35d1ac, 37e0aa9, 02720ef, 527bb48 (design refresh), b8ee15f (section-nav). Voice-input notice wording approved 2026-05-21. No open items — see §13. Phase F is closed.
 - **Supersedes:** `F1_VOICE_INPUT_DESIGN_PROPOSAL_v1_20260520.md` and the parked
   F.5 entry in `PROODOS_UNIFIED_ROADMAP.md` §3.
 
@@ -244,5 +244,27 @@ Staged so each commit is reviewable and browser-testable:
    XAI / HITL regulatory contract.
 4. **Modality tracking** — the per-part voice signal and the submit-view field
    write.
+
+## 13. Post-completion design refresh (2026-05-21)
+
+A discretionary UX polish pass after the four stages, agreed without a separate
+design note. Verified end-to-end in Google Chrome.
+
+- **Motion** — a fade-up transition on each wizard screen, a gentle pulse on the
+  microphone while recording, a tactile active-state on buttons; honours
+  `prefers-reduced-motion`. Commit 527bb48.
+- **Review screen** — each part is an editorial card with a serif numeral and
+  an Edit control that jumps back to that part's screen. Commit 527bb48.
+- **Magazine result panels** — the post-submit RAG/RTM/DTP/peer panels carry a
+  left editorial rule and a serif heading, so they match the wizard's register.
+  Panel interiors untouched. Commit 527bb48.
+- **Results section-nav** — a sticky jump menu (Feedback / Tensions /
+  Development / Colleagues) over the post-submit panels; pill labels are
+  derived from the panel titles, and a MutationObserver re-renders the menu as
+  panels appear progressively (RTM async, DTP/peer on-demand). Commit b8ee15f.
+
+Phase F is complete. The one carried-forward item is the §11 literature-note
+entry for the voice-input rationale — a dissertation-writing task, not a build
+dependency.
 
 Each stage is browser-tested by John before the next begins.
