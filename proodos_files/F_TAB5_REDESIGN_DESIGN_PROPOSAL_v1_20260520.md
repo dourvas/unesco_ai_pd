@@ -183,9 +183,9 @@ recognition server-side, streaming audio to Google):
 > submitting, and is saved only as part of your written reflection. You can
 > type your reflection instead at any time.
 
-This is user-facing, privacy-disclosure-adjacent copy: the final wording
-requires John's explicit sign-off and alignment with the existing privacy
-notice and consent text in the pre-pilot privacy review.
+This is user-facing, privacy-disclosure-adjacent copy. **John explicitly
+approved the wording on 2026-05-21.** It should still be cross-checked against
+the existing privacy notice and consent text in the pre-pilot privacy review.
 
 ## 9. The earlier voice bug — honest note
 
@@ -212,8 +212,8 @@ requested at the right moment.
    screen 5 is a read-only review of all four with the total word count, and
    Submit lives there (§4).
 
-**One item remains open:** the final wording of the §8 voice-input user notice
-awaits John's explicit sign-off.
+**Open items closed:** the final wording of the §8 voice-input user notice was
+explicitly approved by John on 2026-05-21.
 
 ## 11. Bibliographic grounding (project rule 8)
 
