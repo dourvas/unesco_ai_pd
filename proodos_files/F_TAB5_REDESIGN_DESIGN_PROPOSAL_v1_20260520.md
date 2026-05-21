@@ -222,11 +222,12 @@ This proposal is an interaction-design and UX-redesign change. It introduces
 wizard, the magazine styling and the modality plumbing are engineering. Stated
 explicitly so the omission is not read as an oversight.
 
-The one construct-bearing claim remains the voice-input rationale (cognitive
-load, inclusive design, Universal Design for Learning) carried over from the
-F.1 proposal. `Literature_Review_Synthesis_Note(1).md` still has no entry for
-it; verified references are owed before Phase F is presented as dissertation
-content.
+The one construct-bearing claim is the voice-input rationale (cognitive load,
+inclusive design, Universal Design for Learning) carried over from the F.1
+proposal. It was added to `Literature_Review_Synthesis_Note(1).md` as §14
+(2026-05-21), with four verified references: Bourdin & Fayol (1994, 2002) and
+McCutchen (1996) for the working-memory cost of transcription, and Rose &
+Meyer (2002) for UDL's multiple means of action and expression.
 
 ## 12. Implementation outline (for review, not yet approval to build)
 
@@ -263,8 +264,8 @@ design note. Verified end-to-end in Google Chrome.
   derived from the panel titles, and a MutationObserver re-renders the menu as
   panels appear progressively (RTM async, DTP/peer on-demand). Commit b8ee15f.
 
-Phase F is complete. The one carried-forward item is the §11 literature-note
-entry for the voice-input rationale — a dissertation-writing task, not a build
-dependency.
+Phase F is complete. The §11 literature-note entry for the voice-input
+rationale was completed on 2026-05-21 (note §14, four verified references).
+Phase F has no remaining items.
 
 Each stage is browser-tested by John before the next begins.
