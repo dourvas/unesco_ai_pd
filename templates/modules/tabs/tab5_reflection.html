@@ -1016,152 +1016,9 @@
     <span>✓ Reflection completed on {{ progress.reflection_completed_at|date:"M d, Y" }}</span>
 </div>
 
-<!-- DTP - On-Demand (M2+ only) -->
-{% if previous_reflection_exists or reflection_dtp %}
-<div id="dtp-wrapper" class="flex flex-col items-center mt-4 {% if not reflection_dtp %}hidden{% endif %}">
-    <div id="dtp-btn-container" {% if reflection_dtp %}style="display:none"{% endif %}>
-        <button
-            id="dtp-btn"
-            class="btn btn-outline btn-sm btn-success gap-2"
-            onclick="triggerDTP()">
-            View your learning journey so far
-        </button>
-    </div>
-    <div id="dtp-card" class="card bg-base-100 border border-base-300 {% if not reflection_dtp %}hidden{% endif %} w-full mt-2">
-        <div class="card-body">
-            <div class="flex items-center gap-2 mb-4">
-                <h3 class="card-title text-lg">Reflective Development Signal</h3>
-                <div class="badge badge-success">Longitudinal Analysis</div>
-            </div>
-            <p class="text-gray-800 mb-4" id="dtp-narrative">{% if reflection_dtp %}{{ reflection_dtp.narrative }}{% endif %}</p>
-            <div id="dtp-signals-container" class="space-y-3">
-                {% if reflection_dtp.signals.vertical %}
-                <div class="bg-base-100 border border-base-300 rounded-lg p-3">
-                    <div class="text-sm font-semibold text-green-900 mb-1">Within the same competency area</div>
-                    <div class="text-xs text-gray-600 mb-2">Comparison: {{ reflection_dtp.signals.vertical.comparison_module }} → {{ reflection_dtp.current_module }}</div>
-                    {% with t=reflection_dtp.signals.vertical.themes %}
-                    {% if t.increased_themes %}<div class="badge badge-ghost gap-1 mr-1">Came into focus: {{ t.increased_themes|join:", " }}</div>{% endif %}
-                    {% if t.decreased_themes %}<div class="badge badge-ghost gap-1 mr-1">Moved to the background: {{ t.decreased_themes|join:", " }}</div>{% endif %}
-                    {% if t.stable_themes %}<div class="badge badge-ghost gap-1 mr-1">Held steady: {{ t.stable_themes|join:", " }}</div>{% endif %}
-                    {% endwith %}
-                </div>
-                {% endif %}
-                {% if reflection_dtp.signals.temporal %}
-                <div class="bg-base-100 border border-base-300 rounded-lg p-3">
-                    <div class="text-sm font-semibold text-green-900 mb-1">Since your previous module</div>
-                    <div class="text-xs text-gray-600 mb-2">Comparison: {{ reflection_dtp.signals.temporal.comparison_module }} → {{ reflection_dtp.current_module }}</div>
-                    {% with t=reflection_dtp.signals.temporal.themes %}
-                    {% if t.increased_themes %}<div class="badge badge-ghost gap-1 mr-1">Came into focus: {{ t.increased_themes|join:", " }}</div>{% endif %}
-                    {% if t.decreased_themes %}<div class="badge badge-ghost gap-1 mr-1">Moved to the background: {{ t.decreased_themes|join:", " }}</div>{% endif %}
-                    {% if t.stable_themes %}<div class="badge badge-ghost gap-1 mr-1">Held steady: {{ t.stable_themes|join:", " }}</div>{% endif %}
-                    {% endwith %}
-                </div>
-                {% endif %}
-            </div>
-            <div id="dtp-xai-explanation" class="bg-base-100 border border-base-300 rounded-lg p-3 mt-3 {% if not reflection_dtp_xai %}hidden{% endif %}">
-                <div class="text-sm font-semibold text-green-900 mb-1">💡 Why this signal looks this way</div>
-                <p class="text-sm text-gray-700" id="dtp-xai-text">{% if reflection_dtp_xai %}{{ reflection_dtp_xai }}{% endif %}</p>
-            </div>
-            <div class="divider my-3"></div>
-            <!-- ============================================================ -->
-<!-- PARTIAL 3: DTP — XAI + HITL                                 -->
-<!-- Place after the DTP card content, inside dtp-card div       -->
-<!-- ============================================================ -->
- 
-<div class="mt-4 border-t border-base-300 pt-3" id="dtp-xai-hitl"
-     {% if progress.dtp_narrative_provenance %}
-     data-ai-generated="true"
-     data-ai-model="{{ progress.dtp_narrative_provenance.model_name }}"
-     data-ai-generated-at="{{ progress.dtp_narrative_provenance.generated_at|date:'c' }}"
-     data-ai-artefact-kind="dtp_narrative"
-     data-ai-artefact-id="{{ progress.dtp_narrative_provenance.artefact_pk }}"
-     {% endif %}>
-
-    <!-- XAI Panel -->
-    <details class="group mb-2">
-        <summary class="flex items-center gap-2 cursor-pointer list-none text-xs text-base-content/50 hover:text-base-content/70 transition-colors px-1">
-            <span class="group-open:hidden">▶</span>
-            <span class="hidden group-open:inline">▼</span>
-            <span>🔍 How this signal was generated</span>
-        </summary>
-        <div class="mt-2 bg-base-100 border border-base-300 rounded-lg p-4 text-xs space-y-2">
-            <div class="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5">
-                <span class="font-semibold text-base-content/60">Model</span>
-                <span>Gemini 2.5 Flash</span>
-                <span class="font-semibold text-base-content/60">Input</span>
-                <span>Your current reflection, compared with up to two earlier reflections — one within the same UNESCO competency area, one from your previous module</span>
-                <span class="font-semibold text-base-content/60">Logic</span>
-                <span>Two separate comparisons. Each maps which concepts, concerns and language increased, decreased or stayed stable; the model then describes continuity and shift across them</span>
-                <span class="font-semibold text-base-content/60">Intent</span>
-                <span>Help you observe how your thinking about AI is evolving across modules</span>
-                {% ai_provenance for=progress.dtp_narrative_provenance %}
-            </div>
-            <div class="border-t border-base-300 pt-2 mt-2 space-y-1">
-                <p class="text-base-content/60">⚠️ This signal describes what changed — it does not evaluate whether the change is positive or negative. Growth is not always linear.</p>
-                <p class="text-base-content/50">🇪🇺 <strong>EU AI Act — Limited Risk:</strong> Developmental signals are descriptive, not predictive. No conclusions are drawn about your future performance.</p>
-            </div>
-        </div>
-    </details>
- 
-    <!-- HITL Rating -->
-     {% if dispute_dtp %}
-    <div class="px-1 mt-1">
-        <p class="text-xs text-success">✓ You rated this as <strong>{{ dispute_dtp.rating }}</strong>.{% if dispute_dtp.comment %} "{{ dispute_dtp.comment }}"{% endif %}</p>
-    </div>
-    {% else %}
-    <div class="flex items-center gap-3 px-1" id="dtp-rating-container">
-        <span class="text-xs text-base-content/50">Did this signal accurately describe your development?</span>
-        <div class="flex gap-1">
-            <button onclick="submitDispute('dtp', 'yes', this)"
-                    class="btn btn-xs btn-ghost gap-1 dispute-btn" data-feature="dtp" data-rating="yes">
-                👍 Yes
-            </button>
-            <button onclick="submitDispute('dtp', 'partial', this)"
-                    class="btn btn-xs btn-ghost gap-1 dispute-btn" data-feature="dtp" data-rating="partial">
-                🤔 Partially
-            </button>
-            <button onclick="submitDispute('dtp', 'no', this)"
-                    class="btn btn-xs btn-ghost gap-1 dispute-btn" data-feature="dtp" data-rating="no">
-                👎 Not quite
-            </button>
-        </div>
-    </div>
-    {% endif %}
-    <!-- Dispute comment -->
-    <div id="dtp-dispute-form" class="hidden mt-2 px-1">
-        <div class="bg-base-100 border border-base-300 rounded-lg p-3 space-y-2">
-            <select id="dtp-reason" class="select select-xs select-bordered w-full max-w-sm">
-                <option value="">What was off? (optional)</option>
-                <option value="mismatch">Doesn't reflect my actual development</option>
-                <option value="misinterpretation">The comparison felt inaccurate</option>
-                <option value="generic">Too vague / not insightful</option>
-                <option value="pedagogical">I see my development differently</option>
-                <option value="other">Other</option>
-            </select>
-            <textarea id="dtp-comment"
-                      class="textarea textarea-xs textarea-bordered w-full h-16 text-xs"
-                      maxlength="300"
-                      placeholder="Tell us more... (optional, max 300 characters)"></textarea>
-            <div class="flex gap-2">
-                <button onclick="submitDisputeWithComment('dtp')"
-                        class="btn btn-xs btn-primary">Submit feedback</button>
-                <button onclick="cancelDispute('dtp')"
-                        class="btn btn-xs btn-ghost">Cancel</button>
-            </div>
-        </div>
-    </div>
- 
-    <!-- Acknowledgment -->
-    <div id="dtp-dispute-ack" class="hidden px-1 mt-1">
-        <p class="text-xs text-success">✓ Thank you — your feedback has been recorded and will help improve PROODOS. You are a co-designer of this system.</p>
-    </div>
- 
-</div>
- 
-        </div>
-    </div>
-</div>
-{% endif %}
+{# DTP — Reflective Development Signal block relocated to the end of the #}
+{# completed-state branch (after the saved-tensions block) so the order #}
+{# matches the in-session feedback: RAG, tensions, peer, DTP. Phase F. #}
     <div class="card-actions justify-center mt-6">
         {% comment %}
         C.2.4: this button is rewired by the reflection submission
@@ -1514,6 +1371,154 @@
 </div>
 
 {% endif %}
+
+<!-- DTP - On-Demand (M2+ only) -->
+{% if previous_reflection_exists or reflection_dtp %}
+<div id="dtp-wrapper" class="flex flex-col items-center mt-4 {% if not reflection_dtp %}hidden{% endif %}">
+    <div id="dtp-btn-container" {% if reflection_dtp %}style="display:none"{% endif %}>
+        <button
+            id="dtp-btn"
+            class="btn btn-outline btn-sm btn-success gap-2"
+            onclick="triggerDTP()">
+            View your learning journey so far
+        </button>
+    </div>
+    <div id="dtp-card" class="card bg-base-100 border border-base-300 {% if not reflection_dtp %}hidden{% endif %} w-full mt-2">
+        <div class="card-body">
+            <div class="flex items-center gap-2 mb-4">
+                <h3 class="card-title text-lg">Reflective Development Signal</h3>
+                <div class="badge badge-success">Longitudinal Analysis</div>
+            </div>
+            <p class="text-gray-800 mb-4" id="dtp-narrative">{% if reflection_dtp %}{{ reflection_dtp.narrative }}{% endif %}</p>
+            <div id="dtp-signals-container" class="space-y-3">
+                {% if reflection_dtp.signals.vertical %}
+                <div class="bg-base-100 border border-base-300 rounded-lg p-3">
+                    <div class="text-sm font-semibold text-green-900 mb-1">Within the same competency area</div>
+                    <div class="text-xs text-gray-600 mb-2">Comparison: {{ reflection_dtp.signals.vertical.comparison_module }} → {{ reflection_dtp.current_module }}</div>
+                    {% with t=reflection_dtp.signals.vertical.themes %}
+                    {% if t.increased_themes %}<div class="badge badge-ghost gap-1 mr-1">Came into focus: {{ t.increased_themes|join:", " }}</div>{% endif %}
+                    {% if t.decreased_themes %}<div class="badge badge-ghost gap-1 mr-1">Moved to the background: {{ t.decreased_themes|join:", " }}</div>{% endif %}
+                    {% if t.stable_themes %}<div class="badge badge-ghost gap-1 mr-1">Held steady: {{ t.stable_themes|join:", " }}</div>{% endif %}
+                    {% endwith %}
+                </div>
+                {% endif %}
+                {% if reflection_dtp.signals.temporal %}
+                <div class="bg-base-100 border border-base-300 rounded-lg p-3">
+                    <div class="text-sm font-semibold text-green-900 mb-1">Since your previous module</div>
+                    <div class="text-xs text-gray-600 mb-2">Comparison: {{ reflection_dtp.signals.temporal.comparison_module }} → {{ reflection_dtp.current_module }}</div>
+                    {% with t=reflection_dtp.signals.temporal.themes %}
+                    {% if t.increased_themes %}<div class="badge badge-ghost gap-1 mr-1">Came into focus: {{ t.increased_themes|join:", " }}</div>{% endif %}
+                    {% if t.decreased_themes %}<div class="badge badge-ghost gap-1 mr-1">Moved to the background: {{ t.decreased_themes|join:", " }}</div>{% endif %}
+                    {% if t.stable_themes %}<div class="badge badge-ghost gap-1 mr-1">Held steady: {{ t.stable_themes|join:", " }}</div>{% endif %}
+                    {% endwith %}
+                </div>
+                {% endif %}
+            </div>
+            <div id="dtp-xai-explanation" class="bg-base-100 border border-base-300 rounded-lg p-3 mt-3 {% if not reflection_dtp_xai %}hidden{% endif %}">
+                <div class="text-sm font-semibold text-green-900 mb-1">💡 Why this signal looks this way</div>
+                <p class="text-sm text-gray-700" id="dtp-xai-text">{% if reflection_dtp_xai %}{{ reflection_dtp_xai }}{% endif %}</p>
+            </div>
+            <div class="divider my-3"></div>
+            <!-- ============================================================ -->
+<!-- PARTIAL 3: DTP — XAI + HITL                                 -->
+<!-- Place after the DTP card content, inside dtp-card div       -->
+<!-- ============================================================ -->
+
+<div class="mt-4 border-t border-base-300 pt-3" id="dtp-xai-hitl"
+     {% if progress.dtp_narrative_provenance %}
+     data-ai-generated="true"
+     data-ai-model="{{ progress.dtp_narrative_provenance.model_name }}"
+     data-ai-generated-at="{{ progress.dtp_narrative_provenance.generated_at|date:'c' }}"
+     data-ai-artefact-kind="dtp_narrative"
+     data-ai-artefact-id="{{ progress.dtp_narrative_provenance.artefact_pk }}"
+     {% endif %}>
+
+    <!-- XAI Panel -->
+    <details class="group mb-2">
+        <summary class="flex items-center gap-2 cursor-pointer list-none text-xs text-base-content/50 hover:text-base-content/70 transition-colors px-1">
+            <span class="group-open:hidden">▶</span>
+            <span class="hidden group-open:inline">▼</span>
+            <span>🔍 How this signal was generated</span>
+        </summary>
+        <div class="mt-2 bg-base-100 border border-base-300 rounded-lg p-4 text-xs space-y-2">
+            <div class="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5">
+                <span class="font-semibold text-base-content/60">Model</span>
+                <span>Gemini 2.5 Flash</span>
+                <span class="font-semibold text-base-content/60">Input</span>
+                <span>Your current reflection, compared with up to two earlier reflections — one within the same UNESCO competency area, one from your previous module</span>
+                <span class="font-semibold text-base-content/60">Logic</span>
+                <span>Two separate comparisons. Each maps which concepts, concerns and language increased, decreased or stayed stable; the model then describes continuity and shift across them</span>
+                <span class="font-semibold text-base-content/60">Intent</span>
+                <span>Help you observe how your thinking about AI is evolving across modules</span>
+                {% ai_provenance for=progress.dtp_narrative_provenance %}
+            </div>
+            <div class="border-t border-base-300 pt-2 mt-2 space-y-1">
+                <p class="text-base-content/60">⚠️ This signal describes what changed — it does not evaluate whether the change is positive or negative. Growth is not always linear.</p>
+                <p class="text-base-content/50">🇪🇺 <strong>EU AI Act — Limited Risk:</strong> Developmental signals are descriptive, not predictive. No conclusions are drawn about your future performance.</p>
+            </div>
+        </div>
+    </details>
+
+    <!-- HITL Rating -->
+     {% if dispute_dtp %}
+    <div class="px-1 mt-1">
+        <p class="text-xs text-success">✓ You rated this as <strong>{{ dispute_dtp.rating }}</strong>.{% if dispute_dtp.comment %} "{{ dispute_dtp.comment }}"{% endif %}</p>
+    </div>
+    {% else %}
+    <div class="flex items-center gap-3 px-1" id="dtp-rating-container">
+        <span class="text-xs text-base-content/50">Did this signal accurately describe your development?</span>
+        <div class="flex gap-1">
+            <button onclick="submitDispute('dtp', 'yes', this)"
+                    class="btn btn-xs btn-ghost gap-1 dispute-btn" data-feature="dtp" data-rating="yes">
+                👍 Yes
+            </button>
+            <button onclick="submitDispute('dtp', 'partial', this)"
+                    class="btn btn-xs btn-ghost gap-1 dispute-btn" data-feature="dtp" data-rating="partial">
+                🤔 Partially
+            </button>
+            <button onclick="submitDispute('dtp', 'no', this)"
+                    class="btn btn-xs btn-ghost gap-1 dispute-btn" data-feature="dtp" data-rating="no">
+                👎 Not quite
+            </button>
+        </div>
+    </div>
+    {% endif %}
+    <!-- Dispute comment -->
+    <div id="dtp-dispute-form" class="hidden mt-2 px-1">
+        <div class="bg-base-100 border border-base-300 rounded-lg p-3 space-y-2">
+            <select id="dtp-reason" class="select select-xs select-bordered w-full max-w-sm">
+                <option value="">What was off? (optional)</option>
+                <option value="mismatch">Doesn't reflect my actual development</option>
+                <option value="misinterpretation">The comparison felt inaccurate</option>
+                <option value="generic">Too vague / not insightful</option>
+                <option value="pedagogical">I see my development differently</option>
+                <option value="other">Other</option>
+            </select>
+            <textarea id="dtp-comment"
+                      class="textarea textarea-xs textarea-bordered w-full h-16 text-xs"
+                      maxlength="300"
+                      placeholder="Tell us more... (optional, max 300 characters)"></textarea>
+            <div class="flex gap-2">
+                <button onclick="submitDisputeWithComment('dtp')"
+                        class="btn btn-xs btn-primary">Submit feedback</button>
+                <button onclick="cancelDispute('dtp')"
+                        class="btn btn-xs btn-ghost">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Acknowledgment -->
+    <div id="dtp-dispute-ack" class="hidden px-1 mt-1">
+        <p class="text-xs text-success">✓ Thank you — your feedback has been recorded and will help improve PROODOS. You are a co-designer of this system.</p>
+    </div>
+
+</div>
+
+        </div>
+    </div>
+</div>
+{% endif %}
+
 {% if progress.completed_at %}
 <div class="alert alert-success">
     <div>
