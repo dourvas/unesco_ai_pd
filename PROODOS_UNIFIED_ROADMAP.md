@@ -705,7 +705,7 @@ These seven form the architecture chapter of the dissertation. The numerical bal
 
 ### Phase F — TAB5 Redesign (5-screen wizard + magazine + voice)
 
-**Status: COMPLETE (2026-05-21)** — delivered and verified end-to-end. Six commits (1705e27, ba289c0, 4132455, a35d1ac, 37e0aa9, 02720ef). Canonical doc: `proodos_files/F_TAB5_REDESIGN_DESIGN_PROPOSAL_v1_20260520.md`. Open: final sign-off of the voice-input notice wording; an optional design-refresh pass.
+**Status: COMPLETE (2026-05-21)** — delivered and verified end-to-end. Six commits (1705e27, ba289c0, 4132455, a35d1ac, 37e0aa9, 02720ef). Canonical doc: `proodos_files/F_TAB5_REDESIGN_DESIGN_PROPOSAL_v1_20260520.md`. Voice-input notice wording approved 2026-05-21. Open: an optional design-refresh pass.
 
 **Στόχος:** Επανασχεδιασμός του TAB5 ως five-screen wizard στο magazine style (οικογένεια TAB1/TAB2), με voice input ενσωματωμένο.
 
