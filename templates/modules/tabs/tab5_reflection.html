@@ -1,5 +1,5 @@
 <!-- TAB 5: Structured Reflection with Smart Prompts + Part 3 Automation -->
-{% load ai_provenance %}
+{% load ai_provenance module_design %}
 {% if current_tab == 'reflection' %}
 <h2 class="card-title text-2xl mb-4">📝 Reflection & Action Plan</h2>
 
@@ -11,267 +11,438 @@
 <div class="space-y-6 w-full">
 {% if not progress.reflection_completed %}
 
-{# REFLECTION FORM - 4 Structured Sections #}
-<form id="reflection-form-structured" class="space-y-8">
-    
-    {# SECTION 1: Key Insights #}
-    <div class="card bg-blue-50 border-2 border-blue-200">
-        <div class="card-body">
-            <h3 class="card-title text-lg text-blue-800">
-                💡 Part 1: Key Insights
-                <span class="badge badge-info">~100 words</span>
-            </h3>
-            
-            <p class="text-sm text-gray-700 mb-4">
-                {% if reflection_meta.part1_question %}
-                    {{ reflection_meta.part1_question }}
-                {% else %}
-                    What was the most important thing you learned in this module?
-                {% endif %}
-            </p>
-            
-            <div class="collapse collapse-arrow bg-blue-100 mb-4">
-                <input type="checkbox" /> 
-                <div class="collapse-title text-sm font-medium">
-                    ✨ Click for reflection prompts
-                </div>
-                <div class="collapse-content text-sm">
-                    <ul class="list-disc list-inside space-y-1">
-                        {% if reflection_meta.part1_prompts %}
-                            {% for prompt in reflection_meta.part1_prompts %}
-                                <li>{{ prompt }}</li>
-                            {% endfor %}
-                        {% else %}
-                            <li>What surprised you most in this module?</li>
-                            <li>What concept do you now see differently?</li>
-                            <li>What was your biggest "aha moment"?</li>
-                        {% endif %}
-                    </ul>
-                </div>
-            </div>
-            
-            <div class="form-control">
-                <textarea 
-                    name="part1_insights" 
-                    id="part1-textarea"
-                    class="textarea textarea-bordered h-32" 
-                    placeholder="Share your key learning moments and insights..."
-                    required></textarea>
-                <label class="label">
-                    <span class="label-text-alt" id="part1-count">0 words</span>
-                    <span class="label-text-alt text-gray-500">Target: 80-120 words</span>
-                </label>
-            </div>
+{# REFLECTION WIZARD - 5-screen magazine layout (Phase F redesign, stage 1). #}
+{# See proodos_files/F_TAB5_REDESIGN_DESIGN_PROPOSAL_v1_20260520.md.          #}
+{% module_aspect_colour module as aspect_colour %}
+<form id="reflection-form-structured" class="tab5-redesign"
+      style="--aspect-main: {{ aspect_colour.main }};
+             --aspect-bg: {{ aspect_colour.bg }};
+             --aspect-text: {{ aspect_colour.text }};">
+
+    <p class="rfx-eyebrow">Module {{ module.code }} · {{ aspect_colour.name }} · {{ module.get_proficiency_level_display }}</p>
+    <p class="rfx-blurb">Work through each part in turn. You can move freely between steps — your draft is saved in this browser as you write.</p>
+
+    <nav class="rfx-nav">
+      <div class="rfx-pills">
+        <button type="button" class="rfx-pill is-current" data-goto="1"><span class="rfx-pill-num">1</span><span class="rfx-pill-text">Insights</span></button>
+        <button type="button" class="rfx-pill" data-goto="2"><span class="rfx-pill-num">2</span><span class="rfx-pill-text">Application</span></button>
+        <button type="button" class="rfx-pill" data-goto="3"><span class="rfx-pill-num">3</span><span class="rfx-pill-text">Concerns</span></button>
+        <button type="button" class="rfx-pill" data-goto="4"><span class="rfx-pill-num">4</span><span class="rfx-pill-text">Action Plan</span></button>
+        <button type="button" class="rfx-pill" data-goto="5"><span class="rfx-pill-num">5</span><span class="rfx-pill-text">Review</span></button>
+      </div>
+      <div class="rfx-progress-track"><div class="rfx-progress-fill" id="rfx-progress"></div></div>
+    </nav>
+
+    {# SCREEN 1 — Key Insights #}
+    <section class="rfx-screen is-active" data-screen="1">
+      <header class="rfx-screen-head">
+        <span class="rfx-numeral">1</span>
+        <div>
+          <p class="rfx-screen-eyebrow">Part 1 of 4</p>
+          <h3 class="rfx-screen-title">Key Insights</h3>
         </div>
-    </div>
-    
-    {# SECTION 2: Personal Application #}
-    <div class="card bg-green-50 border-2 border-green-200">
-        <div class="card-body">
-            <h3 class="card-title text-lg text-green-800">
-                🎯 Part 2: Application in Your Classroom
-                <span class="badge badge-success">~100 words</span>
-            </h3>
-            
-            <div class="mb-4">
-                {% if reflection_part2 %}
-                    {{ reflection_part2.content_data|safe }}
-                {% else %}
-                    <p class="text-sm text-gray-700 mb-4">
-                        How might AI tools support teaching and learning in your specific subject area?
-                    </p>
-                {% endif %}
-            </div>
-            
-                       
-            <div class="form-control">
-                <textarea 
-                    name="part2_application" 
-                    id="part2-textarea"
-                    class="textarea textarea-bordered h-32" 
-                    placeholder="Describe specific ways you could use AI in your teaching context..."
-                    required></textarea>
-                <label class="label">
-                    <span class="label-text-alt" id="part2-count">0 words</span>
-                    <span class="label-text-alt text-gray-500">Target: 80-120 words</span>
-                </label>
-            </div>
+      </header>
+      <p class="rfx-question">
+        {% if reflection_meta.part1_question %}{{ reflection_meta.part1_question }}{% else %}What was the most important thing you learned in this module?{% endif %}
+      </p>
+      <details class="rfx-prompts">
+        <summary>Reflection prompts</summary>
+        <ul>
+          {% if reflection_meta.part1_prompts %}
+            {% for prompt in reflection_meta.part1_prompts %}<li>{{ prompt }}</li>{% endfor %}
+          {% else %}
+            <li>What surprised you most in this module?</li>
+            <li>What concept do you now see differently?</li>
+            <li>What was your biggest "aha moment"?</li>
+          {% endif %}
+        </ul>
+      </details>
+      <div class="rfx-field">
+        <textarea name="part1_insights" id="part1-textarea"
+                  class="textarea textarea-bordered rfx-textarea"
+                  placeholder="Share your key learning moments and insights..." required></textarea>
+        <div class="rfx-field-meta">
+          <span id="part1-count">0 words</span>
+          <span class="rfx-target">Target: 80-120 words</span>
         </div>
-    </div>
+      </div>
+    </section>
     
-    {# SECTION 3: Concerns & Challenges - WITH SMART AUTOMATION #}
-    <div class="card bg-orange-50 border-2 border-orange-200">
-        <div class="card-body">
-            <h3 class="card-title text-lg text-orange-800">
-                ⚠️ Part 3: Concerns & How You'll Address Them
-                <span class="badge badge-warning">~100 words</span>
-            </h3>
-            
-            <p class="text-sm text-gray-700 mb-4">
-                {% if reflection_meta.part3_intro %}
-                    {{ reflection_meta.part3_intro|safe }}
-                {% else %}
-                    <strong>Select your main concerns</strong>, and we'll help you articulate them:
-                {% endif %}
-            </p>
-            
-            {# Checkboxes — dynamic from DB or M1 fallback #}
-            <div class="form-control mb-4 space-y-2">
-                {% if reflection_meta.part3_checkboxes %}
-                    {% for cb in reflection_meta.part3_checkboxes %}
-                    <label class="label cursor-pointer justify-start gap-2 hover:bg-orange-100 p-2 rounded transition-colors">
-                        <input type="checkbox" class="checkbox checkbox-sm concern-checkbox" data-concern="{{ cb.value }}" />
-                        <span class="label-text text-sm font-medium">{{ cb.label }}</span>
-                    </label>
-                    {% endfor %}
-                {% else %}
-                    <label class="label cursor-pointer justify-start gap-2 hover:bg-orange-100 p-2 rounded transition-colors">
-                        <input type="checkbox" class="checkbox checkbox-sm concern-checkbox" data-concern="over-reliance" />
-                        <span class="label-text text-sm font-medium">Student over-reliance on AI</span>
-                    </label>
-                    <label class="label cursor-pointer justify-start gap-2 hover:bg-orange-100 p-2 rounded transition-colors">
-                        <input type="checkbox" class="checkbox checkbox-sm concern-checkbox" data-concern="privacy" />
-                        <span class="label-text text-sm font-medium">Data privacy concerns</span>
-                    </label>
-                    <label class="label cursor-pointer justify-start gap-2 hover:bg-orange-100 p-2 rounded transition-colors">
-                        <input type="checkbox" class="checkbox checkbox-sm concern-checkbox" data-concern="accuracy" />
-                        <span class="label-text text-sm font-medium">Accuracy and hallucinations</span>
-                    </label>
-                    <label class="label cursor-pointer justify-start gap-2 hover:bg-orange-100 p-2 rounded transition-colors">
-                        <input type="checkbox" class="checkbox checkbox-sm concern-checkbox" data-concern="bias" />
-                        <span class="label-text text-sm font-medium">Algorithmic bias</span>
-                    </label>
-                    <label class="label cursor-pointer justify-start gap-2 hover:bg-orange-100 p-2 rounded transition-colors">
-                        <input type="checkbox" class="checkbox checkbox-sm concern-checkbox" data-concern="equity" />
-                        <span class="label-text text-sm font-medium">Equity and access issues</span>
-                    </label>
-                    <label class="label cursor-pointer justify-start gap-2 hover:bg-orange-100 p-2 rounded transition-colors">
-                        <input type="checkbox" class="checkbox checkbox-sm concern-checkbox" data-concern="assessment" />
-                        <span class="label-text text-sm font-medium">Academic integrity and assessment</span>
-                    </label>
-                {% endif %}
-            </div>
-            
-            {# Action Buttons #}
-            <div class="flex gap-2 mb-4">
-                <button type="button" 
-                        class="btn btn-sm btn-warning gap-2"
-                        onclick="generateConcernsText()"
-                        id="generate-concerns-btn">
-                    <span class="loading loading-spinner loading-xs hidden" id="generate-spinner"></span>
-                    <span id="generate-text">✨ Generate from selected</span>
-                </button>
-                <button type="button" 
-                        class="btn btn-sm btn-outline btn-warning"
-                        onclick="clearPart3()">
-                    🔄 Clear
-                </button>
-            </div>
-            
-            <div class="form-control">
-                <textarea 
-                    name="part3_concerns" 
-                    id="part3-textarea"
-                    class="textarea textarea-bordered h-40" 
-                    placeholder="Select concerns above and click 'Generate', or write your own response..."
-                    required></textarea>
-                <label class="label">
-                    <span class="label-text-alt" id="part3-count">0 words</span>
-                    <span class="label-text-alt text-gray-500">Target: 80-120 words</span>
-                </label>
-            </div>
-            
-            <div class="alert alert-info text-xs mt-2">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 w-4 h-4"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                <span>Generated text is a starting point - customize it to your specific context!</span>
-            </div>
+    {# SCREEN 2 — Application #}
+    <section class="rfx-screen" data-screen="2">
+      <header class="rfx-screen-head">
+        <span class="rfx-numeral">2</span>
+        <div>
+          <p class="rfx-screen-eyebrow">Part 2 of 4</p>
+          <h3 class="rfx-screen-title">Application in Your Classroom</h3>
         </div>
-    </div>
-    
-    {# SECTION 4: Action Plan #}
-    <div class="card bg-purple-50 border-2 border-purple-200">
-        <div class="card-body">
-            <h3 class="card-title text-lg text-purple-800">
-                🚀 Part 4: Your Action Plan (Next Month)
-                <span class="badge badge-secondary">~100 words</span>
-            </h3>
-            
-            <p class="text-sm text-gray-700 mb-4">
-                {% if reflection_meta.part4_question %}
-                    {{ reflection_meta.part4_question }}
-                {% else %}
-                    What 2-3 specific actions will you take in the next month?
-                {% endif %}
-            </p>
-            
-            {% if reflection_meta.part4_template %}
-            <div class="collapse collapse-arrow bg-purple-100 mb-4">
-                <input type="checkbox" /> 
-                <div class="collapse-title text-sm font-medium">
-                    ✨ Click for action plan template
-                </div>
-                <div class="collapse-content text-sm">
-                    {{ reflection_meta.part4_template|safe }}
-                </div>
-            </div>
-            {% else %}
-            <div class="collapse collapse-arrow bg-purple-100 mb-4">
-                <input type="checkbox" /> 
-                <div class="collapse-title text-sm font-medium">
-                    ✨ Click for action plan template
-                </div>
-                <div class="collapse-content text-sm">
-                    <p class="font-semibold mb-2">Template structure:</p>
-                    <div class="bg-white p-3 rounded space-y-2 text-xs">
-                        <p><strong>Week 1:</strong> [Specific action] with [AI tool] for [purpose]</p>
-                        <p><strong>Week 2:</strong> [Specific action] with [AI tool] for [purpose]</p>
-                        <p><strong>Week 4:</strong> [Specific action] with [AI tool] for [purpose]</p>
-                    </div>
-                </div>
-            </div>
-            {% endif %}
-            
-            <div class="form-control">
-                <textarea 
-                    name="part4_action" 
-                    id="part4-textarea"
-                    class="textarea textarea-bordered h-32" 
-                    placeholder="Outline your concrete action steps..."
-                    required></textarea>
-                <label class="label">
-                    <span class="label-text-alt" id="part4-count">0 words</span>
-                    <span class="label-text-alt text-gray-500">Target: 80-120 words</span>
-                </label>
-            </div>
+      </header>
+      <div class="rfx-question">
+        {% if reflection_part2 %}{{ reflection_part2.content_data|safe }}{% else %}<p>How might AI tools support teaching and learning in your specific subject area?</p>{% endif %}
+      </div>
+      <div class="rfx-field">
+        <textarea name="part2_application" id="part2-textarea"
+                  class="textarea textarea-bordered rfx-textarea"
+                  placeholder="Describe specific ways you could use AI in your teaching context..." required></textarea>
+        <div class="rfx-field-meta">
+          <span id="part2-count">0 words</span>
+          <span class="rfx-target">Target: 80-120 words</span>
         </div>
-    </div>
+      </div>
+    </section>
     
-    {# Total Word Count & Submit #}
-    <div class="card bg-base-200">
-        <div class="card-body">
-            <div class="flex justify-between items-center">
-                <div>
-                    <h4 class="font-semibold">Total Word Count:</h4>
-                    <p class="text-2xl font-bold">
-                        <span id="total-count">0</span> words
-                    </p>
-                </div>
-                <div>
-                    <span class="badge badge-lg" id="count-status">0/400 - Start writing</span>
-                </div>
-            </div>
-            
-            <div class="card-actions justify-end mt-4">
-                <button type="submit" 
-                        class="btn btn-primary btn-lg gap-2"
-                        id="submit-reflection-btn">
-                    📤 Submit Reflection
-                </button>
-            </div>
+    {# SCREEN 3 — Concerns #}
+    <section class="rfx-screen" data-screen="3">
+      <header class="rfx-screen-head">
+        <span class="rfx-numeral">3</span>
+        <div>
+          <p class="rfx-screen-eyebrow">Part 3 of 4</p>
+          <h3 class="rfx-screen-title">Concerns &amp; How You'll Address Them</h3>
         </div>
-    </div>
+      </header>
+      <p class="rfx-question">
+        {% if reflection_meta.part3_intro %}{{ reflection_meta.part3_intro|safe }}{% else %}<strong>Select your main concerns</strong>, and we'll help you articulate them:{% endif %}
+      </p>
+      <div class="rfx-concerns">
+        {% if reflection_meta.part3_checkboxes %}
+          {% for cb in reflection_meta.part3_checkboxes %}
+          <label class="rfx-concern"><input type="checkbox" class="checkbox checkbox-sm concern-checkbox" data-concern="{{ cb.value }}" /><span>{{ cb.label }}</span></label>
+          {% endfor %}
+        {% else %}
+          <label class="rfx-concern"><input type="checkbox" class="checkbox checkbox-sm concern-checkbox" data-concern="over-reliance" /><span>Student over-reliance on AI</span></label>
+          <label class="rfx-concern"><input type="checkbox" class="checkbox checkbox-sm concern-checkbox" data-concern="privacy" /><span>Data privacy concerns</span></label>
+          <label class="rfx-concern"><input type="checkbox" class="checkbox checkbox-sm concern-checkbox" data-concern="accuracy" /><span>Accuracy and hallucinations</span></label>
+          <label class="rfx-concern"><input type="checkbox" class="checkbox checkbox-sm concern-checkbox" data-concern="bias" /><span>Algorithmic bias</span></label>
+          <label class="rfx-concern"><input type="checkbox" class="checkbox checkbox-sm concern-checkbox" data-concern="equity" /><span>Equity and access issues</span></label>
+          <label class="rfx-concern"><input type="checkbox" class="checkbox checkbox-sm concern-checkbox" data-concern="assessment" /><span>Academic integrity and assessment</span></label>
+        {% endif %}
+      </div>
+      <div class="rfx-concern-actions">
+        <button type="button" class="btn btn-sm" onclick="generateConcernsText()" id="generate-concerns-btn">
+          <span class="loading loading-spinner loading-xs hidden" id="generate-spinner"></span>
+          <span id="generate-text">Generate from selected</span>
+        </button>
+        <button type="button" class="btn btn-sm btn-ghost" onclick="clearPart3()">Clear</button>
+      </div>
+      <div class="rfx-field">
+        <textarea name="part3_concerns" id="part3-textarea"
+                  class="textarea textarea-bordered rfx-textarea rfx-textarea-tall"
+                  placeholder="Select concerns above and click 'Generate', or write your own response..." required></textarea>
+        <div class="rfx-field-meta">
+          <span id="part3-count">0 words</span>
+          <span class="rfx-target">Target: 80-120 words</span>
+        </div>
+      </div>
+      <p class="rfx-hint">Generated text is a starting point — adapt it to your specific context.</p>
+    </section>
     
+    {# SCREEN 4 — Action Plan #}
+    <section class="rfx-screen" data-screen="4">
+      <header class="rfx-screen-head">
+        <span class="rfx-numeral">4</span>
+        <div>
+          <p class="rfx-screen-eyebrow">Part 4 of 4</p>
+          <h3 class="rfx-screen-title">Your Action Plan (Next Month)</h3>
+        </div>
+      </header>
+      <p class="rfx-question">
+        {% if reflection_meta.part4_question %}{{ reflection_meta.part4_question }}{% else %}What 2-3 specific actions will you take in the next month?{% endif %}
+      </p>
+      <details class="rfx-prompts">
+        <summary>Action plan template</summary>
+        {% if reflection_meta.part4_template %}
+          <div>{{ reflection_meta.part4_template|safe }}</div>
+        {% else %}
+          <p><strong>Template structure:</strong></p>
+          <ul>
+            <li><strong>Week 1:</strong> [Specific action] with [AI tool] for [purpose]</li>
+            <li><strong>Week 2:</strong> [Specific action] with [AI tool] for [purpose]</li>
+            <li><strong>Week 4:</strong> [Specific action] with [AI tool] for [purpose]</li>
+          </ul>
+        {% endif %}
+      </details>
+      <div class="rfx-field">
+        <textarea name="part4_action" id="part4-textarea"
+                  class="textarea textarea-bordered rfx-textarea"
+                  placeholder="Outline your concrete action steps..." required></textarea>
+        <div class="rfx-field-meta">
+          <span id="part4-count">0 words</span>
+          <span class="rfx-target">Target: 80-120 words</span>
+        </div>
+      </div>
+    </section>
+    
+    {# SCREEN 5 — Review #}
+    <section class="rfx-screen" data-screen="5">
+      <header class="rfx-screen-head">
+        <span class="rfx-numeral">5</span>
+        <div>
+          <p class="rfx-screen-eyebrow">Final step</p>
+          <h3 class="rfx-screen-title">Review &amp; Submit</h3>
+        </div>
+      </header>
+      <p class="rfx-question">Read your reflection through before submitting. To change a part, return to its step.</p>
+      <div id="rfx-review-body"></div>
+      <div class="rfx-review-total">
+        <span><strong id="total-count">0</strong> words total</span>
+        <span class="badge badge-lg" id="count-status">0/400 - Start writing</span>
+      </div>
+    </section>
+
+    {# Wizard navigation #}
+    <div class="rfx-actions">
+      <button type="button" class="btn btn-ghost" id="rfx-back">Back</button>
+      <button type="button" class="btn btn-primary" id="rfx-next">Next</button>
+      <button type="submit" class="btn btn-primary btn-lg" id="submit-reflection-btn">Submit Reflection</button>
+    </div>
+
 </form>
+
+<style>
+/* ===== TAB5 reflection wizard — magazine layout (Phase F, stage 1).
+   Scoped under .tab5-redesign; aspect colour injected as CSS variables,
+   same convention as TAB1/TAB2. ===== */
+.tab5-redesign { color: oklch(var(--bc)); }
+.tab5-redesign .rfx-eyebrow {
+  font-size: 0.75rem; font-weight: 600; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--aspect-main); margin: 0 0 0.4rem;
+}
+.tab5-redesign .rfx-blurb {
+  color: oklch(var(--bc) / 0.7); max-width: 42rem; margin: 0 0 1.5rem;
+  font-size: 0.95rem; line-height: 1.55;
+}
+.tab5-redesign .rfx-nav { margin-bottom: 2rem; }
+.tab5-redesign .rfx-pills {
+  display: flex; gap: 0.5rem; overflow-x: auto; scrollbar-width: none;
+  padding-bottom: 0.5rem;
+}
+.tab5-redesign .rfx-pills::-webkit-scrollbar { display: none; }
+.tab5-redesign .rfx-pill {
+  flex-shrink: 0; display: inline-flex; align-items: baseline; gap: 0.375rem;
+  padding: 0.375rem 0.75rem; border: 1px solid oklch(var(--b3));
+  border-radius: 9999px; font-size: 0.8rem; font-weight: 500;
+  color: oklch(var(--bc)); background: oklch(var(--b1)); cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+.tab5-redesign .rfx-pill-num { font-weight: 700; }
+.tab5-redesign .rfx-pill:hover { background: var(--aspect-bg); color: var(--aspect-text); }
+.tab5-redesign .rfx-pill.is-current {
+  background: var(--aspect-main); color: #fff; border-color: var(--aspect-main);
+}
+.tab5-redesign .rfx-progress-track {
+  height: 0.25rem; background: oklch(var(--b2)); border-radius: 9999px;
+  margin-top: 0.5rem; overflow: hidden;
+}
+.tab5-redesign .rfx-progress-fill {
+  height: 100%; width: 0%; background: var(--aspect-main);
+  transition: width 0.25s ease;
+}
+.tab5-redesign .rfx-screen { display: none; }
+.tab5-redesign .rfx-screen.is-active { display: block; }
+.tab5-redesign .rfx-screen-head {
+  display: flex; align-items: flex-start; gap: 1rem; margin-bottom: 1rem;
+}
+.tab5-redesign .rfx-numeral {
+  font-family: ui-serif, Georgia, "Times New Roman", serif;
+  font-size: 3.5rem; font-weight: 600; line-height: 1;
+  letter-spacing: -0.02em; color: var(--aspect-main); flex-shrink: 0;
+}
+.tab5-redesign .rfx-screen-eyebrow {
+  font-size: 0.7rem; font-weight: 600; letter-spacing: 0.08em;
+  text-transform: uppercase; color: oklch(var(--bc) / 0.55);
+  margin: 0.35rem 0 0.15rem;
+}
+.tab5-redesign .rfx-screen-title {
+  font-family: ui-serif, Georgia, "Times New Roman", serif;
+  font-size: 1.6rem; font-weight: 600; line-height: 1.2;
+  color: oklch(var(--bc)); margin: 0;
+}
+.tab5-redesign .rfx-question {
+  font-size: 0.95rem; line-height: 1.6; color: oklch(var(--bc) / 0.85);
+  margin: 0 0 1rem;
+}
+.tab5-redesign .rfx-question p { margin: 0 0 0.5rem; }
+.tab5-redesign .rfx-prompts {
+  background: var(--aspect-bg); border-radius: 0.5rem;
+  padding: 0.625rem 0.875rem; margin-bottom: 1rem; font-size: 0.85rem;
+}
+.tab5-redesign .rfx-prompts summary {
+  cursor: pointer; font-weight: 600; color: var(--aspect-text);
+}
+.tab5-redesign .rfx-prompts ul {
+  list-style: disc; padding-left: 1.25rem; margin: 0.5rem 0 0; line-height: 1.55;
+}
+.tab5-redesign .rfx-prompts li { margin-bottom: 0.25rem; }
+.tab5-redesign .rfx-field { margin-top: 0.25rem; }
+.tab5-redesign .rfx-textarea {
+  width: 100%; min-height: 9rem; font-size: 0.95rem; line-height: 1.6;
+}
+.tab5-redesign .rfx-textarea-tall { min-height: 11rem; }
+.tab5-redesign .rfx-field-meta {
+  display: flex; justify-content: space-between; font-size: 0.75rem;
+  color: oklch(var(--bc) / 0.55); margin-top: 0.375rem;
+}
+.tab5-redesign .rfx-concerns {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem; margin-bottom: 1rem;
+}
+.tab5-redesign .rfx-concern {
+  display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0.625rem;
+  border: 1px solid oklch(var(--b3)); border-radius: 0.5rem;
+  font-size: 0.85rem; cursor: pointer;
+}
+.tab5-redesign .rfx-concern:hover { background: oklch(var(--b2)); }
+.tab5-redesign .rfx-concern-actions { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
+.tab5-redesign .rfx-hint {
+  font-size: 0.75rem; color: oklch(var(--bc) / 0.55); margin: 0.5rem 0 0;
+  font-style: italic;
+}
+.tab5-redesign .rfx-review-item {
+  border-left: 3px solid var(--aspect-main); padding-left: 1rem; margin-bottom: 1.25rem;
+}
+.tab5-redesign .rfx-review-label {
+  font-size: 0.7rem; font-weight: 600; letter-spacing: 0.06em;
+  text-transform: uppercase; color: oklch(var(--bc) / 0.55); margin: 0 0 0.25rem;
+}
+.tab5-redesign .rfx-review-text {
+  font-size: 0.9rem; line-height: 1.6; white-space: pre-wrap; margin: 0;
+}
+.tab5-redesign .rfx-review-empty {
+  font-size: 0.85rem; color: oklch(var(--bc) / 0.5); font-style: italic; margin: 0;
+}
+.tab5-redesign .rfx-review-total {
+  display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+  padding: 1rem; background: oklch(var(--b2)); border-radius: 0.5rem;
+  margin-top: 1rem; font-size: 1.05rem;
+}
+.tab5-redesign .rfx-actions {
+  display: flex; align-items: center; gap: 0.75rem; margin-top: 1.75rem;
+  padding-top: 1.25rem; border-top: 1px solid oklch(var(--b3));
+}
+.tab5-redesign .rfx-actions #rfx-next,
+.tab5-redesign .rfx-actions #submit-reflection-btn { margin-left: auto; }
+@media (max-width: 640px) {
+  .tab5-redesign .rfx-numeral { font-size: 2.5rem; }
+  .tab5-redesign .rfx-screen-title { font-size: 1.3rem; }
+  .tab5-redesign .rfx-concerns { grid-template-columns: 1fr; }
+}
+</style>
+
+<script>
+/* ===== TAB5 reflection wizard — navigation, draft autosave, review.
+   Phase F redesign, stage 1. Voice input is added in stage 2. ===== */
+(function () {
+  'use strict';
+  var form = document.getElementById('reflection-form-structured');
+  if (!form || !form.classList.contains('tab5-redesign')) { return; }
+
+  var screens = Array.prototype.slice.call(form.querySelectorAll('.rfx-screen'));
+  var pills = Array.prototype.slice.call(form.querySelectorAll('.rfx-pill'));
+  var progress = document.getElementById('rfx-progress');
+  var backBtn = document.getElementById('rfx-back');
+  var nextBtn = document.getElementById('rfx-next');
+  var submitBtn = document.getElementById('submit-reflection-btn');
+  var reviewBody = document.getElementById('rfx-review-body');
+  var totalScreens = screens.length;
+  var current = 1;
+
+  var PARTS = [
+    { id: 'part1-textarea', label: 'Part 1 — Key Insights' },
+    { id: 'part2-textarea', label: 'Part 2 — Application in Your Classroom' },
+    { id: 'part3-textarea', label: "Part 3 — Concerns & How You'll Address Them" },
+    { id: 'part4-textarea', label: 'Part 4 — Your Action Plan' }
+  ];
+
+  function renderReview() {
+    if (!reviewBody) { return; }
+    reviewBody.innerHTML = '';
+    PARTS.forEach(function (p, i) {
+      var ta = document.getElementById(p.id);
+      var text = ta ? ta.value.trim() : '';
+      var item = document.createElement('div');
+      item.className = 'rfx-review-item';
+      var label = document.createElement('p');
+      label.className = 'rfx-review-label';
+      label.textContent = p.label;
+      item.appendChild(label);
+      var body = document.createElement('p');
+      if (text) {
+        body.className = 'rfx-review-text';
+        body.textContent = text;
+      } else {
+        body.className = 'rfx-review-empty';
+        body.textContent = 'Not yet written — go to step ' + (i + 1) + '.';
+      }
+      item.appendChild(body);
+      reviewBody.appendChild(item);
+    });
+  }
+
+  function goTo(n, skipScroll) {
+    if (n < 1) { n = 1; }
+    if (n > totalScreens) { n = totalScreens; }
+    current = n;
+    screens.forEach(function (s) {
+      s.classList.toggle('is-active', parseInt(s.dataset.screen, 10) === n);
+    });
+    pills.forEach(function (pill) {
+      pill.classList.toggle('is-current', parseInt(pill.dataset.goto, 10) === n);
+    });
+    if (progress) {
+      progress.style.width = ((n - 1) / (totalScreens - 1) * 100) + '%';
+    }
+    backBtn.style.display = (n === 1) ? 'none' : '';
+    nextBtn.style.display = (n === totalScreens) ? 'none' : '';
+    submitBtn.style.display = (n === totalScreens) ? '' : 'none';
+    if (n === totalScreens) { renderReview(); }
+    if (!skipScroll) { form.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+  }
+
+  backBtn.addEventListener('click', function () { goTo(current - 1); });
+  nextBtn.addEventListener('click', function () { goTo(current + 1); });
+  pills.forEach(function (pill) {
+    pill.addEventListener('click', function () {
+      goTo(parseInt(pill.dataset.goto, 10));
+    });
+  });
+
+  /* Draft autosave — survives a mid-wizard refresh; cleared on submit. */
+  var DRAFT_KEY = 'proodos.rfxdraft.{{ module.code }}';
+  function saveDraft() {
+    try {
+      var d = {};
+      PARTS.forEach(function (p) {
+        var ta = document.getElementById(p.id);
+        if (ta) { d[p.id] = ta.value; }
+      });
+      localStorage.setItem(DRAFT_KEY, JSON.stringify(d));
+    } catch (e) { /* storage unavailable */ }
+  }
+  function restoreDraft() {
+    try {
+      var raw = localStorage.getItem(DRAFT_KEY);
+      if (!raw) { return; }
+      var d = JSON.parse(raw);
+      PARTS.forEach(function (p) {
+        var ta = document.getElementById(p.id);
+        if (ta && typeof d[p.id] === 'string' && d[p.id] && !ta.value) {
+          ta.value = d[p.id];
+          ta.dispatchEvent(new Event('input'));
+        }
+      });
+    } catch (e) { /* ignore a corrupt draft */ }
+  }
+  PARTS.forEach(function (p) {
+    var ta = document.getElementById(p.id);
+    if (ta) { ta.addEventListener('input', saveDraft); }
+  });
+  form.addEventListener('submit', function () {
+    try { localStorage.removeItem(DRAFT_KEY); } catch (e) { /* ignore */ }
+  });
+
+  goTo(1, true);
+  window.addEventListener('load', restoreDraft);
+})();
+</script>
 
 {# FEEDBACK SECTION - After submission #}
 <div id="feedback-section" class="hidden space-y-6">
