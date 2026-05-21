@@ -1,7 +1,7 @@
 <!-- TAB 5: Structured Reflection with Smart Prompts + Part 3 Automation -->
 {% load ai_provenance module_design %}
 {% if current_tab == 'reflection' %}
-<h2 class="card-title text-2xl mb-4">📝 Reflection & Action Plan</h2>
+<h2 class="card-title text-2xl mb-4">Reflection & Action Plan</h2>
 
 {# C.3 commit 3 — page-level JSON-LD for every AI artefact rendered on this page. #}
 {# Article 50(2) machine-readable provenance: schema.org CreativeWork nodes with #}
@@ -691,9 +691,9 @@
         <span><strong>Reflection submitted!</strong> Here's your personalized feedback:</span>
     </div>
     
-    <div class="card bg-base-200 shadow-lg">
+    <div class="card bg-base-100 border border-base-300">
         <div class="card-body">
-            <h3 class="card-title text-lg mb-4">🎯 Feedback on Your Reflection</h3>
+            <h3 class="card-title text-lg mb-4">Feedback on Your Reflection</h3>
             <div id="feedback-content" class="prose max-w-none">
                 <!-- Feedback inserted here -->
             </div>
@@ -794,10 +794,10 @@
     
     
     <!-- RTM CARD - Reflective Tension Mapper -->
-    <div id="rtm-card" class="card bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-300 shadow-lg hidden">
+    <div id="rtm-card" class="card bg-base-100 border border-base-300 hidden">
         <div class="card-body">
             <div class="flex items-center gap-2 mb-4">
-                <h3 class="card-title text-lg text-purple-900">🟣 Pedagogical Tensions in Your Reflection</h3>
+                <h3 class="card-title text-lg">Pedagogical Tensions in Your Reflection</h3>
                 <div class="badge badge-secondary">Epistemic Positioning</div>
             </div>
             <!-- XAI Panel — live state (id με -live suffix για αποφυγή duplicate) -->
@@ -891,14 +891,14 @@
                 id="peer-synthesis-btn"
                 class="btn btn-outline btn-sm btn-secondary gap-2"
                 onclick="triggerPeerSynthesis()">
-                🤝 View insights from colleagues in other subjects
+                View insights from colleagues in other subjects
             </button>
         </div>
 
-        <div id="peer-synthesis-card" class="card bg-gradient-to-br from-purple-50 to-indigo-50 border-2 border-purple-200 shadow-lg hidden w-full mt-2">
+        <div id="peer-synthesis-card" class="card bg-base-100 border border-base-300 hidden w-full mt-2">
             <div class="card-body">
                 <div class="flex items-center gap-2 mb-4">
-                    <h3 class="card-title text-lg text-purple-800">🤝 Insights from Colleagues in Other Subjects</h3>
+                    <h3 class="card-title text-lg">Insights from Colleagues in Other Subjects</h3>
                     <div class="badge badge-secondary">Cross-Disciplinary</div>
                 </div>
                 <div class="alert alert-info text-sm mb-4">
@@ -918,13 +918,13 @@
             id="dtp-btn"
             class="btn btn-outline btn-sm btn-success gap-2"
             onclick="triggerDTP()">
-            📈 View your learning journey so far
+            View your learning journey so far
         </button>
     </div>
-    <div id="dtp-card" class="card bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-300 shadow-lg hidden w-full mt-2">
+    <div id="dtp-card" class="card bg-base-100 border border-base-300 hidden w-full mt-2">
         <div class="card-body">
             <div class="flex items-center gap-2 mb-4">
-                <h3 class="card-title text-lg text-green-900">📈 Reflective Development Signal</h3>
+                <h3 class="card-title text-lg">Reflective Development Signal</h3>
                 <div class="badge badge-success">Longitudinal Analysis</div>
             </div>
             <p class="text-gray-800 mb-4" id="dtp-narrative"></p>
@@ -1024,13 +1024,13 @@
             id="dtp-btn"
             class="btn btn-outline btn-sm btn-success gap-2"
             onclick="triggerDTP()">
-            📈 View your learning journey so far
+            View your learning journey so far
         </button>
     </div>
-    <div id="dtp-card" class="card bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-300 shadow-lg {% if not reflection_dtp %}hidden{% endif %} w-full mt-2">
+    <div id="dtp-card" class="card bg-base-100 border border-base-300 {% if not reflection_dtp %}hidden{% endif %} w-full mt-2">
         <div class="card-body">
             <div class="flex items-center gap-2 mb-4">
-                <h3 class="card-title text-lg text-green-900">📈 Reflective Development Signal</h3>
+                <h3 class="card-title text-lg">Reflective Development Signal</h3>
                 <div class="badge badge-success">Longitudinal Analysis</div>
             </div>
             <p class="text-gray-800 mb-4" id="dtp-narrative">{% if reflection_dtp %}{{ reflection_dtp.narrative }}{% endif %}</p>
@@ -1178,9 +1178,9 @@
 </div><!-- closes feedback-section -->
 
 {% if progress.reflection_rag_feedback %}
-<div class="card bg-base-200 shadow-lg mb-6">
+<div class="card bg-base-100 border border-base-300 mb-6">
     <div class="card-body">
-        <h3 class="card-title text-lg mb-4">🎯 Your Personalized Feedback</h3>
+        <h3 class="card-title text-lg mb-4">Your Personalized Feedback</h3>
         <div class="prose max-w-none">
             {{ progress.reflection_rag_feedback|safe }}
         </div>
@@ -1288,7 +1288,7 @@
 {% endif %}
 
 {% if progress.reflection_peer_synthesis %}
-<div class="card bg-gradient-to-br from-purple-50 to-indigo-50 border-2 border-purple-200 shadow-lg mb-6"
+<div class="card bg-base-100 border border-base-300 mb-6"
      {% if progress.peer_synthesis_provenance %}
      data-ai-generated="true"
      data-ai-model="{{ progress.peer_synthesis_provenance.model_name }}"
@@ -1298,7 +1298,7 @@
      {% endif %}>
     <div class="card-body">
         <div class="flex items-center gap-2 mb-4">
-            <h3 class="card-title text-lg text-purple-800">🤝 Insights from Colleagues in Other Subjects</h3>
+            <h3 class="card-title text-lg">Insights from Colleagues in Other Subjects</h3>
             <div class="badge badge-secondary">Cross-Disciplinary</div>
         </div>
         <div class="prose max-w-none prose-purple">
@@ -1382,10 +1382,10 @@
 <!-- TENSIONS ALWAYS SHOW TEST -->
 {% if saved_tensions %}
 
-<div class="card bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-300 shadow-lg mb-6">
+<div class="card bg-base-100 border border-base-300 mb-6">
     <div class="card-body">
         <div class="flex items-center gap-2 mb-4">
-            <h3 class="card-title text-lg text-purple-900">🟣 Your Pedagogical Tensions</h3>
+            <h3 class="card-title text-lg">Your Pedagogical Tensions</h3>
             <div class="badge badge-secondary">Epistemic Positioning</div>
         </div>
         {% for tension in saved_tensions %}
@@ -1989,7 +1989,7 @@ async function autoSaveTensions(tensions) {
                 rtmCard.innerHTML = `
     <div class="card-body">
         <div class="flex items-center gap-2 mb-4">
-            <h3 class="card-title text-lg text-purple-900">🟣 Pedagogical Tensions in Your Reflection</h3>
+            <h3 class="card-title text-lg">Pedagogical Tensions in Your Reflection</h3>
             <div class="badge badge-secondary">Epistemic Positioning</div>
         </div>
         <details class="group mb-3">
