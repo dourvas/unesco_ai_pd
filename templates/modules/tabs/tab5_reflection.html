@@ -12,11 +12,31 @@
 /* Post-submit result panels — magazine treatment (Phase F design refresh).
    Unscoped (the panels render outside the .tab5-redesign wizard form);
    a left editorial rule plus a serif panel heading. */
-.rfx-result { border-left: 3px solid oklch(var(--bc) / 0.35); }
+.rfx-result {
+  border-left: 3px solid oklch(var(--bc) / 0.35);
+  scroll-margin-top: 7rem;
+}
 .rfx-result .card-title {
   font-family: ui-serif, Georgia, "Times New Roman", serif;
   font-weight: 600;
 }
+/* Post-submit results section-nav — sticky jump menu (Phase F follow-up). */
+.results-nav {
+  position: sticky; top: 4rem; z-index: 20;
+  display: flex; flex-wrap: wrap; gap: 0.4rem;
+  padding: 0.55rem 0.7rem; margin-bottom: 1.25rem;
+  background: oklch(var(--b1) / 0.95);
+  -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+  border: 1px solid oklch(var(--b3)); border-radius: 0.5rem;
+}
+.results-nav-pill {
+  padding: 0.3rem 0.7rem;
+  border: 1px solid oklch(var(--b3)); border-radius: 9999px;
+  background: oklch(var(--b1)); color: oklch(var(--bc));
+  font-size: 0.78rem; font-weight: 600; cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.results-nav-pill:hover { background: oklch(var(--b2)); }
 </style>
 
 <div class="space-y-6 w-full">
@@ -1591,6 +1611,69 @@
 </div>
 {% endif %}
 
+
+<script>
+/* Post-submit results section-nav (Phase F follow-up). A sticky jump
+   menu over the AI-generated result panels; pills appear as panels
+   become visible (RTM extraction is async, DTP/peer are on-demand).
+   Labels are derived from the panel titles — no per-panel markup. */
+(function () {
+  'use strict';
+  var LABELS = [
+    { test: /feedback/i,    label: 'Feedback' },
+    { test: /tension/i,     label: 'Tensions' },
+    { test: /development/i, label: 'Development' },
+    { test: /colleague/i,   label: 'Colleagues' }
+  ];
+  function labelFor(title) {
+    for (var i = 0; i < LABELS.length; i++) {
+      if (LABELS[i].test.test(title)) { return LABELS[i].label; }
+    }
+    return null;
+  }
+  function isVisible(el) { return !!(el && el.offsetParent !== null); }
+
+  var panels = Array.prototype.slice.call(document.querySelectorAll('.rfx-result'));
+  if (panels.length === 0) { return; }
+
+  var nav = document.createElement('nav');
+  nav.className = 'results-nav';
+  nav.style.display = 'none';
+  nav.setAttribute('aria-label', 'Reflection results');
+  panels[0].parentNode.insertBefore(nav, panels[0]);
+
+  function render() {
+    var items = [];
+    panels.forEach(function (panel) {
+      if (!isVisible(panel)) { return; }
+      var titleEl = panel.querySelector('.card-title');
+      if (!titleEl) { return; }
+      var lab = labelFor(titleEl.textContent || '');
+      if (lab) { items.push({ label: lab, panel: panel }); }
+    });
+    if (items.length < 2) { nav.style.display = 'none'; return; }
+    nav.style.display = '';
+    nav.innerHTML = '';
+    items.forEach(function (it) {
+      var pill = document.createElement('button');
+      pill.type = 'button';
+      pill.className = 'results-nav-pill';
+      pill.textContent = it.label;
+      pill.addEventListener('click', function () {
+        it.panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+      nav.appendChild(pill);
+    });
+  }
+
+  render();
+  /* Panels appear progressively; re-render when visibility changes. */
+  var obs = new MutationObserver(render);
+  obs.observe(nav.parentNode, {
+    attributes: true, attributeFilter: ['class', 'style'], subtree: true
+  });
+})();
+</script>
 
 <script>
 // PART 3: SMART CONCERNS GENERATION
