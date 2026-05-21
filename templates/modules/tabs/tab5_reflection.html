@@ -8,6 +8,17 @@
 {# SoftwareApplication creator. View context passes a list of provenance rows. #}
 {% ai_provenance_jsonld ai_provenance_jsonld_list %}
 
+<style>
+/* Post-submit result panels — magazine treatment (Phase F design refresh).
+   Unscoped (the panels render outside the .tab5-redesign wizard form);
+   a left editorial rule plus a serif panel heading. */
+.rfx-result { border-left: 3px solid oklch(var(--bc) / 0.35); }
+.rfx-result .card-title {
+  font-family: ui-serif, Georgia, "Times New Roman", serif;
+  font-weight: 600;
+}
+</style>
+
 <div class="space-y-6 w-full">
 {% if not progress.reflection_completed %}
 
@@ -428,6 +439,38 @@
   background: #dc2626; color: #fff; border-color: #dc2626;
 }
 .tab5-redesign .rfx-mic svg { width: 1rem; height: 1rem; }
+/* Motion + review polish (Phase F design refresh) */
+@keyframes rfx-screen-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: none; }
+}
+.tab5-redesign .rfx-screen.is-active { animation: rfx-screen-in 0.28s ease both; }
+@keyframes rfx-mic-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.45); }
+  50%      { box-shadow: 0 0 0 7px rgba(220, 38, 38, 0); }
+}
+.tab5-redesign .rfx-mic.is-recording { animation: rfx-mic-pulse 1.6s ease-in-out infinite; }
+.tab5-redesign .rfx-mic:active,
+.tab5-redesign .rfx-pill:active { transform: scale(0.97); }
+@media (prefers-reduced-motion: reduce) {
+  .tab5-redesign .rfx-screen.is-active,
+  .tab5-redesign .rfx-mic.is-recording { animation: none; }
+}
+.tab5-redesign .rfx-review-head {
+  display: flex; align-items: baseline; gap: 0.625rem; margin-bottom: 0.4rem;
+}
+.tab5-redesign .rfx-review-num {
+  font-family: ui-serif, Georgia, "Times New Roman", serif;
+  font-size: 1.5rem; font-weight: 600; line-height: 1;
+  color: var(--aspect-main); flex-shrink: 0;
+}
+.tab5-redesign .rfx-review-edit {
+  margin-left: auto; font-size: 0.72rem; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.06em;
+  color: var(--aspect-main); background: none; border: none;
+  cursor: pointer; padding: 0.15rem 0.25rem;
+}
+.tab5-redesign .rfx-review-edit:hover { text-decoration: underline; }
 </style>
 
 <script>
@@ -463,17 +506,34 @@
       var text = ta ? ta.value.trim() : '';
       var item = document.createElement('div');
       item.className = 'rfx-review-item';
+
+      var head = document.createElement('div');
+      head.className = 'rfx-review-head';
+      var num = document.createElement('span');
+      num.className = 'rfx-review-num';
+      num.textContent = String(i + 1);
+      head.appendChild(num);
       var label = document.createElement('p');
       label.className = 'rfx-review-label';
       label.textContent = p.label;
-      item.appendChild(label);
+      head.appendChild(label);
+      var edit = document.createElement('button');
+      edit.type = 'button';
+      edit.className = 'rfx-review-edit';
+      edit.textContent = 'Edit';
+      (function (screenNum) {
+        edit.addEventListener('click', function () { goTo(screenNum); });
+      })(i + 1);
+      head.appendChild(edit);
+      item.appendChild(head);
+
       var body = document.createElement('p');
       if (text) {
         body.className = 'rfx-review-text';
         body.textContent = text;
       } else {
         body.className = 'rfx-review-empty';
-        body.textContent = 'Not yet written — go to step ' + (i + 1) + '.';
+        body.textContent = 'Not yet written — use Edit to go to this part.';
       }
       item.appendChild(body);
       reviewBody.appendChild(item);
@@ -691,7 +751,7 @@
         <span><strong>Reflection submitted!</strong> Here's your personalized feedback:</span>
     </div>
     
-    <div class="card bg-base-100 border border-base-300">
+    <div class="card rfx-result bg-base-100 border border-base-300">
         <div class="card-body">
             <h3 class="card-title text-lg mb-4">Feedback on Your Reflection</h3>
             <div id="feedback-content" class="prose max-w-none">
@@ -794,7 +854,7 @@
     
     
     <!-- RTM CARD - Reflective Tension Mapper -->
-    <div id="rtm-card" class="card bg-base-100 border border-base-300 hidden">
+    <div id="rtm-card" class="card rfx-result bg-base-100 border border-base-300 hidden">
         <div class="card-body">
             <div class="flex items-center gap-2 mb-4">
                 <h3 class="card-title text-lg">Pedagogical Tensions in Your Reflection</h3>
@@ -895,7 +955,7 @@
             </button>
         </div>
 
-        <div id="peer-synthesis-card" class="card bg-base-100 border border-base-300 hidden w-full mt-2">
+        <div id="peer-synthesis-card" class="card rfx-result bg-base-100 border border-base-300 hidden w-full mt-2">
             <div class="card-body">
                 <div class="flex items-center gap-2 mb-4">
                     <h3 class="card-title text-lg">Insights from Colleagues in Other Subjects</h3>
@@ -921,7 +981,7 @@
             View your learning journey so far
         </button>
     </div>
-    <div id="dtp-card" class="card bg-base-100 border border-base-300 hidden w-full mt-2">
+    <div id="dtp-card" class="card rfx-result bg-base-100 border border-base-300 hidden w-full mt-2">
         <div class="card-body">
             <div class="flex items-center gap-2 mb-4">
                 <h3 class="card-title text-lg">Reflective Development Signal</h3>
@@ -1035,7 +1095,7 @@
 </div><!-- closes feedback-section -->
 
 {% if progress.reflection_rag_feedback %}
-<div class="card bg-base-100 border border-base-300 mb-6">
+<div class="card rfx-result bg-base-100 border border-base-300 mb-6">
     <div class="card-body">
         <h3 class="card-title text-lg mb-4">Your Personalized Feedback</h3>
         <div class="prose max-w-none">
@@ -1145,7 +1205,7 @@
 {% endif %}
 
 {% if progress.reflection_peer_synthesis %}
-<div class="card bg-base-100 border border-base-300 mb-6"
+<div class="card rfx-result bg-base-100 border border-base-300 mb-6"
      {% if progress.peer_synthesis_provenance %}
      data-ai-generated="true"
      data-ai-model="{{ progress.peer_synthesis_provenance.model_name }}"
@@ -1239,7 +1299,7 @@
 <!-- TENSIONS ALWAYS SHOW TEST -->
 {% if saved_tensions %}
 
-<div class="card bg-base-100 border border-base-300 mb-6">
+<div class="card rfx-result bg-base-100 border border-base-300 mb-6">
     <div class="card-body">
         <div class="flex items-center gap-2 mb-4">
             <h3 class="card-title text-lg">Your Pedagogical Tensions</h3>
@@ -1383,7 +1443,7 @@
             View your learning journey so far
         </button>
     </div>
-    <div id="dtp-card" class="card bg-base-100 border border-base-300 {% if not reflection_dtp %}hidden{% endif %} w-full mt-2">
+    <div id="dtp-card" class="card rfx-result bg-base-100 border border-base-300 {% if not reflection_dtp %}hidden{% endif %} w-full mt-2">
         <div class="card-body">
             <div class="flex items-center gap-2 mb-4">
                 <h3 class="card-title text-lg">Reflective Development Signal</h3>
