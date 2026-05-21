@@ -58,6 +58,24 @@
         </ul>
       </details>
       <div class="rfx-field">
+        <div class="rfx-voice-cluster hidden">
+          <button type="button" class="rfx-mic" data-voice-target="part1-textarea" aria-pressed="false">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 18.75a6 6 0 006-6v-1.5m-6 7.5a6 6 0 01-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 01-3-3V4.5a3 3 0 116 0v8.25a3 3 0 01-3 3z"/></svg>
+            <span class="rfx-mic-label">Voice input</span>
+          </button>
+          <label class="rfx-voicelang">
+            <span>Language</span>
+            <select class="select select-sm select-bordered rfx-voice-lang">
+              <option value="en-US" selected>English</option>
+              <option value="el-GR">Ελληνικά</option>
+            </select>
+          </label>
+          <details class="rfx-voice-note">
+            <summary>About voice input</summary>
+            {% include "modules/partials/voice_input_note.html" %}
+          </details>
+          <span class="rfx-voice-status"></span>
+        </div>
         <textarea name="part1_insights" id="part1-textarea"
                   class="textarea textarea-bordered rfx-textarea"
                   placeholder="Share your key learning moments and insights..." required></textarea>
@@ -81,6 +99,24 @@
         {% if reflection_part2 %}{{ reflection_part2.content_data|safe }}{% else %}<p>How might AI tools support teaching and learning in your specific subject area?</p>{% endif %}
       </div>
       <div class="rfx-field">
+        <div class="rfx-voice-cluster hidden">
+          <button type="button" class="rfx-mic" data-voice-target="part2-textarea" aria-pressed="false">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 18.75a6 6 0 006-6v-1.5m-6 7.5a6 6 0 01-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 01-3-3V4.5a3 3 0 116 0v8.25a3 3 0 01-3 3z"/></svg>
+            <span class="rfx-mic-label">Voice input</span>
+          </button>
+          <label class="rfx-voicelang">
+            <span>Language</span>
+            <select class="select select-sm select-bordered rfx-voice-lang">
+              <option value="en-US" selected>English</option>
+              <option value="el-GR">Ελληνικά</option>
+            </select>
+          </label>
+          <details class="rfx-voice-note">
+            <summary>About voice input</summary>
+            {% include "modules/partials/voice_input_note.html" %}
+          </details>
+          <span class="rfx-voice-status"></span>
+        </div>
         <textarea name="part2_application" id="part2-textarea"
                   class="textarea textarea-bordered rfx-textarea"
                   placeholder="Describe specific ways you could use AI in your teaching context..." required></textarea>
@@ -125,6 +161,24 @@
         <button type="button" class="btn btn-sm btn-ghost" onclick="clearPart3()">Clear</button>
       </div>
       <div class="rfx-field">
+        <div class="rfx-voice-cluster hidden">
+          <button type="button" class="rfx-mic" data-voice-target="part3-textarea" aria-pressed="false">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 18.75a6 6 0 006-6v-1.5m-6 7.5a6 6 0 01-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 01-3-3V4.5a3 3 0 116 0v8.25a3 3 0 01-3 3z"/></svg>
+            <span class="rfx-mic-label">Voice input</span>
+          </button>
+          <label class="rfx-voicelang">
+            <span>Language</span>
+            <select class="select select-sm select-bordered rfx-voice-lang">
+              <option value="en-US" selected>English</option>
+              <option value="el-GR">Ελληνικά</option>
+            </select>
+          </label>
+          <details class="rfx-voice-note">
+            <summary>About voice input</summary>
+            {% include "modules/partials/voice_input_note.html" %}
+          </details>
+          <span class="rfx-voice-status"></span>
+        </div>
         <textarea name="part3_concerns" id="part3-textarea"
                   class="textarea textarea-bordered rfx-textarea rfx-textarea-tall"
                   placeholder="Select concerns above and click 'Generate', or write your own response..." required></textarea>
@@ -162,6 +216,24 @@
         {% endif %}
       </details>
       <div class="rfx-field">
+        <div class="rfx-voice-cluster hidden">
+          <button type="button" class="rfx-mic" data-voice-target="part4-textarea" aria-pressed="false">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 18.75a6 6 0 006-6v-1.5m-6 7.5a6 6 0 01-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 01-3-3V4.5a3 3 0 116 0v8.25a3 3 0 01-3 3z"/></svg>
+            <span class="rfx-mic-label">Voice input</span>
+          </button>
+          <label class="rfx-voicelang">
+            <span>Language</span>
+            <select class="select select-sm select-bordered rfx-voice-lang">
+              <option value="en-US" selected>English</option>
+              <option value="el-GR">Ελληνικά</option>
+            </select>
+          </label>
+          <details class="rfx-voice-note">
+            <summary>About voice input</summary>
+            {% include "modules/partials/voice_input_note.html" %}
+          </details>
+          <span class="rfx-voice-status"></span>
+        </div>
         <textarea name="part4_action" id="part4-textarea"
                   class="textarea textarea-bordered rfx-textarea"
                   placeholder="Outline your concrete action steps..." required></textarea>
@@ -325,6 +397,37 @@
   .tab5-redesign .rfx-screen-title { font-size: 1.3rem; }
   .tab5-redesign .rfx-concerns { grid-template-columns: 1fr; }
 }
+/* Voice input — per-screen cluster (Phase F stage 2) */
+.tab5-redesign .rfx-voice-cluster {
+  display: flex; flex-wrap: wrap; align-items: center;
+  gap: 0.4rem 0.75rem; margin-bottom: 0.625rem;
+}
+.tab5-redesign .rfx-voicelang {
+  display: flex; align-items: center; gap: 0.375rem;
+  font-size: 0.8rem; font-weight: 500;
+}
+.tab5-redesign .rfx-voice-note { font-size: 0.78rem; }
+.tab5-redesign .rfx-voice-note summary { cursor: pointer; color: oklch(var(--bc) / 0.6); }
+.tab5-redesign .rfx-voice-note p {
+  margin: 0.4rem 0 0; color: oklch(var(--bc) / 0.65);
+  line-height: 1.5; max-width: 40rem;
+}
+.tab5-redesign .rfx-voice-status {
+  flex-basis: 100%; font-size: 0.75rem; color: #dc2626;
+}
+.tab5-redesign .rfx-mic {
+  display: inline-flex; align-items: center; gap: 0.375rem;
+  padding: 0.3rem 0.7rem;
+  border: 1px solid oklch(var(--b3)); border-radius: 9999px;
+  background: oklch(var(--b1)); color: oklch(var(--bc));
+  font-size: 0.8rem; font-weight: 500; cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+.tab5-redesign .rfx-mic:hover { background: var(--aspect-bg); color: var(--aspect-text); }
+.tab5-redesign .rfx-mic.is-recording {
+  background: #dc2626; color: #fff; border-color: #dc2626;
+}
+.tab5-redesign .rfx-mic svg { width: 1rem; height: 1rem; }
 </style>
 
 <script>
@@ -441,6 +544,143 @@
 
   goTo(1, true);
   window.addEventListener('load', restoreDraft);
+})();
+
+/* ===== TAB5 voice input — Web Speech API (Phase F stage 2).
+   One reused SpeechRecognition; one microphone per screen, clustered
+   with that screen's language selector. Browser-side dictation: the
+   transcript lands in the editable textarea for the teacher to review
+   before submitting. ===== */
+(function () {
+  'use strict';
+  var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  var form = document.getElementById('reflection-form-structured');
+  if (!form || !form.classList.contains('tab5-redesign')) { return; }
+  var clusters = Array.prototype.slice.call(form.querySelectorAll('.rfx-voice-cluster'));
+  var mics = Array.prototype.slice.call(form.querySelectorAll('.rfx-mic'));
+
+  /* Feature detection: without the Web Speech API the wizard stays a
+     plain text form and the voice clusters remain hidden. */
+  if (!SR || clusters.length === 0) { return; }
+
+  clusters.forEach(function (c) { c.classList.remove('hidden'); });
+
+  /* One language setting, surfaced in every cluster; the selects are
+     kept in sync so the teacher can change it next to any microphone. */
+  var langSelects = Array.prototype.slice.call(form.querySelectorAll('.rfx-voice-lang'));
+  function applyLang(val) {
+    langSelects.forEach(function (s) { s.value = val; });
+  }
+  function currentLang() {
+    return langSelects.length ? langSelects[0].value : 'en-US';
+  }
+  try {
+    var savedLang = localStorage.getItem('proodos.voiceLang');
+    if (savedLang) { applyLang(savedLang); }
+  } catch (e) { /* storage unavailable */ }
+  langSelects.forEach(function (s) {
+    s.addEventListener('change', function () {
+      applyLang(s.value);
+      try { localStorage.setItem('proodos.voiceLang', s.value); } catch (e) {}
+    });
+  });
+
+  /* Modality signal consumed by the submit handler in stage 4. */
+  window.proodosVoiceUsed = window.proodosVoiceUsed || {};
+
+  var recognition = new SR();
+  recognition.continuous = true;
+  recognition.interimResults = true;
+
+  var activeBtn = null, activeTextarea = null, activeStatus = null;
+  var baseText = '', finalText = '';
+
+  function setMic(btn, on) {
+    btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+    btn.classList.toggle('is-recording', on);
+    var label = btn.querySelector('.rfx-mic-label');
+    if (label) { label.textContent = on ? 'Stop' : 'Voice input'; }
+  }
+
+  function startRecording(btn) {
+    var ta = document.getElementById(btn.dataset.voiceTarget);
+    if (!ta) { return; }
+    activeBtn = btn;
+    activeTextarea = ta;
+    var cluster = btn.closest('.rfx-voice-cluster');
+    activeStatus = cluster ? cluster.querySelector('.rfx-voice-status') : null;
+    baseText = ta.value;
+    if (baseText && !/\s$/.test(baseText)) { baseText += ' '; }
+    finalText = '';
+    recognition.lang = currentLang();
+    try {
+      recognition.start();
+    } catch (e) {
+      setTimeout(function () {
+        try { recognition.start(); } catch (e2) { /* give up */ }
+      }, 250);
+    }
+  }
+
+  recognition.onstart = function () {
+    if (activeStatus) { activeStatus.textContent = ''; }
+    if (activeBtn) { setMic(activeBtn, true); }
+  };
+  recognition.onresult = function (ev) {
+    var interim = '';
+    for (var i = ev.resultIndex; i < ev.results.length; i++) {
+      var chunk = ev.results[i][0].transcript;
+      if (ev.results[i].isFinal) { finalText += chunk; } else { interim += chunk; }
+    }
+    if (activeTextarea) {
+      activeTextarea.value = baseText + finalText + interim;
+      activeTextarea.dispatchEvent(new Event('input'));
+    }
+  };
+  recognition.onerror = function (ev) {
+    if (!activeStatus) { return; }
+    if (ev.error === 'not-allowed' || ev.error === 'service-not-allowed' ||
+        ev.error === 'audio-capture' || ev.error === 'network') {
+      activeStatus.textContent = 'Voice input could not start. Use Google Chrome and check '
+        + 'that online speech recognition is enabled on your device — see "About voice '
+        + 'input". You can type your reflection instead.';
+    }
+  };
+  recognition.onend = function () {
+    if (activeTextarea) {
+      activeTextarea.value = baseText + finalText;
+      activeTextarea.dispatchEvent(new Event('input'));
+      if (activeBtn && finalText.trim()) {
+        window.proodosVoiceUsed[activeBtn.dataset.voiceTarget] = true;
+      }
+    }
+    if (activeBtn) { setMic(activeBtn, false); }
+    activeBtn = null;
+    activeTextarea = null;
+    activeStatus = null;
+  };
+
+  mics.forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      if (activeBtn) {
+        recognition.stop();
+      } else {
+        startRecording(btn);
+      }
+    });
+  });
+
+  /* Stop recording when the teacher navigates between screens. */
+  var navEls = Array.prototype.slice.call(form.querySelectorAll('.rfx-pill'));
+  navEls.push(document.getElementById('rfx-back'));
+  navEls.push(document.getElementById('rfx-next'));
+  navEls.forEach(function (el) {
+    if (el) {
+      el.addEventListener('click', function () {
+        if (activeBtn) { recognition.stop(); }
+      });
+    }
+  });
 })();
 </script>
 

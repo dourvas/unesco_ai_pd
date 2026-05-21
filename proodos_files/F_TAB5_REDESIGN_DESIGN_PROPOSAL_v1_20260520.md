@@ -114,11 +114,27 @@ Each screen has exactly **one** textarea and **one** microphone button.
 - Interim results stream into the visible textarea; the teacher reviews and
   edits in place before moving on ("AI proposes, human ratifies", intrinsic to
   the editable textarea).
-- A form-level language `<select>` — default `en-US`, `el-GR` offered, last
-  choice remembered via `localStorage`. A single source-of-truth language list.
+- **Per-screen voice cluster.** Each screen's microphone, language `<select>`
+  and the "About voice input" note sit together in one cluster beside the
+  textarea — voice controls are never far from the microphone (changed from an
+  earlier top-of-form voice bar after a usability note, 2026-05-21). The
+  language selects across screens are synchronised — changing one changes all —
+  so it stays one logical setting; default `en-US`, `el-GR` offered, remembered
+  via `localStorage`.
 - Feature detection: without the Web Speech API the microphone and language
   controls stay hidden and the wizard works as a plain text form.
 - An inline Article 50 notice near the voice controls (wording in §8).
+- **Browser support (tested 2026-05-21).** Voice input was verified working in
+  **Google Chrome** — all four wizard screens captured speech correctly. The
+  Web Speech API depends on browser and device support: it needs a Chromium
+  browser and the device's online speech recognition enabled (on Windows:
+  Settings → Privacy & security → Speech; Android and macOS have an equivalent
+  setting). Where the API is absent the voice controls are hidden by feature
+  detection; where it is present but the device setting is off, the API fails
+  silently, so the voice bar carries a "supported setup" note and the
+  on-screen error message points the teacher to it. Voice is optional
+  throughout — typing is always available. **Google Chrome is the recommended
+  browser for the pilot.**
 
 ## 6. What stays unchanged — the low-risk argument
 
