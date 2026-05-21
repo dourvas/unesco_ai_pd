@@ -2,7 +2,7 @@
 
 - **Phase:** F (formerly split as F.1 voice + the parked F.5 TAB5 redesign — now merged)
 - **Date:** 2026-05-20
-- **Status:** Reviewed — design decisions recorded 2026-05-20
+- **Status:** IMPLEMENTED and verified end-to-end (2026-05-21). All four stages built plus the DTP-ordering fix. Commits: 1705e27 (F.1a field), ba289c0 (stage 1 wizard), 4132455 (stage 2 voice), a35d1ac (stage 3 magazine pass), 37e0aa9 (DTP ordering fix), 02720ef (stage 4 modality). Open: final sign-off of the voice-input notice wording (§8); an optional design-refresh pass.
 - **Supersedes:** `F1_VOICE_INPUT_DESIGN_PROPOSAL_v1_20260520.md` and the parked
   F.5 entry in `PROODOS_UNIFIED_ROADMAP.md` §3.
 
