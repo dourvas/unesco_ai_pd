@@ -1705,7 +1705,15 @@ if (reflectionForm) {
         const part4 = document.getElementById('part4-textarea').value;
         
         const reflection_text = `Part 1: Key Insights\n\n${part1}\n\nPart 2: Personal Application\n\n${part2}\n\nPart 3: Concerns & Challenges\n\n${part3}\n\nPart 4: Action Plan\n\n${part4}`;
-        
+
+        // F.1 — input modality (text / voice / mixed) for the voice-vs-text
+        // research dimension. window.proodosVoiceUsed is set by the voice IIFE.
+        const _voiceUsed = window.proodosVoiceUsed || {};
+        const _voiceCount = ['part1-textarea', 'part2-textarea', 'part3-textarea', 'part4-textarea']
+            .filter(function (id) { return _voiceUsed[id]; }).length;
+        const input_modality = _voiceCount === 0 ? 'text'
+            : (_voiceCount === 4 ? 'voice' : 'mixed');
+
         const submitBtn = document.getElementById('submit-reflection-btn');
         submitBtn.disabled = true;
         submitBtn.innerHTML = '<span class="loading loading-spinner"></span> Processing (10-15 seconds)...';
@@ -1717,7 +1725,7 @@ if (reflectionForm) {
                     'Content-Type': 'application/json',
                     'X-CSRFToken': csrftoken
                 },
-                body: JSON.stringify({ reflection_text })
+                body: JSON.stringify({ reflection_text, input_modality })
             });
             
             const result = await response.json();

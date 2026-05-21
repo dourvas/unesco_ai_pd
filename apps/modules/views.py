@@ -807,6 +807,15 @@ def mark_tab_complete(request, code, tab_name):
                     'message': f'The reflection must be between 300-800 words (current count: {word_count}).'
                 })
             
+            # F.1 — record the input modality of this reflection
+            # (text / voice / mixed) for the voice-vs-text research
+            # dimension. The reflection_input_modality field was added
+            # in F.1a (commit 1705e27).
+            input_modality = data.get('input_modality')
+            if input_modality in ('text', 'voice', 'mixed'):
+                progress.reflection_input_modality = input_modality
+                progress.save(update_fields=['reflection_input_modality'])
+
             # ============================================================
             # 🔥 RAG FEEDBACK GENERATION + PEER SYNTHESIS
             # Phase E commit 2: RAGFeedbackAgent owns the full pipeline
