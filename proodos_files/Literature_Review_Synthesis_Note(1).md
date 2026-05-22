@@ -474,6 +474,51 @@ Rose, D. H., & Meyer, A. (2002). *Teaching every student in the digital age: Uni
 
 ---
 
+## 15. PROODOS Epilogue — Στήριξη για το Phase G
+
+Προστέθηκε 2026-05-21 για το **Phase G (PROODOS Epilogue)** — το post-completion synthesis feature που κάθεται ανάμεσα στο M15 και το AILST T2. Σχεδιαστικό αρχείο: `PHASE_G_EPILOGUE_DESIGN_PROPOSAL_v1_20260521.md`. Οι αναφορές στηρίζουν δύο σχεδιαστικές αποφάσεις του proposal: **Q2** (το Stage 0 dashboard παραμένει ορατό κατά τον διάλογο) και **Q5** (το Stage 0 υποχρεωτικό, ο διάλογος προαιρετικός). Όλες επαληθεύτηκαν με αναζήτηση (2026-05-21).
+
+*Σημείωση εσωτερικής στήριξης.* Δύο ακόμη αποφάσεις του Phase G — η περιγραφική (όχι αξιολογική) όψη του Stage 0 και ο χειρισμός ισχνών δεδομένων (Q6) — **δεν εισάγουν νέα εξωτερική κατασκευή**: επεκτείνουν την ήδη τεκμηριωμένη αρχή του D.3a §4.4/§5 («describe, do not evaluate»· «an honest 'no signal here' is defensible»). Καταγράφεται ρητά ότι δεν χρειάζονται νέα αναφορά.
+
+### 15.1 — Γνωστικό φορτίο & split-attention effect (Sweller, 1988· Chandler & Sweller, 1992)
+Η **Cognitive Load Theory** του Sweller εκκινεί από την περιορισμένη χωρητικότητα της εργαζόμενης μνήμης και διακρίνει intrinsic, extraneous και germane φορτίο. Το **split-attention effect** (Chandler & Sweller, 1992) είναι μορφή extraneous φορτίου: όταν ο μανθάνων αναγκάζεται να μοιράσει την προσοχή του ανάμεσα σε δύο πηγές πληροφορίας που πρέπει να ολοκληρωθούν νοητικά (π.χ. κείμενο και διάγραμμα), το περιττό αυτό φορτίο βλάπτει τη μάθηση· η χωρική ολοκλήρωση των πηγών το μειώνει.
+
+*Ρόλος για το Phase G.* Στηρίζει το Q2: στα Stages 1-3 ο διάλογος αναφέρεται διαρκώς στα δεδομένα του Stage 0 («στο M6 μετατοπίστηκε η σκέψη σου», «αυτό το tension επανήλθε»). Αν το dashboard εξαφανιζόταν, ο εκπαιδευτικός θα έπρεπε να κρατά τα δεδομένα στην εργαζόμενη μνήμη ταυτόχρονα με τη συζήτηση — split attention. Κρατώντας το dashboard ορατό (collapsible side panel) δίπλα στον διάλογο, οι δύο πηγές συνυπάρχουν χωρικά και το extraneous φορτίο μειώνεται. Δεν είναι αξίωση για το «πώς» μαθαίνει ο εκπαιδευτικός — είναι αιτιολόγηση της διάταξης οθόνης του διαλόγου.
+
+Sweller, J. (1988). Cognitive load during problem solving: Effects on learning. *Cognitive Science, 12*(2), 257–285. https://doi.org/10.1207/s15516709cog1202_4
+
+Chandler, P., & Sweller, J. (1992). The split-attention effect as a factor in the design of instruction. *British Journal of Educational Psychology, 62*(2), 233–246. https://doi.org/10.1111/j.2044-8279.1992.tb01017.x
+
+### 15.2 — Αυτονομία & εσωτερικά κίνητρα: Self-Determination Theory (Ryan & Deci, 2000· Deci & Ryan, 2000)
+Η **Self-Determination Theory (SDT)** ορίζει τρεις έμφυτες ψυχολογικές ανάγκες — αυτονομία, επάρκεια, συσχέτιση. Η **αυτονομία** — η εμπειρία του εαυτού ως αφετηρίας της δικής του δράσης — είναι το χαρακτηριστικό γνώρισμα των εσωτερικών κινήτρων: όταν δρα κανείς αυτόνομα, η δράση αντανακλά γνήσια ενδιαφέροντα και αξίες αντί εξωτερικής πίεσης. Δεκαετίες έρευνας SDT συνδέουν τα εσωτερικά κίνητρα με ενισχυμένη μάθηση και ποιότητα εμπλοκής.
+
+*Ρόλος για το Phase G.* Στηρίζει το Q5 (διαβαθμισμένο μοντέλο skip/υποχρεωτικό). Το Stage 0 είναι πληροφορία, όχι task — το να δει ο εκπαιδευτικός τα δικά του δεδομένα δεν επιβάλλει κόστος αυτονομίας, οπότε μπορεί να ανήκει στην υποχρεωτική ροή. Ο αναστοχαστικός διάλογος (Stages 1-3) όμως είναι γνωστική και προσωπική εργασία· ένας εξαναγκασμένος αναστοχασμός κινδυνεύει να γίνει performative αντί γνήσιος. Γι' αυτό ο διάλογος παραμένει σαφής, ρητά επιλέξιμη πρόσκληση (autonomy-supported), και η επιλογή του εκπαιδευτικού (entered / skipped) καταγράφεται ως μετρούμενη μεταβλητή.
+
+Ryan, R. M., & Deci, E. L. (2000). Self-determination theory and the facilitation of intrinsic motivation, social development, and well-being. *American Psychologist, 55*(1), 68–78. https://doi.org/10.1037/0003-066X.55.1.68
+
+Deci, E. L., & Ryan, R. M. (2000). The "what" and "why" of goal pursuits: Human needs and the self-determination of behavior. *Psychological Inquiry, 11*(4), 227–268. https://doi.org/10.1207/S15327965PLI1104_01
+
+### 15.3 — Η τρίφαση δομή του διαλόγου (Look Back / Look In / Look Forward)
+**Korthagen — ALACT (πρωταρχικό grounding).** Το μοντέλο αναστοχασμού ALACT (Korthagen et al., 2001) περιγράφει τον αναστοχασμό ως κύκλο πέντε φάσεων: **A**ction, **L**ooking back, **A**wareness of essential aspects, **C**reating alternative methods, **T**rial. Η τρίφαση δομή του Epilogue χαρτογραφείται πάνω του: Look Back ← Action + Looking back· Look In ← Awareness of essential aspects· Look Forward ← Creating alternatives + Trial. Κρίσιμο: η φάση «Awareness of essential aspects» είναι, στον Korthagen, η συνειδητοποίηση **του ίδιου του αναστοχαστή** — όχι κάτι που του επιβάλλεται· αυτό στηρίζει τον σχεδιασμό του Stage 2 ως «juxtaposition surfacing» (ο εκπαιδευτικός ονομάζει, όχι το AI).
+
+**Mezirow — transformative learning.** Ο κριτικός αναστοχασμός προχωρά συχνά μέσω διαλόγου, και το «disorienting dilemma» το βιώνει ο μανθάνων (Mezirow, 1991). Στηρίζει (α) τη διαλογική μορφή των Stages 1-3, (β) την επιστημολογική διόρθωση του Stage 2 — ο εκπαιδευτικός δουλεύει μια αντιπαράθεση δεδομένων, δεν δέχεται μια ετυμηγορία.
+
+**Schön — μέσω της δικής μας RPE εργασίας.** Ο Schön (1983, *The Reflective Practitioner*) είναι ήδη ο θεωρητικός κορμός της δημοσίευσης Dourvas, Kokkonis & Kontogiannis, «Reconceptualizing Prompt Engineering as Reflective Professional Practice» (αναφορά [10] εκεί), που εδραίωσε το reflection-on-action / reflection-in-action πλαίσιο για TAB5/RTM/DTP. Το Epilogue είναι η αναδρομική κορύφωση αυτού του πλαισίου· η στήριξή του στον Schön γίνεται μέσα από τη δική μας προηγούμενη εργασία — **συνέχεια του θεωρητικού πλαισίου της διατριβής**, όχι νέα εξωτερική εισαγωγή.
+
+**Brookfield — εξετάστηκε και απορρίφθηκε για αυτόν τον ρόλο.** Οι Four Lenses (Brookfield, 1995 — autobiographical / students' eyes / colleagues / theoretical literature) είναι **οπτικές γωνίες / πηγές** αναστοχασμού, όχι χρονικές φάσεις· δεν χαρτογραφούνται στην τρίφαση δομή και δεν χρησιμοποιούνται ως grounding της.
+
+**Guided reflection.** Η βιβλιογραφία του καθοδηγούμενου αναστοχασμού στην επαγγελματική ανάπτυξη εκπαιδευτικών τεκμηριώνει ότι ο δομημένος αναστοχασμός υποστηρίζει την ανάπτυξη αναστοχαστικής επάρκειας, με την αξία να προκύπτει από αυθεντική εμπλοκή — ενισχύοντας το autonomy-supported πλαίσιο του Q5.
+
+Korthagen, F. A. J., Kessels, J., Koster, B., Lagerwerf, B., & Wubbels, T. (2001). *Linking Practice and Theory: The Pedagogy of Realistic Teacher Education.* Mahwah, NJ: Lawrence Erlbaum Associates.
+
+Mezirow, J. (1991). *Transformative Dimensions of Adult Learning.* San Francisco, CA: Jossey-Bass.
+
+Schön, D. A. (1983). *The Reflective Practitioner: How Professionals Think in Action.* New York, NY: Basic Books.
+
+Brookfield, S. D. (1995). *Becoming a Critically Reflective Teacher.* San Francisco, CA: Jossey-Bass.
+
+---
+
 ## Project Context (ιστορικό snapshot — Απρίλιος 2026)
 
 > Το παρακάτω μπλοκ είναι snapshot **Απριλίου 2026**. Για την τρέχουσα κατάσταση φάσεων — Phase E (multi-agent refactor) ολοκληρωμένη, Phase D σε εξέλιξη (D.3a DTP redefinition done) — δες το `git log` και τα design proposals στο `proodos_files/`.
@@ -491,4 +536,4 @@ Rose, D. H., & Meyer, A. (2002). *Teaching every student in the digital age: Uni
 
 ---
 
-*Τελευταία ενημέρωση: 21 Μαΐου 2026 — προστέθηκε §14 (φωνή ως τρόπος εισόδου — 4 αναφορές για το Phase F: Bourdin & Fayol 1994/2002, McCutchen 1996, Rose & Meyer 2002). Προηγουμένως: §12 (trust/reactivity, D.1) και §13 (engagement, D.2).*
+*Τελευταία ενημέρωση: 21 Μαΐου 2026 — η §15 (PROODOS Epilogue — στήριξη για το Phase G) ολοκληρώθηκε: §15.1 Sweller 1988 / Chandler & Sweller 1992 (CLT / split-attention, Q2), §15.2 Ryan & Deci 2000 / Deci & Ryan 2000 (SDT, Q5), §15.3 Korthagen et al. 2001 / Mezirow 1991 / Schön 1983 (τρίφαση δομή· Schön μέσω της RPE εργασίας — συνέχεια θεωρητικού πλαισίου). Brookfield 1995 εξετάστηκε και απορρίφθηκε για αυτόν τον ρόλο. Σχεδιαστικό αρχείο: `PHASE_G_EPILOGUE_DESIGN_PROPOSAL_v2_20260521.md`. Την ίδια μέρα νωρίτερα: §14 (φωνή ως τρόπος εισόδου — Phase F: Bourdin & Fayol 1994/2002, McCutchen 1996, Rose & Meyer 2002). Προηγουμένως: §12 (trust/reactivity, D.1) και §13 (engagement, D.2).*

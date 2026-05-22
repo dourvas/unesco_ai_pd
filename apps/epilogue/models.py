@@ -32,12 +32,13 @@ class EpilogueCompletion(models.Model):
 
     OneToOne with auth.User: a user either has not started the Epilogue
     (no row), is in progress (row exists, completed_at NULL), or has
-    completed (completed_at set). The Epilogue is one-shot; replays are
-    not currently allowed at the data model level.
+    completed (completed_at set). The Epilogue is one-shot; the OneToOne
+    constraint enforces that invariant at the database level. Replay is
+    out of pilot scope — see TD-022.
 
-    Future expansion (TD-011): add per-stage timestamps
-    (stage0_completed_at .. stage3_completed_at), Gemini turn log
-    (JSONField), generated Learning Portrait text + PDF path.
+    Phase G (G.0) extends this model with the frozen Stage 0 snapshot,
+    the three-phase dialogue log, and the Learning Portrait fields.
+    Design: proodos_files/PHASE_G_EPILOGUE_DESIGN_PROPOSAL_v2_20260521.md.
     """
 
     user = models.OneToOneField(
@@ -53,10 +54,76 @@ class EpilogueCompletion(models.Model):
         null=True,
         blank=True,
         help_text=(
-            'Set when the user clicks "Mark complete and continue" on the '
-            'placeholder page (or, in the future spec, when Stage 3 is '
-            'finished and the Learning Portrait is generated).'
+            'Set when the user finishes the Epilogue — after Stage 3 and '
+            'Learning Portrait acceptance, or when they skip the dialogue. '
+            'NULL means started but not yet finished.'
         ),
+    )
+
+    # --- Phase G (G.0): Stage 0 — Personal Evolution Dashboard ---
+    stage0_snapshot = models.JSONField(
+        default=dict,
+        blank=True,
+        help_text=(
+            'Frozen Stage 0 semantic payload (DTP theme-evolution, RTM '
+            'tension trajectories, quantitative summary). Computed once on '
+            'first entry and rendered live from this JSON; never HTML.'
+        ),
+    )
+    stage0_seen_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text='Set when the user first views the Stage 0 dashboard.',
+    )
+
+    # --- Phase G (G.0): Stages 1-3 — reflective dialogue ---
+    dialogue_entered = models.BooleanField(
+        default=False,
+        help_text=(
+            'True once the user enters the Stage 1-3 dialogue; False means '
+            'they chose to skip it. Q5 measured variable.'
+        ),
+    )
+    stage1_completed_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text='Set when Stage 1 (Look Back) finishes.',
+    )
+    stage2_completed_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text='Set when Stage 2 (Look In) finishes or is skipped.',
+    )
+    stage3_completed_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text='Set when Stage 3 (Look Forward) finishes.',
+    )
+    dialogue_turns = models.JSONField(
+        default=list,
+        blank=True,
+        help_text=(
+            'Conversation log: [{stage, role, content, model, '
+            'generated_at}], plus any stage-skip records.'
+        ),
+    )
+
+    # --- Phase G (G.0): Learning Portrait ---
+    learning_portrait_text = models.TextField(
+        blank=True,
+        default='',
+        help_text='The accepted Learning Portrait narrative (300-400 words).',
+    )
+    learning_portrait_pdf = models.FileField(
+        upload_to='epilogue_portraits/',
+        null=True,
+        blank=True,
+        help_text='Generated Learning Portrait PDF.',
+    )
+    learning_portrait_generated_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text='Set when the user accepts the Learning Portrait.',
     )
 
     class Meta:
