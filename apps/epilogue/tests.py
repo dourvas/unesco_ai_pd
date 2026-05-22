@@ -39,13 +39,20 @@ class EpiloguePlaceholderViewTest(EpilogueViewBase):
     def test_first_visit_creates_completion_row_and_renders(self):
         resp = self.client.get(reverse('epilogue:placeholder'))
         self.assertEqual(resp.status_code, 200)
-        self.assertTemplateUsed(resp, 'epilogue/placeholder.html')
+        self.assertTemplateUsed(resp, 'epilogue/stage0.html')
+        # Regression: template comments must not leak into the page.
+        # A multi-line {# #} is not a valid Django comment and renders
+        # as literal text; {% comment %} must be used instead.
+        self.assertNotIn('{#', resp.content.decode('utf-8'))
         self.assertTrue(
             EpilogueCompletion.objects.filter(user=self.user).exists(),
             'First GET must create an EpilogueCompletion row so started_at is captured.',
         )
         row = EpilogueCompletion.objects.get(user=self.user)
         self.assertIsNone(row.completed_at)
+        # G.1: the Stage 0 snapshot is computed and frozen on first entry.
+        self.assertEqual(row.stage0_snapshot.get('schema'), 'epilogue_stage0_v1')
+        self.assertIsNotNone(row.stage0_seen_at)
 
     def test_revisit_reuses_existing_row(self):
         EpilogueCompletion.objects.create(user=self.user)
@@ -226,3 +233,153 @@ class EpilogueM15GatingTest(EpilogueViewBase):
         self.user.save()
         resp = self.client.get(reverse('epilogue:placeholder'))
         self.assertEqual(resp.status_code, 200)
+
+
+# ============================================================================
+# Phase G G.1 — Stage 0 Personal Evolution Dashboard
+# ============================================================================
+
+
+class Stage0SnapshotTest(EpilogueViewBase):
+    """The Stage 0 snapshot aggregation and its first-entry-only freeze.
+
+    The base user is staff, so the TD-013 M15 gate bypasses — these
+    tests exercise the snapshot logic, not the gate.
+    """
+
+    def _make_module(self, code, order_index):
+        from apps.modules.models import Module
+        module, _ = Module.objects.get_or_create(
+            code=code,
+            defaults={
+                'title': f'{code} test', 'description': 'test',
+                'unesco_aspect': 'ai_foundations',
+                'proficiency_level': 'Acquire',
+                'order_index': order_index, 'is_published': True,
+            },
+        )
+        return module
+
+    @staticmethod
+    def _dtp_composite(current, increased, decreased, stable, narrative):
+        import json
+        return json.dumps({
+            'schema': 'dtp_dual_v1',
+            'current_module': current,
+            'narrative': narrative,
+            'signals': {
+                'temporal': {
+                    'comparison_module': 'M_prev',
+                    'similarity': 0.7,
+                    'themes': {
+                        'increased_themes': increased,
+                        'decreased_themes': decreased,
+                        'stable_themes': stable,
+                    },
+                },
+            },
+        })
+
+    def test_build_snapshot_with_no_data_returns_empty_structure(self):
+        from apps.epilogue.services_stage0 import build_stage0_snapshot
+        snap = build_stage0_snapshot(self.user)
+        self.assertEqual(snap['schema'], 'epilogue_stage0_v1')
+        self.assertEqual(snap['quantitative']['modules_completed'], 0)
+        self.assertEqual(snap['theme_evolution']['grown'], [])
+        self.assertEqual(snap['narrative_timeline'], [])
+        self.assertEqual(snap['rtm_trajectories'], [])
+
+    def test_build_snapshot_aggregates_dtp_and_rtm(self):
+        from apps.epilogue.services_stage0 import build_stage0_snapshot
+        from apps.modules.models import ReflectionTension, UserModuleProgress
+
+        m2 = self._make_module('SNAP_M2', 902)
+        m3 = self._make_module('SNAP_M3', 903)
+
+        UserModuleProgress.objects.create(
+            user=self.user, module=m2, status='completed',
+            completed_at=timezone.now(), reflection_completed=True,
+            reflection_input_modality='text',
+            reflection_dtp=self._dtp_composite(
+                'SNAP_M2', ['ethical focus'], [], ['physics context'],
+                'Across these modules, your reflection shifted toward ethics.',
+            ),
+        )
+        UserModuleProgress.objects.create(
+            user=self.user, module=m3, status='completed',
+            completed_at=timezone.now(), reflection_completed=True,
+            reflection_input_modality='voice',
+            reflection_dtp=self._dtp_composite(
+                'SNAP_M3', ['student agency'], ['ethical focus'], [],
+                'Across these modules, your focus moved to student agency.',
+            ),
+        )
+        ReflectionTension.objects.create(
+            user=self.user, module=m2, tension_label='Control vs autonomy',
+            left_pole='control', right_pole='autonomy',
+            grounding_quote='q', selected_position=2, position_confirmed=True,
+        )
+        ReflectionTension.objects.create(
+            user=self.user, module=m3, tension_label='Control vs autonomy',
+            left_pole='control', right_pole='autonomy',
+            grounding_quote='q', selected_position=4, position_confirmed=True,
+        )
+
+        snap = build_stage0_snapshot(self.user)
+
+        q = snap['quantitative']
+        self.assertEqual(q['modules_completed'], 2)
+        self.assertEqual(q['reflections_written'], 2)
+        self.assertEqual(q['distinct_tensions'], 1)
+        self.assertEqual(q['tensions_engaged'], 2)
+        self.assertEqual(q['dtp_composites'], 2)
+        self.assertEqual(q['dtp_composites_with_shift'], 2)
+        self.assertEqual(q['input_modality']['text'], 1)
+        self.assertEqual(q['input_modality']['voice'], 1)
+
+        grown = {i['theme'] for i in snap['theme_evolution']['grown']}
+        self.assertIn('ethical focus', grown)
+        self.assertIn('student agency', grown)
+
+        self.assertEqual(len(snap['narrative_timeline']), 2)
+        self.assertEqual(snap['narrative_timeline'][0]['module'], 'SNAP_M2')
+
+        self.assertEqual(len(snap['rtm_trajectories']), 1)
+        traj = snap['rtm_trajectories'][0]
+        self.assertEqual(traj['tension_label'], 'Control vs autonomy')
+        self.assertTrue(traj['recurring'])
+        self.assertEqual(len(traj['points']), 2)
+
+    def test_malformed_dtp_is_skipped_not_fatal(self):
+        from apps.epilogue.services_stage0 import build_stage0_snapshot
+        from apps.modules.models import UserModuleProgress
+        m = self._make_module('SNAP_BAD', 905)
+        UserModuleProgress.objects.create(
+            user=self.user, module=m, status='completed',
+            completed_at=timezone.now(), reflection_completed=True,
+            reflection_dtp='{not valid json',
+        )
+        snap = build_stage0_snapshot(self.user)
+        self.assertEqual(snap['quantitative']['dtp_composites'], 0)
+        self.assertEqual(snap['narrative_timeline'], [])
+
+    def test_snapshot_frozen_on_first_visit(self):
+        resp = self.client.get(reverse('epilogue:placeholder'))
+        self.assertEqual(resp.status_code, 200)
+        row = EpilogueCompletion.objects.get(user=self.user)
+        self.assertEqual(row.stage0_snapshot.get('schema'), 'epilogue_stage0_v1')
+        self.assertIsNotNone(row.stage0_seen_at)
+
+    def test_snapshot_not_recomputed_on_revisit(self):
+        row = EpilogueCompletion.objects.create(
+            user=self.user, stage0_snapshot={'schema': 'sentinel'},
+            stage0_seen_at=timezone.now(),
+        )
+        original_seen_at = row.stage0_seen_at
+        self.client.get(reverse('epilogue:placeholder'))
+        row.refresh_from_db()
+        self.assertEqual(
+            row.stage0_snapshot, {'schema': 'sentinel'},
+            'A revisit must not recompute the frozen Stage 0 snapshot.',
+        )
+        self.assertEqual(row.stage0_seen_at, original_seen_at)

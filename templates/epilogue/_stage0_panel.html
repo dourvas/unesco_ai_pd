@@ -1,0 +1,123 @@
+{% load i18n %}
+{% comment %}
+Stage 0 - Personal Evolution panel (Phase G, G.1).
+
+Pure HTML/CSS (no SVG, no JS) so the SAME markup renders in-page
+(Stage 0, and the collapsible side panel during the G.2 dialogue)
+AND inside the Learning Portrait PDF via xhtml2pdf (G.3) - one
+render path, design proposal v2 section 8.3.
+
+Expects `snapshot` in context: EpilogueCompletion.stage0_snapshot,
+schema `epilogue_stage0_v1`. Every section degrades gracefully to an
+honest empty state when the teacher's record is thin (Q6).
+
+Note: Django {# #} comments are single-line only; a multi-line comment
+must use {% templatetag openblock %} comment {% templatetag closeblock %}.
+{% endcomment %}
+
+<section class="space-y-8">
+
+  {# --- Quantitative summary -------------------------------------- #}
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+    <div class="rounded-lg border border-base-300 p-4 text-center">
+      <div class="text-3xl font-bold text-primary">{{ snapshot.quantitative.modules_completed }}</div>
+      <div class="text-xs text-base-content/70 mt-1">{% trans "Modules completed" %}</div>
+    </div>
+    <div class="rounded-lg border border-base-300 p-4 text-center">
+      <div class="text-3xl font-bold text-primary">{{ snapshot.quantitative.reflections_written }}</div>
+      <div class="text-xs text-base-content/70 mt-1">{% trans "Reflections written" %}</div>
+    </div>
+    <div class="rounded-lg border border-base-300 p-4 text-center">
+      <div class="text-3xl font-bold text-primary">{{ snapshot.quantitative.distinct_tensions }}</div>
+      <div class="text-xs text-base-content/70 mt-1">{% trans "Tensions surfaced" %}</div>
+    </div>
+    <div class="rounded-lg border border-base-300 p-4 text-center">
+      <div class="text-3xl font-bold text-primary">{{ snapshot.quantitative.tensions_engaged }}</div>
+      <div class="text-xs text-base-content/70 mt-1">{% trans "Tensions you positioned" %}</div>
+    </div>
+  </div>
+
+  {# --- Theme evolution ------------------------------------------- #}
+  <div>
+    <h2 class="text-xl font-bold mb-1">{% trans "The themes of your reflective writing" %}</h2>
+    <p class="text-sm text-base-content/70 mb-4">
+      {% trans "Drawn from the developmental comparison of your reflections across the modules. These describe what shifted in your writing — they are not a judgement of better or worse." %}
+    </p>
+    <div class="grid md:grid-cols-3 gap-4">
+
+      <div class="rounded-lg border border-base-300 p-4">
+        <h3 class="font-semibold text-sm mb-2">{% trans "Themes that grew" %}</h3>
+        {% for item in snapshot.theme_evolution.grown %}
+          <span class="badge badge-outline mr-1 mb-1">{{ item.theme }}{% if item.count > 1 %} &times;{{ item.count }}{% endif %}</span>
+        {% empty %}
+          <p class="text-xs text-base-content/50">{% trans "None recorded." %}</p>
+        {% endfor %}
+      </div>
+
+      <div class="rounded-lg border border-base-300 p-4">
+        <h3 class="font-semibold text-sm mb-2">{% trans "Recurring themes" %}</h3>
+        {% for item in snapshot.theme_evolution.recurring %}
+          <span class="badge badge-outline mr-1 mb-1">{{ item.theme }}{% if item.count > 1 %} &times;{{ item.count }}{% endif %}</span>
+        {% empty %}
+          <p class="text-xs text-base-content/50">{% trans "None recorded." %}</p>
+        {% endfor %}
+      </div>
+
+      <div class="rounded-lg border border-base-300 p-4">
+        <h3 class="font-semibold text-sm mb-2">{% trans "Themes that receded" %}</h3>
+        {% for item in snapshot.theme_evolution.faded %}
+          <span class="badge badge-outline mr-1 mb-1">{{ item.theme }}{% if item.count > 1 %} &times;{{ item.count }}{% endif %}</span>
+        {% empty %}
+          <p class="text-xs text-base-content/50">{% trans "None recorded." %}</p>
+        {% endfor %}
+      </div>
+
+    </div>
+  </div>
+
+  {# --- Narrative timeline ---------------------------------------- #}
+  <div>
+    <h2 class="text-xl font-bold mb-1">{% trans "Your trajectory, module by module" %}</h2>
+    <p class="text-sm text-base-content/70 mb-4">
+      {% trans "A short description of how your reflective focus moved from one module to the next." %}
+    </p>
+    {% for item in snapshot.narrative_timeline %}
+      <div class="border-l-4 border-primary/40 pl-4 py-2 mb-3">
+        <div class="font-bold text-sm text-primary">{{ item.module }}</div>
+        <p class="text-sm">{{ item.narrative }}</p>
+      </div>
+    {% empty %}
+      <p class="text-sm text-base-content/50">
+        {% trans "No developmental narratives are on record yet. They are produced once a second reflection exists to compare against." %}
+      </p>
+    {% endfor %}
+  </div>
+
+  {# --- RTM tension trajectories ---------------------------------- #}
+  <div>
+    <h2 class="text-xl font-bold mb-1">{% trans "The tensions you positioned yourself on" %}</h2>
+    <p class="text-sm text-base-content/70 mb-4">
+      {% trans "The professional tensions the Reflective Tension Mapper surfaced, and where you placed yourself on each. A tension seen in several modules shows how your stance held or moved." %}
+    </p>
+    {% for tr in snapshot.rtm_trajectories %}
+      <div class="rounded-lg border border-base-300 p-4 mb-3">
+        <div class="flex items-center gap-2">
+          <span class="font-semibold text-sm">{{ tr.tension_label }}</span>
+          {% if tr.recurring %}
+            <span class="badge badge-sm">{% trans "recurring" %}</span>
+          {% endif %}
+        </div>
+        <div class="flex flex-wrap gap-2 mt-2">
+          {% for pt in tr.points %}
+            <span class="badge badge-outline">{{ pt.module }} &middot; {{ pt.position_label }}</span>
+          {% endfor %}
+        </div>
+      </div>
+    {% empty %}
+      <p class="text-sm text-base-content/50">
+        {% trans "No reflective tensions are on record yet." %}
+      </p>
+    {% endfor %}
+  </div>
+
+</section>

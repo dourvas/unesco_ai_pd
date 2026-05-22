@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+{% load i18n %}
+
+{% block title %}{% trans "PROODOS Epilogue" %}{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto py-10 px-4">
+
+  <header class="mb-8">
+    <h1 class="text-3xl font-bold text-primary mb-1">{% trans "PROODOS Epilogue" %}</h1>
+    <p class="text-lg text-base-content/80">{% trans "Stage 0 — Your Personal Evolution" %}</p>
+    <p class="text-base mt-3">
+      {% blocktrans %}
+      You have completed the fifteen UNESCO-aligned modules. Before the
+      closing assessment, take a moment to look back. Everything below is
+      drawn from your own reflective work across M1-M15 — the themes that
+      moved through your writing, the trajectory of your thinking, and the
+      professional tensions you positioned yourself on. Nothing here is a
+      grade or a score; it is a description of your journey.
+      {% endblocktrans %}
+    </p>
+  </header>
+
+  {% if already_completed %}
+    <div class="alert alert-success mb-6">
+      <span>
+        {% blocktrans with completed_on=completion.completed_at|date:"M d, Y" %}
+        You reached the Epilogue on {{ completed_on }}.
+        {% endblocktrans %}
+      </span>
+    </div>
+  {% endif %}
+
+  {% include 'epilogue/_stage0_panel.html' with snapshot=snapshot %}
+
+  <form method="post" action="{% url 'epilogue:complete' %}"
+        class="flex justify-end gap-3 mt-10">
+    {% csrf_token %}
+    <a href="{% url 'users:dashboard' %}" class="btn btn-ghost">
+      {% trans "Back to dashboard" %}
+    </a>
+    <button type="submit" class="btn btn-primary btn-lg">
+      {% trans "Continue" %}
+    </button>
+  </form>
+
+</div>
+{% endblock %}

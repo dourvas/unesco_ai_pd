@@ -3,9 +3,9 @@ Views for the PROODOS Epilogue placeholder feature (C.2.5).
 
 Two views:
 
-  - epilogue_placeholder_view (GET): renders templates/epilogue/placeholder.html
-    and ensures an EpilogueCompletion row exists for the user (creates
-    one on first visit so started_at is captured).
+  - epilogue_placeholder_view (GET): renders Stage 0, the Personal
+    Evolution Dashboard (templates/epilogue/stage0.html). On the user's
+    first entry it aggregates and freezes the Stage 0 snapshot.
   - epilogue_complete_view (POST): flips completed_at = NOW, then
     redirects to /ailst/t2/ if the user has active research_consent and
     has not yet completed T2; otherwise sends them to the dashboard.
@@ -26,6 +26,7 @@ from django.utils import timezone
 from django.views.decorators.http import require_POST
 
 from apps.epilogue.models import EpilogueCompletion
+from apps.epilogue.services_stage0 import build_stage0_snapshot
 
 
 def _is_m15_completed(user) -> bool:
@@ -39,15 +40,18 @@ def _is_m15_completed(user) -> bool:
 
 @login_required
 def epilogue_placeholder_view(request):
-    """GET /epilogue/ — placeholder page until TD-011 lands.
+    """GET /epilogue/ — the PROODOS Epilogue entry point (Stage 0).
 
-    Creates an EpilogueCompletion row on first visit so the start
-    timestamp is captured for research-design accounting.
+    Phase G G.1: renders Stage 0, the Personal Evolution Dashboard.
+    On the user's first entry the Stage 0 snapshot is aggregated from
+    their DTP and RTM data and frozen into
+    EpilogueCompletion.stage0_snapshot (first-entry-only — design
+    proposal v2 section 5.4). Revisits render the stored snapshot
+    unchanged, so the Learning Portrait stays reproducible.
 
     Phase C TD-013: blocked unless the user has completed M15. Staff
-    and superusers bypass for support. A blocked user is redirected
-    to the dashboard with an informational flash; the dashboard
-    nudge banner (when added) can point them at the next-up module.
+    and superusers bypass for support; a blocked user is redirected to
+    the dashboard with an informational flash.
     """
     if not (request.user.is_staff or request.user.is_superuser):
         if not _is_m15_completed(request.user):
@@ -58,11 +62,21 @@ def epilogue_placeholder_view(request):
             )
             return redirect('users:dashboard')
 
-    EpilogueCompletion.objects.get_or_create(user=request.user)
+    with transaction.atomic():
+        completion, _ = EpilogueCompletion.objects.select_for_update().get_or_create(
+            user=request.user,
+        )
+        # First-entry-only freeze: compute the Stage 0 snapshot once.
+        if not completion.stage0_snapshot:
+            completion.stage0_snapshot = build_stage0_snapshot(request.user)
+            completion.stage0_seen_at = timezone.now()
+            completion.save(
+                update_fields=['stage0_snapshot', 'stage0_seen_at'],
+            )
 
-    completion = EpilogueCompletion.objects.get(user=request.user)
-    return render(request, 'epilogue/placeholder.html', {
+    return render(request, 'epilogue/stage0.html', {
         'completion': completion,
+        'snapshot': completion.stage0_snapshot,
         'already_completed': completion.completed_at is not None,
     })
 
