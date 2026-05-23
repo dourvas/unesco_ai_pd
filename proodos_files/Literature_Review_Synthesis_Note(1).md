@@ -519,6 +519,68 @@ Brookfield, S. D. (1995). *Becoming a Critically Reflective Teacher.* San Franci
 
 ---
 
+## 16. PROODOS Epilogue — G.6 Magazine Design Upgrade + Aletheia persona
+
+Προστέθηκε 2026-05-23 για το **Phase G G.6** — το magazine design upgrade των τριών Epilogue surfaces (Stage 0 dashboard, dialogue, Learning Portrait in-page + PDF) και η εισαγωγή της chatbot persona «Aletheia» (ν.2 §23). Σχεδιαστικά αρχεία: `PHASE_G_G6_DESIGN_PROPOSAL_v2_20260523.md` (το G.6 proposal), `PHASE_G_EPILOGUE_DESIGN_PROPOSAL_v2_20260521.md` §22-§23 (τα master proposal amendments). Όλες οι αναφορές επαληθεύτηκαν με αναζήτηση (2026-05-23) πριν τη χρήση τους στο proposal — η no-hallucination πολιτική κράτησε εκτός μια πρόταση reviewer (Gallagher 2018, ανεπαλήθευτη) και τη αντικατέστησε με τον van Manen (1990/2016, καθιερωμένη).
+
+### 16.1 — Τυπογραφική ιεραρχία & magazine editorial register (Bringhurst, 2013)
+
+Η τυπογραφική παράδοση που το G.6 §2 (TAB1/TAB2/TAB5 editorial register) ακολουθεί είναι κωδικοποιημένη στον Bringhurst (4η έκδοση, 2013). Η τρίφαση «serif numeral + sans title + eyebrow» που εμφανίζεται σε κάθε opening των Epilogue surfaces είναι κανονική magazine opening (Bringhurst §3 — ιεραρχία τίτλων): ο αναγνώστης διαβάζει τη θέση της ενότητας στο όλον (numeral) πριν τον τίτλο της (title) — βοηθάει στην αναστοχαστική επανείσοδο, όπου ο εκπαιδευτικός γυρνά σε Portrait που ήδη έχει αποδεχτεί.
+
+*Ρόλος για το G.6.* Τεκμηριώνει την επιλογή του typography pattern σε §2.1 και τη χρήση drop cap στο Portrait body (Bringhurst §3.3 — magazine-feature opening). Όχι αισθητική προτίμηση — εμπεδωμένη παράδοση του μέσου που το Portrait μιμείται.
+
+Bringhurst, R. (2013). *The Elements of Typographic Style* (4th ed.). Vancouver: Hartley & Marks.
+
+### 16.2 — Ορατότητα μεταβάσεων κατάστασης (Norman, 2013)
+
+Ο Norman στο *The Design of Everyday Things* (κεφάλαια 4-5 για feedback και conceptual models) τεκμηριώνει ότι ο χρήστης χρειάζεται το σύστημα να κάνει **τις μεταβάσεις κατάστασης ορατές**. Στο G.2 dialogue, η μετάβαση από φάση Ν σε Ν+1 ήταν αόρατη — το closing turn της φάσης Ν και το opening turn της φάσης Ν+1 εμφανίζονταν ως δύο διαδοχικά assistant bubbles σε flat scroll, χωρίς τίποτα να σηματοδοτεί την παιδαγωγική μετατόπιση (Korthagen ALACT, §15.3). Το phase-seam bug που εντόπισε η PI κατά το G.3 live sample-review 2026-05-23.
+
+*Ρόλος για το G.6.* Στηρίζει τη §4.2 αναμόρφωση «phase-as-chapter» — η αλλαγή φάσης γίνεται **ορατό γεγονός** (το προηγούμενο chapter συμπτύσσεται σε `<details>`· το νέο εμφανίζεται με το Tab5 Phase F `rfx-screen-in` keyframe 0.28s). Το v2 §6.1 ALACT mapping διατηρείται στα δεδομένα· το G.6 το διατηρεί στην **αντίληψη**.
+
+Norman, D. A. (2013). *The Design of Everyday Things* (revised and expanded ed.). New York: Basic Books.
+
+### 16.3 — Ονοματίζοντας τον AI partner: τι μετράει και τι αποφεύγουμε (Reeves & Nass, 1996· Bryson, 2010)
+
+**Reeves & Nass — η εξίσωση των μέσων.** Στο *The Media Equation* (1996), οι Reeves και Nass δείχνουν πειραματικά ότι οι άνθρωποι σχετίζονται με υπολογιστές ως **κοινωνικούς δρώντες**: ένας ονοματισμένος συνομιλητής γίνεται αποδέκτης ομιλίας *προς αυτόν*, ένας ανώνυμος αλγόριθμος γίνεται αποδέκτης ομιλίας *μέσα από αυτόν*. Το εύρημα παραμένει αναμφισβήτητο τρεις δεκαετίες αργότερα και αποτελεί τη foundational αναφορά για AI persona design στην εκπαιδευτική έρευνα.
+
+*Ρόλος για το G.6.* Στηρίζει την §3.2 απόφαση να δοθεί στον reflective chatbot ένα όνομα («Aletheia») και ένα οπτικό πρόσωπο (κρύσταλλος + κλαδί ελιάς). Ο εκπαιδευτικός απαντά σε **έναν εταίρο**, όχι σε ένα πεδίο φόρμας — η αναμενόμενη συνέπεια είναι η εμβάθυνση της περιγραφικής-αναστοχαστικής στάσης που ήδη ζητά το dialogue agent prompt.
+
+**Bryson — counter-weight.** Η Bryson στο «Robots should be slaves» (2010, στο Y. Wilks (Ed.), *Close Engagements with Artificial Companions*) προειδοποιεί ότι η δραματοποίηση ενός ονοματισμένου AI σε «συνεργάτη», «αυθεντία» ή «φίλο» **παραπληροφορεί τη σχέση** και είναι χειραγωγική σε εκπαιδευτικό πλαίσιο. Η Aletheia ονομάζεται· δεν δραματοποιείται.
+
+*Ρόλος για το G.6.* Στηρίζει την §3.5 «no anthropomorphisation traps»: η Aletheia δεν χρησιμοποιεί first-person συναισθηματική φωνή, δεν ονομάζει τον εαυτό της μέσα στον διάλογο, δεν αναφέρει το ότι είναι AI μέσα στις απαντήσεις της. Η persona είναι **πλαίσιο** μέσα στο οποίο ο εκπαιδευτικός τοποθετεί τη συζήτηση· η συμπεριφορά του agent παραμένει αμετάβλητη. Ο κανόνας ενσωματώνεται **στο ίδιο το prompt** του agent στο master proposal v2 §23 — όχι μόνο στα templates — αφού η third-pass external review εντόπισε ότι η template-only enforcement αφήνει το model ελεύθερο να σπάει το framing.
+
+Reeves, B., & Nass, C. (1996). *The Media Equation: How People Treat Computers, Television, and New Media Like Real People and Places.* Cambridge: Cambridge University Press.
+
+Bryson, J. J. (2010). Robots should be slaves. In Y. Wilks (Ed.), *Close Engagements with Artificial Companions: Key Social, Psychological, Ethical and Design Issues* (pp. 63–74). Amsterdam: John Benjamins.
+
+### 16.4 — Το όνομα «Aletheia»: ἀλήθεια ως ξεσκέπασμα (Heidegger, 1927 — μέσω van Manen, 1990/2016)
+
+**Heidegger §44 — ἀλήθεια ως Unverborgenheit.** Στο *Sein und Zeit* (1927) §44, ο Heidegger ανακαλεί τη προσωκρατική έννοια της αλήθειας ως ξεσκέπασμα / αποκάλυψη (Unverborgenheit) — η αλήθεια εδώ δεν είναι αντικείμενο που παραδίδεται αλλά πράξη που ο φέρων εκτελεί. Το όνομα «Aletheia» (ἀλήθεια) για τον reflective chatbot **δεν είναι διακοσμητικό** — είναι μια γλωσσική αξίωση για το **τι είναι ο διάλογος**: ένα ξεσκέπασμα, που μόνο ο εκπαιδευτικός μπορεί να εκτελέσει.
+
+**van Manen — γέφυρα προς την εκπαιδευτική φαινομενολογία.** Ο Max van Manen στο *Researching Lived Experience: Human Science for an Action Sensitive Pedagogy* (αρχική έκδοση 1990, State University of New York Press· δεύτερη έκδοση Routledge, 2016) είναι ο καθιερωμένος φαινομενολόγος της εκπαίδευσης εκπαιδευτικών — η standard γέφυρα από τη φαινομενολογία του Heidegger στην εκπαιδευτική έρευνα του αναστοχαστικού επαγγελματία. Αντιμετωπίζει τη βιωμένη εμπειρία ως κάτι που ο πρακτικός **κάνει** και **αποκαλύπτει μέσα από τη γραφή** — ακριβώς η κίνηση που η ονομασία Aletheia αξιώνει για τον Epilogue διάλογο.
+
+*Ρόλος για το G.6.* Στηρίζει την §6.5 ονομασία της chatbot persona. Η βιβλιογραφική λογική είναι: **Heidegger §44** δένει την ετυμολογία (γιατί αυτή η ελληνική λέξη, γιατί «ξεσκέπασμα» αντί «αλήθεια»)· **van Manen 1990/2016** μεταφέρει την αξίωση του ξεσκεπάσματος στην **εκπαιδευτική** φαινομενολογική έρευνα (γιατί αυτό έχει σημασία για την αναστοχαστική πρακτική του εκπαιδευτικού, όχι μόνο για τη θεμελιώδη οντολογία)· **Dourvas, Kokkonis & Kontogiannis** (RPE paper, §15.3) τη μεταφέρει στο θεωρητικό πλαίσιο του ίδιου του έργου.
+
+**Defense statement για committee question** (από G.6 §6.5, ανταποκρινόμενο σε αναμενόμενη εξεταστική ερώτηση «γιατί Heidegger όταν ήδη κιτάζεις τον Schön;»): ο **Schön** δένει την αναστοχαστική πρακτική (το πώς συμβαίνει ο αναστοχασμός, πότε, τι παράγει)· ο **Heidegger §44** δένει την επιλογή του ονόματος (το τι είναι ο αναστοχασμός — ένα ξεσκέπασμα που μόνο ο πρακτικός μπορεί να εκτελέσει). Διαφορετικά άγκυρα του ίδιου επιχειρήματος· ο van Manen κάθεται ανάμεσά τους ως το standard education-domain bridge που έχει διανυθεί σε εκατοντάδες διατριβές για teacher reflection.
+
+Heidegger, M. (1927/1962). *Being and Time* (J. Macquarrie & E. Robinson, Trans.). New York: Harper & Row. (§44 on ἀλήθεια as Unverborgenheit.)
+
+van Manen, M. (1990). *Researching Lived Experience: Human Science for an Action Sensitive Pedagogy.* Albany, NY: State University of New York Press. (2nd ed. London: Routledge, 2016.)
+
+### 16.5 — Μεθοδολογική διευκρίνιση για ανάλυση του dialogue corpus (G.6 §10 trade-off)
+
+Πρόκειται για ένα **σημαντικό μεθοδολογικό σημείο που πρέπει να γραφτεί στη διατριβή** όταν φτάσει το αντίστοιχο chapter — όχι νέα βιβλιογραφική αναφορά αλλά αυτο-καταγραφή σχεδιαστικής μετατόπισης ώστε να μη χαθεί.
+
+Μέχρι το G.6c, το dialogue interface εμφάνιζε όλους τους προηγούμενους γύρους σε flat scroll· κάθε εκπαιδευτικός έβλεπε κάθε προηγούμενο turn ενόσω συνέθετε ένα νέο. Από το G.6c και μετά, οι προηγούμενες φάσεις συμπτύσσονται από προεπιλογή, οπότε ένας εκπαιδευτικός μπορεί να συνθέσει ένα Stage 3 turn **χωρίς να ξαναδιαβάσει** τα Stage 1 / Stage 2 turns του. Το `dialogue_turns` JSON record (το ερευνητικό artefact) παραμένει αμετάβλητο — κάθε turn από κάθε φάση αποθηκεύεται σε χρονολογική σειρά — αλλά οι **συνθήκες παραγωγής** διαφέρουν: pre-G.6c turns παράχθηκαν με τις προηγούμενες φάσεις *ορατές*, post-G.6c turns μπορεί να παράχθηκαν *χωρίς να τις βλέπει*.
+
+**Πρόταση που εντάσσεται verbatim στο dissertation methodology chapter όταν γραφτεί:**
+
+> *Από το G.6c και μετά, το dialogue interface σύμπτυξε από προεπιλογή τις προηγούμενες φάσεις. Η ποιοτική ανάλυση του dialogue corpus πρέπει συνεπώς να εκλαμβάνει τη θεματική συνέχεια μεταξύ φάσεων ως τεκμήριο της **μνήμης του εκπαιδευτικού** συν τη συνοπτική μεταφορά της Aletheia (prior-stages carry-forward, v2 §6.3), όχι ως τεκμήριο συμπαρόντος κειμένου. Οι κανόνες κωδικοποίησης λαμβάνουν υπόψη αυτή την ασυμμετρία: κάθε θέμα που εμφανίζεται σε μεταγενέστερη φάση χωρίς να έχει εμφανιστεί στο carry-forward πρέπει να αντιμετωπίζεται ως **ενεργά ανακληθέν**, όχι οπτικά υποκινούμενο.*
+
+Σημείωση: Pilot participants είδαν την **post-G.6c** παρουσίαση. Ο διαχωρισμός pre-/post-G.6c στην ανάλυση δεν αφορά αυτούς (όλοι τους είναι post-G.6c)· είναι ο μηχανισμός που γεννά την παρατήρηση της ασυμμετρίας.
+
+---
+
 ## Project Context (ιστορικό snapshot — Απρίλιος 2026)
 
 > Το παρακάτω μπλοκ είναι snapshot **Απριλίου 2026**. Για την τρέχουσα κατάσταση φάσεων — Phase E (multi-agent refactor) ολοκληρωμένη, Phase D σε εξέλιξη (D.3a DTP redefinition done) — δες το `git log` και τα design proposals στο `proodos_files/`.
@@ -536,4 +598,4 @@ Brookfield, S. D. (1995). *Becoming a Critically Reflective Teacher.* San Franci
 
 ---
 
-*Τελευταία ενημέρωση: 21 Μαΐου 2026 — η §15 (PROODOS Epilogue — στήριξη για το Phase G) ολοκληρώθηκε: §15.1 Sweller 1988 / Chandler & Sweller 1992 (CLT / split-attention, Q2), §15.2 Ryan & Deci 2000 / Deci & Ryan 2000 (SDT, Q5), §15.3 Korthagen et al. 2001 / Mezirow 1991 / Schön 1983 (τρίφαση δομή· Schön μέσω της RPE εργασίας — συνέχεια θεωρητικού πλαισίου). Brookfield 1995 εξετάστηκε και απορρίφθηκε για αυτόν τον ρόλο. Σχεδιαστικό αρχείο: `PHASE_G_EPILOGUE_DESIGN_PROPOSAL_v2_20260521.md`. Την ίδια μέρα νωρίτερα: §14 (φωνή ως τρόπος εισόδου — Phase F: Bourdin & Fayol 1994/2002, McCutchen 1996, Rose & Meyer 2002). Προηγουμένως: §12 (trust/reactivity, D.1) και §13 (engagement, D.2).*
+*Τελευταία ενημέρωση: 23 Μαΐου 2026 — η §16 (PROODOS Epilogue G.6 + Aletheia persona) ολοκληρώθηκε: §16.1 Bringhurst 2013 (typography hierarchy / drop cap pattern), §16.2 Norman 2013 (visible state transitions, phase-as-chapter fix), §16.3 Reeves & Nass 1996 + Bryson 2010 (AI partner naming + counter-weight), §16.4 Heidegger 1927/1962 §44 μέσω van Manen 1990/2016 (η ονομασία Aletheia ως linguistic claim), §16.5 μεθοδολογική διευκρίνιση (collapsed-phases trade-off για το dissertation chapter). Σχεδιαστικό αρχείο: `PHASE_G_G6_DESIGN_PROPOSAL_v2_20260523.md`. Δύο reviewer passes διαμόρφωσαν το proposal — η no-hallucination πολιτική κράτησε εκτός μια unverified πρόταση (Gallagher 2018) υπέρ του verified van Manen 1990/2016. Master proposal §23 amendment ενσωμάτωσε το anti-anthropomorphisation rule στο ίδιο το dialogue agent prompt, όχι μόνο στα templates. Προηγούμενη ενημέρωση: 21 Μαΐου 2026 — η §15 (PROODOS Epilogue — στήριξη για το Phase G) ολοκληρώθηκε με §15.1 (CLT / split-attention, Q2), §15.2 (SDT, Q5), §15.3 (τρίφαση δομή· Korthagen / Mezirow / Schön μέσω RPE· Brookfield εξετάστηκε και απορρίφθηκε).*

@@ -200,7 +200,13 @@ Standard research-ethics practice: participants receive feedback AFTER the study
 
 ## TD-011 — Full PROODOS Epilogue implementation
 
-**Status:** Active. Defer to post-pilot Phase G/H (or whenever the synthesis-and-dialogue feature is prioritised).
+**Status:** RESOLVED in Phase G (2026-05-21 → 2026-05-23). The full Epilogue feature shipped across seven commits matching the v2 §19 commit plan (G.0 schema, G.1 Stage 0 dashboard, G.2a/b/c three-phase dialogue, G.3 Learning Portrait + PDF). All four design questions from the C.2.5 placeholder spec — Stage 0 visualisation, three-phase dialogue, Learning Portrait, re-entry policy — are answered in `proodos_files/PHASE_G_EPILOGUE_DESIGN_PROPOSAL_v2_20260521.md` (PI-approved 2026-05-21, two implementation-correction amendments §22/§23 added during G.3 and before G.6a). The one-shot invariant from this TD's spec is preserved (`OneToOneField`); post-pilot replay is logged as TD-022 (below) with an explicit mechanical migration path. The G.6 magazine design upgrade follows in design-proposal form (`PHASE_G_G6_DESIGN_PROPOSAL_v2_20260523.md`); G.6a-e implementation is the next code-bearing block.
+
+Final test count after Phase G G.3: 470/470 platform tests pass (96 Epilogue + dialogue + portrait + agent tests added by Phase G).
+
+Original analysis kept below for historical context.
+
+**Status (historical):** Active. Defer to post-pilot Phase G/H (or whenever the synthesis-and-dialogue feature is prioritised).
 **Where:** `apps/epilogue/` (currently a stub) — needs full Stage 0..3 implementation, Gemini integration, and Learning Portrait PDF export.
 
 C.2.5 (10 May 2026) introduced a placeholder for the PROODOS Epilogue so the post-M15 → T2 redirect chain can be wired research-correctly during the pilot. The current implementation is a single page with a "Mark complete and continue" button that flips `EpilogueCompletion.completed_at` and routes the user to AILST T2 (consent-gated) or the dashboard.
@@ -438,6 +444,59 @@ Decision deferred; needs a short design note (grounded in the learning-analytics
 **Dependencies:** D.4's UNESCO-matrix visual component (option a would reuse it).
 
 **Resolved at:** a dedicated UX pass — see status line.
+
+---
+
+## TD-022 — Epilogue replay (post-pilot)
+
+**Status:** Active. Defer to **post-pilot** (re-entry policy decision needed after pilot data is analysed).
+**Where:** `apps/epilogue/models.py::EpilogueCompletion` (the `OneToOneField` to `auth.User`) + `apps/epilogue/views.py::epilogue_placeholder_view` (the row creation + first-entry freeze).
+
+Phase G shipped with the **one-shot Epilogue** invariant enforced at the DB level via `OneToOneField` (PROODOS Epilogue v2 §9 + Q1 decision). This was chosen for research-design integrity during the pilot: the Stage 0 snapshot is frozen on first entry (v2 §5.4), the dialogue runs once, the Learning Portrait is generated and accepted once. Every participant's Epilogue artefacts are therefore a single coherent snapshot in time — methodologically the cleanest position for the pilot's qualitative analysis (v2 §13 research variables).
+
+Post-pilot, however, some teachers may benefit from re-entering the Epilogue — refreshing the Stage 0 snapshot as their teaching evolves, re-running the dialogue against newer reflections, regenerating a fresh Learning Portrait. The current model forbids this at the database level; revisiting requires a migration.
+
+**Forward path (post-pilot, fully mechanical):**
+
+1. Drop the `OneToOneField` unique constraint on `epilogue_completions.user_id` — convert to `ForeignKey`.
+2. Add an `is_active: BooleanField(default=True)` column, plus a partial unique index `(user_id) WHERE is_active = TRUE` so at most one Epilogue row is active per user at any time.
+3. Add a "Start a new Epilogue" action on the user dashboard (only visible when an `is_active=True` row exists with `completed_at` set, i.e. the prior one is finished). The action flips the prior row's `is_active=False` and creates a new row with `is_active=True`.
+4. The Stage 0 snapshot and Learning Portrait flows are unchanged — they continue to operate on the active row.
+5. The dissertation methodology chapter discloses that replay was disabled during the pilot to keep per-participant Epilogue artefacts singular; post-pilot replay is described as a teacher-facing affordance, not a research instrument.
+
+**Why deferred:** the pilot's research questions (v2 §13) treat the Epilogue as a single synthesis event per participant. Replay introduces a `replay_index` covariate that the pre-registered analysis plan does not currently account for. Better to ship the one-shot model, complete the pilot, then enable replay for the post-pilot user community without contaminating the research record.
+
+**Estimated effort:** ~80-120 LOC + 1 additive migration + UI on dashboard. Tests: covered by the existing G.3 test surface plus a new "second Epilogue allowed once prior is_active=False" assertion.
+
+**Discovered / scoped in:** PROODOS Epilogue design proposal v2 §9 + §18 (B.2 review item), 2026-05-21.
+**Resolved at:** Post-pilot release.
+
+---
+
+## TD-023 — M15 RAG corpus versioning (defensive)
+
+**Status:** Acknowledged, no fix planned (under the pilot feature-freeze). To be re-evaluated only if M15 content is ever edited mid-pilot.
+**Where:** `apps/modules/main_content` row for M15 + the RAG ingestion pipeline that feeds the `rag_queries` retrieval corpus from module main_content text.
+
+Phase G v2 §12 mandates a one-time M15 content alignment (G.4) — rewriting the pre-D.3a DTP description (Similarity Curve SVG + High/Moderate/Significant table) for the D.3a dual-signal DTP, plus a small Part 5 Epilogue notice clarification. The content edit is followed by a one-time **M15 RAG re-ingest** so the retrieval corpus matches what teachers see in TAB2.
+
+The risk this TD logs is **contamination of the RAG retrieval corpus across content versions**: if two teachers in the same pilot retrieve from M15 against two different versions of the corpus, their AI feedback is comparable on different evidence bases — a hidden methodological variable.
+
+**v2 §12.1 resolution: timing, not versioning.** Phase G is pre-pilot work. Per the v2 commit plan, every code-bearing phase and C.5/C.6 run **before** participant recruitment. The M15 content edit + RAG re-ingest therefore happens while there is no pilot participant; current M15 completions are test data. The C.6 pre-pilot operational sequence (PROODOS_UNIFIED_ROADMAP.md §3.C.6) is amended in G.4 to include a "confirm M15 content edit + RAG re-ingest done" step.
+
+**RAG-corpus versioning is unnecessary under the pilot feature-freeze.** This TD logs the assumption explicitly: if M15 content is ever edited **mid-pilot** (in violation of the feature-freeze), RAG-corpus versioning per `RAGQuery` row becomes necessary — every persisted RAG query needs to remember which content version it retrieved against, and analyses must group queries by version.
+
+**Forward path (only if mid-pilot M15 edit is ever needed):**
+
+1. Add `rag_corpus_version: CharField(max_length=20)` to the raw-SQL `rag_queries` schema; mint a `RAG_CORPUS_CURRENT_VERSION` constant in settings; bump on every M15 (or any module) main_content edit.
+2. Stamp every new `rag_queries` row with the current corpus version at insert time.
+3. Update the C.4 export (gather_user_export) to include the corpus version per query.
+4. Update analysis scripts to group by corpus version before computing aggregates.
+
+**Estimated effort (only if triggered):** ~40 LOC + 1 raw-SQL `ALTER TABLE` + version-bump discipline. The discipline is the load-bearing piece, not the schema.
+
+**Discovered / scoped in:** PROODOS Epilogue design proposal v2 §12.1 + §18 (B.5 review item), 2026-05-21.
+**Resolved at:** N/A under pilot feature-freeze; logged so the assumption is explicit.
 
 ---
 
