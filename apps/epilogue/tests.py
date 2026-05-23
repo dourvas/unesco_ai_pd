@@ -912,6 +912,107 @@ class Stage3DialogueTest(EpilogueViewBase):
         self.assertIn('a stage1 reply', text)
         self.assertNotIn('Stage 2', text)
 
+    # ------------------------------------------------------------------
+    # summarise_dialogue_for_portrait (G.3a — Learning Portrait input)
+    # ------------------------------------------------------------------
+    def test_summarise_dialogue_for_portrait_full_three_stages(self):
+        from apps.epilogue.services_stage0 import (
+            summarise_dialogue_for_portrait,
+        )
+        turns = [
+            {'stage': 1, 'role': 'assistant', 'content': 'opening synth'},
+            {'stage': 1, 'role': 'teacher', 'content': 'I felt I was performing'},
+            {'stage': 1, 'role': 'assistant', 'content': 'follow-up Q'},
+            {'stage': 1, 'role': 'teacher', 'content': 'M10 was the moment'},
+            {'stage': 2, 'role': 'assistant',
+             'content': 'M3 strongly left, M11 leaning right'},
+            {'stage': 2, 'role': 'teacher',
+             'content': 'A change anchored to a moment'},
+            {'stage': 2, 'role': 'assistant', 'content': 'tell me more'},
+            {'stage': 3, 'role': 'assistant', 'content': 'what is one step'},
+            {'stage': 3, 'role': 'teacher',
+             'content': 'Rewrite the AI first answer'},
+        ]
+        text = summarise_dialogue_for_portrait(turns)
+        # Per-stage headings are present in order.
+        self.assertIn('Stage 1 (Look Back)', text)
+        self.assertIn('Stage 2 (Look In)', text)
+        self.assertIn('Stage 3 (Look Forward)', text)
+        s1 = text.index('Stage 1')
+        s2 = text.index('Stage 2')
+        s3 = text.index('Stage 3')
+        self.assertLess(s1, s2)
+        self.assertLess(s2, s3)
+        # Teacher messages from every stage are present verbatim.
+        self.assertIn('I felt I was performing', text)
+        self.assertIn('M10 was the moment', text)
+        self.assertIn('A change anchored to a moment', text)
+        self.assertIn('Rewrite the AI first answer', text)
+        # The Stage 2 juxtaposition opener is included so the
+        # Portrait knows what the teacher was responding to.
+        self.assertIn('M3 strongly left, M11 leaning right', text)
+
+    def test_summarise_dialogue_for_portrait_omits_continuing_agent_turns(self):
+        """The Portrait prompt is teacher-led — only the Stage 2
+        opener is preserved from the assistant; Stage 1 / Stage 3
+        agent turns are not included so the prompt stays focused on
+        the teacher's own framing."""
+        from apps.epilogue.services_stage0 import (
+            summarise_dialogue_for_portrait,
+        )
+        turns = [
+            {'stage': 1, 'role': 'assistant', 'content': 'opening agent line'},
+            {'stage': 1, 'role': 'teacher', 'content': 'teacher line 1'},
+            {'stage': 3, 'role': 'assistant', 'content': 'a stage3 agent line'},
+            {'stage': 3, 'role': 'teacher', 'content': 'teacher line 3'},
+        ]
+        text = summarise_dialogue_for_portrait(turns)
+        self.assertIn('teacher line 1', text)
+        self.assertIn('teacher line 3', text)
+        self.assertNotIn('opening agent line', text)
+        self.assertNotIn('a stage3 agent line', text)
+
+    def test_summarise_dialogue_for_portrait_skipped_stage2(self):
+        """A teacher who hit the Stage 2 skip path has no Stage 2
+        teacher messages; the Stage 2 block shows '(no responses)'
+        so the Portrait agent does not invent material."""
+        from apps.epilogue.services_stage0 import (
+            summarise_dialogue_for_portrait,
+        )
+        turns = [
+            {'stage': 1, 'role': 'teacher', 'content': 'a stage1 reply'},
+            {'stage': 2, 'role': 'system', 'event': 'stage2_skipped',
+             'reason': 'insufficient_juxtaposition_material'},
+            {'stage': 3, 'role': 'teacher', 'content': 'a stage3 reply'},
+        ]
+        text = summarise_dialogue_for_portrait(turns)
+        self.assertIn('Stage 2 (Look In)', text)
+        self.assertIn('(no responses)', text)
+        # The system skip record itself must not be quoted.
+        self.assertNotIn('insufficient_juxtaposition_material', text)
+
+    def test_summarise_dialogue_for_portrait_empty(self):
+        from apps.epilogue.services_stage0 import (
+            summarise_dialogue_for_portrait,
+        )
+        self.assertEqual(summarise_dialogue_for_portrait([]), '')
+        self.assertEqual(summarise_dialogue_for_portrait(None), '')
+
+    def test_summarise_dialogue_for_portrait_ignores_unknown_stages(self):
+        """Defensive: a future 'portrait'-stage event in dialogue_turns
+        (G.3 §22.1) must not pollute the dialogue summary."""
+        from apps.epilogue.services_stage0 import (
+            summarise_dialogue_for_portrait,
+        )
+        turns = [
+            {'stage': 1, 'role': 'teacher', 'content': 'real stage1'},
+            {'stage': 'portrait', 'role': 'assistant',
+             'event': 'proposal', 'content': 'a proposed portrait'},
+        ]
+        text = summarise_dialogue_for_portrait(turns)
+        self.assertIn('real stage1', text)
+        self.assertNotIn('a proposed portrait', text)
+
     def test_advance_from_stage2_to_stage3_generates_opening(self):
         self._completion(
             stage1_completed_at=timezone.now(),
@@ -1008,3 +1109,492 @@ class Stage3DialogueTest(EpilogueViewBase):
         self.client.post(reverse('epilogue:complete'))
         row = EpilogueCompletion.objects.get(user=self.user)
         self.assertIsNotNone(row.stage3_completed_at)
+
+
+# ======================================================================
+# G.3b — Learning Portrait views (review / regenerate / accept / pdf)
+# ======================================================================
+
+_PORTRAIT_TEXT_A = (
+    'Across your fifteen modules, your attention travelled. You '
+    'wrote often about pedagogical fit and teacher oversight; you '
+    'leave with one concrete step: to ask students to rewrite the '
+    "AI's first answer in their own words."
+)
+_PORTRAIT_TEXT_B = (
+    'Looking back across your reflections, a few threads stand out. '
+    'You returned to teacher oversight; you named M10 as the moment '
+    'reflection felt performative. You will rewrite the AI first '
+    'answer in your own words next week.'
+)
+_PORTRAIT_TEXT_C = (
+    'Your fifteen modules trace a movement of attention. Where '
+    'pedagogical fit recurred, oversight remained. Your next step '
+    'is concrete: rewrite the AI answer first, then discuss.'
+)
+
+
+def _mock_portrait_gemini(text):
+    """Mock for EpiloguePortraitAgent's LLM client. Pattern mirrors
+    `_mock_gemini` but lives here for the longer Portrait texts."""
+    mock = MagicMock()
+    if text is None:
+        mock.generate.return_value = None
+    else:
+        mock.generate.return_value = GenerationResult(
+            text=text, model='gemini-2.5-flash',
+            tokens_estimate=400, cost_eur_estimate=0.0,
+        )
+    return mock
+
+
+class PortraitViewBase(EpilogueViewBase):
+    """Reusable fixture: a teacher who has finished Stage 3 of the
+    dialogue and is ready for the Learning Portrait step.
+
+    The dialogue is mocked at the agent level for all earlier tests in
+    this file; here we set the row state directly so the Portrait view
+    can be exercised without re-running the dialogue.
+    """
+
+    def _completion_post_stage3(self, **overrides):
+        defaults = {
+            'stage0_snapshot': _SNAPSHOT,
+            'dialogue_entered': True,
+            'stage1_completed_at': timezone.now(),
+            'stage2_completed_at': timezone.now(),
+            'stage3_completed_at': timezone.now(),
+            'dialogue_turns': [
+                {'stage': 1, 'role': 'assistant', 'content': 's1 open',
+                 'model': 'gemini-2.5-flash', 'generated_at': 'x'},
+                {'stage': 1, 'role': 'teacher',
+                 'content': 'I felt I was performing reflection.',
+                 'generated_at': 'x'},
+                {'stage': 2, 'role': 'assistant', 'content': 'jux',
+                 'model': 'gemini-2.5-flash', 'generated_at': 'x'},
+                {'stage': 2, 'role': 'teacher',
+                 'content': 'A change anchored to a moment.',
+                 'generated_at': 'x'},
+                {'stage': 3, 'role': 'assistant', 'content': 's3 open',
+                 'model': 'gemini-2.5-flash', 'generated_at': 'x'},
+                {'stage': 3, 'role': 'teacher',
+                 'content': 'Rewrite the AI first answer next week.',
+                 'generated_at': 'x'},
+            ],
+        }
+        defaults.update(overrides)
+        return EpilogueCompletion.objects.create(user=self.user, **defaults)
+
+
+class PortraitViewGatingTest(PortraitViewBase):
+    """The Portrait page gates: dialogue must have been entered, and
+    Stage 3 must have been completed (design proposal v2 §22.2)."""
+
+    def test_no_completion_row_redirects_to_placeholder(self):
+        resp = self.client.get(reverse('epilogue:portrait'))
+        self.assertRedirects(
+            resp, reverse('epilogue:placeholder'),
+            fetch_redirect_response=False,
+        )
+
+    def test_skip_dialogue_teacher_does_not_see_portrait(self):
+        """A teacher who skipped the dialogue (dialogue_entered=False)
+        is bounced back to the Stage 0 page — they go through
+        /complete/ instead (§22.2)."""
+        EpilogueCompletion.objects.create(
+            user=self.user,
+            stage0_snapshot=_SNAPSHOT,
+            dialogue_entered=False,
+        )
+        resp = self.client.get(reverse('epilogue:portrait'))
+        self.assertRedirects(
+            resp, reverse('epilogue:placeholder'),
+            fetch_redirect_response=False,
+        )
+        self.assertFalse(
+            EpilogueCompletion.objects.filter(
+                user=self.user,
+            ).exclude(learning_portrait_text='').exists()
+        )
+
+    def test_stage3_not_complete_redirects_to_dialogue(self):
+        EpilogueCompletion.objects.create(
+            user=self.user,
+            stage0_snapshot=_SNAPSHOT,
+            dialogue_entered=True,
+            stage1_completed_at=timezone.now(),
+        )
+        resp = self.client.get(reverse('epilogue:portrait'))
+        self.assertRedirects(
+            resp, reverse('epilogue:dialogue'),
+            fetch_redirect_response=False,
+        )
+
+
+class PortraitGenerateAndRenderTest(PortraitViewBase):
+    """First-entry generation + subsequent revisit rendering."""
+
+    def test_first_get_generates_proposal_and_renders(self):
+        self._completion_post_stage3()
+        with patch('apps.agents.epilogue_portrait.get_llm_client',
+                   return_value=_mock_portrait_gemini(_PORTRAIT_TEXT_A)):
+            resp = self.client.get(reverse('epilogue:portrait'))
+        self.assertEqual(resp.status_code, 200)
+        self.assertTemplateUsed(resp, 'epilogue/portrait.html')
+        self.assertContains(resp, 'pedagogical fit')
+        row = EpilogueCompletion.objects.get(user=self.user)
+        proposals = [
+            t for t in row.dialogue_turns
+            if t.get('stage') == 'portrait'
+            and t.get('event') == 'proposal'
+        ]
+        self.assertEqual(len(proposals), 1)
+        self.assertEqual(proposals[0]['content'], _PORTRAIT_TEXT_A)
+        # The teacher has not accepted yet, so:
+        self.assertEqual(row.learning_portrait_text, '')
+        self.assertIsNone(row.learning_portrait_generated_at)
+
+    def test_revisit_does_not_re_extract(self):
+        """Second GET must reuse the stored proposal, not call Gemini
+        again (proposals are research evidence; a silent re-extract
+        would make the record unreliable)."""
+        self._completion_post_stage3()
+        with patch('apps.agents.epilogue_portrait.get_llm_client',
+                   return_value=_mock_portrait_gemini(_PORTRAIT_TEXT_A)):
+            self.client.get(reverse('epilogue:portrait'))
+        mock = _mock_portrait_gemini(_PORTRAIT_TEXT_B)
+        with patch('apps.agents.epilogue_portrait.get_llm_client',
+                   return_value=mock):
+            resp = self.client.get(reverse('epilogue:portrait'))
+        self.assertEqual(resp.status_code, 200)
+        # Mock for the second visit must not have been called.
+        mock.generate.assert_not_called()
+        # Still only one proposal on record.
+        row = EpilogueCompletion.objects.get(user=self.user)
+        proposals = [
+            t for t in row.dialogue_turns
+            if t.get('event') == 'proposal'
+        ]
+        self.assertEqual(len(proposals), 1)
+        self.assertEqual(proposals[0]['content'], _PORTRAIT_TEXT_A)
+
+    def test_gemini_failure_renders_retry_state(self):
+        """Gemini returning None must not persist a proposal event."""
+        self._completion_post_stage3()
+        with patch('apps.agents.epilogue_portrait.get_llm_client',
+                   return_value=_mock_portrait_gemini(None)):
+            resp = self.client.get(reverse('epilogue:portrait'))
+        self.assertEqual(resp.status_code, 200)
+        # No proposal event written.
+        row = EpilogueCompletion.objects.get(user=self.user)
+        self.assertFalse(any(
+            t.get('event') == 'proposal'
+            for t in row.dialogue_turns
+        ))
+        # Page surfaces the retry state.
+        self.assertContains(resp, 'could not be generated')
+
+
+class PortraitRegenerateTest(PortraitViewBase):
+    """Regeneration is bounded to 2 (design proposal v2 §22.1)."""
+
+    def _generate_initial(self):
+        with patch('apps.agents.epilogue_portrait.get_llm_client',
+                   return_value=_mock_portrait_gemini(_PORTRAIT_TEXT_A)):
+            self.client.get(reverse('epilogue:portrait'))
+
+    def test_regenerate_appends_a_new_proposal(self):
+        self._completion_post_stage3()
+        self._generate_initial()
+        with patch('apps.agents.epilogue_portrait.get_llm_client',
+                   return_value=_mock_portrait_gemini(_PORTRAIT_TEXT_B)):
+            resp = self.client.post(reverse('epilogue:portrait_regenerate'))
+        self.assertRedirects(
+            resp, reverse('epilogue:portrait'),
+            fetch_redirect_response=False,
+        )
+        row = EpilogueCompletion.objects.get(user=self.user)
+        proposals = [
+            t['content'] for t in row.dialogue_turns
+            if t.get('event') == 'proposal'
+        ]
+        self.assertEqual(proposals, [_PORTRAIT_TEXT_A, _PORTRAIT_TEXT_B])
+
+    def test_third_regeneration_is_refused(self):
+        """1 initial + 2 regenerations = 3 proposals max. A fourth
+        proposal must NOT be written; Gemini must NOT be called."""
+        self._completion_post_stage3()
+        self._generate_initial()
+        with patch('apps.agents.epilogue_portrait.get_llm_client',
+                   return_value=_mock_portrait_gemini(_PORTRAIT_TEXT_B)):
+            self.client.post(reverse('epilogue:portrait_regenerate'))
+        with patch('apps.agents.epilogue_portrait.get_llm_client',
+                   return_value=_mock_portrait_gemini(_PORTRAIT_TEXT_C)):
+            self.client.post(reverse('epilogue:portrait_regenerate'))
+        mock_fourth = _mock_portrait_gemini('SHOULD NOT BE PERSISTED')
+        with patch('apps.agents.epilogue_portrait.get_llm_client',
+                   return_value=mock_fourth):
+            resp = self.client.post(reverse('epilogue:portrait_regenerate'))
+        self.assertRedirects(
+            resp, reverse('epilogue:portrait'),
+            fetch_redirect_response=False,
+        )
+        mock_fourth.generate.assert_not_called()
+        row = EpilogueCompletion.objects.get(user=self.user)
+        proposals = [
+            t['content'] for t in row.dialogue_turns
+            if t.get('event') == 'proposal'
+        ]
+        self.assertEqual(len(proposals), 3)
+        self.assertNotIn('SHOULD NOT BE PERSISTED', proposals)
+
+    def test_regenerate_after_accept_is_refused(self):
+        self._completion_post_stage3(
+            learning_portrait_text=_PORTRAIT_TEXT_A,
+            learning_portrait_generated_at=timezone.now(),
+        )
+        mock = _mock_portrait_gemini(_PORTRAIT_TEXT_B)
+        with patch('apps.agents.epilogue_portrait.get_llm_client',
+                   return_value=mock):
+            self.client.post(reverse('epilogue:portrait_regenerate'))
+        mock.generate.assert_not_called()
+
+    def test_regenerate_gemini_failure_does_not_consume_a_slot(self):
+        """A failed regeneration must not be counted toward the ceiling."""
+        self._completion_post_stage3()
+        self._generate_initial()
+        with patch('apps.agents.epilogue_portrait.get_llm_client',
+                   return_value=_mock_portrait_gemini(None)):
+            self.client.post(reverse('epilogue:portrait_regenerate'))
+        row = EpilogueCompletion.objects.get(user=self.user)
+        proposals = [
+            t for t in row.dialogue_turns
+            if t.get('event') == 'proposal'
+        ]
+        self.assertEqual(len(proposals), 1)
+
+
+class PortraitAcceptTest(PortraitViewBase):
+    """Accept persists the text + PDF + provenance + completion in one
+    atomic block (design proposal v2 §8.4)."""
+
+    def test_accept_persists_text_pdf_provenance_and_completion(self):
+        self._completion_post_stage3()
+        with patch('apps.agents.epilogue_portrait.get_llm_client',
+                   return_value=_mock_portrait_gemini(_PORTRAIT_TEXT_A)):
+            self.client.get(reverse('epilogue:portrait'))
+        # Accept now lands back on /epilogue/portrait/ so the teacher
+        # sees the Download PDF + Continue buttons (UX feedback,
+        # 2026-05-23). Forward routing happens on the Continue click.
+        resp = self.client.post(reverse('epilogue:portrait_accept'))
+        self.assertRedirects(
+            resp, reverse('epilogue:portrait'),
+            fetch_redirect_response=False,
+        )
+
+        row = EpilogueCompletion.objects.get(user=self.user)
+        self.assertEqual(row.learning_portrait_text, _PORTRAIT_TEXT_A)
+        self.assertIsNotNone(row.learning_portrait_generated_at)
+        self.assertIsNotNone(row.completed_at)
+        # PDF was generated and stored (xhtml2pdf runs live in tests).
+        self.assertTrue(bool(row.learning_portrait_pdf))
+        # Provenance row written.
+        from apps.compliance.models import AIArtefactProvenance
+        prov = AIArtefactProvenance.objects.get(
+            artefact_kind='epilogue_portrait',
+            artefact_pk=str(row.pk),
+        )
+        self.assertEqual(prov.user_id, self.user.id)
+        self.assertEqual(prov.model_name, 'gemini-2.5-flash')
+        # `accepted` system event appended to dialogue_turns.
+        accepted = [
+            t for t in row.dialogue_turns
+            if t.get('event') == 'accepted'
+        ]
+        self.assertEqual(len(accepted), 1)
+        self.assertIn('accepted_proposal_index', accepted[0])
+
+    def test_accept_idempotent_second_post(self):
+        self._completion_post_stage3(
+            learning_portrait_text=_PORTRAIT_TEXT_A,
+            learning_portrait_generated_at=timezone.now(),
+            completed_at=timezone.now(),
+        )
+        resp = self.client.post(reverse('epilogue:portrait_accept'))
+        self.assertEqual(resp.status_code, 302)
+        # An already-accepted second POST routes forward (not back to
+        # the portrait), since there is nothing more to review.
+        self.assertEqual(resp.url, '/ailst/t2/')
+        # Re-POST must not duplicate the provenance row.
+        self.client.post(reverse('epilogue:portrait_accept'))
+        from apps.compliance.models import AIArtefactProvenance
+        count = AIArtefactProvenance.objects.filter(
+            artefact_kind='epilogue_portrait',
+            artefact_pk=str(EpilogueCompletion.objects.get(
+                user=self.user,
+            ).pk),
+        ).count()
+        # Either 0 (no proposal was generated so accept is a no-op) or 1.
+        self.assertIn(count, (0, 1))
+
+    def test_continue_after_accept_routes_to_T2(self):
+        """The 'Continue' button on the accepted-state portrait page
+        POSTs to /epilogue/complete/ — which routes to T2 (or dashboard)
+        via _post_epilogue_destination. The two-step pattern was added
+        2026-05-23 so the teacher could see the Download-PDF button
+        before continuing forward."""
+        self._completion_post_stage3()
+        with patch('apps.agents.epilogue_portrait.get_llm_client',
+                   return_value=_mock_portrait_gemini(_PORTRAIT_TEXT_A)):
+            self.client.get(reverse('epilogue:portrait'))
+        self.client.post(reverse('epilogue:portrait_accept'))
+        # Now the teacher clicks "Continue".
+        resp = self.client.post(reverse('epilogue:complete'))
+        self.assertEqual(resp.status_code, 302)
+        self.assertEqual(resp.url, '/ailst/t2/')
+
+    def test_accepted_portrait_page_shows_download_and_continue(self):
+        """Belt-and-braces: the accepted state of the portrait page
+        renders both the Download as PDF link and the Continue form."""
+        self._completion_post_stage3()
+        with patch('apps.agents.epilogue_portrait.get_llm_client',
+                   return_value=_mock_portrait_gemini(_PORTRAIT_TEXT_A)):
+            self.client.get(reverse('epilogue:portrait'))
+        self.client.post(reverse('epilogue:portrait_accept'))
+        resp = self.client.get(reverse('epilogue:portrait'))
+        self.assertEqual(resp.status_code, 200)
+        body = resp.content.decode('utf-8')
+        self.assertIn(reverse('epilogue:portrait_pdf'), body)
+        self.assertIn(reverse('epilogue:complete'), body)
+
+    def test_accept_without_a_proposal_redirects_with_warning(self):
+        self._completion_post_stage3()
+        resp = self.client.post(reverse('epilogue:portrait_accept'))
+        self.assertRedirects(
+            resp, reverse('epilogue:portrait'),
+            fetch_redirect_response=False,
+        )
+        row = EpilogueCompletion.objects.get(user=self.user)
+        self.assertEqual(row.learning_portrait_text, '')
+
+    def test_accept_pdf_failure_still_persists_text(self):
+        """The PDF is best-effort: a pisa failure must not roll back
+        the text / provenance writes (design proposal v2 §10.1)."""
+        self._completion_post_stage3()
+        with patch('apps.agents.epilogue_portrait.get_llm_client',
+                   return_value=_mock_portrait_gemini(_PORTRAIT_TEXT_A)):
+            self.client.get(reverse('epilogue:portrait'))
+        with patch(
+            'apps.epilogue.views._generate_portrait_pdf',
+            side_effect=RuntimeError('forced pisa failure'),
+        ):
+            resp = self.client.post(reverse('epilogue:portrait_accept'))
+        self.assertEqual(resp.status_code, 302)
+        row = EpilogueCompletion.objects.get(user=self.user)
+        self.assertEqual(row.learning_portrait_text, _PORTRAIT_TEXT_A)
+        self.assertIsNotNone(row.completed_at)
+        # PDF was not saved.
+        self.assertFalse(bool(row.learning_portrait_pdf))
+        # Provenance still written.
+        from apps.compliance.models import AIArtefactProvenance
+        self.assertTrue(
+            AIArtefactProvenance.objects.filter(
+                artefact_kind='epilogue_portrait',
+                artefact_pk=str(row.pk),
+            ).exists()
+        )
+
+
+class PortraitPDFDownloadTest(PortraitViewBase):
+
+    def test_pdf_view_404_when_no_portrait(self):
+        EpilogueCompletion.objects.create(user=self.user)
+        resp = self.client.get(reverse('epilogue:portrait_pdf'))
+        self.assertEqual(resp.status_code, 404)
+
+    def test_pdf_view_serves_attachment(self):
+        self._completion_post_stage3()
+        with patch('apps.agents.epilogue_portrait.get_llm_client',
+                   return_value=_mock_portrait_gemini(_PORTRAIT_TEXT_A)):
+            self.client.get(reverse('epilogue:portrait'))
+        self.client.post(reverse('epilogue:portrait_accept'))
+        resp = self.client.get(reverse('epilogue:portrait_pdf'))
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp['Content-Type'], 'application/pdf')
+        self.assertIn('attachment', resp['Content-Disposition'])
+
+    def test_pdf_view_regenerates_on_demand_when_file_missing(self):
+        """If accept persisted the text but the PDF blob is absent
+        (pisa failure during accept), the download view regenerates
+        from the stored text and saves before serving."""
+        self._completion_post_stage3(
+            learning_portrait_text=_PORTRAIT_TEXT_A,
+            learning_portrait_generated_at=timezone.now(),
+        )
+        # Confirm we are starting from "text present, file absent".
+        row = EpilogueCompletion.objects.get(user=self.user)
+        self.assertFalse(bool(row.learning_portrait_pdf))
+        resp = self.client.get(reverse('epilogue:portrait_pdf'))
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp['Content-Type'], 'application/pdf')
+        # The PDF blob is now persisted for future requests.
+        row.refresh_from_db()
+        self.assertTrue(bool(row.learning_portrait_pdf))
+
+
+class PortraitPDFArticle50MetadataTest(PortraitViewBase):
+    """Strict variant — JSON-LD inside the PDF body plus PDF document
+    metadata (design proposal v2 §22.3)."""
+
+    def _accepted_pdf_bytes(self):
+        self._completion_post_stage3()
+        with patch('apps.agents.epilogue_portrait.get_llm_client',
+                   return_value=_mock_portrait_gemini(_PORTRAIT_TEXT_A)):
+            self.client.get(reverse('epilogue:portrait'))
+        self.client.post(reverse('epilogue:portrait_accept'))
+        resp = self.client.get(reverse('epilogue:portrait_pdf'))
+        return resp.getvalue() if hasattr(resp, 'getvalue') else b''.join(resp.streaming_content)
+
+    def test_pdf_html_render_carries_jsonld_block(self):
+        """The HTML source that pisa renders to PDF carries the
+        Article 50(2) JSON-LD block. We assert against the HTML
+        (the truthful layer) rather than the PDF bytes — pisa
+        compresses content streams (ASCII85/Flate), so a literal
+        grep against the raw PDF bytes is the wrong test. The
+        metadata test below covers the strict Article 50(2) layer
+        in the PDF Info dict (which is NOT compressed)."""
+        self._completion_post_stage3()
+        with patch('apps.agents.epilogue_portrait.get_llm_client',
+                   return_value=_mock_portrait_gemini(_PORTRAIT_TEXT_A)):
+            self.client.get(reverse('epilogue:portrait'))
+        self.client.post(reverse('epilogue:portrait_accept'))
+        from django.template.loader import render_to_string
+        from apps.compliance.models import AIArtefactProvenance
+        row = EpilogueCompletion.objects.get(user=self.user)
+        provenance = AIArtefactProvenance.objects.get(
+            artefact_kind='epilogue_portrait',
+            artefact_pk=str(row.pk),
+        )
+        html = render_to_string('pdf/learning_portrait.html', {
+            'portrait_text': row.learning_portrait_text,
+            'snapshot': row.stage0_snapshot,
+            'teacher_display': self.user.username,
+            'generated_at': row.learning_portrait_generated_at,
+            'model_name': 'gemini-2.5-flash',
+            'provenance': provenance,
+            'provenances': [provenance],
+        })
+        self.assertIn('application/ld+json', html)
+        self.assertIn('epilogue_portrait', html)
+        self.assertIn('SoftwareApplication', html)
+        self.assertIn('gemini-2.5-flash', html)
+
+    def test_pdf_carries_document_metadata(self):
+        """PDF Info dict carries Title / Author / Subject / Keywords
+        / Creator from the <meta> tags in the template head."""
+        pdf_bytes = self._accepted_pdf_bytes()
+        # The PDF info layer carries these strings literally (PDF
+        # is a binary format, but textual /Info entries are visible).
+        self.assertIn(b'PROODOS Learning Portrait', pdf_bytes)
+        self.assertIn(b'EU AI Act Article 50', pdf_bytes)
+        self.assertIn(b'gemini-2.5-flash', pdf_bytes)

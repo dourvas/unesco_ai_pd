@@ -107,6 +107,15 @@ class EpilogueCompletion(models.Model):
             'generated_at}], plus any stage-skip records.'
         ),
     )
+    # G.3 (design proposal v2 section 22.1): `dialogue_turns` also stores
+    # the portrait-stage proposal / accepted events
+    #   {stage: 'portrait', role: 'assistant', event: 'proposal',
+    #    content, model, generated_at}
+    #   {stage: 'portrait', role: 'system', event: 'accepted',
+    #    accepted_proposal_index, generated_at}
+    # The help_text above is kept unchanged so this is a code-only
+    # documentation change — no migration generated (the field shape
+    # is identical).
 
     # --- Phase G (G.0): Learning Portrait ---
     learning_portrait_text = models.TextField(

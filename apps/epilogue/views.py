@@ -19,6 +19,8 @@ Learning Portrait PDF) is tracked as TD-011 and will replace this
 placeholder later.
 """
 
+import logging
+
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
@@ -30,12 +32,19 @@ from apps.agents.epilogue_dialogue import (
     EPILOGUE_DIALOGUE_TURN_CEILING,
     EpilogueDialogueAgent,
 )
+from apps.agents.epilogue_portrait import (
+    EPILOGUE_PORTRAIT_REGENERATION_CEILING,
+    EpiloguePortraitAgent,
+)
 from apps.epilogue.models import EpilogueCompletion
 from apps.epilogue.services_stage0 import (
     build_stage0_snapshot,
+    count_portrait_proposals,
     format_juxtaposition_for_prompt,
+    latest_portrait_proposal,
     pick_juxtaposition_for_stage2,
     should_skip_stage2,
+    summarise_dialogue_for_portrait,
     summarise_prior_stages_for_stage3,
     summarise_stage0_for_dialogue,
 )
@@ -553,6 +562,439 @@ def epilogue_complete_view(request):
             completion.save(update_fields=update_fields)
 
     return redirect(_post_epilogue_destination(request.user))
+
+
+# ======================================================================
+# G.3 — Learning Portrait (review / regenerate / accept / PDF)
+# ======================================================================
+#
+# Four views implement the Learning Portrait HITL contract from design
+# proposal v2 sections 8.4 / 22.1:
+#
+#   GET  /epilogue/portrait/            -> review the current proposal
+#   POST /epilogue/portrait/regenerate/ -> request a fresh proposal
+#                                          (bounded to 2 regenerations)
+#   POST /epilogue/portrait/accept/     -> accept; atomic write of text
+#                                          + PDF + provenance + complete
+#   GET  /epilogue/portrait/pdf/        -> download (regen-on-demand)
+#
+# The "current proposal" and "regen counter" live in
+# `EpilogueCompletion.dialogue_turns` as `portrait`-stage events — no
+# new schema field, per design proposal v2 section 22.1.
+
+_PORTRAIT_PROPOSAL_CEILING = 1 + EPILOGUE_PORTRAIT_REGENERATION_CEILING
+
+# Cap on PDF regeneration attempts per HTTP request — guards against
+# pisa errors quietly looping. One try is enough; an error returns an
+# explicit HTTP 500 so the support path is visible.
+
+
+def _has_completed_dialogue(completion) -> bool:
+    """True iff the teacher entered the dialogue AND finished Stage 3.
+
+    The Portrait depends on the dialogue (design proposal v2 sections
+    8.1 and 22.2); a skip-dialogue teacher does not see the Portrait at
+    all.
+    """
+    return (
+        completion is not None
+        and completion.dialogue_entered
+        and completion.stage3_completed_at is not None
+    )
+
+
+def _build_portrait_context(completion) -> dict:
+    """Stage 0 summary + dialogue summary — the two inputs the Portrait
+    agent's `extract()` consumes (design proposal v2 section 8.1)."""
+    return {
+        'stage0_summary': summarise_stage0_for_dialogue(
+            completion.stage0_snapshot or {},
+        ),
+        'dialogue_summary': summarise_dialogue_for_portrait(
+            completion.dialogue_turns or [],
+        ),
+    }
+
+
+def _append_portrait_proposal(completion, text: str) -> None:
+    """Append a portrait `proposal` event to `dialogue_turns`.
+
+    Mutates the row's `dialogue_turns` in place and calls .save with
+    update_fields. The caller is responsible for holding a row lock
+    (`select_for_update`) so concurrent regenerations cannot interleave.
+    """
+    completion.dialogue_turns = list(completion.dialogue_turns) + [{
+        'stage': 'portrait',
+        'role': 'assistant',
+        'event': 'proposal',
+        'content': text,
+        'model': EpiloguePortraitAgent.model_name,
+        'generated_at': timezone.now().isoformat(),
+    }]
+    completion.save(update_fields=['dialogue_turns'])
+
+
+@login_required
+def epilogue_portrait_view(request):
+    """GET /epilogue/portrait/ — the Learning Portrait review page.
+
+    On first entry (no portrait proposal yet) the view generates the
+    first proposal via `EpiloguePortraitAgent.extract()`. Subsequent
+    visits render the most recent proposal — regeneration happens via
+    the companion POST endpoint.
+
+    Gates:
+      - M15 completion (TD-013, like the rest of the Epilogue).
+      - Dialogue entered AND Stage 3 completed (design proposal v2
+        sections 8.1 and 22.2). A skip-dialogue teacher is redirected
+        to /epilogue/complete/ — the Portrait does not apply.
+    """
+    if not (request.user.is_staff or request.user.is_superuser):
+        if not _is_m15_completed(request.user):
+            messages.info(
+                request,
+                'The PROODOS Epilogue is available after you complete Module 15.',
+            )
+            return redirect('users:dashboard')
+
+    completion = EpilogueCompletion.objects.filter(user=request.user).first()
+    if completion is None or not completion.stage0_snapshot:
+        return redirect('epilogue:placeholder')
+    if not completion.dialogue_entered:
+        # Skip-dialogue teachers do not see the Portrait (§22.2).
+        return redirect('epilogue:placeholder')
+    if completion.stage3_completed_at is None:
+        return redirect('epilogue:dialogue')
+
+    proposal_failed = False
+
+    # First-entry-only proposal generation. If already accepted, do
+    # NOT re-extract — the teacher is just viewing the accepted state.
+    if (
+        latest_portrait_proposal(completion.dialogue_turns) is None
+        and not completion.learning_portrait_text
+    ):
+        with transaction.atomic():
+            locked = EpilogueCompletion.objects.select_for_update().get(
+                pk=completion.pk,
+            )
+            if (
+                latest_portrait_proposal(locked.dialogue_turns) is None
+                and not locked.learning_portrait_text
+            ):
+                ctx = _build_portrait_context(locked)
+                proposed = EpiloguePortraitAgent().extract(**ctx)
+                if proposed is None:
+                    proposal_failed = True
+                else:
+                    _append_portrait_proposal(locked, proposed)
+        completion.refresh_from_db()
+
+    proposal = latest_portrait_proposal(completion.dialogue_turns)
+    proposal_count = count_portrait_proposals(completion.dialogue_turns)
+    regenerations_used = max(0, proposal_count - 1)
+    regenerations_remaining = max(
+        0, EPILOGUE_PORTRAIT_REGENERATION_CEILING - regenerations_used,
+    )
+    already_accepted = bool(completion.learning_portrait_text)
+
+    # Article 50(2) machine-readable provenance — only after accept.
+    # The same lookup is reused in _generate_portrait_pdf; kept inline
+    # here to avoid one extra round-trip on the common GET path.
+    accepted_provenance = None
+    if already_accepted:
+        from apps.compliance.models import AIArtefactProvenance
+        accepted_provenance = AIArtefactProvenance.objects.filter(
+            artefact_kind=EpiloguePortraitAgent.artefact_kind,
+            artefact_pk=str(completion.pk),
+            user=request.user,
+        ).first()
+
+    return render(request, 'epilogue/portrait.html', {
+        'completion': completion,
+        'snapshot': completion.stage0_snapshot,
+        'proposal': proposal,
+        'proposal_text': (
+            completion.learning_portrait_text
+            if already_accepted
+            else (proposal.get('content') if proposal else '')
+        ),
+        'proposal_count': proposal_count,
+        'regenerations_used': regenerations_used,
+        'regenerations_remaining': regenerations_remaining,
+        'already_accepted': already_accepted,
+        'proposal_failed': proposal_failed,
+        'can_regenerate': (
+            not already_accepted and regenerations_remaining > 0
+        ),
+        'accepted_provenance': accepted_provenance,
+        'accepted_provenances': (
+            [accepted_provenance] if accepted_provenance else []
+        ),
+    })
+
+
+@login_required
+@require_POST
+def epilogue_portrait_regenerate_view(request):
+    """POST /epilogue/portrait/regenerate/ — request a fresh proposal.
+
+    Bounded to `EPILOGUE_PORTRAIT_REGENERATION_CEILING` regenerations
+    (design proposal v2 sections 8.4 / 22.1). A POST past the ceiling
+    is refused with an informational flash; nothing is written.
+    """
+    if not (request.user.is_staff or request.user.is_superuser):
+        if not _is_m15_completed(request.user):
+            messages.info(
+                request,
+                'The PROODOS Epilogue is available after you complete Module 15.',
+            )
+            return redirect('users:dashboard')
+
+    completion = EpilogueCompletion.objects.filter(user=request.user).first()
+    if completion is None or not _has_completed_dialogue(completion):
+        return redirect('epilogue:placeholder')
+    if completion.learning_portrait_text:
+        # Already accepted; regeneration is closed.
+        return redirect('epilogue:portrait')
+
+    with transaction.atomic():
+        locked = EpilogueCompletion.objects.select_for_update().get(
+            pk=completion.pk,
+        )
+        if locked.learning_portrait_text:
+            return redirect('epilogue:portrait')
+        if count_portrait_proposals(
+            locked.dialogue_turns,
+        ) >= _PORTRAIT_PROPOSAL_CEILING:
+            messages.info(
+                request,
+                'You have used both regenerations. Please review the '
+                'current Portrait and accept it, or keep it as your '
+                'final version.',
+            )
+            return redirect('epilogue:portrait')
+
+        ctx = _build_portrait_context(locked)
+        proposed = EpiloguePortraitAgent().extract(**ctx)
+        if proposed is None:
+            messages.warning(
+                request,
+                'The Portrait could not be regenerated just now. '
+                'Please try again.',
+            )
+            return redirect('epilogue:portrait')
+        _append_portrait_proposal(locked, proposed)
+
+    return redirect('epilogue:portrait')
+
+
+@login_required
+@require_POST
+def epilogue_portrait_accept_view(request):
+    """POST /epilogue/portrait/accept/ — atomic accept + persist + PDF
+    + provenance + completion (design proposal v2 section 8.4).
+
+    Atomicity contract (CP-9): the text write, the provenance row, and
+    the completion timestamp are inside one `transaction.atomic` block.
+    The PDF generation is best-effort inside the block — a pisa failure
+    does NOT roll back the text/provenance writes; the PDF view
+    regenerates on demand (design proposal v2 section 10.1: "The
+    teacher never loses the portrait").
+
+    Idempotent: a second POST after the row is already accepted no-ops
+    the writes and re-routes via `_post_epilogue_destination`.
+    """
+    if not (request.user.is_staff or request.user.is_superuser):
+        if not _is_m15_completed(request.user):
+            messages.info(
+                request,
+                'The PROODOS Epilogue is available after you complete Module 15.',
+            )
+            return redirect('users:dashboard')
+
+    completion = EpilogueCompletion.objects.filter(user=request.user).first()
+    if completion is None or not _has_completed_dialogue(completion):
+        return redirect('epilogue:placeholder')
+
+    with transaction.atomic():
+        locked = EpilogueCompletion.objects.select_for_update().get(
+            pk=completion.pk,
+        )
+        if locked.learning_portrait_text:
+            # Idempotent: already accepted; just route forward.
+            return redirect(_post_epilogue_destination(request.user))
+
+        proposal = latest_portrait_proposal(locked.dialogue_turns)
+        if proposal is None:
+            messages.warning(
+                request,
+                'There is no Portrait to accept yet. Please generate '
+                'one first.',
+            )
+            return redirect('epilogue:portrait')
+
+        now = timezone.now()
+        accepted_text = (proposal.get('content') or '').strip()
+        proposals = [
+            i for i, t in enumerate(locked.dialogue_turns)
+            if t.get('stage') == 'portrait'
+            and t.get('role') == 'assistant'
+            and t.get('event') == 'proposal'
+        ]
+        accepted_idx = proposals[-1] if proposals else 0
+
+        locked.learning_portrait_text = accepted_text
+        locked.learning_portrait_generated_at = now
+        locked.dialogue_turns = list(locked.dialogue_turns) + [{
+            'stage': 'portrait',
+            'role': 'system',
+            'event': 'accepted',
+            'accepted_proposal_index': accepted_idx,
+            'generated_at': now.isoformat(),
+        }]
+        if locked.completed_at is None:
+            locked.completed_at = now
+
+        from apps.compliance.services import record_ai_provenance
+        record_ai_provenance(
+            artefact_kind=EpiloguePortraitAgent.artefact_kind,
+            artefact_pk=locked.pk,
+            user=request.user,
+            module=None,
+            model_name=EpiloguePortraitAgent.model_name,
+            generated_at=now,
+        )
+
+        # PDF generation is best-effort; a pisa error must not roll
+        # back the text/provenance writes.
+        try:
+            pdf_bytes, pdf_filename = _generate_portrait_pdf(
+                locked, request.user,
+            )
+            from django.core.files.base import ContentFile
+            locked.learning_portrait_pdf.save(
+                pdf_filename, ContentFile(pdf_bytes), save=False,
+            )
+        except Exception as exc:
+            logging.getLogger(__name__).warning(
+                'Learning Portrait PDF generation failed for user %s: %s',
+                request.user.pk, exc,
+            )
+
+        locked.save(update_fields=[
+            'learning_portrait_text',
+            'learning_portrait_generated_at',
+            'learning_portrait_pdf',
+            'dialogue_turns',
+            'completed_at',
+        ])
+
+    # Land on the same page after accept so the teacher can see
+    # the "Download as PDF" and "Continue" buttons in the accepted
+    # state (user-facing feedback, 2026-05-23). Routing forward to
+    # T2/dashboard happens on the Continue click, which posts to
+    # /epilogue/complete/ — already idempotent for completed_at.
+    return redirect('epilogue:portrait')
+
+
+@login_required
+def epilogue_portrait_pdf_view(request):
+    """GET /epilogue/portrait/pdf/ — download the Learning Portrait PDF.
+
+    Regenerate-on-demand semantics (design proposal v2 section 10.1):
+    if `learning_portrait_pdf` is missing but `learning_portrait_text`
+    exists, the PDF is regenerated from the stored text and saved
+    before being served. The teacher never loses the Portrait.
+    """
+    completion = EpilogueCompletion.objects.filter(user=request.user).first()
+    if completion is None or not completion.learning_portrait_text:
+        from django.http import Http404
+        raise Http404('No Learning Portrait on record yet.')
+
+    if not completion.learning_portrait_pdf:
+        try:
+            pdf_bytes, pdf_filename = _generate_portrait_pdf(
+                completion, request.user,
+            )
+        except Exception as exc:
+            from django.http import HttpResponse
+            logging.getLogger(__name__).error(
+                'Learning Portrait PDF regeneration failed for user %s: %s',
+                request.user.pk, exc,
+            )
+            return HttpResponse(
+                'The Learning Portrait PDF could not be generated.',
+                status=500,
+            )
+        from django.core.files.base import ContentFile
+        with transaction.atomic():
+            locked = EpilogueCompletion.objects.select_for_update().get(
+                pk=completion.pk,
+            )
+            if not locked.learning_portrait_pdf:
+                locked.learning_portrait_pdf.save(
+                    pdf_filename, ContentFile(pdf_bytes), save=True,
+                )
+            completion = locked
+
+    from django.http import FileResponse
+    completion.learning_portrait_pdf.open('rb')
+    return FileResponse(
+        completion.learning_portrait_pdf,
+        as_attachment=True,
+        filename=f'PROODOS_Learning_Portrait_{request.user.username}.pdf',
+        content_type='application/pdf',
+    )
+
+
+def _generate_portrait_pdf(completion, user) -> tuple:
+    """Render the Learning Portrait as a PDF via xhtml2pdf.
+
+    Returns `(pdf_bytes, filename)`. Raises on pisa error so the caller
+    can decide between "fail this request" (download view) and
+    "swallow and let regen-on-demand handle it later" (accept view).
+
+    Article 50(2) marker (design proposal v2 sections 8.5 and 22.3):
+    the rendered HTML carries the `{% ai_provenance_jsonld %}` block;
+    PDF document metadata (Title / Author / Subject / Creator) is set
+    via `<meta>` tags in the template head — xhtml2pdf reads these and
+    writes them into the PDF metadata layer.
+    """
+    from django.template.loader import render_to_string
+    from xhtml2pdf import pisa
+    import io
+
+    from apps.compliance.models import AIArtefactProvenance
+
+    provenance = AIArtefactProvenance.objects.filter(
+        artefact_kind=EpiloguePortraitAgent.artefact_kind,
+        artefact_pk=str(completion.pk),
+        user=user,
+    ).first()
+
+    teacher_display = (
+        user.get_full_name() or user.username or 'PROODOS teacher'
+    )
+
+    context = {
+        'portrait_text': completion.learning_portrait_text,
+        'snapshot': completion.stage0_snapshot or {},
+        'teacher_display': teacher_display,
+        'generated_at': completion.learning_portrait_generated_at,
+        'model_name': EpiloguePortraitAgent.model_name,
+        'provenance': provenance,
+        'provenances': [provenance] if provenance else [],
+    }
+    html = render_to_string('pdf/learning_portrait.html', context)
+
+    buf = io.BytesIO()
+    result = pisa.CreatePDF(html, dest=buf, encoding='utf-8')
+    if result.err:
+        raise RuntimeError(f'pisa.CreatePDF reported {result.err} errors')
+
+    filename = f'PROODOS_Learning_Portrait_{user.username}.pdf'
+    return buf.getvalue(), filename
 
 
 def _post_epilogue_destination(user):

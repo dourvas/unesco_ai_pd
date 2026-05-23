@@ -1,0 +1,268 @@
+{% load ai_provenance %}<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  {# Article 50(2) — PDF document metadata. xhtml2pdf reads these   #}
+  {# <meta> tags in <head> and writes them into the PDF info layer  #}
+  {# (Title / Author / Subject / Keywords). Design proposal v2 §22.3.#}
+  <title>PROODOS Learning Portrait — {{ teacher_display }}</title>
+  <meta name="author" content="PROODOS Platform (AI-generated, human-accepted)">
+  <meta name="subject" content="AI-generated reflective synthesis (EU AI Act Article 50)">
+  <meta name="keywords" content="PROODOS, Learning Portrait, AI-generated, EU AI Act Article 50, {{ model_name }}">
+  <meta name="creator" content="{{ model_name }} via xhtml2pdf">
+  <style>
+    @page {
+      size: A4;
+      margin: 18mm 16mm 22mm 16mm;
+      @frame footer {
+        -pdf-frame-content: footerContent;
+        bottom: 8mm;
+        margin-left: 16mm;
+        margin-right: 16mm;
+        height: 14mm;
+      }
+    }
+    body {
+      font-family: Helvetica, Arial, sans-serif;
+      color: #1E293B;
+      font-size: 10.5pt;
+      line-height: 1.55;
+    }
+    .header {
+      border-bottom: 2pt solid #2563EB;
+      padding-bottom: 8pt;
+      margin-bottom: 14pt;
+    }
+    .brand { font-size: 18pt; font-weight: bold; color: #2563EB; margin: 0; }
+    .module-tag { font-size: 9pt; color: #64748B; margin: 2pt 0 0 0; }
+    h1 { font-size: 16pt; color: #1E293B; margin: 0 0 4pt 0; }
+    h2 {
+      font-size: 12pt;
+      color: #1E40AF;
+      margin: 18pt 0 6pt 0;
+      border-bottom: 0.5pt solid #DBEAFE;
+      padding-bottom: 3pt;
+    }
+    h3 { font-size: 10.5pt; color: #1E293B; margin: 8pt 0 4pt 0; }
+    .subtitle { color: #64748B; font-size: 10pt; margin: 0 0 14pt 0; }
+    .portrait-text {
+      background-color: #F8FAFC;
+      border-left: 3pt solid #2563EB;
+      padding: 12pt 14pt;
+      margin: 0 0 18pt 0;
+      font-size: 11pt;
+      line-height: 1.65;
+      white-space: pre-line;
+    }
+    .meta-table { width: 100%; margin: 0 0 14pt 0; border-collapse: collapse; }
+    .meta-table td { padding: 3pt 6pt; font-size: 9.5pt; }
+    .meta-table td.label { color: #64748B; width: 32%; }
+    .stage0-section { margin-top: 14pt; }
+    .stage0-section p { margin: 4pt 0; }
+    .stat-grid {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 0 0 10pt 0;
+    }
+    .stat-grid td {
+      width: 25%;
+      text-align: center;
+      border: 0.5pt solid #CBD5E1;
+      padding: 6pt 4pt;
+    }
+    .stat-grid .stat-num {
+      font-size: 16pt; font-weight: bold; color: #2563EB;
+    }
+    .stat-grid .stat-label {
+      font-size: 8pt; color: #64748B; margin-top: 2pt;
+    }
+    .theme-block {
+      border: 0.5pt solid #CBD5E1;
+      padding: 6pt 8pt;
+      margin: 0 0 6pt 0;
+    }
+    .theme-block .theme-heading {
+      font-weight: bold;
+      font-size: 9.5pt;
+      margin: 0 0 4pt 0;
+    }
+    .badge {
+      display: inline-block;
+      border: 0.5pt solid #94A3B8;
+      padding: 1pt 5pt;
+      margin: 1pt;
+      font-size: 8.5pt;
+      color: #334155;
+    }
+    .timeline-item {
+      border-left: 2pt solid #93C5FD;
+      padding: 2pt 0 4pt 8pt;
+      margin: 0 0 6pt 0;
+      font-size: 9.5pt;
+    }
+    .timeline-item .timeline-module {
+      font-weight: bold;
+      color: #2563EB;
+      font-size: 9pt;
+    }
+    .trajectory-item {
+      border: 0.5pt solid #CBD5E1;
+      padding: 6pt 8pt;
+      margin: 0 0 6pt 0;
+    }
+    .trajectory-item .trajectory-label {
+      font-weight: bold;
+      font-size: 9.5pt;
+    }
+    .ai-footer {
+      margin-top: 18pt;
+      padding: 8pt 10pt;
+      background-color: #F1F5F9;
+      border: 0.5pt solid #CBD5E1;
+      font-size: 8.5pt;
+      color: #475569;
+      line-height: 1.4;
+    }
+    .ai-footer strong { color: #1E293B; }
+    .footer-content {
+      font-size: 8pt;
+      color: #94A3B8;
+      text-align: center;
+    }
+    .footer-content strong { color: #475569; }
+    /* JSON-LD <script> blocks are not visual; hide defensively. */
+    script { display: none; }
+  </style>
+</head>
+<body>
+
+{# Article 50(2) — machine-readable JSON-LD block inside the rendered  #}
+{# HTML. xhtml2pdf writes <script> as plain text in the PDF stream;    #}
+{# this block is greppable via pdftotext (design proposal v2 §22.3).   #}
+{% if provenances %}
+  {% ai_provenance_jsonld provenances %}
+{% endif %}
+
+<div class="header">
+  <p class="brand">PROODOS</p>
+  <p class="module-tag">{{ teacher_display }} &middot; PROODOS Epilogue &middot; Learning Portrait</p>
+</div>
+
+<h1>Your Learning Portrait</h1>
+<p class="subtitle">
+  A narrative synthesis of your reflective journey across the fifteen
+  PROODOS modules. Produced by an AI system; reviewed and accepted by
+  you.
+</p>
+
+<table class="meta-table">
+  <tr><td class="label">Teacher:</td><td><strong>{{ teacher_display }}</strong></td></tr>
+  {% if generated_at %}<tr><td class="label">Accepted on:</td><td>{{ generated_at|date:"j M Y, H:i" }}</td></tr>{% endif %}
+  <tr><td class="label">AI model:</td><td>{{ model_name }}</td></tr>
+  <tr><td class="label">Status:</td><td>AI-generated; accepted by the teacher (EU AI Act Article 50)</td></tr>
+</table>
+
+<div class="portrait-text">{{ portrait_text }}</div>
+
+<h2>Your Personal Evolution — Stage 0 summary</h2>
+
+{# Stage 0 summary, rendered with PDF-safe markup. The shared in-page  #}
+{# partial (_stage0_panel.html) uses Tailwind / DaisyUI classes that    #}
+{# xhtml2pdf does not interpret; this PDF block carries the same data  #}
+{# in plain HTML with inline styles so the PDF reader sees it laid out. #}
+<div class="stage0-section">
+
+  <table class="stat-grid">
+    <tr>
+      <td>
+        <div class="stat-num">{{ snapshot.quantitative.modules_completed|default:0 }}</div>
+        <div class="stat-label">Modules completed</div>
+      </td>
+      <td>
+        <div class="stat-num">{{ snapshot.quantitative.reflections_written|default:0 }}</div>
+        <div class="stat-label">Reflections written</div>
+      </td>
+      <td>
+        <div class="stat-num">{{ snapshot.quantitative.distinct_tensions|default:0 }}</div>
+        <div class="stat-label">Tensions surfaced</div>
+      </td>
+      <td>
+        <div class="stat-num">{{ snapshot.quantitative.tensions_engaged|default:0 }}</div>
+        <div class="stat-label">Tensions you positioned</div>
+      </td>
+    </tr>
+  </table>
+
+  <h3>The themes of your reflective writing</h3>
+
+  <div class="theme-block">
+    <p class="theme-heading">Themes that grew</p>
+    {% for item in snapshot.theme_evolution.grown %}
+      <span class="badge">{{ item.theme }}{% if item.count > 1 %} &times;{{ item.count }}{% endif %}</span>
+    {% empty %}
+      <span style="color:#94A3B8;font-size:9pt;">None recorded.</span>
+    {% endfor %}
+  </div>
+
+  <div class="theme-block">
+    <p class="theme-heading">Recurring themes</p>
+    {% for item in snapshot.theme_evolution.recurring %}
+      <span class="badge">{{ item.theme }}{% if item.count > 1 %} &times;{{ item.count }}{% endif %}</span>
+    {% empty %}
+      <span style="color:#94A3B8;font-size:9pt;">None recorded.</span>
+    {% endfor %}
+  </div>
+
+  <div class="theme-block">
+    <p class="theme-heading">Themes that receded</p>
+    {% for item in snapshot.theme_evolution.faded %}
+      <span class="badge">{{ item.theme }}{% if item.count > 1 %} &times;{{ item.count }}{% endif %}</span>
+    {% empty %}
+      <span style="color:#94A3B8;font-size:9pt;">None recorded.</span>
+    {% endfor %}
+  </div>
+
+  <h3>Your trajectory, module by module</h3>
+  {% for item in snapshot.narrative_timeline %}
+    <div class="timeline-item">
+      <span class="timeline-module">{{ item.module }}</span><br>
+      {{ item.narrative }}
+    </div>
+  {% empty %}
+    <p style="color:#94A3B8;font-size:9pt;">
+      No developmental narratives are on record yet.
+    </p>
+  {% endfor %}
+
+  <h3>The tensions you positioned yourself on</h3>
+  {% for tr in snapshot.rtm_trajectories %}
+    <div class="trajectory-item">
+      <span class="trajectory-label">{{ tr.tension_label }}</span>
+      {% if tr.recurring %}<span class="badge">recurring</span>{% endif %}
+      <div style="margin-top:3pt;">
+        {% for pt in tr.points %}
+          <span class="badge">{{ pt.module }} &middot; {{ pt.position_label }}</span>
+        {% endfor %}
+      </div>
+    </div>
+  {% empty %}
+    <p style="color:#94A3B8;font-size:9pt;">
+      No reflective tensions are on record yet.
+    </p>
+  {% endfor %}
+
+</div>
+
+<div class="ai-footer">
+  <strong>AI provenance — EU AI Act Article 50.</strong>
+  This Learning Portrait was generated by <strong>{{ model_name }}</strong>{% if generated_at %} on <strong>{{ generated_at|date:"j M Y" }}</strong>{% endif %} and accepted by the teacher in the PROODOS Epilogue. The teacher reviewed the proposal and accepted the version above; the underlying Stage 0 summary draws on data the teacher generated across the fifteen modules of the PROODOS programme.
+</div>
+
+<div id="footerContent">
+  <div class="footer-content">
+    <strong>PROODOS</strong> &middot; Learning Portrait &middot; AI-generated, human-accepted &middot; Page <pdf:pagenumber> / <pdf:pagecount>
+  </div>
+</div>
+
+</body>
+</html>

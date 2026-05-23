@@ -11,6 +11,25 @@ artefact kind already exists in `AIArtefactProvenance.ARTEFACT_KIND_CHOICES`
 (added forward-compat in C.3), so the planned `compliance` migration is
 unnecessary. G.0 is a single migration on `epilogue_completions`. §8.5 / §9 /
 §16 / §17 / §19 corrected accordingly.
+
+**Implementation correction (2026-05-23, during G.3):** three clarifications
+landed during G.3 design — the storage of transient portrait proposals and the
+regeneration counter (no new schema field; reuse `dialogue_turns`), the
+skip-dialogue bypass of the Portrait (so the test sweep cannot regress it),
+and the exact `xhtml2pdf` shape of the Article 50(2) machine-readable marker
+(JSON-LD block inside the rendered HTML **plus** a PDF document-metadata
+callback). Captured in full in §22; §8 / §8.4 / §8.5 / §9 / §10 are read in
+light of §22. No proposal direction changes.
+
+**Implementation correction (2026-05-23, before G.6a):** the chatbot has been
+given a teacher-facing persona ("Aletheia") in the G.6 design proposal. To
+keep the persona consistent at the actual *model* level (rather than only at
+the template level), four lines are added to `EpilogueDialogueAgent.
+_SYSTEM_PROMPT` — no first-person voice, no self-naming, no in-dialogue
+references to being an AI. Captured in §23. The agent-contract surface of v2
+§7 is otherwise unchanged; no schema change, no provenance change, no view
+change. Lands as a stand-alone commit *before* G.6a so the G.6 design changes
+inherit a prompt that already enforces the persona.
 **Origin:** Phase G kickoff design session + v1 review, 2026-05-21.
 **Roadmap relationship:** Implements `PROODOS_UNIFIED_ROADMAP.md` §3 Phase G
 (G.1 / G.2 / G.3) and resolves TD-011. Builds on the C.2.5 Epilogue placeholder.
@@ -700,6 +719,313 @@ B.1-B.5; C.1-C.5; D.1-D.4; B.4 = option (α) with the two §11 conditions.
 
 **To confirm:** this proposal as a whole, then the G.0 migrations under the
 backup / dry-run / approval protocol.
+
+---
+
+## 22. G.3 implementation clarifications (2026-05-23, during G.3)
+
+Three points came out of the G.3 design session that were either implicit in
+the v2 text or where an implementation choice had to be pinned down. None
+changes the v2 direction; each is recorded here so the implementation matches
+what was reviewed.
+
+### 22.1 Transient portrait proposals + the regeneration counter — `dialogue_turns`, not a new column
+
+§8.4 specifies an "AI proposes -> teacher reviews -> may regenerate (bounded
+to 2) -> accept" loop. §9 lists `learning_portrait_text` (the **accepted**
+text) but does not name a place to hold the **proposed-but-not-yet-accepted**
+text or the regeneration counter. Two options were considered:
+
+- Add a new `JSONField` (or pair of fields) to `epilogue_completions`. This
+  would require a second migration after G.0 and break the "G.0 is a single
+  migration" commitment recorded in the header correction.
+- Reuse the existing `dialogue_turns` JSONField with a `portrait`-stage
+  family of system events.
+
+**Decision: reuse `dialogue_turns`.** The pattern is already established —
+Stage 2 skip records are written there (§6.4). The schema extension is
+internal to a `JSONField(default=list)`, so it is a no-migration change.
+Each new proposal appends one row:
+
+```
+{stage: 'portrait', role: 'assistant', event: 'proposal',
+ content: '<full proposed text>',
+ model: 'gemini-2.5-flash',
+ generated_at: '<iso>'}
+```
+
+The **current proposal** = the most recent `proposal` event. The
+**regeneration count** = `(count of 'proposal' events) - 1`. The hard ceiling
+is therefore three `proposal` events (1 initial + 2 regenerations); the
+regenerate endpoint refuses a fourth.
+
+On accept, two additional events land — atomically with the
+`learning_portrait_text` / `learning_portrait_pdf` writes and the
+`AIArtefactProvenance` row:
+
+```
+{stage: 'portrait', role: 'system', event: 'accepted',
+ accepted_proposal_index: <0-based index into the proposal events>,
+ generated_at: '<iso>'}
+```
+
+This keeps the research record reconstructable: the analyst can see how many
+proposals the teacher saw, when each was generated, and which one they
+accepted — without a separate audit table.
+
+**Consequence for §9:** the field list is unchanged. The `dialogue_turns`
+help_text grows to mention the `portrait`-stage events alongside the existing
+stage-2 skip records; no migration is required.
+
+### 22.2 Skip-dialogue teachers do not see the Portrait
+
+§8.1 specifies that the Portrait is produced "from the dialogue responses and
+the frozen Stage 0 snapshot". A teacher who skipped the dialogue at Stage 0
+(`dialogue_entered = false`) has no dialogue responses to draw on; the
+Portrait is therefore not generated for them. §10's lifecycle table already
+reflects this — the `dialogue_entered = false` row goes directly to
+`completed_at` — but the implication for the Portrait was implicit.
+
+**Made explicit:** the skip-dialogue path bypasses `/epilogue/portrait/` and
+routes the existing `/epilogue/complete/` endpoint unchanged (Stage 0 ->
+skip -> complete -> T2/dashboard). The dialogue-entered path inserts the
+Portrait between Stage 3 and `/complete/`. The `_post_epilogue_destination`
+helper from C.2.5 is unchanged; the rewiring is upstream of it.
+
+A regression test in G.3b covers this: a teacher with `dialogue_entered=False`
+who POSTs to `/epilogue/complete/` is routed to T2/dashboard with no Portrait
+row touched.
+
+### 22.3 Article 50(2) in the PDF — strict variant (JSON-LD + PDF document metadata)
+
+§8.5 commits to a "machine-readable marker (JSON-LD block / document
+metadata)" but leaves the choice of mechanism open. `xhtml2pdf` (pisa) does
+not interpret `<script type="application/ld+json">` as embedded structured
+data — it ignores it visually, and the JSON-LD becomes plain text inside the
+PDF stream (greppable via `pdftotext`, but not a true metadata layer). The
+two options were considered:
+
+- **Regular:** ship only the in-HTML JSON-LD block + a human-readable footer.
+  Greppable, faithful to the in-page rendering, simple.
+- **Strict:** add the in-HTML JSON-LD block **and** a `pisa` link-callback /
+  context that sets PDF document metadata (Title / Author / Subject /
+  Producer / Creator) on the document itself.
+
+**Decision: strict.** The Learning Portrait is the most prominent AI artefact
+the platform produces — a downloadable PDF that may circulate outside the
+platform's surfaces — and Article 50(2) reads more naturally as
+"machine-readable on the artefact itself" than "readable if you extract the
+PDF's text stream and grep it". The extra cost is a small `pisa`
+`xhtml2pdf_default_callbacks`-style hook in the PDF view + one test that the
+generated PDF carries the expected metadata.
+
+Concretely:
+
+- The PDF document metadata layer carries:
+  - **Title:** "PROODOS Learning Portrait — <teacher display name>"
+  - **Author:** "PROODOS Platform (AI-generated, human-accepted)"
+  - **Subject:** "AI-generated reflective synthesis (EU AI Act Article 50)"
+  - **Creator / Producer:** "gemini-2.5-flash via xhtml2pdf"
+- The rendered HTML still carries:
+  - The `{% ai_provenance_jsonld %}` block at the head (greppable structured
+    data).
+  - A footer paragraph: "This Learning Portrait was generated by
+    gemini-2.5-flash on YYYY-MM-DD and accepted by the teacher in the
+    PROODOS Epilogue. EU AI Act Article 50."
+
+The in-page Portrait (§8.5 first bullet) is unchanged — it already uses the
+existing `{% ai_provenance %}` and `{% ai_provenance_jsonld %}` template
+tags. The strict variant adds the metadata layer only on the PDF side.
+
+---
+
+## 23. Aletheia persona — agent-prompt enforcement (2026-05-23, before G.6a)
+
+### 23.1 What this section adds
+
+The G.6 design proposal (`PHASE_G_G6_DESIGN_PROPOSAL_v1_20260523.md`) gives
+the dialogue chatbot a teacher-facing persona named **Aletheia** and codifies
+linguistic rules in its §3.3 / §3.5 — friendly framing uses the name
+"Aletheia"; the agent itself **does not** name itself, does not use first-
+person emotional voice, and does not reference being an AI within the
+dialogue. G.6 §3.5 phrased this as a design rule; §0 of G.6 ruled "no agent
+change" within G.6's scope. The two are in tension: a rule that depends on
+the agent's actual output cannot be enforced from outside the agent.
+
+This §23 resolves that tension within v2's own scope — the agent contracts
+live here (v2 §7), so the prompt enforcement of the persona also lives here.
+External review by a second LLM on 2026-05-23 surfaced the gap explicitly
+(see G.6 §B.3 in the briefing thread); §23 closes it.
+
+### 23.2 The prompt addition
+
+The following block is **appended** (not replacing) to
+`_SYSTEM_PROMPT` in `apps/agents/epilogue_dialogue.py`, immediately
+after the existing "never open a reply by appraising what the
+teacher said" instruction block and **before** the closing
+word-cap paragraph. The existing descriptive-non-evaluative stance
+(v2 §6.2) stays in force — the new block adds *persona* constraints
+on top of the existing *stance* constraints. The 23.6 layer-2
+regression check guards against the new block eroding the stance
+(see §23.6).
+
+```
+You are the reflective partner the platform names "Aletheia" to the
+teacher; you yourself do NOT introduce, name, or refer to yourself
+by that name in the conversation. Do not begin replies with "I" and
+avoid first-person language anywhere in your reply — emotional
+("I feel", "I am glad"), cognitive ("I notice", "I think",
+"I understand"), and perceptual ("I see", "I hear"). Do not refer
+to being an AI, a model, a system, an assistant, or a chatbot
+within the dialogue — the teacher already knows; restating it
+in-turn is a distraction. Address the teacher in the second person
+("you"); when an action would naturally take a subject, prefer
+impersonal phrasing ("a thread runs through what you said") over
+self-reference ("I notice a thread").
+```
+
+**Wording history (audit trail).** Drafted as 4 lines (v1, 2026-05-23
+afternoon). Third-pass external review flagged two potential holes —
+(a) the v1 phrasing covered only *emotional* first-person ("I feel"),
+missing the equally anthropomorphising *cognitive* ("I notice",
+"I think") and *perceptual* ("I see") variants that LLMs reach for
+naturally; (b) the v1 "do not begin replies with 'I'" rule was
+invisible in Greek (which expresses first-person through verb
+endings). Hole (a) is closed in the current wording — it is a
+language-neutral fix and tightens the anti-anthropomorphisation
+guard meaningfully. Hole (b) is **deferred** by PI decision
+(2026-05-23): the platform's EL branch is scheduled for the
+following week and will introduce **Greek-language prompts written
+in Greek register from the start**, with their own
+anti-anthropomorphisation guidance using Greek-natural examples
+(verb-ending patterns, no `νιώθω / παρατηρώ / βλέπω / σκέφτομαι`
+etc.). Mixing one Greek-targeting bullet into an otherwise English
+prompt — for a prompt that the current EN locale never runs against
+Greek output — would be premature scope-creep that confuses both
+languages' guidance. The EL branch owns the Greek rules cleanly.
+
+### 23.3 Why these four rules, and only these four
+
+The rules are minimal and specific — they do not redefine the agent's
+voice or stance (those are owned by the existing prompt, v2 §6.2 / §6.5).
+They close exactly the gap the reviewer surfaced:
+
+- **No self-naming.** Without this, the agent could write "as Aletheia, I
+  notice…", which would surface the persona inside the dialogue and break
+  the §3.5 "named not voiced" boundary. The persona belongs to the
+  template surface; the dialogue belongs to the reflective partner role.
+- **No first-person language — emotional, cognitive, or perceptual.**
+  Without this, "I am moved by what you said" (emotional), "I notice
+  a thread in your reflections" (cognitive), and "I see what you
+  mean" (perceptual) all break the descriptive-non-evaluative stance
+  v2 §6.2 / D.3a §4.4 already commit to. The original draft of this
+  rule (2026-05-23 afternoon) covered only the emotional variant —
+  third-pass review caught that LLMs reach for cognitive and
+  perceptual first-person at least as often, and the rule was
+  expanded to cover all three. The "do not begin with 'I'" sub-rule
+  is the directly-testable anchor; the "avoid anywhere in your
+  reply" extension catches mid-sentence variants like "That returns
+  to what, I think, you said earlier".
+- **No in-dialogue AI self-reference.** Without this, "as an AI system I
+  cannot judge…" surfaces in the conversation. The Article 50(1)
+  transparency notice already discloses the AI status *outside* the
+  dialogue (v2 §6.5); in-turn restating is bureaucratic and weakens the
+  reflective register.
+- **Second-person impersonal phrasing.** Provides a concrete positive
+  replacement for the three forbidden patterns above — so the model
+  reaches for "a thread runs through…" rather than "I notice…". Without
+  this positive instruction, the negative rules would leave the model
+  without a fallback voice.
+
+### 23.4 What §23 does NOT change
+
+- No schema change.
+- No `AIArtefactProvenance` change. The provenance row still names
+  `gemini-2.5-flash`; the teacher's PDF still carries
+  `<meta name="creator">` with the model identifier (v2 §22.3).
+- No view contract change. The dialogue endpoint still calls
+  `EpilogueDialogueAgent().extract(...)` with the same signature.
+- No `dialogue_turns` JSON record change. The agent still produces one
+  turn per call; the turn's `model` field still records
+  `gemini-2.5-flash`. The conversation as stored is byte-compatible
+  with G.2 turns.
+- No change to `EpiloguePortraitAgent`. The Portrait is third-person
+  narrative ("Across your fifteen modules…") and does not need the
+  no-self-reference rule. Its prompt is unchanged.
+- No change to the Article 50(1) transparency notice (the "Google Gemini"
+  language outside the dialogue is unchanged).
+
+### 23.5 Commit plan
+
+A single one-line-change commit landed *before* the G.6a CSS commit:
+
+| Commit | Content |
+|---|---|
+| **v2-§23** | Prompt addition in `apps/agents/epilogue_dialogue.py`. One new test (`EpilogueDialoguePromptTest::test_persona_guards_present`) asserts the four guards appear in the assembled prompt. The 50-test dialogue suite (v2 §7) re-runs unchanged otherwise — the existing prompt-shape assertions are append-only and do not break. |
+
+### 23.6 Verification — two-layer
+
+The four prompt rules introduced in §23.2 are **restrictive**, not
+generative — they remove patterns the model would otherwise produce.
+Restrictive rules carry a known risk: they can over-constrain and
+shift the agent's tone away from what the existing prompt (v2 §6.2
+descriptive-non-evaluative stance, §6.5 reflective-partner role)
+established. Verification therefore runs at two layers — the rules
+must **hold**, AND the prior stance must **not regress**.
+
+**Layer 1 — pattern check (forbidden-substring scan).** The next live
+sample-review (G.6c, the dialogue chapter rewrite) reads ~10 dialogue
+turns generated post-prompt-change and asserts none of them contain,
+case-insensitive:
+
+- `^I\b` at the start of a reply (first-person opening)
+- `\bI feel\b`, `\bI am (excited|moved|glad|happy|sad|impressed)\b`
+  (first-person *emotional* voice)
+- `\bI (notice|think|understand|believe|see|hear|sense)\b` anywhere
+  in the reply (first-person *cognitive / perceptual* voice — added
+  in the third-pass-revised wording, §23.2)
+- `\bas (an? )?AI\b`, `\bas (an? )?(model|system|assistant|chatbot)\b`
+  (in-dialogue AI self-reference)
+- `\bAletheia\b` (self-naming)
+
+The patterns are English-only because the prompt the agent receives
+and produces from is English; when the EL branch lands the following
+week, layer 1 grows a Greek pattern set (verb-ending matches:
+`\b(νιώθω|παρατηρώ|βλέπω|σκέφτομαι|καταλαβαίνω|πιστεύω)\b`) scoped
+to the EL prompt's own §23-equivalent.
+
+A slip on layer 1 is treated as **prompt-tuning feedback** (refine
+the four lines), not a v3 trigger.
+
+**Layer 2 — behavioural-regression check (added v2-revised per
+second-pass reviewer point 5).** The same ~10 turns are also
+inspected for *what the existing prompt was already supposed to
+produce*. The four new rules must not erode any of these:
+
+- (a) **Descriptive-not-evaluative stance** (v2 §6.2 / D.3a §4.4).
+  No appraisals of the teacher's reflection ("interesting",
+  "insightful", "valuable", "powerful", "meaningful"). No grading,
+  praising, or ranking of the journey.
+- (b) **Refusal of evaluation when asked** (v2 §6.5). When the
+  teacher asks "was that right?" or "what do you think?", the agent
+  still names the boundary ("that is yours to decide") rather than
+  judging.
+- (c) **One open question per turn** (v2 §6.1, the dialogue-shape
+  invariant). Each reply still ends with exactly one open question.
+- (d) **Warm and plain register** (v2 §6.2). Replies still feel
+  like a partner, not a form field — the restrictive rules must
+  not make the agent stiff or bureaucratic.
+
+If (a)-(d) regress, the §23.2 prompt addition is **over-
+constraining** and must be revised — either softened, or replaced
+with a positive-form rule that achieves the same end without
+collateral damage to the stance. Layer 2 protects the existing
+character of the agent from the restrictive rules of layer 1.
+
+The verification artefact lives at
+`proodos_files/V23_PROMPT_VERIFICATION_20260524.md` (created during
+the §23 commit's sample-review pass), with the 10 sample turns
+quoted and each rule pass/fail tagged.
 
 ---
 

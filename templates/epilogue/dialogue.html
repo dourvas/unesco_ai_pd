@@ -108,13 +108,29 @@
           </button>
         </form>
       {% endif %}
-      <form method="post" action="{% url 'epilogue:complete' %}" class="inline">
-        {% csrf_token %}
-        <button type="submit"
-                class="{% if can_advance %}btn btn-ghost{% else %}btn btn-primary btn-lg{% endif %}">
-          {% trans "Finish the Epilogue" %}
-        </button>
-      </form>
+      {% comment %}
+      Phase G G.3 — once the teacher has at least one Stage 3 reply
+      the dialogue is "ready to finish" and the flow continues into the
+      Learning Portrait (review / regenerate / accept). The Portrait
+      page itself owns the final accept-and-complete POST. Before
+      Stage 3 has any teacher reply, the "Finish" exit posts to
+      /complete/ directly — used by teachers who want to leave the
+      dialogue early without producing a Portrait.
+      {% endcomment %}
+      {% if current_stage == 3 or current_stage == 'finished' %}
+        <a href="{% url 'epilogue:portrait' %}"
+           class="{% if can_advance %}btn btn-ghost{% else %}btn btn-primary btn-lg{% endif %}">
+          {% trans "Continue to your Learning Portrait" %}
+        </a>
+      {% else %}
+        <form method="post" action="{% url 'epilogue:complete' %}" class="inline">
+          {% csrf_token %}
+          <button type="submit"
+                  class="{% if can_advance %}btn btn-ghost{% else %}btn btn-primary btn-lg{% endif %}">
+            {% trans "Finish the Epilogue" %}
+          </button>
+        </form>
+      {% endif %}
     </div>
 
   {% endif %}

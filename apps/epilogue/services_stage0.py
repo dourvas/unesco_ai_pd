@@ -268,6 +268,110 @@ def summarise_prior_stages_for_stage3(dialogue_turns: list) -> str:
     return ' '.join(parts)
 
 
+def summarise_dialogue_for_portrait(dialogue_turns: list) -> str:
+    """Render the three-phase dialogue into a compact text summary for
+    the EpiloguePortraitAgent prompt (design proposal v2 section 8.1).
+
+    Surfaces the teacher's own framing across Stages 1-3 — the
+    Portrait is meant to weave the teacher's distinctive wording into
+    the narrative, so the prompt is built around their messages, not
+    the agent's. Per-stage:
+
+      Stage 1 (Look Back)    - every teacher message verbatim, in order
+      Stage 2 (Look In)      - the juxtaposition opening from the agent
+                               (one line, so the Portrait knows what
+                               the teacher was responding to) + every
+                               teacher message verbatim
+      Stage 3 (Look Forward) - every teacher message verbatim
+
+    System events (skip records, future portrait events) and
+    intermediate agent turns are omitted. A teacher who skipped Stage 2
+    yields an empty Stage 2 block, which the prompt renders as
+    "(no responses)" so the agent does not invent material.
+    """
+    if not dialogue_turns:
+        return ''
+
+    stages: dict[int, dict] = {
+        1: {'label': 'Look Back', 'opener': '', 'teacher': []},
+        2: {'label': 'Look In', 'opener': '', 'teacher': []},
+        3: {'label': 'Look Forward', 'opener': '', 'teacher': []},
+    }
+    seen_opener = {1: False, 2: False, 3: False}
+
+    for turn in dialogue_turns:
+        stage = turn.get('stage')
+        if stage not in stages:
+            continue
+        role = turn.get('role')
+        content = (turn.get('content') or '').strip()
+        if not content:
+            continue
+        if role == 'teacher':
+            stages[stage]['teacher'].append(content)
+        elif role == 'assistant' and stage == 2 and not seen_opener[2]:
+            # Stage 2's opening turn carries the neutral juxtaposition
+            # the teacher was reacting to; keep it so the Portrait can
+            # weave the pairing in. Only the opener — continuing agent
+            # turns are skipped to keep the prompt teacher-led.
+            stages[2]['opener'] = content
+            seen_opener[2] = True
+
+    lines: list[str] = []
+    for stage_num in (1, 2, 3):
+        block = stages[stage_num]
+        lines.append(f'In Stage {stage_num} ({block["label"]}):')
+        if stage_num == 2 and block['opener']:
+            lines.append(
+                f'  The juxtaposition the teacher responded to: '
+                f'"{block["opener"]}"'
+            )
+        if block['teacher']:
+            for msg in block['teacher']:
+                lines.append(f'  The teacher said: "{msg}"')
+        else:
+            lines.append('  (no responses)')
+
+    return '\n'.join(lines)
+
+
+def latest_portrait_proposal(dialogue_turns: list) -> dict | None:
+    """Return the most recently appended Learning Portrait proposal
+    event from `dialogue_turns`, or None if none has been generated.
+
+    Per design proposal v2 section 22.1 a proposal event has shape
+    `{stage: 'portrait', role: 'assistant', event: 'proposal', ...}`.
+    The "current proposal" is the last such event in chronological
+    (append) order.
+    """
+    if not dialogue_turns:
+        return None
+    for turn in reversed(dialogue_turns):
+        if (
+            turn.get('stage') == 'portrait'
+            and turn.get('role') == 'assistant'
+            and turn.get('event') == 'proposal'
+        ):
+            return turn
+    return None
+
+
+def count_portrait_proposals(dialogue_turns: list) -> int:
+    """Count of portrait `proposal` events in `dialogue_turns`.
+
+    Per design proposal v2 section 22.1 the regeneration count is
+    `count - 1` and the ceiling is `1 (initial) + 2 (regenerations) = 3`.
+    """
+    if not dialogue_turns:
+        return 0
+    return sum(
+        1 for t in dialogue_turns
+        if t.get('stage') == 'portrait'
+        and t.get('role') == 'assistant'
+        and t.get('event') == 'proposal'
+    )
+
+
 def format_juxtaposition_for_prompt(juxtaposition: dict) -> str:
     """Render the picked juxtaposition into a neutral text statement
     for the Stage 2 opening prompt. Names the data points only; never
