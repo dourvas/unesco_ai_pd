@@ -671,6 +671,7 @@ assumption is explicit.
 | G.3 | `EpiloguePortraitAgent` + the review/regenerate/accept loop + PDF export + Article 50(2) markers. |
 | G.4 | M15 content alignment + M15 RAG re-ingest (§12). |
 | G.5 | Test sweep + roadmap (§3 Phase G, §3.C.5 row, §H.5), TD-011/022/023, Literature-note, architecture-chapter updates. |
+| G.6 | Magazine design upgrade — visual treatment of Stage 0, the dialogue (Stages 1-3), and the Learning Portrait in-page + PDF, in the TAB1/TAB2/TAB5 editorial register. Separate design proposal first (planned 2026-05-23 during G.2a sample-review). |
 
 The dialogue-corpus consent language (§11) is delivered into `copy.py` here but
 **activated** in C.5; G.5 adds the §3.C.5 checklist row.
@@ -684,6 +685,11 @@ The dialogue-corpus consent language (§11) is delivered into `copy.py` here but
   §7.2 narrative-sample check).
 - Re-verify the §14 cost figure against live `cost_tracker` data once the
   dialogue runs end-to-end.
+- The G.6 magazine design upgrade may force §8.3's single-HTML-render
+  decision to relax: a rich in-page magazine treatment may not survive
+  `xhtml2pdf`. Plan: re-evaluate at G.6 design time; if necessary, the
+  Learning Portrait PDF carries a simpler variant of the magazine markup
+  (rich in-page + simple PDF), accepted as a trade-off.
 
 ---
 

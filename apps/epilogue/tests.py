@@ -591,3 +591,274 @@ class Stage1DialogueTest(EpilogueViewBase):
         resp = self.client.get(reverse('epilogue:placeholder'))
         self.assertContains(resp, 'Begin the reflective dialogue')
         self.assertContains(resp, 'Continue without the dialogue')
+
+
+# ============================================================================
+# Phase G G.2b - Stage 2 (Look In) juxtaposition picker + advance flow
+# ============================================================================
+
+
+class Stage2PickerTest(TestCase):
+    """The Stage 2 picker, skip threshold and prompt formatter."""
+
+    def test_picker_returns_rtm_with_widest_position_range(self):
+        from apps.epilogue.services_stage0 import pick_juxtaposition_for_stage2
+        snapshot = {
+            'rtm_trajectories': [
+                {'tension_label': 'A vs B', 'recurring': True,
+                 'points': [
+                     {'module': 'M3', 'position': 1,
+                      'position_label': 'Strongly Left'},
+                     {'module': 'M11', 'position': 5,
+                      'position_label': 'Strongly Right'},
+                 ]},
+                {'tension_label': 'C vs D', 'recurring': True,
+                 'points': [
+                     {'module': 'M5', 'position': 2,
+                      'position_label': 'Leaning Left'},
+                     {'module': 'M9', 'position': 3,
+                      'position_label': 'Neutral / Middle'},
+                 ]},
+            ],
+        }
+        result = pick_juxtaposition_for_stage2(snapshot)
+        self.assertEqual(result['kind'], 'rtm_movement')
+        # Widest range (5-1=4) wins over (3-2=1).
+        self.assertEqual(result['tension_label'], 'A vs B')
+
+    def test_picker_falls_back_to_theme_shift(self):
+        from apps.epilogue.services_stage0 import pick_juxtaposition_for_stage2
+        snapshot = {
+            'rtm_trajectories': [],  # no recurring RTM
+            'theme_evolution': {
+                'grown': [{'theme': 'pedagogical fit', 'count': 2}],
+                'recurring': [],
+                'faded': [{'theme': 'LLM mechanics', 'count': 3}],
+            },
+        }
+        result = pick_juxtaposition_for_stage2(snapshot)
+        self.assertEqual(result['kind'], 'theme_shift')
+        self.assertEqual(result['faded_theme'], 'LLM mechanics')
+        self.assertEqual(result['grown_theme'], 'pedagogical fit')
+
+    def test_picker_returns_none_when_no_material(self):
+        from apps.epilogue.services_stage0 import pick_juxtaposition_for_stage2
+        snapshot = {
+            'rtm_trajectories': [],
+            'theme_evolution': {'grown': [], 'recurring': [], 'faded': []},
+        }
+        self.assertIsNone(pick_juxtaposition_for_stage2(snapshot))
+
+    def test_picker_skips_non_recurring_rtm(self):
+        from apps.epilogue.services_stage0 import pick_juxtaposition_for_stage2
+        snapshot = {
+            'rtm_trajectories': [
+                {'tension_label': 'Solo', 'recurring': False,
+                 'points': [{'module': 'M3', 'position': 1,
+                             'position_label': 'Strongly Left'}]},
+            ],
+            'theme_evolution': {'grown': [], 'recurring': [], 'faded': []},
+        }
+        self.assertIsNone(pick_juxtaposition_for_stage2(snapshot))
+
+    def test_should_skip_when_both_below_threshold(self):
+        from apps.epilogue.services_stage0 import should_skip_stage2
+        snap = {'quantitative': {
+            'distinct_tensions': 2, 'dtp_composites_with_shift': 2,
+        }}
+        self.assertTrue(should_skip_stage2(snap))
+
+    def test_should_not_skip_when_tensions_sufficient(self):
+        from apps.epilogue.services_stage0 import should_skip_stage2
+        snap = {'quantitative': {
+            'distinct_tensions': 3, 'dtp_composites_with_shift': 0,
+        }}
+        self.assertFalse(should_skip_stage2(snap))
+
+    def test_should_not_skip_when_dtp_shift_sufficient(self):
+        from apps.epilogue.services_stage0 import should_skip_stage2
+        snap = {'quantitative': {
+            'distinct_tensions': 0, 'dtp_composites_with_shift': 3,
+        }}
+        self.assertFalse(should_skip_stage2(snap))
+
+    def test_format_juxtaposition_rtm_movement(self):
+        from apps.epilogue.services_stage0 import format_juxtaposition_for_prompt
+        jux = {
+            'kind': 'rtm_movement',
+            'tension_label': 'A vs B',
+            'points': [
+                {'module': 'M3', 'position_label': 'Strongly Left'},
+                {'module': 'M11', 'position_label': 'Strongly Right'},
+            ],
+        }
+        text = format_juxtaposition_for_prompt(jux)
+        self.assertIn('A vs B', text)
+        self.assertIn('M3 Strongly Left', text)
+        self.assertIn('M11 Strongly Right', text)
+
+    def test_format_juxtaposition_theme_shift(self):
+        from apps.epilogue.services_stage0 import format_juxtaposition_for_prompt
+        jux = {
+            'kind': 'theme_shift',
+            'faded_theme': 'LLM mechanics',
+            'grown_theme': 'pedagogical fit',
+        }
+        text = format_juxtaposition_for_prompt(jux)
+        self.assertIn('LLM mechanics', text)
+        self.assertIn('pedagogical fit', text)
+
+
+class Stage2DialogueTest(EpilogueViewBase):
+    """The Stage 1 -> Stage 2 transition and Stage 2 dialogue handling."""
+
+    def _completion(self, **kwargs):
+        defaults = {'stage0_snapshot': _SNAPSHOT, 'dialogue_entered': True}
+        defaults.update(kwargs)
+        return EpilogueCompletion.objects.create(user=self.user, **defaults)
+
+    def test_advance_skips_stage2_when_threshold_triggers(self):
+        thin_snapshot = {
+            'quantitative': {
+                'distinct_tensions': 1, 'dtp_composites_with_shift': 1,
+            },
+            'rtm_trajectories': [],
+            'theme_evolution': {'grown': [], 'recurring': [], 'faded': []},
+        }
+        self._completion(
+            stage0_snapshot=thin_snapshot,
+            dialogue_turns=[
+                {'stage': 1, 'role': 'teacher', 'content': 'first',
+                 'generated_at': 'x'},
+            ],
+        )
+        resp = self.client.post(reverse('epilogue:dialogue_advance'))
+        self.assertEqual(resp.status_code, 302)
+        row = EpilogueCompletion.objects.get(user=self.user)
+        self.assertIsNotNone(row.stage1_completed_at)
+        self.assertIsNotNone(row.stage2_completed_at)
+        skip = [t for t in row.dialogue_turns
+                if t.get('event') == 'stage2_skipped']
+        self.assertEqual(len(skip), 1)
+        self.assertEqual(skip[0]['reason'],
+                         'insufficient_juxtaposition_material')
+
+    def test_advance_skips_stage2_when_no_juxtaposition(self):
+        # Threshold passes but no recurring RTM and no theme-shift pair.
+        snapshot = {
+            'quantitative': {
+                'distinct_tensions': 3, 'dtp_composites_with_shift': 3,
+            },
+            'rtm_trajectories': [],
+            'theme_evolution': {'grown': [], 'recurring': [], 'faded': []},
+        }
+        self._completion(
+            stage0_snapshot=snapshot,
+            dialogue_turns=[
+                {'stage': 1, 'role': 'teacher', 'content': 'first',
+                 'generated_at': 'x'},
+            ],
+        )
+        resp = self.client.post(reverse('epilogue:dialogue_advance'))
+        self.assertEqual(resp.status_code, 302)
+        row = EpilogueCompletion.objects.get(user=self.user)
+        self.assertIsNotNone(row.stage2_completed_at)
+        skip = [t for t in row.dialogue_turns
+                if t.get('event') == 'stage2_skipped']
+        self.assertEqual(skip[0]['reason'],
+                         'no_clean_juxtaposition_available')
+
+    def test_advance_proceeds_with_rtm_juxtaposition(self):
+        rich_snapshot = {
+            'quantitative': {
+                'distinct_tensions': 3, 'dtp_composites_with_shift': 3,
+            },
+            'rtm_trajectories': [
+                {'tension_label': 'Control vs autonomy', 'recurring': True,
+                 'points': [
+                     {'module': 'M3', 'position': 1,
+                      'position_label': 'Strongly Left'},
+                     {'module': 'M11', 'position': 5,
+                      'position_label': 'Strongly Right'},
+                 ]},
+            ],
+            'theme_evolution': {'grown': [], 'recurring': [], 'faded': []},
+        }
+        self._completion(
+            stage0_snapshot=rich_snapshot,
+            dialogue_turns=[
+                {'stage': 1, 'role': 'teacher', 'content': 'first',
+                 'generated_at': 'x'},
+            ],
+        )
+        with patch('apps.agents.epilogue_dialogue.get_llm_client',
+                   return_value=_mock_gemini(
+                       'Two of your own moments sit next to each other.')):
+            resp = self.client.post(reverse('epilogue:dialogue_advance'))
+        self.assertEqual(resp.status_code, 302)
+        row = EpilogueCompletion.objects.get(user=self.user)
+        self.assertIsNotNone(row.stage1_completed_at)
+        self.assertIsNone(row.stage2_completed_at)
+        stage2 = [t for t in row.dialogue_turns if t.get('stage') == 2]
+        self.assertEqual(len(stage2), 1)
+        self.assertEqual(stage2[0]['role'], 'assistant')
+
+    def test_advance_does_not_transition_on_gemini_failure(self):
+        rich_snapshot = {
+            'quantitative': {
+                'distinct_tensions': 3, 'dtp_composites_with_shift': 3,
+            },
+            'rtm_trajectories': [
+                {'tension_label': 'A vs B', 'recurring': True,
+                 'points': [
+                     {'module': 'M3', 'position': 1,
+                      'position_label': 'Strongly Left'},
+                     {'module': 'M11', 'position': 5,
+                      'position_label': 'Strongly Right'},
+                 ]},
+            ],
+            'theme_evolution': {'grown': [], 'recurring': [], 'faded': []},
+        }
+        self._completion(
+            stage0_snapshot=rich_snapshot,
+            dialogue_turns=[
+                {'stage': 1, 'role': 'teacher', 'content': 'first',
+                 'generated_at': 'x'},
+            ],
+        )
+        with patch('apps.agents.epilogue_dialogue.get_llm_client',
+                   return_value=_mock_gemini(None)):
+            resp = self.client.post(reverse('epilogue:dialogue_advance'))
+        self.assertEqual(resp.status_code, 302)
+        row = EpilogueCompletion.objects.get(user=self.user)
+        # Stage transition did not happen.
+        self.assertIsNone(row.stage1_completed_at)
+        # No Stage 2 turns were stored.
+        stage2 = [t for t in row.dialogue_turns if t.get('stage') == 2]
+        self.assertEqual(stage2, [])
+
+    def test_handle_dialogue_turn_in_stage2(self):
+        self._completion(
+            stage1_completed_at=timezone.now(),
+            dialogue_turns=[
+                {'stage': 1, 'role': 'assistant', 'content': 'opening 1',
+                 'model': 'gemini-2.5-flash', 'generated_at': 'x'},
+                {'stage': 1, 'role': 'teacher', 'content': 'reply 1',
+                 'generated_at': 'x'},
+                {'stage': 2, 'role': 'assistant', 'content': 'opening 2',
+                 'model': 'gemini-2.5-flash', 'generated_at': 'x'},
+            ],
+        )
+        with patch('apps.agents.epilogue_dialogue.get_llm_client',
+                   return_value=_mock_gemini('A Stage 2 reply.')):
+            resp = self.client.post(
+                reverse('epilogue:dialogue'),
+                {'message': 'My take on it.'},
+            )
+        self.assertEqual(resp.status_code, 302)
+        row = EpilogueCompletion.objects.get(user=self.user)
+        stage2 = [t for t in row.dialogue_turns
+                  if t.get('stage') == 2
+                  and t.get('role') in ('assistant', 'teacher')]
+        roles = [t['role'] for t in stage2]
+        self.assertEqual(roles, ['assistant', 'teacher', 'assistant'])

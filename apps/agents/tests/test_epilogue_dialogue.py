@@ -68,6 +68,16 @@ class EpilogueDialogueHierarchyTest(SimpleTestCase):
     def test_model_name_is_gemini_flash(self):
         self.assertEqual(EpilogueDialogueAgent.model_name, 'gemini-2.5-flash')
 
+    def test_stage1_and_stage2_briefs_present(self):
+        """G.2a brought Stage 1 (Look Back); G.2b adds Stage 2 (Look In).
+        Stage 3 is G.2c."""
+        from apps.agents.epilogue_dialogue import _STAGE_BRIEF
+        self.assertIn(1, _STAGE_BRIEF)
+        self.assertEqual(_STAGE_BRIEF[1]['name'], 'Look Back')
+        self.assertIn(2, _STAGE_BRIEF)
+        self.assertEqual(_STAGE_BRIEF[2]['name'], 'Look In')
+        self.assertNotIn(3, _STAGE_BRIEF)
+
 
 class EpilogueDialogueGenerateBlockedTest(SimpleTestCase):
 
@@ -80,10 +90,10 @@ class EpilogueDialogueGenerateBlockedTest(SimpleTestCase):
 class EpilogueDialogueStageGuardTest(SimpleTestCase):
 
     def test_unimplemented_stage_raises(self):
-        """Stages 2 / 3 land in G.2b / G.2c — until then a request for
-        them must fail loudly, not produce an off-spec turn."""
+        """G.2c lands Stage 3 — until then a request for stage 3 must
+        fail loudly, not produce an off-spec turn."""
         with self.assertRaises(ValueError) as cm:
-            EpilogueDialogueAgent().extract(stage=2, stage0_summary=_SUMMARY)
+            EpilogueDialogueAgent().extract(stage=3, stage0_summary=_SUMMARY)
         self.assertIn('not implemented', str(cm.exception))
 
 
@@ -146,6 +156,49 @@ class EpilogueDialoguePromptTest(SimpleTestCase):
         self.assertIn('model its shape, never its content', prompt)
         self.assertIn('A line runs through what you said', prompt)
         self.assertIn('Stay with that for a moment', prompt)
+
+    def test_stage2_opening_prompt_includes_juxtaposition(self):
+        """G.2b: Stage 2 opening carries the pre-computed juxtaposition
+        as a dedicated prompt section, framed as neutral data."""
+        mock, captured = _capture_client()
+        juxtaposition_text = (
+            "On the recurring tension 'A vs B', the teacher positioned "
+            "themselves as follows: M3 Strongly Left, M11 Strongly Right."
+        )
+        with patch('apps.agents.epilogue_dialogue.get_llm_client',
+                   return_value=mock):
+            EpilogueDialogueAgent().extract(
+                stage=2, stage0_summary=_SUMMARY, history=[],
+                juxtaposition=juxtaposition_text,
+            )
+        prompt = captured['prompt']
+        self.assertIn('Look In', prompt)
+        self.assertIn('THE JUXTAPOSITION TO SURFACE', prompt)
+        self.assertIn('A vs B', prompt)
+        self.assertIn('do not label it a contradiction', prompt.lower())
+        # Stage 2 opening also uses the system stance.
+        self.assertIn('never judge, grade, praise', prompt)
+
+    def test_stage2_continuing_omits_juxtaposition_section(self):
+        """Continuing turns carry the juxtaposition through the history,
+        not through a dedicated prompt section."""
+        history = [
+            {'role': 'assistant',
+             'content': 'Two of your own moments sit here.'},
+            {'role': 'teacher',
+             'content': 'I think they are different things.'},
+        ]
+        mock, captured = _capture_client()
+        with patch('apps.agents.epilogue_dialogue.get_llm_client',
+                   return_value=mock):
+            EpilogueDialogueAgent().extract(
+                stage=2, stage0_summary=_SUMMARY, history=history,
+                juxtaposition='UNUSED on continuing turns',
+            )
+        prompt = captured['prompt']
+        self.assertNotIn('THE JUXTAPOSITION TO SURFACE', prompt)
+        self.assertIn('THE DIALOGUE SO FAR:', prompt)
+        self.assertIn('Continue the Look In dialogue', prompt)
 
     def test_generate_called_with_thinking_disabled(self):
         """A short dialogue turn disables Gemini thinking so the whole

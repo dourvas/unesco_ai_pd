@@ -165,6 +165,110 @@ def summarise_stage0_for_dialogue(snapshot: dict) -> str:
     return '\n'.join(lines)
 
 
+# ======================================================================
+# Stage 2 (Look In) — juxtaposition picker + skip threshold (G.2b)
+# ======================================================================
+def pick_juxtaposition_for_stage2(snapshot: dict) -> dict | None:
+    """Pick the strongest juxtaposition candidate from the frozen
+    Stage 0 snapshot to seed the Stage 2 opening turn.
+
+    Priority order (design proposal v2 section 6.2):
+
+      1. The RTM tension with the largest position movement across the
+         modules it appeared in (recurring tensions only — same label
+         in at least two modules). Ties broken alphabetically on the
+         tension label for reproducibility.
+      2. A faded-theme paired with a grown-theme (early X, later Y).
+      3. None — no clean juxtaposition; the view logs a skip record
+         (design proposal v2 section 6.4) and transitions past Stage 2.
+
+    Returns a dict describing the juxtaposition, with key 'kind' set to
+    'rtm_movement' or 'theme_shift'; or None.
+    """
+    if not snapshot:
+        return None
+
+    # Priority 1: recurring RTM tension with the widest position range.
+    rtm = snapshot.get('rtm_trajectories') or []
+    candidates = []
+    for t in rtm:
+        if not t.get('recurring'):
+            continue
+        positions = [
+            p.get('position')
+            for p in (t.get('points') or [])
+            if p.get('position') is not None
+        ]
+        if len(positions) < 2:
+            continue
+        rng = max(positions) - min(positions)
+        candidates.append((rng, t.get('tension_label') or '', t))
+    if candidates:
+        candidates.sort(key=lambda x: (-x[0], x[1]))
+        best = candidates[0][2]
+        return {
+            'kind': 'rtm_movement',
+            'tension_label': best.get('tension_label', ''),
+            'points': list(best.get('points') or []),
+        }
+
+    # Priority 2: theme-shift pair (the top faded with the top grown).
+    te = snapshot.get('theme_evolution') or {}
+    faded = te.get('faded') or []
+    grown = te.get('grown') or []
+    if faded and grown:
+        return {
+            'kind': 'theme_shift',
+            'faded_theme': faded[0].get('theme', ''),
+            'grown_theme': grown[0].get('theme', ''),
+        }
+
+    return None
+
+
+def should_skip_stage2(snapshot: dict) -> bool:
+    """Strict skip threshold for Stage 2 (design proposal v2 section
+    6.4): skip iff distinct_tensions < 3 AND dtp_composites_with_shift
+    < 3. Both conditions must hold; either alone leaves enough data.
+    """
+    q = (snapshot or {}).get('quantitative') or {}
+    return (
+        q.get('distinct_tensions', 0) < 3
+        and q.get('dtp_composites_with_shift', 0) < 3
+    )
+
+
+def format_juxtaposition_for_prompt(juxtaposition: dict) -> str:
+    """Render the picked juxtaposition into a neutral text statement
+    for the Stage 2 opening prompt. Names the data points only; never
+    labels them as contradiction / tension / shift / change.
+    """
+    if not juxtaposition:
+        return ''
+    kind = juxtaposition.get('kind')
+    if kind == 'rtm_movement':
+        label = juxtaposition.get('tension_label', '')
+        points = juxtaposition.get('points') or []
+        position_lines = ', '.join(
+            f"{p.get('module', '?')} {p.get('position_label', '?')}"
+            for p in points
+        )
+        return (
+            f"On the recurring tension '{label}', the teacher positioned "
+            f"themselves across the modules where it appeared as "
+            f"follows: {position_lines}."
+        )
+    if kind == 'theme_shift':
+        faded = juxtaposition.get('faded_theme', '')
+        grown = juxtaposition.get('grown_theme', '')
+        return (
+            f"In early modules the teacher's reflective writing returned "
+            f"to the theme '{faded}'. In later modules the theme "
+            f"'{grown}' became more present."
+        )
+    return ''
+
+
 # ----------------------------------------------------------------------
 # DTP composite parsing
 # ----------------------------------------------------------------------

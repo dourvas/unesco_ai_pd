@@ -1,14 +1,20 @@
 {% extends 'base.html' %}
 {% load i18n %}
 
-{% block title %}{% trans "PROODOS Epilogue — Look Back" %}{% endblock %}
+{% block title %}{% trans "PROODOS Epilogue — Dialogue" %}{% endblock %}
 
 {% block content %}
 <div class="max-w-3xl mx-auto py-10 px-4">
 
   <header class="mb-6">
     <h1 class="text-2xl font-bold text-primary mb-1">{% trans "PROODOS Epilogue" %}</h1>
-    <p class="text-lg text-base-content/80">{% trans "Stage 1 — Look Back" %}</p>
+    {% if current_stage == 1 %}
+      <p class="text-lg text-base-content/80">{% trans "Stage 1 — Look Back" %}</p>
+    {% elif current_stage == 2 %}
+      <p class="text-lg text-base-content/80">{% trans "Stage 2 — Look In" %}</p>
+    {% elif current_stage == 'finished' %}
+      <p class="text-lg text-base-content/80">{% trans "Reflective dialogue complete" %}</p>
+    {% endif %}
   </header>
 
   {% comment %}
@@ -61,8 +67,22 @@
       {% endfor %}
     </div>
 
+    {% if stage2_skip_record %}
+      <div class="alert alert-info mb-6 text-sm">
+        <span>
+          {% blocktrans with reason=stage2_skip_record.reason %}
+          Stage 2 (Look In) was skipped automatically: {{ reason }}.
+          Your reflective record did not have enough recurring tensions
+          or thematic shifts to support a juxtaposition. This is
+          recorded for the research; it is not a judgement on your
+          reflection.
+          {% endblocktrans %}
+        </span>
+      </div>
+    {% endif %}
+
     {% if can_respond %}
-      <form method="post" action="{% url 'epilogue:dialogue' %}" class="mb-6">
+      <form method="post" action="{% url 'epilogue:dialogue' %}" class="mb-4">
         {% csrf_token %}
         <textarea name="message" rows="3" required
                   class="textarea textarea-bordered w-full"
@@ -71,19 +91,29 @@
           <button type="submit" class="btn btn-primary">{% trans "Send" %}</button>
         </div>
       </form>
-    {% else %}
-      <div class="alert mb-6 text-sm">
+    {% elif current_stage == 1 or current_stage == 2 %}
+      <div class="alert mb-4 text-sm">
         <span>{% trans "You have reached the end of this reflective exchange. When you are ready, continue below." %}</span>
       </div>
     {% endif %}
 
-    <form method="post" action="{% url 'epilogue:complete' %}"
-          class="flex justify-end gap-3 border-t border-base-300 pt-4">
-      {% csrf_token %}
-      <button type="submit" class="btn btn-ghost">
-        {% trans "Finish the Epilogue" %}
-      </button>
-    </form>
+    <div class="flex flex-wrap justify-end items-center gap-3 border-t border-base-300 pt-4">
+      {% if can_advance and next_stage_label %}
+        <form method="post" action="{% url 'epilogue:dialogue_advance' %}" class="inline">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-primary">
+            {{ next_stage_label }}
+          </button>
+        </form>
+      {% endif %}
+      <form method="post" action="{% url 'epilogue:complete' %}" class="inline">
+        {% csrf_token %}
+        <button type="submit"
+                class="{% if can_advance %}btn btn-ghost{% else %}btn btn-primary btn-lg{% endif %}">
+          {% trans "Finish the Epilogue" %}
+        </button>
+      </form>
+    </div>
 
   {% endif %}
 

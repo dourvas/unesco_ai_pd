@@ -16,9 +16,9 @@ grounded in Korthagen's ALACT reflection model:
   Stage 2 — Look In       (ALACT: Awareness of essential aspects)
   Stage 3 — Look Forward  (ALACT: Creating alternatives + Trial)
 
-G.2a implements Stage 1. Stages 2 and 3 land in G.2b / G.2c; the agent
-raises ValueError for an unimplemented stage so a mis-wire is caught
-loudly rather than producing an off-spec turn.
+G.2a implements Stage 1; G.2b adds Stage 2. Stage 3 lands in G.2c; the
+agent raises ValueError for an unimplemented stage so a mis-wire is
+caught loudly rather than producing an off-spec turn.
 
 Stance — non-negotiable (design proposal v2 section 6.2 / review B.1):
 the agent is descriptive, never evaluative. It does not grade, praise,
@@ -175,6 +175,69 @@ _STAGE_BRIEF = {
             },
         ],
     },
+    2: {
+        'name': 'Look In',
+        'purpose': (
+            'Help the teacher notice and name something in their own '
+            'data — bringing two of their own data points together '
+            'neutrally and letting them interpret what it means. ALACT '
+            "'Awareness of essential aspects', where the awareness is "
+            "the teacher's, not yours."
+        ),
+        'opening': (
+            'This is the opening of the Look In phase. Present the '
+            'juxtaposition above ONLY as two of the teacher\'s own '
+            'data points sitting beside each other — name the modules '
+            'and the positions or themes plainly. Do NOT call it a '
+            'contradiction, a tension, a shift, an evolution, a '
+            'change, or any interpretive label. Do NOT suggest what '
+            'it means or why it might have happened. End with one '
+            'open question that invites the teacher to make their own '
+            'sense of the two data points being there together.'
+        ),
+        'continuing': (
+            'Continue the Look In dialogue. Respond directly to what '
+            'the teacher said about the juxtaposition; especially '
+            'when they label it (contradiction / evolution / context '
+            '/ change of mind / whatever they call it), stay with '
+            'their label rather than imposing your own. Vary how you '
+            "open. Deepen the teacher's own reflection with one open "
+            'question. Do not evaluate, praise, or summarise '
+            'prematurely.'
+        ),
+        'opening_example': (
+            'Two of your own moments sit next to each other here. In '
+            'M3, on the tension between AI assistance and pedagogical '
+            'control, you placed yourself at strongly left. In M11, on '
+            'the same tension, leaning right. The data simply notes '
+            'that those are both yours. What do you make of the two '
+            'of them being there together?'
+        ),
+        'continuing_examples': [
+            {
+                'teacher': (
+                    "I think by M11 I just trusted the AI more — "
+                    "that's all."
+                ),
+                'reply': (
+                    "Stay with that 'just' for a moment. When you "
+                    "say 'just', is that simpler than what was going "
+                    'on, or does it feel like the most honest word?'
+                ),
+            },
+            {
+                'teacher': (
+                    "It doesn't surprise me. The middle modules are "
+                    'when I started actually trying things.'
+                ),
+                'reply': (
+                    'A change anchored to a moment, then — when you '
+                    'started trying things. What were you trying that '
+                    'the earlier modules had not asked for?'
+                ),
+            },
+        ],
+    },
 }
 
 
@@ -195,12 +258,14 @@ class EpilogueDialogueAgent(ResearchInstrumentAgent):
         stage0_summary: str,
         history: Optional[list[dict]] = None,
         prior_stages: str = '',
+        juxtaposition: Optional[str] = None,
     ) -> Optional[str]:
         """Produce the assistant's next dialogue turn.
 
         Args:
-            stage: dialogue phase (1 = Look Back). Stages 2 / 3 land in
-                G.2b / G.2c — an unimplemented stage raises ValueError.
+            stage: dialogue phase (1 = Look Back, 2 = Look In).
+                Stage 3 lands in G.2c — an unimplemented stage raises
+                ValueError.
             stage0_summary: a compact text summary of the frozen Stage 0
                 snapshot — the descriptive evidence the dialogue draws on.
             history: the current phase's turns so far, as
@@ -208,6 +273,12 @@ class EpilogueDialogueAgent(ResearchInstrumentAgent):
                 Empty / None for the opening turn of a phase.
             prior_stages: a one to two sentence carry-forward of what
                 earlier phases concluded. Empty for Stage 1.
+            juxtaposition: the pre-computed juxtaposition material for
+                Stage 2's opening turn (a neutral text statement of two
+                of the teacher's own data points sitting beside each
+                other). Used only at Stage 2 opening; ignored on
+                continuing turns (the data is already in the history
+                via the opening turn).
 
         Returns the turn text, or None on any AI-side failure — the
         caller surfaces a graceful retry (design proposal v2 section
@@ -219,12 +290,13 @@ class EpilogueDialogueAgent(ResearchInstrumentAgent):
         if brief is None:
             raise ValueError(
                 f'EpilogueDialogueAgent: stage {stage} is not implemented. '
-                'G.2a implements Stage 1 (Look Back); Stages 2 and 3 land '
-                'in G.2b / G.2c.'
+                'G.2a implements Stage 1 (Look Back); G.2b adds Stage 2 '
+                '(Look In); Stage 3 lands in G.2c.'
             )
 
         prompt = self._build_prompt(
             brief, stage0_summary, history or [], prior_stages,
+            juxtaposition,
         )
 
         client = get_llm_client()
@@ -277,10 +349,12 @@ class EpilogueDialogueAgent(ResearchInstrumentAgent):
         stage0_summary: str,
         history: list[dict],
         prior_stages: str,
+        juxtaposition: Optional[str] = None,
     ) -> str:
         """Assemble the turn prompt (design proposal v2 section 6.3):
         system stance, the frozen Stage 0 summary, the prior-stage
-        carry-forward, the current-phase history, and the per-turn task.
+        carry-forward, the optional Stage 2 juxtaposition, the
+        current-phase history, and the per-turn task.
         """
         parts = [_SYSTEM_PROMPT, '']
         parts.append(f'CURRENT PHASE: {brief["name"]}.')
@@ -298,6 +372,19 @@ class EpilogueDialogueAgent(ResearchInstrumentAgent):
         if prior_stages.strip():
             parts.append('')
             parts.append(f'EARLIER IN THIS EPILOGUE: {prior_stages.strip()}')
+
+        # Stage 2 only: include the juxtaposition material at the
+        # opening turn (no history yet). Continuing turns already have
+        # the data in the history via the opening turn.
+        if juxtaposition and not history:
+            parts.append('')
+            parts.append(
+                'THE JUXTAPOSITION TO SURFACE (neutral data; do not '
+                'label it a contradiction, tension, or shift, and do '
+                'not suggest what it means — present the data, then '
+                'ask the teacher to make their own sense of it):'
+            )
+            parts.append(juxtaposition.strip())
 
         parts.append('')
         if history:
