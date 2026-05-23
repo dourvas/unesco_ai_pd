@@ -16,9 +16,10 @@ grounded in Korthagen's ALACT reflection model:
   Stage 2 — Look In       (ALACT: Awareness of essential aspects)
   Stage 3 — Look Forward  (ALACT: Creating alternatives + Trial)
 
-G.2a implements Stage 1; G.2b adds Stage 2. Stage 3 lands in G.2c; the
-agent raises ValueError for an unimplemented stage so a mis-wire is
-caught loudly rather than producing an off-spec turn.
+G.2a implements Stage 1; G.2b adds Stage 2; G.2c completes the trio
+with Stage 3 (Look Forward). The agent raises ValueError for any
+unimplemented stage so a mis-wire is caught loudly rather than
+producing an off-spec turn.
 
 Stance — non-negotiable (design proposal v2 section 6.2 / review B.1):
 the agent is descriptive, never evaluative. It does not grade, praise,
@@ -175,6 +176,67 @@ _STAGE_BRIEF = {
             },
         ],
     },
+    3: {
+        'name': 'Look Forward',
+        'purpose': (
+            'Help the teacher articulate one concrete, near-term step '
+            'they will take in their classroom — something small, '
+            'specific, and rooted in what they reflected on. ALACT '
+            "'Creating alternative methods of action + Trial', where "
+            'the action is the teacher\'s own choice.'
+        ),
+        'opening': (
+            'This is the opening of the Look Forward phase. Drawing on '
+            'the journey summary and what the teacher said in earlier '
+            'phases (see EARLIER IN THIS EPILOGUE above, if present), '
+            'invite them to name one concrete, near-term action in '
+            'their classroom — something small enough to actually try '
+            'next week with particular students, not a general '
+            'resolution. Do NOT suggest what they should do; ask '
+            'them. End with one open question.'
+        ),
+        'continuing': (
+            'Continue the Look Forward dialogue. Respond directly to '
+            'what the teacher has proposed; help them make it more '
+            'concrete — when, with which class, what would they '
+            'notice — without prescribing the answer. Vary how you '
+            'open. Stay descriptive. One open question.'
+        ),
+        'opening_example': (
+            'Across everything you have looked at — the themes that '
+            'moved through your writing, the moments you named — what '
+            'is one specific thing you will try in your classroom '
+            'this week or next? Not a resolution: something you could '
+            'actually do on a particular day, with particular students.'
+        ),
+        'continuing_examples': [
+            {
+                'teacher': (
+                    'I would like to start asking students to rewrite '
+                    "the AI's first answer in their own words before "
+                    'we discuss it.'
+                ),
+                'reply': (
+                    'A concrete move, then — the rewrite step. In '
+                    'which lesson next week could you try this first, '
+                    'and what would tell you whether it worked?'
+                ),
+            },
+            {
+                'teacher': (
+                    'I think I want to be more careful about when I '
+                    'show students what the AI gave me. Sometimes I '
+                    'show too early.'
+                ),
+                'reply': (
+                    "'Show too early' — that is a specific moment to "
+                    'change. Picture one lesson where you would '
+                    'normally have shown early: what would you do '
+                    'instead?'
+                ),
+            },
+        ],
+    },
     2: {
         'name': 'Look In',
         'purpose': (
@@ -291,7 +353,7 @@ class EpilogueDialogueAgent(ResearchInstrumentAgent):
             raise ValueError(
                 f'EpilogueDialogueAgent: stage {stage} is not implemented. '
                 'G.2a implements Stage 1 (Look Back); G.2b adds Stage 2 '
-                '(Look In); Stage 3 lands in G.2c.'
+                '(Look In); G.2c adds Stage 3 (Look Forward).'
             )
 
         prompt = self._build_prompt(

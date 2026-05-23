@@ -862,3 +862,149 @@ class Stage2DialogueTest(EpilogueViewBase):
                   and t.get('role') in ('assistant', 'teacher')]
         roles = [t['role'] for t in stage2]
         self.assertEqual(roles, ['assistant', 'teacher', 'assistant'])
+
+
+# ============================================================================
+# Phase G G.2c - Stage 3 (Look Forward) + dialogue completion
+# ============================================================================
+
+
+class Stage3DialogueTest(EpilogueViewBase):
+    """Stage 2 -> Stage 3 transition, Stage 3 dialogue, and completion
+    marking the right stage timestamps."""
+
+    def _completion(self, **kwargs):
+        defaults = {'stage0_snapshot': _SNAPSHOT, 'dialogue_entered': True}
+        defaults.update(kwargs)
+        return EpilogueCompletion.objects.create(user=self.user, **defaults)
+
+    def test_summarise_prior_stages_for_stage3(self):
+        from apps.epilogue.services_stage0 import (
+            summarise_prior_stages_for_stage3,
+        )
+        turns = [
+            {'stage': 1, 'role': 'assistant', 'content': 'opening'},
+            {'stage': 1, 'role': 'teacher', 'content': 'first thought'},
+            {'stage': 1, 'role': 'teacher', 'content': 'last stage1 thought'},
+            {'stage': 2, 'role': 'assistant', 'content': 'juxtaposition'},
+            {'stage': 2, 'role': 'teacher', 'content': 'stage2 reply'},
+        ]
+        text = summarise_prior_stages_for_stage3(turns)
+        self.assertIn('Stage 1', text)
+        self.assertIn('last stage1 thought', text)
+        self.assertIn('Stage 2', text)
+        self.assertIn('stage2 reply', text)
+        # Earlier stage-1 message is overwritten by the last one.
+        self.assertNotIn('first thought', text)
+
+    def test_summarise_prior_stages_handles_skipped_stage2(self):
+        """Stage 2 skip records have role='system' and must not be
+        treated as teacher messages in the prior-stages summary."""
+        from apps.epilogue.services_stage0 import (
+            summarise_prior_stages_for_stage3,
+        )
+        turns = [
+            {'stage': 1, 'role': 'teacher', 'content': 'a stage1 reply'},
+            {'stage': 2, 'role': 'system', 'event': 'stage2_skipped',
+             'reason': 'insufficient_juxtaposition_material'},
+        ]
+        text = summarise_prior_stages_for_stage3(turns)
+        self.assertIn('a stage1 reply', text)
+        self.assertNotIn('Stage 2', text)
+
+    def test_advance_from_stage2_to_stage3_generates_opening(self):
+        self._completion(
+            stage1_completed_at=timezone.now(),
+            dialogue_turns=[
+                {'stage': 2, 'role': 'assistant', 'content': 'juxtaposition',
+                 'model': 'gemini-2.5-flash', 'generated_at': 'x'},
+                {'stage': 2, 'role': 'teacher', 'content': 'my take',
+                 'generated_at': 'x'},
+            ],
+        )
+        with patch('apps.agents.epilogue_dialogue.get_llm_client',
+                   return_value=_mock_gemini(
+                       'Across everything you have looked at, what is '
+                       'one specific thing you will try?')):
+            resp = self.client.post(reverse('epilogue:dialogue_advance'))
+        self.assertEqual(resp.status_code, 302)
+        row = EpilogueCompletion.objects.get(user=self.user)
+        self.assertIsNotNone(row.stage2_completed_at)
+        self.assertIsNone(row.stage3_completed_at)
+        stage3 = [t for t in row.dialogue_turns
+                  if t.get('stage') == 3
+                  and t.get('role') == 'assistant']
+        self.assertEqual(len(stage3), 1)
+
+    def test_advance_from_stage3_with_no_turns_enters_stage3(self):
+        """After Stage 2 auto-skip, current_stage=3 with no Stage 3
+        turns. Clicking 'Continue to Look Forward' enters Stage 3."""
+        self._completion(
+            stage1_completed_at=timezone.now(),
+            stage2_completed_at=timezone.now(),
+            dialogue_turns=[
+                {'stage': 1, 'role': 'teacher', 'content': 'a stage1 reply',
+                 'generated_at': 'x'},
+                {'stage': 2, 'role': 'system', 'event': 'stage2_skipped',
+                 'reason': 'insufficient_juxtaposition_material',
+                 'generated_at': 'x'},
+            ],
+        )
+        with patch('apps.agents.epilogue_dialogue.get_llm_client',
+                   return_value=_mock_gemini('Stage 3 opening.')):
+            resp = self.client.post(reverse('epilogue:dialogue_advance'))
+        self.assertEqual(resp.status_code, 302)
+        row = EpilogueCompletion.objects.get(user=self.user)
+        stage3 = [t for t in row.dialogue_turns
+                  if t.get('stage') == 3
+                  and t.get('role') == 'assistant']
+        self.assertEqual(len(stage3), 1)
+
+    def test_handle_dialogue_turn_in_stage3(self):
+        self._completion(
+            stage1_completed_at=timezone.now(),
+            stage2_completed_at=timezone.now(),
+            dialogue_turns=[
+                {'stage': 3, 'role': 'assistant', 'content': 'opening 3',
+                 'model': 'gemini-2.5-flash', 'generated_at': 'x'},
+            ],
+        )
+        with patch('apps.agents.epilogue_dialogue.get_llm_client',
+                   return_value=_mock_gemini('A Stage 3 reply.')):
+            resp = self.client.post(
+                reverse('epilogue:dialogue'),
+                {'message': 'I will rewrite the AI output on Monday.'},
+            )
+        self.assertEqual(resp.status_code, 302)
+        row = EpilogueCompletion.objects.get(user=self.user)
+        stage3 = [t for t in row.dialogue_turns
+                  if t.get('stage') == 3
+                  and t.get('role') in ('assistant', 'teacher')]
+        roles = [t['role'] for t in stage3]
+        self.assertEqual(roles, ['assistant', 'teacher', 'assistant'])
+
+    def test_complete_marks_stage2_when_in_stage2(self):
+        self._completion(
+            stage1_completed_at=timezone.now(),
+            dialogue_turns=[
+                {'stage': 2, 'role': 'assistant', 'content': 'opening',
+                 'model': 'gemini-2.5-flash', 'generated_at': 'x'},
+            ],
+        )
+        self.client.post(reverse('epilogue:complete'))
+        row = EpilogueCompletion.objects.get(user=self.user)
+        self.assertIsNotNone(row.stage2_completed_at)
+        self.assertIsNone(row.stage3_completed_at)
+
+    def test_complete_marks_stage3_when_in_stage3(self):
+        self._completion(
+            stage1_completed_at=timezone.now(),
+            stage2_completed_at=timezone.now(),
+            dialogue_turns=[
+                {'stage': 3, 'role': 'assistant', 'content': 'opening',
+                 'model': 'gemini-2.5-flash', 'generated_at': 'x'},
+            ],
+        )
+        self.client.post(reverse('epilogue:complete'))
+        row = EpilogueCompletion.objects.get(user=self.user)
+        self.assertIsNotNone(row.stage3_completed_at)

@@ -36,6 +36,7 @@ from apps.epilogue.services_stage0 import (
     format_juxtaposition_for_prompt,
     pick_juxtaposition_for_stage2,
     should_skip_stage2,
+    summarise_prior_stages_for_stage3,
     summarise_stage0_for_dialogue,
 )
 
@@ -56,14 +57,13 @@ def _current_stage(completion):
       0          - not started (dialogue_entered is False)
       1          - in Stage 1 (Look Back)
       2          - in Stage 2 (Look In)
-      'finished' - all implemented dialogue stages past
-
-    Stage 3 (Look Forward) lands in G.2c; until then, stage2_completed_at
-    set marks the dialogue as 'finished' (the teacher is now ready to
-    submit the Epilogue and route to T2).
+      3          - in Stage 3 (Look Forward)
+      'finished' - all three dialogue stages past
     """
-    if completion.stage2_completed_at is not None:
+    if completion.stage3_completed_at is not None:
         return 'finished'
+    if completion.stage2_completed_at is not None:
+        return 3
     if completion.stage1_completed_at is not None:
         return 2
     if completion.dialogue_entered:
@@ -163,7 +163,7 @@ def epilogue_dialogue_view(request):
     # are excluded; the skip note is surfaced separately for the
     # template.
     if current_stage == 'finished':
-        max_stage_visible = 2
+        max_stage_visible = 3
     elif isinstance(current_stage, int):
         max_stage_visible = current_stage
     else:
@@ -183,25 +183,39 @@ def epilogue_dialogue_view(request):
             stage2_skip_record = t
             break
     can_respond = (
-        current_stage in (1, 2)
+        current_stage in (1, 2, 3)
         and teacher_turns_in_current < EPILOGUE_DIALOGUE_TURN_CEILING
     )
-    # Stage 1 -> Stage 2 advance is available once the teacher has
-    # answered the opening at least once. Stage 2 -> Stage 3 is G.2c;
-    # for now Stage 2 has no advance, only finish.
-    can_advance_from_stage1 = (
-        current_stage == 1 and teacher_turns_in_current >= 1
+    # Advance buttons (G.2c):
+    #   Stage 1 -> Stage 2: available once teacher has 1+ Stage 1 reply.
+    #   Stage 2 -> Stage 3: available once teacher has 1+ Stage 2 reply.
+    #   Stage 3 (no turns yet, after Stage 2 auto-skip): "Continue to
+    #     Look Forward" button enters Stage 3.
+    #   Stage 3 (with turns): no advance, only finish.
+    has_stage3_turns = any(
+        t.get('stage') == 3 and t.get('role') in ('assistant', 'teacher')
+        for t in completion.dialogue_turns
     )
+    if current_stage == 1 and teacher_turns_in_current >= 1:
+        can_advance = True
+        next_stage_label = 'Continue to Look In'
+    elif current_stage == 2 and teacher_turns_in_current >= 1:
+        can_advance = True
+        next_stage_label = 'Continue to Look Forward'
+    elif current_stage == 3 and not has_stage3_turns:
+        can_advance = True
+        next_stage_label = 'Continue to Look Forward'
+    else:
+        can_advance = False
+        next_stage_label = None
     return render(request, 'epilogue/dialogue.html', {
         'completion': completion,
         'snapshot': completion.stage0_snapshot,
         'turns': visible_turns,
         'current_stage': current_stage,
         'can_respond': can_respond,
-        'can_advance': can_advance_from_stage1,
-        'next_stage_label': (
-            'Continue to Look In' if can_advance_from_stage1 else None
-        ),
+        'can_advance': can_advance,
+        'next_stage_label': next_stage_label,
         'stage2_skip_record': stage2_skip_record,
         'turns_remaining': max(
             0, EPILOGUE_DIALOGUE_TURN_CEILING - teacher_turns_in_current,
@@ -262,7 +276,7 @@ def _handle_dialogue_turn(request, completion):
             pk=completion.pk,
         )
         stage = _current_stage(locked)
-        if stage not in (1, 2):
+        if stage not in (1, 2, 3):
             # Not in an active dialogue stage; nothing to handle.
             return redirect('epilogue:dialogue')
         stage_turns = [
@@ -309,17 +323,20 @@ def _handle_dialogue_turn(request, completion):
 def _advance_dialogue(completion):
     """Advance the dialogue to the next stage.
 
-    For G.2b: from Stage 1 -> Stage 2 (or skip per design proposal v2
-    section 6.4). From Stage 2 there is no Stage 3 yet (G.2c); the
-    template routes from Stage 2 / 'finished' to /complete directly.
+    G.2c: stage 1 -> stage 2 (or skip per section 6.4); stage 2 -> stage 3;
+    stage 3 (no turns yet, e.g. after Stage 2 auto-skip) -> enter Stage 3.
+    Stage 3 with turns has no advance — the "Finish the Epilogue" form
+    routes to /complete instead.
 
-    Returns (success, error_message) - error_message is non-None only
-    when the transition could not happen (e.g. Stage 2 opening Gemini
-    failure) and the caller surfaces a retry.
+    Returns (success, error_message). error_message is non-None only
+    when the transition could not happen (e.g. Gemini failure) and the
+    caller surfaces a retry.
     """
     stage = _current_stage(completion)
     if stage == 1:
         return _advance_to_stage2(completion)
+    if stage == 2 or stage == 3:
+        return _advance_to_stage3(completion)
     return False, None
 
 
@@ -401,6 +418,54 @@ def _advance_to_stage2(completion):
     return True, None
 
 
+def _advance_to_stage3(completion):
+    """Enter Stage 3 (Look Forward). Marks stage2_completed_at if not
+    already set, then generates the Stage 3 opening turn. Idempotent:
+    if a Stage 3 turn already exists, no-op success.
+
+    Stage 3 has no skip threshold — once reached, it always runs. The
+    prior_stages kwarg carries the teacher's last messages from
+    Stages 1 and 2 so the agent has their own framing to build on
+    (design proposal v2 section 6.3).
+    """
+    has_stage3 = any(
+        t.get('stage') == 3 for t in completion.dialogue_turns
+    )
+    if has_stage3:
+        return True, None
+
+    now_dt = timezone.now()
+    now_iso = now_dt.isoformat()
+    snapshot = completion.stage0_snapshot or {}
+    summary = summarise_stage0_for_dialogue(snapshot)
+    prior = summarise_prior_stages_for_stage3(completion.dialogue_turns)
+    opening = EpilogueDialogueAgent().extract(
+        stage=3,
+        stage0_summary=summary,
+        history=[],
+        prior_stages=prior,
+    )
+    if opening is None:
+        return False, (
+            'The reflective assistant could not start the next stage '
+            'just now. Please try again.'
+        )
+
+    completion.dialogue_turns = list(completion.dialogue_turns) + [{
+        'stage': 3,
+        'role': 'assistant',
+        'content': opening,
+        'model': EpilogueDialogueAgent.model_name,
+        'generated_at': now_iso,
+    }]
+    fields = ['dialogue_turns']
+    if completion.stage2_completed_at is None:
+        completion.stage2_completed_at = now_dt
+        fields.append('stage2_completed_at')
+    completion.save(update_fields=fields)
+    return True, None
+
+
 @login_required
 @require_POST
 def epilogue_dialogue_advance_view(request):
@@ -467,13 +532,23 @@ def epilogue_complete_view(request):
         if completion.completed_at is None:
             completion.completed_at = timezone.now()
             update_fields.append('completed_at')
-        # G.2a: finishing the Epilogue from within the dialogue marks
-        # the Stage 1 (Look Back) phase complete, for the research
-        # record (design proposal v2 section 13). A user who skipped
-        # the dialogue has dialogue_entered False and no stage timestamp.
-        if completion.dialogue_entered and completion.stage1_completed_at is None:
-            completion.stage1_completed_at = timezone.now()
-            update_fields.append('stage1_completed_at')
+        # G.2a/b/c: finishing the Epilogue from within the dialogue
+        # marks whichever stage the teacher is currently in as
+        # complete, for the research record (design proposal v2
+        # section 13). A user who skipped the dialogue has
+        # dialogue_entered False and no stage timestamp is touched.
+        if completion.dialogue_entered:
+            stage = _current_stage(completion)
+            stage_now = timezone.now()
+            if stage == 1 and completion.stage1_completed_at is None:
+                completion.stage1_completed_at = stage_now
+                update_fields.append('stage1_completed_at')
+            elif stage == 2 and completion.stage2_completed_at is None:
+                completion.stage2_completed_at = stage_now
+                update_fields.append('stage2_completed_at')
+            elif stage == 3 and completion.stage3_completed_at is None:
+                completion.stage3_completed_at = stage_now
+                update_fields.append('stage3_completed_at')
         if update_fields:
             completion.save(update_fields=update_fields)
 

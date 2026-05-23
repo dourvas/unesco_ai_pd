@@ -12,6 +12,8 @@
       <p class="text-lg text-base-content/80">{% trans "Stage 1 — Look Back" %}</p>
     {% elif current_stage == 2 %}
       <p class="text-lg text-base-content/80">{% trans "Stage 2 — Look In" %}</p>
+    {% elif current_stage == 3 %}
+      <p class="text-lg text-base-content/80">{% trans "Stage 3 — Look Forward" %}</p>
     {% elif current_stage == 'finished' %}
       <p class="text-lg text-base-content/80">{% trans "Reflective dialogue complete" %}</p>
     {% endif %}
@@ -91,7 +93,7 @@
           <button type="submit" class="btn btn-primary">{% trans "Send" %}</button>
         </div>
       </form>
-    {% elif current_stage == 1 or current_stage == 2 %}
+    {% elif current_stage == 1 or current_stage == 2 or current_stage == 3 %}
       <div class="alert mb-4 text-sm">
         <span>{% trans "You have reached the end of this reflective exchange. When you are ready, continue below." %}</span>
       </div>

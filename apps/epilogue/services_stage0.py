@@ -238,6 +238,36 @@ def should_skip_stage2(snapshot: dict) -> bool:
     )
 
 
+def summarise_prior_stages_for_stage3(dialogue_turns: list) -> str:
+    """Produce a one to two sentence carry-forward of what Stages 1
+    and 2 concluded, for Stage 3's prior_stages prompt kwarg
+    (design proposal v2 section 6.3).
+
+    Takes the last teacher message in each of Stages 1 and 2 (if any
+    teacher messages exist there) and renders them verbatim so the
+    Stage 3 agent has the teacher's own framing to build on.
+    """
+    last_teacher = {1: '', 2: ''}
+    for turn in dialogue_turns or []:
+        if turn.get('role') != 'teacher':
+            continue
+        s = turn.get('stage')
+        if s in last_teacher:
+            last_teacher[s] = (turn.get('content') or '').strip()
+    parts = []
+    if last_teacher[1]:
+        parts.append(
+            f'In Stage 1 (Look Back) the teacher said: '
+            f'"{last_teacher[1]}"'
+        )
+    if last_teacher[2]:
+        parts.append(
+            f'In Stage 2 (Look In) the teacher said: '
+            f'"{last_teacher[2]}"'
+        )
+    return ' '.join(parts)
+
+
 def format_juxtaposition_for_prompt(juxtaposition: dict) -> str:
     """Render the picked juxtaposition into a neutral text statement
     for the Stage 2 opening prompt. Names the data points only; never
