@@ -236,6 +236,58 @@ class EpilogueDialoguePromptTest(SimpleTestCase):
             kw['max_output_tokens'], EPILOGUE_DIALOGUE_MAX_OUTPUT_TOKENS,
         )
 
+    def test_persona_guards_present(self):
+        """The v2 §23 Aletheia persona enforcement adds four
+        anti-anthropomorphisation rules to the system prompt:
+
+          1. No self-naming as "Aletheia" inside the dialogue.
+          2. No first-person language anywhere — emotional, cognitive,
+             or perceptual variants all forbidden.
+          3. No in-dialogue AI / model / system / chatbot self-reference.
+          4. Prefer impersonal phrasing, with a concrete example
+             showing the positive form ("a thread runs through what
+             you said") versus the forbidden form ("I notice a
+             thread").
+
+        See PHASE_G_EPILOGUE_DESIGN_PROPOSAL_v2 §23.2 for the design
+        rationale. The four guards are *additive* to the existing
+        descriptive-non-evaluative stance — the §23.6 layer-2
+        regression check guards against drift on the prior stance.
+        """
+        mock, captured = _capture_client()
+        with patch('apps.agents.epilogue_dialogue.get_llm_client',
+                   return_value=mock):
+            EpilogueDialogueAgent().extract(
+                stage=1, stage0_summary=_SUMMARY, history=[],
+            )
+        prompt = captured['prompt']
+        # Guard 1: no self-naming.
+        self.assertIn('do NOT introduce, name, or refer to', prompt)
+        self.assertIn('by that name in the conversation', prompt)
+        # Guard 2: no first-person, covering all three families.
+        self.assertIn('Do not begin replies with "I"', prompt)
+        self.assertIn('avoid first-person language anywhere', prompt)
+        self.assertIn('emotional', prompt)
+        self.assertIn('cognitive', prompt)
+        self.assertIn('perceptual', prompt)
+        # Concrete first-person examples named in the prompt so the
+        # model has explicit targets to avoid.
+        self.assertIn('"I feel"', prompt)
+        self.assertIn('"I notice"', prompt)
+        self.assertIn('"I see"', prompt)
+        # Guard 3: no in-dialogue AI self-reference.
+        self.assertIn('Do not refer to being an AI', prompt)
+        self.assertIn('model, a system, an assistant, or a chatbot', prompt)
+        # Guard 4: positive contrastive example — impersonal vs
+        # self-reference — anchors the positive form for the model
+        # to mimic.
+        self.assertIn('a thread runs through what you said', prompt)
+        self.assertIn('"I notice a thread"', prompt)
+        # Existing descriptive-non-evaluative stance is preserved
+        # (this prompt addition is append, not replace — §23.1).
+        self.assertIn('never judge, grade, praise', prompt)
+        self.assertIn('never open a reply by appraising', prompt)
+
 
 class EpilogueDialogueExtractTest(TestCase):
 
