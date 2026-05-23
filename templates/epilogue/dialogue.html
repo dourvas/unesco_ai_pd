@@ -1,0 +1,91 @@
+{% extends 'base.html' %}
+{% load i18n %}
+
+{% block title %}{% trans "PROODOS Epilogue — Look Back" %}{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto py-10 px-4">
+
+  <header class="mb-6">
+    <h1 class="text-2xl font-bold text-primary mb-1">{% trans "PROODOS Epilogue" %}</h1>
+    <p class="text-lg text-base-content/80">{% trans "Stage 1 — Look Back" %}</p>
+  </header>
+
+  {% comment %}
+  EU AI Act Article 50(1) transparency notice — the teacher is told
+  they are interacting with an AI system (design proposal v2 6.5).
+  {% endcomment %}
+  <div class="alert alert-info mb-6 text-sm">
+    <span>
+      {% trans "This is a reflective dialogue with an AI system (Google Gemini). It is here to help you look back at your own work — it does not assess, grade, or score you. You may end it whenever you wish." %}
+    </span>
+  </div>
+
+  {% comment %}
+  Q2 (cognitive load / split-attention): the Stage 0 dashboard stays
+  available as a collapsible side panel through the dialogue so the
+  teacher can keep the referenced data in view.
+  {% endcomment %}
+  <div class="collapse collapse-arrow border border-base-300 mb-6">
+    <input type="checkbox" />
+    <div class="collapse-title font-medium">
+      {% trans "Your Personal Evolution (Stage 0 data)" %}
+    </div>
+    <div class="collapse-content">
+      {% include 'epilogue/_stage0_panel.html' with snapshot=snapshot %}
+    </div>
+  </div>
+
+  {% if dialogue_error %}
+
+    <div class="alert alert-warning mb-4">
+      <span>{% trans "The reflective dialogue could not start just now. Please reload the page to try again." %}</span>
+    </div>
+    <a href="{% url 'epilogue:dialogue' %}" class="btn btn-primary">
+      {% trans "Try again" %}
+    </a>
+
+  {% else %}
+
+    <div class="space-y-3 mb-6">
+      {% for turn in turns %}
+        {% if turn.role == 'teacher' %}
+          <div class="chat chat-end">
+            <div class="chat-bubble chat-bubble-primary">{{ turn.content }}</div>
+          </div>
+        {% else %}
+          <div class="chat chat-start">
+            <div class="chat-bubble">{{ turn.content }}</div>
+          </div>
+        {% endif %}
+      {% endfor %}
+    </div>
+
+    {% if can_respond %}
+      <form method="post" action="{% url 'epilogue:dialogue' %}" class="mb-6">
+        {% csrf_token %}
+        <textarea name="message" rows="3" required
+                  class="textarea textarea-bordered w-full"
+                  placeholder="{% trans 'Write your response…' %}"></textarea>
+        <div class="flex justify-end mt-2">
+          <button type="submit" class="btn btn-primary">{% trans "Send" %}</button>
+        </div>
+      </form>
+    {% else %}
+      <div class="alert mb-6 text-sm">
+        <span>{% trans "You have reached the end of this reflective exchange. When you are ready, continue below." %}</span>
+      </div>
+    {% endif %}
+
+    <form method="post" action="{% url 'epilogue:complete' %}"
+          class="flex justify-end gap-3 border-t border-base-300 pt-4">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-ghost">
+        {% trans "Finish the Epilogue" %}
+      </button>
+    </form>
+
+  {% endif %}
+
+</div>
+{% endblock %}

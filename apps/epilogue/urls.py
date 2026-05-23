@@ -9,5 +9,6 @@ app_name = 'epilogue'
 
 urlpatterns = [
     path('',          views.epilogue_placeholder_view, name='placeholder'),
+    path('dialogue/', views.epilogue_dialogue_view,    name='dialogue'),
     path('complete/', views.epilogue_complete_view,    name='complete'),
 ]

@@ -4,11 +4,14 @@ Covers the placeholder view, the completion view, and the routing
 helper that connects M15 completion to /epilogue/.
 """
 
+from unittest.mock import MagicMock, patch
+
 from django.contrib.auth.models import User
 from django.test import Client, TestCase
 from django.urls import reverse
 from django.utils import timezone
 
+from apps.agents.shared.llm_client import GenerationResult
 from apps.ailst.models import AilstResponse
 from apps.epilogue.models import EpilogueCompletion
 from apps.epilogue.services import get_post_module_epilogue_redirect_url
@@ -383,3 +386,208 @@ class Stage0SnapshotTest(EpilogueViewBase):
             'A revisit must not recompute the frozen Stage 0 snapshot.',
         )
         self.assertEqual(row.stage0_seen_at, original_seen_at)
+
+
+# ============================================================================
+# Phase G G.2a — Stage 1 (Look Back) reflective dialogue
+# ============================================================================
+
+
+_SNAPSHOT = {
+    'schema': 'epilogue_stage0_v1',
+    'generated_at': '2026-05-21T10:00:00+00:00',
+    'quantitative': {
+        'modules_completed': 12, 'reflections_written': 12,
+        'distinct_tensions': 8, 'tensions_engaged': 4,
+        'dtp_composites': 3, 'dtp_composites_with_shift': 3,
+        'input_modality': {'text': 12, 'voice': 0, 'mixed': 0,
+                           'unspecified': 0},
+    },
+    'theme_evolution': {
+        'grown': [{'theme': 'pedagogical fit', 'count': 2}],
+        'recurring': [{'theme': 'teacher oversight', 'count': 3}],
+        'faded': [],
+    },
+    'narrative_timeline': [
+        {'module': 'M6', 'order': 6, 'narrative': 'A descriptive note.'},
+    ],
+    'rtm_trajectories': [],
+}
+
+
+def _mock_gemini(text):
+    """A mock LLM client whose generate() returns a canned turn, or
+    None to simulate an AI-side failure."""
+    mock = MagicMock()
+    if text is None:
+        mock.generate.return_value = None
+    else:
+        mock.generate.return_value = GenerationResult(
+            text=text, model='gemini-2.5-flash',
+            tokens_estimate=50, cost_eur_estimate=0.0,
+        )
+    return mock
+
+
+class Stage1DialogueTest(EpilogueViewBase):
+    """The Stage 1 (Look Back) dialogue view. The agent's LLM is mocked
+    at apps.agents.epilogue_dialogue.get_llm_client; the base user is
+    staff, so the TD-013 M15 gate bypasses."""
+
+    def _completion(self, **kwargs):
+        defaults = {'stage0_snapshot': _SNAPSHOT}
+        defaults.update(kwargs)
+        return EpilogueCompletion.objects.create(user=self.user, **defaults)
+
+    # --- summarise_stage0_for_dialogue ---
+
+    def test_summary_renders_snapshot(self):
+        from apps.epilogue.services_stage0 import summarise_stage0_for_dialogue
+        text = summarise_stage0_for_dialogue(_SNAPSHOT)
+        self.assertIn('12 modules', text)
+        self.assertIn('teacher oversight', text)
+
+    def test_summary_temporal_direction_is_explicit(self):
+        """Bug fix: 'Themes that receded' was ambiguous about time and
+        Gemini occasionally misread it as 'less prominent early on'.
+        The summary now spells out the early-vs-late direction.
+        """
+        from apps.epilogue.services_stage0 import summarise_stage0_for_dialogue
+        snap = {
+            'quantitative': {'modules_completed': 5, 'reflections_written': 5},
+            'theme_evolution': {
+                'grown': [{'theme': 'pedagogical fit', 'count': 1}],
+                'recurring': [{'theme': 'teacher oversight', 'count': 1}],
+                'faded': [{'theme': 'LLM mechanics', 'count': 1}],
+            },
+            'narrative_timeline': [],
+            'rtm_trajectories': [],
+        }
+        text = summarise_stage0_for_dialogue(snap)
+        self.assertIn('became more prominent later', text)
+        self.assertIn('consistently present throughout', text)
+        self.assertIn('prominent in early modules and faded in later ones',
+                      text)
+
+    def test_summary_empty_snapshot(self):
+        from apps.epilogue.services_stage0 import summarise_stage0_for_dialogue
+        self.assertIn('No reflective data', summarise_stage0_for_dialogue({}))
+
+    # --- dialogue GET ---
+
+    def test_get_redirects_to_stage0_without_snapshot(self):
+        resp = self.client.get(reverse('epilogue:dialogue'))
+        self.assertEqual(resp.status_code, 302)
+        self.assertEqual(resp.url, reverse('epilogue:placeholder'))
+
+    def test_first_get_enters_dialogue_and_generates_opening(self):
+        self._completion()
+        with patch('apps.agents.epilogue_dialogue.get_llm_client',
+                   return_value=_mock_gemini('An opening synthesis. '
+                                             'What stands out to you?')):
+            resp = self.client.get(reverse('epilogue:dialogue'))
+        self.assertEqual(resp.status_code, 200)
+        row = EpilogueCompletion.objects.get(user=self.user)
+        self.assertTrue(row.dialogue_entered)
+        stage1 = [t for t in row.dialogue_turns if t.get('stage') == 1]
+        self.assertEqual(len(stage1), 1)
+        self.assertEqual(stage1[0]['role'], 'assistant')
+
+    def test_get_with_failed_opening_stays_unentered(self):
+        self._completion()
+        with patch('apps.agents.epilogue_dialogue.get_llm_client',
+                   return_value=_mock_gemini(None)):
+            resp = self.client.get(reverse('epilogue:dialogue'))
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, 'could not start')
+        row = EpilogueCompletion.objects.get(user=self.user)
+        self.assertFalse(row.dialogue_entered)
+        self.assertEqual(row.dialogue_turns, [])
+
+    # --- dialogue POST (one teacher message) ---
+
+    def test_post_message_appends_teacher_and_assistant_turns(self):
+        self._completion(
+            dialogue_entered=True,
+            dialogue_turns=[{
+                'stage': 1, 'role': 'assistant', 'content': 'Opening.',
+                'model': 'gemini-2.5-flash',
+                'generated_at': '2026-05-21T10:00:00',
+            }],
+        )
+        with patch('apps.agents.epilogue_dialogue.get_llm_client',
+                   return_value=_mock_gemini('A reflective reply. And you?')):
+            resp = self.client.post(
+                reverse('epilogue:dialogue'),
+                {'message': 'My thinking changed at M6.'},
+            )
+        self.assertEqual(resp.status_code, 302)
+        row = EpilogueCompletion.objects.get(user=self.user)
+        roles = [t['role'] for t in row.dialogue_turns if t.get('stage') == 1]
+        self.assertEqual(roles, ['assistant', 'teacher', 'assistant'])
+
+    def test_post_empty_message_adds_nothing(self):
+        self._completion(dialogue_entered=True, dialogue_turns=[])
+        resp = self.client.post(
+            reverse('epilogue:dialogue'), {'message': '   '},
+        )
+        self.assertEqual(resp.status_code, 302)
+        row = EpilogueCompletion.objects.get(user=self.user)
+        self.assertEqual(row.dialogue_turns, [])
+
+    def test_post_at_turn_ceiling_adds_nothing(self):
+        from apps.agents.epilogue_dialogue import (
+            EPILOGUE_DIALOGUE_TURN_CEILING,
+        )
+        turns = []
+        for i in range(EPILOGUE_DIALOGUE_TURN_CEILING):
+            turns.append({'stage': 1, 'role': 'teacher',
+                          'content': f'msg {i}', 'generated_at': 'x'})
+            turns.append({'stage': 1, 'role': 'assistant',
+                          'content': f'reply {i}', 'generated_at': 'x'})
+        self._completion(dialogue_entered=True, dialogue_turns=turns)
+        with patch('apps.agents.epilogue_dialogue.get_llm_client',
+                   return_value=_mock_gemini('Should not be used.')):
+            resp = self.client.post(
+                reverse('epilogue:dialogue'), {'message': 'one more'},
+            )
+        self.assertEqual(resp.status_code, 302)
+        row = EpilogueCompletion.objects.get(user=self.user)
+        self.assertEqual(len(row.dialogue_turns), len(turns))
+
+    def test_post_with_failed_reply_persists_no_partial_turn(self):
+        self._completion(dialogue_entered=True, dialogue_turns=[])
+        with patch('apps.agents.epilogue_dialogue.get_llm_client',
+                   return_value=_mock_gemini(None)):
+            resp = self.client.post(
+                reverse('epilogue:dialogue'), {'message': 'My message.'},
+            )
+        self.assertEqual(resp.status_code, 302)
+        row = EpilogueCompletion.objects.get(user=self.user)
+        self.assertEqual(
+            row.dialogue_turns, [],
+            'A failed reply must not leave the teacher turn persisted.',
+        )
+
+    # --- completion marks the Stage 1 phase ---
+
+    def test_complete_marks_stage1_when_dialogue_entered(self):
+        self._completion(dialogue_entered=True, dialogue_turns=[])
+        self.client.post(reverse('epilogue:complete'))
+        row = EpilogueCompletion.objects.get(user=self.user)
+        self.assertIsNotNone(row.completed_at)
+        self.assertIsNotNone(row.stage1_completed_at)
+
+    def test_complete_skips_stage1_when_dialogue_not_entered(self):
+        self._completion(dialogue_entered=False)
+        self.client.post(reverse('epilogue:complete'))
+        row = EpilogueCompletion.objects.get(user=self.user)
+        self.assertIsNotNone(row.completed_at)
+        self.assertIsNone(row.stage1_completed_at)
+
+    # --- Stage 0 invites the dialogue ---
+
+    def test_stage0_offers_begin_dialogue_and_skip(self):
+        resp = self.client.get(reverse('epilogue:placeholder'))
+        self.assertContains(resp, 'Begin the reflective dialogue')
+        self.assertContains(resp, 'Continue without the dialogue')

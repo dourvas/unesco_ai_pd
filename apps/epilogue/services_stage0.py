@@ -100,6 +100,71 @@ def build_stage0_snapshot(user) -> dict:
     }
 
 
+def summarise_stage0_for_dialogue(snapshot: dict) -> str:
+    """Render a frozen Stage 0 snapshot into a compact, descriptive text
+    summary for the EpilogueDialogueAgent prompt (design proposal v2
+    section 6.3). Descriptive only — no scores, no evaluation.
+    """
+    if not snapshot:
+        return 'No reflective data is on record for this teacher.'
+
+    lines: list[str] = []
+    q = snapshot.get('quantitative') or {}
+    lines.append(
+        f"The teacher completed {q.get('modules_completed', 0)} modules "
+        f"and wrote {q.get('reflections_written', 0)} reflections."
+    )
+
+    te = snapshot.get('theme_evolution') or {}
+    grown = [i['theme'] for i in te.get('grown') or []]
+    recurring = [i['theme'] for i in te.get('recurring') or []]
+    faded = [i['theme'] for i in te.get('faded') or []]
+    if grown:
+        lines.append(
+            'Themes that became more prominent later in the modules '
+            '(uncommon in early modules, common in later ones): '
+            + ', '.join(grown) + '.'
+        )
+    if recurring:
+        lines.append(
+            'Themes consistently present throughout the modules '
+            '(early to late): '
+            + ', '.join(recurring) + '.'
+        )
+    if faded:
+        lines.append(
+            'Themes that were prominent in early modules and faded in '
+            'later ones (common early, uncommon late): '
+            + ', '.join(faded) + '.'
+        )
+
+    timeline = snapshot.get('narrative_timeline') or []
+    if timeline:
+        lines.append('Module-by-module developmental notes:')
+        for item in timeline:
+            lines.append(f"  {item['module']}: {item['narrative']}")
+
+    trajectories = snapshot.get('rtm_trajectories') or []
+    recurring_tensions = [t for t in trajectories if t.get('recurring')]
+    if recurring_tensions:
+        lines.append('Professional tensions met in several modules:')
+        for t in recurring_tensions:
+            positions = ', '.join(
+                f"{p['module']} {p['position_label']}"
+                for p in t.get('points') or []
+            )
+            lines.append(f"  {t['tension_label']}: {positions}")
+
+    distinct = q.get('distinct_tensions', 0)
+    if distinct:
+        lines.append(
+            f"In total the teacher positioned themselves on {distinct} "
+            'distinct professional tensions.'
+        )
+
+    return '\n'.join(lines)
+
+
 # ----------------------------------------------------------------------
 # DTP composite parsing
 # ----------------------------------------------------------------------

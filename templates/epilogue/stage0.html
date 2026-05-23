@@ -33,16 +33,42 @@
 
   {% include 'epilogue/_stage0_panel.html' with snapshot=snapshot %}
 
-  <form method="post" action="{% url 'epilogue:complete' %}"
-        class="flex justify-end gap-3 mt-10">
-    {% csrf_token %}
-    <a href="{% url 'users:dashboard' %}" class="btn btn-ghost">
-      {% trans "Back to dashboard" %}
-    </a>
-    <button type="submit" class="btn btn-primary btn-lg">
-      {% trans "Continue" %}
-    </button>
-  </form>
+  <div class="mt-10 border-t border-base-300 pt-6">
+    {% if already_completed %}
+      <form method="post" action="{% url 'epilogue:complete' %}"
+            class="flex justify-end gap-3">
+        {% csrf_token %}
+        <a href="{% url 'users:dashboard' %}" class="btn btn-ghost">
+          {% trans "Back to dashboard" %}
+        </a>
+        <button type="submit" class="btn btn-primary btn-lg">
+          {% trans "Continue" %}
+        </button>
+      </form>
+    {% else %}
+      <p class="text-base mb-4">
+        {% blocktrans %}
+        You can now take part in a short reflective dialogue about your
+        journey — an invitation to look back, look in, and look forward.
+        It is not assessed, and you can end it whenever you wish.
+        {% endblocktrans %}
+      </p>
+      <div class="flex flex-wrap justify-end items-center gap-3">
+        <a href="{% url 'users:dashboard' %}" class="btn btn-ghost">
+          {% trans "Back to dashboard" %}
+        </a>
+        <form method="post" action="{% url 'epilogue:complete' %}" class="inline">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-ghost">
+            {% trans "Continue without the dialogue" %}
+          </button>
+        </form>
+        <a href="{% url 'epilogue:dialogue' %}" class="btn btn-primary btn-lg">
+          {% trans "Begin the reflective dialogue" %}
+        </a>
+      </div>
+    {% endif %}
+  </div>
 
 </div>
 {% endblock %}
