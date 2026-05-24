@@ -500,6 +500,79 @@ The risk this TD logs is **contamination of the RAG retrieval corpus across cont
 
 ---
 
+## TD-024 — Local-dev secrets in source + git history before production deploy
+
+**Status:** Acknowledged, **deferred to production-deploy moment** (post-pilot). The repo is currently private + single-developer; production deploy is the natural trigger to harden these.
+**Where:** `config/settings.py` (lines around `SECRET_KEY` and `DATABASES`) + ~30 `ingest_*.py` scripts at repo root + various utility scripts (`add_feedback_rating.py`, `check_table_structure.py`, `embed_seed_reflections.py`, `extract_subject_boxes.py`, `get_m1_content.py`, `batch_ingest_part3_apr2026.py`) + helper handoff docs (`HANDOFF_TO_TIER*_SESSION.md`) + `audits/DEAD_SCHEMA_AUDIT_20260509.md`.
+
+The first GitHub push on 2026-05-24 (155 commits, https://github.com/dourvas/unesco_ai_pd, **private**) surfaced two pre-existing hardcoded local-dev credentials:
+
+- **`Django123!`** — PostgreSQL password for the local `unesco_ai_teacher_pd` database. Used by `localhost` PostgreSQL only; embedded literally in `config/settings.py::DATABASES['default']['PASSWORD']` and in every standalone ingest/utility script that opens a `psycopg2.connect(...)` call directly (i.e. bypasses Django's ORM). Present in every commit from the **Initial baseline** (`6b090fa`, 2026-04-25) onward; 7 history commits modify it.
+- **`SECRET_KEY = 'django-insecure-sx*zgjka*(ev+pi)qw)rj*vz%+z9ex!*6y4j7ope^5icxfp4#u'`** — Django session/CSRF/signing key. Marked with Django's own `django-insecure-` convention prefix, meaning Django itself flags it as a development-only key not safe for production.
+
+**Risk assessment under current state:**
+
+- Repo visibility = **private** (only the PI account has access). External leak surface = none.
+- `Django123!` works only against `localhost` PostgreSQL on the PI's dev machine — no production DB exposure.
+- `SECRET_KEY` is dev-only; production deploy will need a fresh key regardless (cookies/CSRF tokens are tied to it).
+- **Real risk only materialises** if (a) the repo visibility is flipped public, (b) access is granted to a third party who could mirror history, or (c) production deploy reuses these literal values.
+
+**Forward path (do all three before any production deploy):**
+
+1. **Rotate the local DB password.** New value lives in `.env` (already gitignored). Update `config/settings.py::DATABASES` to read via `os.environ['DB_PASSWORD']` or `python-decouple` / `django-environ`. Update each standalone `ingest_*.py` script to read from the same env var instead of the hardcoded literal.
+2. **Regenerate `SECRET_KEY`.** `python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"` → set as `DJANGO_SECRET_KEY` env var → `SECRET_KEY = os.environ['DJANGO_SECRET_KEY']` in settings.
+3. **Decide history-rewrite vs leave-in-history** (only if repo visibility may ever become public or org-shared). `git-filter-repo --replace-text` can scrub `Django123!` from every historical commit; cost is that every commit SHA after the first occurrence changes, breaking any references to commits elsewhere (dissertation, chat logs, other clones). For a research repo that stays private through the dissertation period, **leaving the dev password in history is an acceptable tradeoff** — the credentials are dev-only, the repo is private, and history-rewrite has costs that exceed the benefit.
+
+**Estimated effort:** 30-60 minutes for steps 1-2 (~30 files, mostly find-and-replace of two literals into env-var reads + new lines in `.env`). Step 3 (optional history rewrite): 1-2 hours including a clean reclone verification afterwards.
+
+**Discovered / scoped in:** First-push secrets audit, 2026-05-24, immediately before pushing to `https://github.com/dourvas/unesco_ai_pd` for the first time.
+**Resolved at:** Production deploy preparation (post-pilot, before any non-PI account is granted repo access).
+
+---
+
+## TD-025 — Large SQL backups in git history + gitignore pattern gap
+
+**Status:** Partially-fixed (forward-prevention done in commit "Tech-debt hygiene after first GitHub push"). History cleanup deferred.
+**Where:** `.gitignore` (forward fix landed in same commit as this entry) + 7 historical commits containing `pre_migration_backup_phaseC_*.sql` files (~48MB each, ~338MB cumulative).
+
+Phase C migrations followed the established workflow rule (memory: `feedback_workflow.md`) of taking a `pg_dump` backup before each migration apply. The backup naming convention is `pre_migration_backup_<phase>_<step>_<date>.sql`. Seven such files from the Phase C M1-M6 + GAMMA1 migrations were inadvertently committed to git history before the first GitHub push:
+
+```
+48.3 MB  pre_migration_backup_phaseC_GAMMA1_20260509.sql
+48.3 MB  pre_migration_backup_phaseC_M2_20260509.sql
+48.3 MB  pre_migration_backup_phaseC_M1_20260509.sql
+48.2 MB  pre_migration_backup_phaseC_M6_20260510.sql
+48.2 MB  pre_migration_backup_phaseC_M5_20260510.sql
+48.2 MB  pre_migration_backup_phaseC_M4_20260510.sql
+48.2 MB  pre_migration_backup_phaseC_M3_20260509.sql
+```
+
+**Root cause:** the `.gitignore` had `proodos_backup_*.sql` (a different naming pattern) but did not cover `pre_*.sql` — so the pg_dump backups slipped through. Other `pre_*.sql` files that escaped commit by chance are sitting untracked in the working tree (`pre_phaseG_G4_20260524.sql`, `pre_g6c_review_revert_20260524.sql`, `pre_v23_verification_revert_20260524.sql`, etc.).
+
+**Risk:** the backups contain real (test-account) DB content — schema + Phase C test data including hashed passwords + RTM responses. Risk surface mirrors TD-024: bounded under the private-repo assumption, materialises only if visibility flips. Plus the cumulative ~338MB inflates every clone of the repo.
+
+**Forward fix (landed in same commit as this entry):**
+
+- `.gitignore` extended with `pre_*.sql` (catches the entire pg_dump-before-migration naming convention going forward) + `_commit_msg.txt` / `_*.txt` (ephemeral HEREDOC artefacts) + `*_smoke.pdf` + `proodos_matrix_files.zip` (ad-hoc dev outputs that had been sitting untracked).
+- All future backups generated by the `pg_dump unesco_ai_teacher_pd > pre_phaseH_*.sql` pattern will be ignored automatically.
+
+**History cleanup (deferred, optional):**
+
+If/when the 338MB clone size becomes a real annoyance OR repo visibility changes:
+
+1. `git-filter-repo --path-glob 'pre_migration_backup_*.sql' --invert-paths` removes the 7 files from every commit they appear in.
+2. Rewrites change every SHA after the first impacted commit — same constraint as TD-024 step 3.
+3. Anyone with a clone needs to re-clone after the rewrite.
+
+Until then: backups remain in git history; they don't slow normal development.
+
+**Estimated effort:** forward fix = done (5 minutes, this commit). History rewrite (if ever triggered) = 30 minutes + clean reclone verification.
+
+**Discovered / scoped in:** First-push size audit, 2026-05-24, immediately before pushing to `https://github.com/dourvas/unesco_ai_pd` for the first time.
+**Resolved at:** Forward-prevention resolved 2026-05-24 in commit alongside this entry; historical cleanup remains optional and deferred.
+
+---
+
 ## TD entry conventions
 
 When adding a new entry:

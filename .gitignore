@@ -16,7 +16,23 @@ staticfiles/
 *.log
 
 # --- Database backups (large, regenerable) ---
+# Generic backup pattern + the pre_*.sql convention used by the
+# pg_dump-before-migration workflow rule (memory: feedback_workflow.md).
+# Extended 2026-05-24 after TD-025 was opened — the earlier pattern
+# missed pre_migration_backup_*.sql / pre_phaseG_*.sql / pre_*_revert_*.sql
+# and seven 48MB phaseC backups slipped into git history before the
+# first push.
 proodos_backup_*.sql
+pre_*.sql
+
+# --- Ephemeral session artefacts ---
+# Commit-message temp files written during multi-line HEREDOC commits;
+# the script removes them but the pattern keeps stray ones out of git.
+_commit_msg.txt
+_*.txt
+# Smoke-test PDF outputs and ad-hoc zip bundles generated during dev
+*_smoke.pdf
+proodos_matrix_files.zip
 
 # --- Editors / IDE ---
 .idea/
