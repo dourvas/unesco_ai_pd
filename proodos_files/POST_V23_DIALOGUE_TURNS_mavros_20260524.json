@@ -1,0 +1,146 @@
+{
+  "note": "Post-§23 dialogue + Portrait artefacts from mavros, captured 2026-05-24 for V23_PROMPT_VERIFICATION_20260524.md. Generated AFTER commit 0e52044 (v2 §23 prompt enforcement) with the 5-line anti-anthropomorphisation rule active in _SYSTEM_PROMPT.",
+  "commit_post_v23": "0e52044 (v2 §23 prompt enforcement)",
+  "epilogue_completion_pk": 1,
+  "user": "mavros",
+  "stage1_completed_at": "2026-05-24T05:39:41.723834+00:00",
+  "stage2_completed_at": "2026-05-24T05:44:48.122616+00:00",
+  "stage3_completed_at": "2026-05-24T05:51:53.918315+00:00",
+  "stage3_completed_at_note": "NOTE: set 2026-05-24 05:51 via manual shell patch — UNCOVERED a G.3 UX bug where the Continue-to-Portrait GET link did not set this. Bug fix in companion commit G.3.1.",
+  "completed_at": "2026-05-24T05:53:01.814979+00:00",
+  "learning_portrait_generated_at": "2026-05-24T05:53:01.814979+00:00",
+  "learning_portrait_pdf_present": true,
+  "learning_portrait_text": "Across your fifteen modules, your attention travelled. Early in the programme, your reflections often explored LLM mechanics and general reliability. As you moved through the modules, these themes became less prominent, while your focus shifted to auditing tools, learning impact, and pedagogical fit. Throughout this journey, teacher oversight remained a consistent area of your reflection.\n\nYou described the connection between auditing tools, learning impact, and pedagogical fit as being \"downstream of the same shift.\" For you, auditing tools emerged from \"realising the AI can be wrong in ways students miss,\" and learning impact from \"realising not every right answer helps them learn.\" Pedagogical fit, you said, ties them together, as \"the question stopped being 'is the output correct?' and became 'does this lesson belong in this classroom?'\" For you, oversight is what each of those three demands.\n\nWhen reflecting on the shift from LLM mechanics to auditing tools, you noted that your earlier position was theoretical. The later position, you explained, came \"after I had been burned once,\" when you had \"actually used the tool in a real lesson and seen it fail in a way I had not predicted.\" You asked, \"Does it look to you like growth or like overconfidence?\"\n\nLooking ahead to your Year 4 lesson on essay structure, you plan to ask students to compare their own draft to one you generate with AI, and \"write down which sentences from the AI version they would refuse to use and why.\" You want their reasons to be specific, not \"it sounds wrong.\" What you are still uncertain about is whether to show the AI version before they have written their own draft, or after.",
+  "dialogue_turns_count": 18,
+  "dialogue_turns": [
+    {
+      "role": "assistant",
+      "model": "gemini-2.5-flash",
+      "stage": 1,
+      "content": "Looking back across your modules, it appears your reflective attention shifted in some ways. Early on, you spent more time reflecting on how large language models work and their general reliability. Later, your reflections moved towards areas like pedagogical fit, auditing tools, and the impact on learning. Throughout all the modules, teacher oversight remained a consistent area of focus for you.\n\nWhat stands out to you most about how your reflective focus moved?",
+      "generated_at": "2026-05-24T05:33:01.604627+00:00"
+    },
+    {
+      "role": "teacher",
+      "stage": 1,
+      "content": "do you think?",
+      "generated_at": "2026-05-24T05:36:57.214904+00:00"
+    },
+    {
+      "role": "assistant",
+      "model": "gemini-2.5-flash",
+      "stage": 1,
+      "content": "You asked what the reflective movement meant. That is yours to decide.\n\nWhen you consider the areas that became more prominent later – auditing tools, learning impact, and pedagogical fit – what connections do you see between these three areas in your own thinking?",
+      "generated_at": "2026-05-24T05:36:57.214904+00:00"
+    },
+    {
+      "role": "teacher",
+      "stage": 1,
+      "content": "The connection I see is that all three are downstream of the same shift. Auditing tools comes from realising the AI can be wrong in ways students miss. Learning impact comes from realising not every right answer helps them learn. Pedagogical fit ties them together — the question stopped being \"is the output correct?\" and became \"does this lesson belong in this classroom?\" Oversight is what each of those three demands.",
+      "generated_at": "2026-05-24T05:38:37.871138+00:00"
+    },
+    {
+      "role": "assistant",
+      "model": "gemini-2.5-flash",
+      "stage": 1,
+      "content": "You described a shift where the question moved from \"is the output correct?\" to \"does this lesson belong in this classroom?\", and you noted that oversight is what each of auditing tools, learning impact, and pedagogical fit demands.\n\nWhat does \"oversight\" mean to you in the context of ensuring a lesson belongs in the classroom?",
+      "generated_at": "2026-05-24T05:38:37.871138+00:00"
+    },
+    {
+      "role": "assistant",
+      "model": "gemini-2.5-flash",
+      "stage": 2,
+      "content": "Two of your own moments sit next to each other here. In your early module reflections, the theme of 'LLM mechanics' appeared frequently. Later in the modules, the theme of 'auditing tools' became more present in your writing. The data simply notes that those are both yours.\n\nWhat do you make of these two themes appearing in your reflections in this way?",
+      "generated_at": "2026-05-24T05:39:41.723834+00:00"
+    },
+    {
+      "role": "teacher",
+      "stage": 2,
+      "content": "I think the second moment, the later one, came when I had actually used the tool in a real lesson and seen it fail in a way I had not predicted. The earlier position was theoretical. The later position was after I had been burned once. That is the difference.",
+      "generated_at": "2026-05-24T05:40:12.438369+00:00"
+    },
+    {
+      "role": "assistant",
+      "model": "gemini-2.5-flash",
+      "stage": 2,
+      "content": "You describe a shift from a theoretical position to one shaped by direct experience, specifically by a tool's unexpected failure. This \"being burned once\" seems to mark a turning point in your reflection.\n\nWhat did that specific experience of the tool failing reveal to you about its mechanics that the earlier, theoretical understanding had not?",
+      "generated_at": "2026-05-24T05:40:12.438369+00:00"
+    },
+    {
+      "role": "teacher",
+      "stage": 2,
+      "content": "Looking at the two of them next to each other — how do you feel about that change? Does it look to you like growth or like overconfidence?",
+      "generated_at": "2026-05-24T05:42:43.968132+00:00"
+    },
+    {
+      "role": "assistant",
+      "model": "gemini-2.5-flash",
+      "stage": 2,
+      "content": "You are asking about whether that shift appears as growth or overconfidence. Your own earlier reflection described the theoretical position and the later position after having been \"burned once.\"\n\nReflecting on that experience of being \"burned,\" what did you learn about your own confidence in these tools, whether theoretical or practical?",
+      "generated_at": "2026-05-24T05:42:43.968132+00:00"
+    },
+    {
+      "role": "assistant",
+      "model": "gemini-2.5-flash",
+      "stage": 3,
+      "content": "Across everything you have looked at — the shift from \"is the output correct?\" to \"does this lesson belong in this classroom?\", and the consistent focus on oversight — what is one specific thing you will try in your classroom this week or next? Not a general resolution, but something you could actually do on a particular day, with particular students, to explore a pedagogical fit, audit a tool, or consider learning impact.",
+      "generated_at": "2026-05-24T05:44:48.122616+00:00"
+    },
+    {
+      "role": "teacher",
+      "stage": 3,
+      "content": "Next week in my Year 4 lesson on essay structure, I will ask the students to compare their own draft to one I generate with AI, and write down which sentences from the AI version they would refuse to use and why. I want their reasons to be specific, not \"it sounds wrong.",
+      "generated_at": "2026-05-24T05:45:18.321532+00:00"
+    },
+    {
+      "role": "assistant",
+      "model": "gemini-2.5-flash",
+      "stage": 3,
+      "content": "Asking students to compare their drafts to an AI-generated one, specifically noting sentences they would refuse to use and their reasons, offers a clear focus. For this Year 4 essay structure lesson, what might you be looking for in their specific reasons, beyond \"it sounds wrong\"?",
+      "generated_at": "2026-05-24T05:45:18.321532+00:00"
+    },
+    {
+      "role": "teacher",
+      "stage": 3,
+      "content": "What I am still uncertain about is whether to show the AI version before they have written their own draft, or after. Showing it after protects their voice but they might be too tired by then to engage critically. Showing it before risks anchoring their writing to its structure. I have not decided yet.",
+      "generated_at": "2026-05-24T05:46:40.718570+00:00"
+    },
+    {
+      "role": "assistant",
+      "model": "gemini-2.5-flash",
+      "stage": 3,
+      "content": "You are weighing the timing of showing the AI-generated draft to your Year 4 students, considering whether to show it before or after they write their own. For this lesson on essay structure, what might you gain by trying one timing over the other, even if you are not yet certain which is \"better\"?",
+      "generated_at": "2026-05-24T05:46:40.718570+00:00"
+    },
+    {
+      "role": "assistant",
+      "event": "proposal",
+      "model": "gemini-2.5-flash",
+      "stage": "portrait",
+      "content": "Across your modules, your attention travelled, shifting its focus as you engaged with the material. Early on, you frequently explored the mechanics of large language models and their general reliability. However, as you moved through the modules, these themes received less attention. Instead, your reflections increasingly focused on auditing tools, the learning impact of AI, and its pedagogical fit within the classroom. Throughout this journey, the theme of teacher oversight remained a consistent area of your reflection.\n\nYou noted that the shift toward auditing tools, learning impact, and pedagogical fit felt connected, downstream of the same shift. You described how auditing tools emerged from the realisation that AI can be wrong in ways students miss, and learning impact from understanding that not every right answer helps students learn. For you, pedagogical fit tied these together, transforming the question from \"is the output correct?\" to \"does this lesson belong in this classroom?\" You saw oversight as what each of these demands.\n\nWhen reflecting on the movement from focusing on LLM mechanics to auditing tools, you pinpointed a specific experience. You felt that your earlier position was theoretical, while the later one came after you had actually used the tool in a real lesson and seen it fail in a way you had not predicted. You described this as the difference, noting it was after you had been burned once. You then asked, \"Looking at the two of them next to each other — how do you feel about that change? Does it look to you like growth or like overconfidence?\"\n\nLooking ahead, you articulated a concrete plan for your Year 4 lesson on essay structure next week. You intend to ask students to compare their own draft to one you generate with AI, and then to write down which sentences from the AI version they would refuse to use and why. You emphasised that you want their reasons to be specific, not \"it sounds wrong.\" What you are still uncertain about is whether to show the AI version before they have written their own draft, or after, weighing the risk of anchoring their writing against the possibility of students being too tired to engage critically. You have not decided yet.",
+      "generated_at": "2026-05-24T05:52:46.406290+00:00"
+    },
+    {
+      "role": "assistant",
+      "event": "proposal",
+      "model": "gemini-2.5-flash",
+      "stage": "portrait",
+      "content": "Across your fifteen modules, your attention travelled. Early in the programme, your reflections often explored LLM mechanics and general reliability. As you moved through the modules, these themes became less prominent, while your focus shifted to auditing tools, learning impact, and pedagogical fit. Throughout this journey, teacher oversight remained a consistent area of your reflection.\n\nYou described the connection between auditing tools, learning impact, and pedagogical fit as being \"downstream of the same shift.\" For you, auditing tools emerged from \"realising the AI can be wrong in ways students miss,\" and learning impact from \"realising not every right answer helps them learn.\" Pedagogical fit, you said, ties them together, as \"the question stopped being 'is the output correct?' and became 'does this lesson belong in this classroom?'\" For you, oversight is what each of those three demands.\n\nWhen reflecting on the shift from LLM mechanics to auditing tools, you noted that your earlier position was theoretical. The later position, you explained, came \"after I had been burned once,\" when you had \"actually used the tool in a real lesson and seen it fail in a way I had not predicted.\" You asked, \"Does it look to you like growth or like overconfidence?\"\n\nLooking ahead to your Year 4 lesson on essay structure, you plan to ask students to compare their own draft to one you generate with AI, and \"write down which sentences from the AI version they would refuse to use and why.\" You want their reasons to be specific, not \"it sounds wrong.\" What you are still uncertain about is whether to show the AI version before they have written their own draft, or after.",
+      "generated_at": "2026-05-24T05:52:58.885412+00:00"
+    },
+    {
+      "role": "system",
+      "event": "accepted",
+      "stage": "portrait",
+      "generated_at": "2026-05-24T05:53:01.814979+00:00",
+      "accepted_proposal_index": 16
+    }
+  ],
+  "provenance": {
+    "pk": 148,
+    "artefact_kind": "epilogue_portrait",
+    "artefact_pk": "1",
+    "model_name": "gemini-2.5-flash",
+    "generated_at": "2026-05-24T05:53:01.814979+00:00"
+  }
+}
