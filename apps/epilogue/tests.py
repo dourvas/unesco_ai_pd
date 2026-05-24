@@ -70,8 +70,12 @@ class EpiloguePlaceholderViewTest(EpilogueViewBase):
         row.save(update_fields=['completed_at'])
         resp = self.client.get(reverse('epilogue:placeholder'))
         self.assertEqual(resp.status_code, 200)
-        # The template shows a success banner when already_completed.
-        self.assertIn('reached the Epilogue on', resp.content.decode('utf-8'))
+        # The template shows a completion banner when already_completed.
+        # Copy reworded in G.6b: "reached the Epilogue on" → "reached
+        # this synthesis on" (the magazine register naming + the label-
+        # leak sweep that hides the internal 'Epilogue' label from the
+        # teacher; G.6 proposal §5).
+        self.assertIn('reached this synthesis on', resp.content.decode('utf-8'))
 
 
 class EpilogueCompleteViewTest(EpilogueViewBase):
@@ -588,9 +592,15 @@ class Stage1DialogueTest(EpilogueViewBase):
     # --- Stage 0 invites the dialogue ---
 
     def test_stage0_offers_begin_dialogue_and_skip(self):
+        """The Stage 0 page invites the teacher into the dialogue and
+        offers a clear skip path. Copy reworded in G.6b: introduces
+        Aletheia by name (G.6 proposal §3.3 — narrative copy uses the
+        persona name) and refers to the dialogue as 'the conversation
+        with Aletheia' so the reflective partner is established before
+        the dialogue surface loads."""
         resp = self.client.get(reverse('epilogue:placeholder'))
-        self.assertContains(resp, 'Begin the reflective dialogue')
-        self.assertContains(resp, 'Continue without the dialogue')
+        self.assertContains(resp, 'Begin the conversation with Aletheia')
+        self.assertContains(resp, 'Continue without the conversation')
 
 
 # ============================================================================
@@ -1694,3 +1704,78 @@ class PortraitPDFArticle50MetadataTest(PortraitViewBase):
         self.assertIn(b'PROODOS Learning Portrait', pdf_bytes)
         self.assertIn(b'EU AI Act Article 50', pdf_bytes)
         self.assertIn(b'gemini-2.5-flash', pdf_bytes)
+
+
+# ======================================================================
+# G.6b — Teacher-facing label-leak guard (proposal §9.4)
+# ======================================================================
+
+class TeacherFacingLabelLeakTest(EpilogueViewBase):
+    """Platform-wide rule (memory: feedback_ui_internal_labels):
+    no internal research labels in teacher-visible text. Implements
+    the §9.4 specification of the G.6 design proposal — strictly
+    scoped to **teacher-visible text**, not the full HTML stream
+    (the Article 50(2) JSON-LD block and the C.3 <meta> tags
+    legitimately contain identifiers like 'epilogue_portrait',
+    'gemini-2.5-flash', and 'AILST' — those are machine-readable
+    compliance markers, not teacher copy).
+
+    G.6b lands the Stage 0 surface check. G.6c will add the
+    dialogue surface in three active-stage states; G.6d will add
+    the Portrait surface in draft + accepted states. See proposal
+    §9.4 for the full fixture coverage rationale.
+    """
+
+    # Word-boundary patterns — bare 'T0/T1/T2' would match prose like
+    # 'the T2 closing reflection'; the exact-word form catches the
+    # bureaucratic label without false positives. Patterns from
+    # G.6 proposal §9.4.
+    FORBIDDEN_PATTERNS = [
+        r'\bStage\s*[0-3]\b',
+        r'\bDTP\b',
+        r'\bRTM\b',
+        r'\bAILST\b',
+        r'\bT[012]\b',
+        r'\bTab\s*[125]\b',
+    ]
+
+    def _visible_text(self, html):
+        """Strip machine-readable and head content; return only what
+        the teacher reads on the page. The JSON-LD <script>, <meta>
+        tags, <style>, and the entire <head> are all dropped — those
+        carry compliance markers and CSS, not teacher copy."""
+        from bs4 import BeautifulSoup
+        soup = BeautifulSoup(html, 'html.parser')
+        for tag in soup(['script', 'style', 'meta', 'head', 'link']):
+            tag.decompose()
+        return soup.get_text(separator=' ')
+
+    def _assert_no_leaks(self, url_name, label_for_error=''):
+        import re
+        resp = self.client.get(reverse(url_name))
+        self.assertEqual(resp.status_code, 200)
+        visible = self._visible_text(resp.content.decode('utf-8'))
+        for pattern in self.FORBIDDEN_PATTERNS:
+            match = re.search(pattern, visible)
+            self.assertIsNone(
+                match,
+                f"{label_for_error or url_name} leaks pattern "
+                f"{pattern!r} at: ...{visible[max(0, match.start()-60):match.end()+60]!r}..."
+                if match else f"{label_for_error or url_name} OK",
+            )
+
+    # --- Stage 0 surface (G.6b) ---
+
+    def test_stage0_page_no_leaks(self):
+        """Stage 0 page (the magazine-redesigned hero + standfirst +
+        action buttons + included _stage0_panel.html partial)
+        contains no teacher-visible forbidden labels."""
+        self._assert_no_leaks('epilogue:placeholder')
+
+    def test_stage0_page_already_completed_no_leaks(self):
+        """The already-completed banner variant of the Stage 0 page
+        also must not leak labels."""
+        row = EpilogueCompletion.objects.create(user=self.user)
+        row.completed_at = timezone.now()
+        row.save(update_fields=['completed_at'])
+        self._assert_no_leaks('epilogue:placeholder')
