@@ -171,6 +171,37 @@
   color: oklch(var(--bc));
 }
 
+/* G.6c.5 — semantic accent variants for the Stage 0 theme blocks.
+   Each of the three theme categories gets its own subtle palette
+   accent so the page is not a wall of grey:
+     theme-grown      → aspect-main (teal)  — "actively growing"
+     theme-recurring  → aspect-gem  (cyan)  — "rooted, persistent"
+     theme-faded      → aspect-silver (slate) — "receded, softer"
+   Each uses a 4pt left border + a very light tinted background.
+   All colours pulled from the locked Aletheia palette (§3.1) — no
+   new colours, just semantic application of existing tokens.
+*/
+.epilogue-redesign .theme-grown {
+  border-left: 4px solid var(--aspect-main);
+  background-color: color-mix(in oklch, var(--aspect-main) 8%, transparent);
+}
+.epilogue-redesign .theme-recurring {
+  border-left: 4px solid var(--aspect-gem);
+  background-color: color-mix(in oklch, var(--aspect-gem) 8%, transparent);
+}
+.epilogue-redesign .theme-faded {
+  border-left: 4px solid var(--aspect-silver);
+  background-color: color-mix(in oklch, var(--aspect-silver) 8%, transparent);
+}
+
+/* G.6c.5 — narrative timeline numerals get the gem-blue accent so
+   the M-number stands out from the body prose. Subtle: same size,
+   different colour. */
+.epilogue-redesign .timeline-module-num {
+  color: var(--aspect-gem);
+  font-weight: 600;
+}
+
 
 /* =========================================================
  * §5 — Magazine hero (proposal §4.1)
@@ -329,6 +360,11 @@
   border: 1px solid oklch(var(--b3));
   border-radius: 0.75rem;
   background-color: oklch(var(--b1));
+  /* G.6c.4 — when the browser jumps to #dialogue-active after a
+     POST-PRG-GET round-trip, this keeps the chapter clear of the
+     sticky Aletheia header (which is ~4-5rem tall). Affects only
+     anchor scroll; normal scrolling is unaffected. */
+  scroll-margin-top: 5rem;
 }
 
 .epilogue-redesign .phase-chapter--collapsed {
@@ -513,6 +549,61 @@
   width: 2rem;
   height: 2rem;
   object-fit: contain;
+}
+
+
+/* =========================================================
+ * §11 — Submit-pending spinner (G.6c.3, added 2026-05-24)
+ *
+ * Pure CSS spinner that replaces a button's label when the
+ * companion JS in dialogue.html flips `data-submitting="true"`
+ * on form submit. Removes the "did my click register?" doubt
+ * during the ~3-6s Gemini turn-generation window.
+ *
+ * Discipline: this rule applies only when the parent <button>
+ * carries `data-submitting`. Buttons that never get the
+ * attribute (cancel buttons, links, etc.) are untouched.
+ * Reduced-motion respected — animation duration scales, but
+ * the spinner remains visible (the feedback is the point).
+ * =======================================================*/
+
+.epilogue-redesign button[data-submitting="true"] {
+  pointer-events: none;
+  opacity: 0.85;
+  position: relative;
+  color: transparent !important;
+}
+
+.epilogue-redesign button[data-submitting="true"]::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 1rem;
+  height: 1rem;
+  margin: -0.5rem 0 0 -0.5rem;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+  color: white;  /* spinner visible on aspect-main primary button */
+  animation: epilogue-spin 0.7s linear infinite;
+}
+
+/* On ghost / secondary buttons (transparent background), keep the
+   spinner ink visible against the page background. */
+.epilogue-redesign .btn-ghost[data-submitting="true"]::after,
+.epilogue-redesign .btn-outline[data-submitting="true"]::after {
+  color: var(--aspect-main);
+}
+
+@keyframes epilogue-spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .epilogue-redesign button[data-submitting="true"]::after {
+    animation-duration: 2.5s;  /* slower, gentler — but still spinning */
+  }
 }
 
 

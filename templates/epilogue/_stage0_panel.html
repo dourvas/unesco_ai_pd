@@ -43,9 +43,16 @@ must use {% templatetag openblock %} comment {% templatetag closeblock %}.
     <p class="text-sm text-base-content/70 mb-4">
       {% trans "Drawn from the developmental comparison of your reflections across the modules. These describe what shifted in your writing — they are not a judgement of better or worse." %}
     </p>
+    {# G.6c.5 — three semantic accent variants from the locked      #}
+    {# Aletheia palette (teal / cyan / slate). Each theme category   #}
+    {# carries its own subtle colour so the page reads as a          #}
+    {# composition of distinct ideas, not a wall of grey. Outside    #}
+    {# the .epilogue-redesign wrapper (e.g. mid-pre-G.6d portrait    #}
+    {# side panel) the classes fall back gracefully to the plain    #}
+    {# rounded card look.                                             #}
     <div class="grid md:grid-cols-3 gap-4">
 
-      <div class="rounded-lg border border-base-300 p-4">
+      <div class="theme-grown rounded-r-lg p-4">
         <h3 class="font-semibold text-sm mb-2">{% trans "Themes that grew" %}</h3>
         {% for item in snapshot.theme_evolution.grown %}
           <span class="badge badge-outline mr-1 mb-1">{{ item.theme }}{% if item.count > 1 %} &times;{{ item.count }}{% endif %}</span>
@@ -54,7 +61,7 @@ must use {% templatetag openblock %} comment {% templatetag closeblock %}.
         {% endfor %}
       </div>
 
-      <div class="rounded-lg border border-base-300 p-4">
+      <div class="theme-recurring rounded-r-lg p-4">
         <h3 class="font-semibold text-sm mb-2">{% trans "Recurring themes" %}</h3>
         {% for item in snapshot.theme_evolution.recurring %}
           <span class="badge badge-outline mr-1 mb-1">{{ item.theme }}{% if item.count > 1 %} &times;{{ item.count }}{% endif %}</span>
@@ -63,7 +70,7 @@ must use {% templatetag openblock %} comment {% templatetag closeblock %}.
         {% endfor %}
       </div>
 
-      <div class="rounded-lg border border-base-300 p-4">
+      <div class="theme-faded rounded-r-lg p-4">
         <h3 class="font-semibold text-sm mb-2">{% trans "Themes that receded" %}</h3>
         {% for item in snapshot.theme_evolution.faded %}
           <span class="badge badge-outline mr-1 mb-1">{{ item.theme }}{% if item.count > 1 %} &times;{{ item.count }}{% endif %}</span>
@@ -75,49 +82,62 @@ must use {% templatetag openblock %} comment {% templatetag closeblock %}.
     </div>
   </div>
 
-  {# --- Narrative timeline ---------------------------------------- #}
-  <div>
-    <h2 class="text-xl font-bold mb-1">{% trans "Your trajectory, module by module" %}</h2>
-    <p class="text-sm text-base-content/70 mb-4">
-      {% trans "A short description of how your reflective focus moved from one module to the next." %}
-    </p>
-    {% for item in snapshot.narrative_timeline %}
-      <div class="border-l-4 border-primary/40 pl-4 py-2 mb-3">
-        <div class="font-bold text-sm text-primary">{{ item.module }}</div>
-        <p class="text-sm">{{ item.narrative }}</p>
-      </div>
-    {% empty %}
-      <p class="text-sm text-base-content/50">
-        {% trans "No developmental narratives are on record yet. They are produced once a second reflection exists to compare against." %}
-      </p>
-    {% endfor %}
-  </div>
+  {# --- Two-column block: trajectory + tensions (G.6c.2) -------- #}
+  {# Reduces vertical scroll on the Stage 0 page. On large screens   #}
+  {# the narrative timeline (left) and the professional tensions    #}
+  {# (right) sit side-by-side; on mobile (< lg) they stack — the     #}
+  {# trajectory above, the tensions below, as before.                #}
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
-  {# --- RTM tension trajectories ---------------------------------- #}
-  <div>
-    <h2 class="text-xl font-bold mb-1">{% trans "The tensions you positioned yourself on" %}</h2>
-    <p class="text-sm text-base-content/70 mb-4">
-      {% trans "The professional tensions the Reflective Tension Mapper surfaced, and where you placed yourself on each. A tension seen in several modules shows how your stance held or moved." %}
-    </p>
-    {% for tr in snapshot.rtm_trajectories %}
-      <div class="rounded-lg border border-base-300 p-4 mb-3">
-        <div class="flex items-center gap-2">
-          <span class="font-semibold text-sm">{{ tr.tension_label }}</span>
-          {% if tr.recurring %}
-            <span class="badge badge-sm">{% trans "recurring" %}</span>
-          {% endif %}
-        </div>
-        <div class="flex flex-wrap gap-2 mt-2">
-          {% for pt in tr.points %}
-            <span class="badge badge-outline">{{ pt.module }} &middot; {{ pt.position_label }}</span>
-          {% endfor %}
-        </div>
-      </div>
-    {% empty %}
-      <p class="text-sm text-base-content/50">
-        {% trans "No reflective tensions are on record yet." %}
+    {# --- Narrative timeline (left column on desktop) ----------- #}
+    <div>
+      <h2 class="text-xl font-bold mb-1">{% trans "Your trajectory, module by module" %}</h2>
+      <p class="text-sm text-base-content/70 mb-4">
+        {% trans "A short description of how your reflective focus moved from one module to the next." %}
       </p>
-    {% endfor %}
+      {% for item in snapshot.narrative_timeline %}
+        <div class="border-l-4 border-primary/40 pl-4 py-2 mb-3">
+          <div class="font-bold text-sm timeline-module-num">{{ item.module }}</div>
+          <p class="text-sm">{{ item.narrative }}</p>
+        </div>
+      {% empty %}
+        <p class="text-sm text-base-content/50">
+          {% trans "No developmental narratives are on record yet. They are produced once a second reflection exists to compare against." %}
+        </p>
+      {% endfor %}
+    </div>
+
+    {# --- Professional tensions (right column on desktop) ------- #}
+    {# Label-relabel sweep (G.6 §5): "Reflective Tension Mapper"   #}
+    {# (the research-instrument's full name) is removed from       #}
+    {# teacher copy in favour of "professional tensions" — the     #}
+    {# acronym RTM was already absent.                              #}
+    <div>
+      <h2 class="text-xl font-bold mb-1">{% trans "The tensions you positioned yourself on" %}</h2>
+      <p class="text-sm text-base-content/70 mb-4">
+        {% trans "The professional tensions that surfaced in your reflections, and where you placed yourself on each. A tension seen in several modules shows how your stance held or moved." %}
+      </p>
+      {% for tr in snapshot.rtm_trajectories %}
+        <div class="rounded-lg border border-base-300 p-4 mb-3">
+          <div class="flex items-center gap-2">
+            <span class="font-semibold text-sm">{{ tr.tension_label }}</span>
+            {% if tr.recurring %}
+              <span class="badge badge-sm">{% trans "recurring" %}</span>
+            {% endif %}
+          </div>
+          <div class="flex flex-wrap gap-2 mt-2">
+            {% for pt in tr.points %}
+              <span class="badge badge-outline">{{ pt.module }} &middot; {{ pt.position_label }}</span>
+            {% endfor %}
+          </div>
+        </div>
+      {% empty %}
+        <p class="text-sm text-base-content/50">
+          {% trans "No reflective tensions are on record yet." %}
+        </p>
+      {% endfor %}
+    </div>
+
   </div>
 
 </section>

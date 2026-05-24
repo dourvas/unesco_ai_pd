@@ -59,6 +59,106 @@ def _is_m15_completed(user) -> bool:
     return user_has_completed_module(user, 'M15')
 
 
+# G.6c — phase-as-chapter view helper (proposal §4.2).
+# Builds the per-phase structured data the dialogue template iterates
+# over. Replaces the pre-G.6c flat-scroll layout where every turn from
+# every stage rendered in one continuous list — that layout had the
+# phase-seam bug (two back-to-back assistant bubbles at a stage
+# boundary). The new layout groups turns by phase, marks each phase
+# 'collapsed' / 'active' / 'upcoming', and lets the template render
+# prior phases as <details> summaries + the active phase as an open
+# chapter card with chat bubbles.
+_PHASE_DEFINITIONS = [
+    (1, 'I',   'Look Back'),
+    (2, 'II',  'Look In'),
+    (3, 'III', 'Look Forward'),
+]
+
+
+def _build_dialogue_phases(completion, current_stage) -> list[dict]:
+    """Group dialogue_turns by phase, mark each phase's display status.
+
+    Returns one record per phase (Stages 1 / 2 / 3), regardless of
+    whether that phase has any turns. The template consumes the list
+    via _phase_chapter.html — collapsed phases render as <details>
+    summaries with a one-line preview; the active phase renders as an
+    open chapter card.
+
+    Mapping current_stage → per-phase status:
+      - current_stage == 0      → all three phases are 'upcoming'
+                                  (dialogue not entered yet — but in
+                                  practice the template renders the
+                                  dialogue-not-entered path before
+                                  this list is built)
+      - current_stage == 1      → 1 active, 2/3 upcoming
+      - current_stage == 2      → 1 collapsed, 2 active, 3 upcoming
+      - current_stage == 3      → 1/2 collapsed, 3 active
+      - current_stage =='finished' → all three collapsed (the teacher
+                                  is past Stage 3 and ready for the
+                                  Portrait button)
+
+    Stage 2 is treated specially when the skip-record applies — its
+    record is attached to the phase 2 dict so the template can render
+    an editorial skip card in place of the chat bubbles.
+    """
+    turns = completion.dialogue_turns or []
+    skip_record = next(
+        (t for t in turns if t.get('event') == 'stage2_skipped'),
+        None,
+    )
+
+    phases = []
+    for number, numeral, name in _PHASE_DEFINITIONS:
+        # Status mapping.
+        if current_stage == 'finished':
+            status = 'collapsed'
+        elif isinstance(current_stage, int) and number < current_stage:
+            status = 'collapsed'
+        elif current_stage == number:
+            status = 'active'
+        else:
+            status = 'upcoming'
+
+        # Visible turns for this phase only (assistant + teacher),
+        # in chronological (storage) order.
+        phase_turns = [
+            t for t in turns
+            if t.get('stage') == number
+            and t.get('role') in ('assistant', 'teacher')
+        ]
+
+        # Last teacher message — used as the collapsed-summary preview
+        # so the teacher can recognise prior phases without re-opening
+        # them. None if the phase had no teacher reply (e.g. skipped
+        # Stage 2 or an interrupted Stage 3).
+        teacher_msgs = [
+            (t.get('content') or '').strip()
+            for t in phase_turns
+            if t.get('role') == 'teacher'
+        ]
+        last_teacher_preview = teacher_msgs[-1] if teacher_msgs else ''
+
+        # Teacher-turn count for the per-phase ceiling (G-D5).
+        teacher_turn_count = len(teacher_msgs)
+
+        # Skip-record attaches to Stage 2 only.
+        has_skip_record = (number == 2) and (skip_record is not None)
+
+        phases.append({
+            'number': number,
+            'numeral': numeral,
+            'name': name,
+            'status': status,
+            'turns': phase_turns,
+            'last_teacher_preview': last_teacher_preview,
+            'teacher_turn_count': teacher_turn_count,
+            'has_skip_record': has_skip_record,
+            'skip_record': skip_record if has_skip_record else None,
+        })
+
+    return phases
+
+
 def _current_stage(completion):
     """Derive the current dialogue stage from the row state.
 
@@ -158,6 +258,7 @@ def epilogue_dialogue_view(request):
                 'completion': completion,
                 'snapshot': completion.stage0_snapshot,
                 'turns': [],
+                'phases': _build_dialogue_phases(completion, 0),
                 'can_respond': False,
                 'can_advance': False,
                 'next_stage_label': None,
@@ -217,10 +318,20 @@ def epilogue_dialogue_view(request):
     else:
         can_advance = False
         next_stage_label = None
+    # G.6c phase-as-chapter context: groups turns per phase and marks
+    # each phase's display status. The template renders prior phases
+    # as <details> summaries + the active phase as an open chapter
+    # card (proposal §4.2 — fixes the phase-seam bug). The flat
+    # `turns` / `stage2_skip_record` / `turns_remaining` keys are
+    # retained for the (now-removed) pre-G.6c fallback rendering and
+    # for backward-compatible tests; the template no longer reads
+    # them directly but reading them does no harm.
+    phases = _build_dialogue_phases(completion, current_stage)
     return render(request, 'epilogue/dialogue.html', {
         'completion': completion,
         'snapshot': completion.stage0_snapshot,
         'turns': visible_turns,
+        'phases': phases,
         'current_stage': current_stage,
         'can_respond': can_respond,
         'can_advance': can_advance,
@@ -231,6 +342,24 @@ def epilogue_dialogue_view(request):
         ),
         'dialogue_error': False,
     })
+
+
+# G.6c.4 — after every POST-redirect-GET round-trip, the new page would
+# otherwise render at the top — hiding the just-generated assistant reply
+# below the sticky header + the Stage 0 evidence panel + the collapsed
+# prior phases. The fragment anchor lands the browser on the active
+# phase chapter (`id="dialogue-active"` in _phase_chapter.html); the
+# scroll-margin-top rule in epilogue.css §7 keeps the chapter clear of
+# the sticky header. Used by every redirect TO the dialogue page from
+# a POST handler.
+from django.urls import reverse as _reverse
+
+
+def _dialogue_redirect():
+    """Redirect to the dialogue page anchored on the active phase
+    chapter, so the teacher lands where the conversation is and not
+    at the top of the page (proposal §4.2 + G.6c.4 follow-up)."""
+    return redirect(_reverse('epilogue:dialogue') + '#dialogue-active')
 
 
 def _enter_dialogue(completion) -> bool:
@@ -304,9 +433,21 @@ def _handle_dialogue_turn(request, completion):
             for t in stage_turns
         ]
         history.append({'role': 'teacher', 'content': message})
+        # G.6c.6 — when the just-appended teacher reply brings the
+        # teacher_turn_count to the per-phase ceiling, the agent's
+        # response is the structural close of the phase (no more
+        # teacher replies possible). Pass the flag so the prompt
+        # overrides the default one-open-question rule with a
+        # settling acknowledgment. Surfaced from a live Stage 1
+        # walkthrough 2026-05-24 where the ceiling-hit reply hung
+        # an unanswerable question.
+        will_be_final = (
+            (teacher_turns + 1) >= EPILOGUE_DIALOGUE_TURN_CEILING
+        )
         summary = summarise_stage0_for_dialogue(locked.stage0_snapshot)
         reply = EpilogueDialogueAgent().extract(
             stage=stage, stage0_summary=summary, history=history,
+            is_final_in_phase=will_be_final,
         )
         if reply is None:
             messages.warning(
@@ -326,7 +467,7 @@ def _handle_dialogue_turn(request, completion):
         ]
         locked.save(update_fields=['dialogue_turns'])
 
-    return redirect('epilogue:dialogue')
+    return _dialogue_redirect()
 
 
 def _advance_dialogue(completion):
@@ -503,7 +644,7 @@ def epilogue_dialogue_advance_view(request):
         if not success and error:
             messages.warning(request, error)
 
-    return redirect('epilogue:dialogue')
+    return _dialogue_redirect()
 
 
 @login_required

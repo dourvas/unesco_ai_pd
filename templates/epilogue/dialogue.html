@@ -1,6 +1,7 @@
 {% extends 'base.html' %}
 {% load i18n %}
 {% load static %}
+{% load module_design %}
 
 {% block title %}{% trans "PROODOS Epilogue — Dialogue" %}{% endblock %}
 
@@ -8,41 +9,88 @@
 <link rel="stylesheet" href="{% static 'css/epilogue.css' %}">
 {% endblock %}
 
+{% block extra_js %}
+<script>
+  // G.6c.3 — submit-pending spinner.
+  // On form submit anywhere inside .epilogue-redesign, set
+  // data-submitting="true" on the clicked submit button so the
+  // CSS spinner (epilogue.css §11) shows during the round-trip.
+  // Removes the "did my click register?" doubt during the
+  // ~3-6s Gemini turn-generation window. Pure DOM, no library.
+  document.addEventListener('submit', function(ev) {
+    var form = ev.target;
+    if (!form.closest('.epilogue-redesign')) return;
+    // Disable all submit buttons in this form (typically one);
+    // disabling prevents double-submit, the attribute drives CSS.
+    var btns = form.querySelectorAll('button[type="submit"], button:not([type])');
+    btns.forEach(function(b) {
+      b.setAttribute('data-submitting', 'true');
+      b.disabled = true;
+    });
+  }, true);
+
+  // G.6c.4 — scroll-to-newest after submit.
+  // CSS anchor + scroll-margin-top placed the browser at the TOP of
+  // the active chapter, which on a long chapter still hid the new
+  // assistant reply below the fold. Override with scrollIntoView on
+  // the chapter's last child (the message form or the last chat
+  // bubble) so the new reply is in view + the input area sits at
+  // the bottom of the viewport — ready for the next message.
+  window.addEventListener('load', function() {
+    if (location.hash !== '#dialogue-active') return;
+    var active = document.getElementById('dialogue-active');
+    if (!active) return;
+    // Prefer the message form (so the input sits at viewport bottom
+    // and the latest assistant reply is right above it). Fall back
+    // to the last chat bubble if the form is not rendered (turn
+    // ceiling hit, skip card, etc.).
+    var target = active.querySelector('form')
+      || active.querySelector('.chat:last-of-type')
+      || active;
+    target.scrollIntoView({block: 'end', behavior: 'auto'});
+  });
+</script>
+{% endblock %}
+
 {% block content %}
-<div class="max-w-3xl mx-auto py-10 px-4">
+{% comment %}
+G.6c — phase-as-chapter dialogue layout (proposal §4.2).
 
-  <header class="mb-6">
-    <h1 class="text-2xl font-bold text-primary mb-1">{% trans "PROODOS Epilogue" %}</h1>
-    {% if current_stage == 1 %}
-      <p class="text-lg text-base-content/80">{% trans "Stage 1 — Look Back" %}</p>
-    {% elif current_stage == 2 %}
-      <p class="text-lg text-base-content/80">{% trans "Stage 2 — Look In" %}</p>
-    {% elif current_stage == 3 %}
-      <p class="text-lg text-base-content/80">{% trans "Stage 3 — Look Forward" %}</p>
-    {% elif current_stage == 'finished' %}
-      <p class="text-lg text-base-content/80">{% trans "Reflective dialogue complete" %}</p>
-    {% endif %}
-  </header>
+Replaces the pre-G.6c flat chat-bubble scroll with a chapter-per-
+phase layout that fixes the phase-seam bug (two consecutive
+assistant bubbles at a stage boundary). The view's phases context
+key carries one record per phase (Stages 1/2/3) marked
+collapsed/active/upcoming; the _phase_chapter.html partial renders
+each one in its appropriate mode.
 
-  {% comment %}
-  EU AI Act Article 50(1) transparency notice — the teacher is told
-  they are interacting with an AI system (design proposal v2 6.5).
-  {% endcomment %}
-  <div class="alert alert-info mb-6 text-sm">
-    <span>
-      {% trans "This is a reflective dialogue with an AI system (Google Gemini). It is here to help you look back at your own work — it does not assess, grade, or score you. You may end it whenever you wish." %}
-    </span>
-  </div>
+Label-removal sweep (proposal §5): no "Stage 1/2/3" anywhere in
+teacher-visible copy. The phase numerals are I/II/III; the phase
+names are the friendly Look Back / Look In / Look Forward. The
+collapsed Stage 0 panel is renamed "Your reflective evidence".
 
-  {% comment %}
-  Q2 (cognitive load / split-attention): the Stage 0 dashboard stays
-  available as a collapsible side panel through the dialogue so the
-  teacher can keep the referenced data in view.
-  {% endcomment %}
+Methodological-disclosure trade-off (proposal §10 + literature note
+§16.5): the collapse pattern means a teacher composing Stage 3 may
+not see prior phases without re-opening them. Coding rules for the
+dissertation's dialogue-corpus analysis must treat thematic
+continuity across phases as evidence of teacher memory + the
+agent's carry-forward summary, not co-present text.
+{% endcomment %}
+{% epilogue_aspect_colour as aspect_colour %}
+<div class="epilogue-redesign max-w-3xl mx-auto py-6 px-4"
+     style="--aspect-main: {{ aspect_colour.main }};
+            --aspect-bg: {{ aspect_colour.bg }};
+            --aspect-text: {{ aspect_colour.text }};
+            --aspect-deep: {{ aspect_colour.deep }};
+            --aspect-silver: {{ aspect_colour.silver }};
+            --aspect-gem: {{ aspect_colour.gem }};">
+
+  {% include 'epilogue/_aletheia_header.html' %}
+
+  {# --- Stage 0 evidence side panel (Q2 / split-attention, v2 §15) --- #}
   <div class="collapse collapse-arrow border border-base-300 mb-6">
     <input type="checkbox" />
     <div class="collapse-title font-medium">
-      {% trans "Your Personal Evolution (Stage 0 data)" %}
+      {% trans "Your reflective evidence" %}
     </div>
     <div class="collapse-content">
       {% include 'epilogue/_stage0_panel.html' with snapshot=snapshot %}
@@ -51,8 +99,8 @@
 
   {% if dialogue_error %}
 
-    <div class="alert alert-warning mb-4">
-      <span>{% trans "The reflective dialogue could not start just now. Please reload the page to try again." %}</span>
+    <div class="callout text-sm mb-4">
+      <span>{% trans "The reflective conversation could not start just now. Please reload the page to try again." %}</span>
     </div>
     <a href="{% url 'epilogue:dialogue' %}" class="btn btn-primary">
       {% trans "Try again" %}
@@ -60,67 +108,21 @@
 
   {% else %}
 
-    <div class="space-y-3 mb-6">
-      {% for turn in turns %}
-        {% if turn.role == 'teacher' %}
-          <div class="chat chat-end">
-            <div class="chat-bubble chat-bubble-primary">{{ turn.content }}</div>
-          </div>
-        {% else %}
-          <div class="chat chat-start">
-            <div class="chat-bubble">{{ turn.content }}</div>
-          </div>
-        {% endif %}
-      {% endfor %}
-    </div>
+    {# --- Phase chapters: one per stage, rendered per status. --- #}
+    {% for phase in phases %}
+      {% include 'epilogue/_phase_chapter.html' with phase=phase can_respond=can_respond can_advance=can_advance next_stage_label=next_stage_label turns_remaining=turns_remaining %}
+    {% endfor %}
 
-    {% if stage2_skip_record %}
-      <div class="alert alert-info mb-6 text-sm">
-        <span>
-          {% blocktrans with reason=stage2_skip_record.reason %}
-          Stage 2 (Look In) was skipped automatically: {{ reason }}.
-          Your reflective record did not have enough recurring tensions
-          or thematic shifts to support a juxtaposition. This is
-          recorded for the research; it is not a judgement on your
-          reflection.
-          {% endblocktrans %}
-        </span>
-      </div>
-    {% endif %}
-
-    {% if can_respond %}
-      <form method="post" action="{% url 'epilogue:dialogue' %}" class="mb-4">
-        {% csrf_token %}
-        <textarea name="message" rows="3" required
-                  class="textarea textarea-bordered w-full"
-                  placeholder="{% trans 'Write your response…' %}"></textarea>
-        <div class="flex justify-end mt-2">
-          <button type="submit" class="btn btn-primary">{% trans "Send" %}</button>
-        </div>
-      </form>
-    {% elif current_stage == 1 or current_stage == 2 or current_stage == 3 %}
-      <div class="alert mb-4 text-sm">
-        <span>{% trans "You have reached the end of this reflective exchange. When you are ready, continue below." %}</span>
-      </div>
-    {% endif %}
-
-    <div class="flex flex-wrap justify-end items-center gap-3 border-t border-base-300 pt-4">
-      {% if can_advance and next_stage_label %}
-        <form method="post" action="{% url 'epilogue:dialogue_advance' %}" class="inline">
-          {% csrf_token %}
-          <button type="submit" class="btn btn-primary">
-            {{ next_stage_label }}
-          </button>
-        </form>
-      {% endif %}
+    {# --- End-of-flow actions: only after Stage 3, the next step is the Portrait. --- #}
+    <div class="flex flex-wrap justify-end items-center gap-3 border-t border-base-300 pt-4 mt-6">
       {% comment %}
       Phase G G.3 — once the teacher has at least one Stage 3 reply
-      the dialogue is "ready to finish" and the flow continues into the
-      Learning Portrait (review / regenerate / accept). The Portrait
-      page itself owns the final accept-and-complete POST. Before
-      Stage 3 has any teacher reply, the "Finish" exit posts to
-      /complete/ directly — used by teachers who want to leave the
-      dialogue early without producing a Portrait.
+      the dialogue is "ready to finish" and the flow continues into
+      the Learning Portrait. The Portrait page owns the final
+      accept-and-complete POST. Before Stage 3 has any teacher reply,
+      the "Leave without continuing" exit posts to /complete/
+      directly — used by teachers who want to leave the reflective
+      flow early without producing a Portrait.
       {% endcomment %}
       {% if current_stage == 3 or current_stage == 'finished' %}
         <a href="{% url 'epilogue:portrait' %}"
@@ -132,13 +134,23 @@
           {% csrf_token %}
           <button type="submit"
                   class="{% if can_advance %}btn btn-ghost{% else %}btn btn-primary btn-lg{% endif %}">
-            {% trans "Finish the Epilogue" %}
+            {% trans "Leave without continuing" %}
           </button>
         </form>
       {% endif %}
     </div>
 
   {% endif %}
+
+  {# --- Article 50(1) transparency notice, relocated to footer.       --- #}
+  {# Always visible, names "Google Gemini" for compliance (G.6 §3.3   --- #}
+  {# function-based boundary — disclosure paragraphs name the engine, --- #}
+  {# narrative copy names the persona).                                --- #}
+  <footer class="mt-10 pt-4 border-t border-base-300">
+    <p class="text-xs text-base-content/60">
+      {% trans "This is a reflective conversation with an AI system (Google Gemini, model gemini-2.5-flash). It is here to help you look back at your own work — it does not assess, grade, or score you. You may end it whenever you wish. EU AI Act Article 50(1)." %}
+    </p>
+  </footer>
 
 </div>
 {% endblock %}

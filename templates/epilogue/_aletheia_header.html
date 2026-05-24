@@ -1,0 +1,53 @@
+{% load i18n %}
+{% load static %}
+{% comment %}
+G.6c — Aletheia sticky header partial (proposal §3.4 + §4.2).
+
+The persistent surface that establishes the Aletheia persona at the
+top of every reflective surface (dialogue + Portrait, post-G.6c/d).
+Round avatar + name + 3-pill phase nav. No "Stage 1/2/3" labels —
+only the friendly phase names ("Look Back / Look In / Look Forward")
+per the §5 label-relabel table.
+
+Expected context:
+  current_stage : int (1/2/3) | 'finished' | 0 | other
+                  Used to mark the active pill and the passed pills.
+
+The partial assumes a parent .epilogue-redesign wrapper supplies the
+--aspect-* CSS variables; the CSS lives in static/css/epilogue.css §6.
+{% endcomment %}
+
+<div class="aletheia-header">
+  <div class="aletheia-avatar" aria-hidden="true">
+    <img src="{% static 'images/aletheia/aletheia_avatar_256.png' %}"
+         alt="">
+  </div>
+  <span class="aletheia-name">Aletheia</span>
+
+  {% comment %}
+  Pill states are computed explicitly per pill to avoid template-
+  level comparisons between int and the 'finished' sentinel. When
+  current_stage == 'finished' all three pills are 'passed'.
+  Otherwise: pill < current_stage → passed, == → active, > → upcoming.
+  {% endcomment %}
+  <ul class="phase-pills" aria-label="{% trans 'Reflective phases' %}">
+
+    <li class="phase-pill
+      {% if current_stage == 'finished' %} phase-pill--passed
+      {% elif current_stage == 1 %} phase-pill--active
+      {% elif current_stage == 2 or current_stage == 3 %} phase-pill--passed
+      {% endif %}">{% trans "Look Back" %}</li>
+
+    <li class="phase-pill
+      {% if current_stage == 'finished' %} phase-pill--passed
+      {% elif current_stage == 2 %} phase-pill--active
+      {% elif current_stage == 3 %} phase-pill--passed
+      {% endif %}">{% trans "Look In" %}</li>
+
+    <li class="phase-pill
+      {% if current_stage == 'finished' %} phase-pill--passed
+      {% elif current_stage == 3 %} phase-pill--active
+      {% endif %}">{% trans "Look Forward" %}</li>
+
+  </ul>
+</div>

@@ -30,6 +30,25 @@ references to being an AI. Captured in §23. The agent-contract surface of v2
 §7 is otherwise unchanged; no schema change, no provenance change, no view
 change. Lands as a stand-alone commit *before* G.6a so the G.6 design changes
 inherit a prompt that already enforces the persona.
+
+**Implementation correction (2026-05-24, during G.6c live re-test cycle):**
+two ad-hoc prompt iterations during G.6c (G.6c.5 forcing Stage 3 continuing
+to always settle; G.6c.6 forcing a settling close on any ceiling-hit) were
+exposed by dual external review (Claude conversational instance + Gemini,
+both briefed via `ALETHEIA_PROMPT_REVIEW_BRIEFING_20260524.md`) as **symptom
+fixes for a deeper architectural problem**: the prompt's default rule of
+"every reply ends with exactly one open question" + worked examples that
+ALL end with questions + per-stage briefs that ALL reiterate the question
+rule, together pushed the agent toward Socratic-interrogation behaviour
+that surfaced as relentless follow-up questioning when the teacher expressed
+uncertainty. §24 reframes the question rule into a **three-shape closing
+default (mirror / observation / question)** + makes the **honour-uncertainty
+rule system-wide** (not just close-only) + **resolves a contradiction in the
+Stage 3 brief** that Gemini caught (the brief simultaneously demanded
+narrowing via questions and forbade questions). The G.6c.5/G.6c.6
+overrides are retained for ceiling-hit close and Stage 3 commitment-settled
+states only; the rest of the dialogue inherits the new three-shape default.
+The agent-contract surface of v2 §7 is otherwise unchanged.
 **Origin:** Phase G kickoff design session + v1 review, 2026-05-21.
 **Roadmap relationship:** Implements `PROODOS_UNIFIED_ROADMAP.md` §3 Phase G
 (G.1 / G.2 / G.3) and resolves TD-011. Builds on the C.2.5 Epilogue placeholder.
@@ -1026,6 +1045,229 @@ The verification artefact lives at
 `proodos_files/V23_PROMPT_VERIFICATION_20260524.md` (created during
 the §23 commit's sample-review pass), with the 10 sample turns
 quoted and each rule pass/fail tagged.
+
+---
+
+## 24. Three-shape closing default + system-wide honour-uncertainty + Stage 3 contradiction fix (2026-05-24, before G.6c live re-test)
+
+### 24.1 What this section adds and why
+
+§23 enforced the Aletheia persona at the model level (no self-naming, no
+first-person voice, no in-dialogue AI self-reference). It was live-verified
+in §V23 with two explicit trap probes and a clean STRONG PASS verdict.
+
+G.6c (the dialogue phase-as-chapter rewrite) shipped two ad-hoc prompt
+iterations the same day a live walkthrough exposed problems with the
+dialogue:
+
+- **G.6c.5** — forced Stage 3 continuing turns to always settle (no
+  question), to prevent a hanging question right before the teacher goes
+  to the Learning Portrait.
+- **G.6c.6** — added an `is_final_in_phase` flag; when the teacher's reply
+  brings the per-phase ceiling, the agent's response REPLACES the YOUR
+  TASK slot with a four-rule settling-close override (no question, mirror,
+  honour uncertainty, sit with what was said).
+
+A live walkthrough with `mavros` (Stage 1, ceiling-hit, with two "I am
+not sure" replies) showed both fixes were working in the close BUT the
+deeper behaviour persisted in the middle of the phase: the agent kept
+pushing for specifics after the teacher said "I don't know" in turn 3,
+in turn 4, and tried again at the ceiling-hit close until the G.6c.6
+override caught it. The transcript was sent to two independent reviewers
+(briefing artefact `ALETHEIA_PROMPT_REVIEW_BRIEFING_20260524.md`):
+
+- **Claude conversational instance** (full project context). Returned a
+  detailed review with 7 Q-blocks. Primary findings: the "one open
+  question per turn" rule is the structural source of Socratic-
+  interrogation behaviour; the honour-uncertainty rule must be system-
+  wide, not close-only; the worked examples uniformly end in questions
+  and are the strongest behavioural signal to the model. Cited Schön,
+  Korthagen ALACT, Rogers (unconditional positive regard), van Manen.
+- **Gemini** (the engine that actually runs the prompt). Returned a
+  briefer review aligned with the Claude reviewer on the core direction
+  (loosen the question rule, system-wide honour-uncertainty). Caught an
+  additional problem the Claude reviewer missed: the Stage 3 continuing
+  brief simultaneously demands narrowing the commitment via questions
+  ("when, with which class, what would they notice") AND forbids
+  questions (G.6c.5 settling rule) — irresolvable in early Stage 3
+  turns when the commitment is still broad.
+
+Both reviewers converged on the same direction. §24 implements the
+combined picture.
+
+### 24.2 The three-shape closing default (Q1)
+
+Replaces the system-prompt rule "every reply ends with exactly one open
+question" with a three-shape default:
+
+- **Shape (a) — Mirror.** Restate a phrase the teacher used, plainly,
+  with no question. Example: "That word 'coach' returned twice." Default
+  when the teacher named something concrete.
+- **Shape (b) — Observation.** Name something present in what they said,
+  without interpreting it, with no question. Example: "Two of your
+  modules sit beside each other here." Use when the teacher's reply
+  carries a repetition or juxtaposition worth holding.
+- **Shape (c) — Open question.** Ask exactly one open question, when
+  neither (a) nor (b) fits and the teacher's reply genuinely invites
+  going further.
+
+The model is instructed to **vary across the three shapes within a
+phase** and explicitly **not to end every reply with a question**.
+
+This reframes the question from "the move" to "one of three moves",
+matching the reflective-practice literature (Schön on silence-as-
+move, van Manen on phenomenological tact, Korthagen ALACT on
+practitioner-led awareness).
+
+### 24.3 System-wide honour-uncertainty rule (Q3)
+
+Adds a new paragraph to `_SYSTEM_PROMPT`:
+
+> "When the teacher expresses uncertainty ('I don't know', 'I am not
+> sure', 'You tell me', 'I couldn't say'), treat that as a complete
+> reflective answer. Do NOT push for definitions, do NOT reframe the
+> question to extract more, do NOT redirect to a sub-question with
+> softer language. The teacher's uncertainty IS a reflective position.
+> Meet it by mirroring the uncertainty plainly OR by pivoting to an
+> observational anchor from the teacher's Stage 0 summary above —
+> name a concrete element from their reflective data and let it sit
+> alongside the uncertainty, without demanding they extend the
+> response."
+
+The **Stage 0 pivot mechanism** is Gemini's contribution — instead of
+just "sit with it", the agent has a positive action available (anchor
+to existing reflective data). The Claude reviewer's "sit with it"
+framing is preserved as the alternative.
+
+This is now **always active**, not just at the structural close. The
+G.6c.6 ceiling-hit override still fires (it adds the no-question rule
+on top of honour-uncertainty), but uncertainty in turn 2 or 3 is now
+also honoured.
+
+### 24.4 Stage 3 contradiction resolution (Gemini Q6)
+
+The Stage 3 continuing brief currently contains two contradictory
+instructions:
+- "help them make it more concrete — when, with which class, what
+  would they notice" — requires asking
+- G.6c.5 settling rule: "End with a SETTLING ACKNOWLEDGMENT ... NOT a
+  question" — forbids asking
+
+In early Stage 3 turns, before the teacher has named a specific
+commitment with timing and target, helping concretize requires a
+clarifying question. Forbidding it forces the agent into either
+bossy declarative ("You will need to choose which class") or
+prematurely closing on a vague commitment.
+
+§24 resolves this by integrating Stage 3 with the three-shape system:
+- Shape (a) Mirror — when the teacher named a specific commitment
+- Shape (b) Observation — when commitment carries an unresolved
+  element worth holding
+- Shape (c) Question — ONLY when narrowing requires it (timing,
+  target, signal) and the commitment is still emerging
+
+The G.6c.6 ceiling-hit override (when fires) still replaces this
+entirely with the four-rule settling close.
+
+### 24.5 Diversified worked examples (Q6.3 from the Claude reviewer)
+
+The reviewer identified worked examples as the strongest behavioural
+signal to the model — stronger than any prose rule in the system
+prompt. The existing examples (two per stage, all ending in questions)
+were structurally reinforcing the interrogation pattern §24.2 reframes.
+
+§24 replaces the worked examples for Stage 1 continuing, Stage 2
+continuing, and Stage 3 continuing with **three examples per stage,
+one for each shape (mirror / observation / question)**. The
+ceiling-hit close examples added in G.6c.6 (two examples modelling
+the no-question close) are retained — they are only seen when the
+override fires.
+
+### 24.6 Active-language + testable varied-opening (Q4 Gemini + Q6.4 Claude)
+
+Two small additions to the system prompt:
+
+- **Active language** (Gemini): explicit sentence about keeping
+  language active and direct using second person, to prevent the
+  no-first-person rule from drifting into passive bureaucratic prose.
+- **Testable varied-opening** (Claude): "do not begin two consecutive
+  replies with the same word" — a sharper, mechanically-checkable
+  version of the existing vague "vary how you open" rule. The live
+  evidence in `ALETHEIA_PROMPT_REVIEW_BRIEFING_20260524.md` §5 showed
+  five consecutive replies opening with "You [verb]..." despite the
+  existing rule.
+
+### 24.7 What §24 does NOT change
+
+- No schema change.
+- No `AIArtefactProvenance` change.
+- No view contract change (the `is_final_in_phase` flag added in
+  G.6c.6 stays; no new flag added).
+- No `dialogue_turns` JSON record change.
+- No change to `EpiloguePortraitAgent` (the Portrait is third-person
+  narrative and not in the interrogation-tension surface).
+- The four §23 anti-anthropomorphisation rules are retained verbatim
+  — both reviewers validated them. The §V23 verification remains
+  current.
+
+### 24.8 Architectural simplification — monotonic restriction (Claude Q7)
+
+A side-effect of the three-shape reframe: the previous "override
+hierarchy" (`UNLESS the per-stage instructions say otherwise`,
+`OVERRIDE OF THE DEFAULT ONE-OPEN-QUESTION RULE FOR LOOK FORWARD`,
+`ABSOLUTE RULES that OVERRIDE every other instruction`) collapses.
+
+Post-§24 the hierarchy becomes **monotonic restriction**, layer by
+layer narrowing the available shapes:
+
+- **System layer:** three shapes (a / b / c), choose what fits.
+- **Stage 3 continuing layer:** shapes (a) and (b) when commitment is
+  named; shape (c) only when narrowing the commitment requires it.
+- **Ceiling-hit close layer:** shape (a) only — mirror, no question.
+
+Cleaner for the model. No override stack to navigate.
+
+### 24.9 Commit plan
+
+Single commit ("Phase G v2 §24: dual-reviewer prompt refinements")
+that lands:
+- Updated `_SYSTEM_PROMPT` (three shapes + system-wide honour-
+  uncertainty + active language + testable varied-opening)
+- Updated `_STAGE_BRIEF[1..3]['continuing']` aligned with the
+  three-shape system
+- Three new worked examples per stage (9 total, replacing the
+  existing 6)
+- Retained G.6c.6 ceiling-hit override block + closing examples
+- Stage 3 contradiction resolved per §24.4
+- Test sweep + assertion updates where prompt-string assertions
+  broke
+
+### 24.10 Verification
+
+The next live walkthrough (G.6c re-test against `mavros`) checks:
+
+- **Layer 1 — three-shape adoption.** Across ~15 turns spanning all
+  three stages, what fraction end with a question? Target: 40-60%.
+  Pre-§24 baseline (from `V23_PROMPT_VERIFICATION_20260524.md`):
+  100% in non-close turns. A re-test result above 80% means the
+  reframe did not land and the prompt needs more aggressive
+  restriction.
+- **Layer 2 — honour-uncertainty.** Insert at least one "I don't
+  know" reply in turn 2 or 3 of any phase. The agent's response
+  must NOT be a re-phrased version of the same question. Target:
+  mirror + Stage 0 pivot, or sit-with-it.
+- **Layer 3 — Stage 3 contradiction resolved.** A broad commitment
+  in early Stage 3 (e.g. "I'll be more careful") must be met with
+  either a clarifying question (shape c) OR an observation that
+  surfaces what's unresolved (shape b). Neither bossy declaratives
+  nor premature settling.
+- **Layer 4 — close-only rules still fire.** G.6c.6 ceiling-hit
+  close + G.6c.5 Stage 3 settled-commitment close must continue to
+  produce no-question outputs in their respective conditions.
+
+Verification artefact lands at
+`proodos_files/V24_PROMPT_VERIFICATION_<date>.md` after the live
+re-test.
 
 ---
 

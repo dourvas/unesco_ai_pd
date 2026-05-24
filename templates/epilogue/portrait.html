@@ -9,6 +9,25 @@
 <link rel="stylesheet" href="{% static 'css/epilogue.css' %}">
 {% endblock %}
 
+{% block extra_js %}
+<script>
+  // G.6c.3 — submit-pending spinner (epilogue.css §11). On submit
+  // inside .epilogue-redesign, flip data-submitting="true" on the
+  // clicked button so the CSS spinner shows during the POST round-trip.
+  // Particularly useful here for Accept (atomic write + PDF generation,
+  // 5-10s) and Regenerate (fresh Gemini extract, 3-6s).
+  document.addEventListener('submit', function(ev) {
+    var form = ev.target;
+    if (!form.closest('.epilogue-redesign')) return;
+    var btns = form.querySelectorAll('button[type="submit"], button:not([type])');
+    btns.forEach(function(b) {
+      b.setAttribute('data-submitting', 'true');
+      b.disabled = true;
+    });
+  }, true);
+</script>
+{% endblock %}
+
 {% block content %}
 {% comment %}
 EU AI Act Article 50(2) — machine-readable provenance for the

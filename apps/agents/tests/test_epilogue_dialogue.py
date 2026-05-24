@@ -111,8 +111,24 @@ class EpilogueDialoguePromptTest(SimpleTestCase):
         # variety rule, and the explicit evaluation-refusal rule.
         self.assertIn('never judge, grade, praise', prompt)
         self.assertIn('never open a reply by appraising', prompt)
-        self.assertIn('Vary how you open', prompt)
+        # §24 — the old "Vary how you open" rule was loose and not
+        # honoured in the live walkthrough (five consecutive replies
+        # opened with "You [verb]..."). The new testable rule forbids
+        # two consecutive replies with the same opening word, and the
+        # three-shape system provides the move variety. Assert on the
+        # new pattern.
+        self.assertIn('Do NOT begin two consecutive replies', prompt)
         self.assertIn('that is yours to decide', prompt)
+        # §24 three-shape closing default — the structural source of
+        # non-interrogation behaviour. All three shape names must be
+        # present in the prompt so the model can route per turn.
+        self.assertIn('MIRROR', prompt)
+        self.assertIn('OBSERVATION', prompt)
+        self.assertIn('OPEN QUESTION', prompt)
+        # §24 system-wide honour-uncertainty rule (Q3 dual-reviewer
+        # convergence). Must fire across all phases, not only at close.
+        self.assertIn('When the teacher expresses uncertainty', prompt)
+        self.assertIn('IS a reflective position', prompt)
         # The phase and the teacher's own data.
         self.assertIn('Look Back', prompt)
         self.assertIn('pedagogical fit', prompt)
@@ -142,19 +158,26 @@ class EpilogueDialoguePromptTest(SimpleTestCase):
         self.assertIn('My view on oversight changed at M6.', prompt)
         self.assertIn('Teacher: My view on oversight', prompt)
         self.assertIn('Continue the Look Back dialogue', prompt)
-        # Refinement (post-sample-review): stay with what the teacher
-        # signalled as significant, and vary the move turn to turn
-        # rather than repeating the connect-themes question.
+        # §24 Stage 1 continuing brief — references three-shape
+        # system + explicit honour-uncertainty + stay-with-it.
         self.assertIn('stay with that rather than steering', prompt)
-        self.assertIn('rather than repeatedly asking them to connect themes',
-                      prompt)
-        # The continuing turn carries two worked teacher-message ->
-        # reply examples with distinct openers (varied shape), flagged
-        # shape-only.
+        self.assertIn('three closing shapes from the system prompt', prompt)
+        self.assertIn('mirror it', prompt)  # shape (a) cue inline
+        self.assertIn('honour it', prompt)  # uncertainty
+        # §24 four worked examples — three shapes + one
+        # uncertainty-handling Stage 0 pivot example. Each carries
+        # an explicit shape label per §24.5.
         self.assertIn('a fitting reply would be:', prompt)
         self.assertIn('model its shape, never its content', prompt)
+        self.assertIn('EXAMPLE — MIRROR', prompt)
+        self.assertIn('EXAMPLE — OBSERVATION', prompt)
+        self.assertIn('EXAMPLE — OPEN QUESTION', prompt)
+        self.assertIn('EXAMPLE — UNCERTAINTY', prompt)
+        # Specific phrases from the new examples (shape-confirming)
+        self.assertIn('Performing reflection more than doing it', prompt)
         self.assertIn('A line runs through what you said', prompt)
-        self.assertIn('Stay with that for a moment', prompt)
+        self.assertIn('Trying things — a turning point', prompt)
+        self.assertIn('Not being sure is a true place', prompt)
 
     def test_stage2_opening_prompt_includes_juxtaposition(self):
         """G.2b: Stage 2 opening carries the pre-computed juxtaposition

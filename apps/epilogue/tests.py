@@ -1779,3 +1779,204 @@ class TeacherFacingLabelLeakTest(EpilogueViewBase):
         row.completed_at = timezone.now()
         row.save(update_fields=['completed_at'])
         self._assert_no_leaks('epilogue:placeholder')
+
+    # --- Dialogue surface, three active-stage fixtures (G.6c) ---
+    # The dialogue label-leak rule must hold at every point in the
+    # flow, not only at end-state. G.6 proposal §9.4 rationale:
+    # a leak could surface in Stage 1 active and stay invisible to a
+    # test that only renders the post-Stage-3 collapsed view.
+
+    def _dialogue_completion(self, *, active_stage):
+        """Build an EpilogueCompletion at the requested active stage.
+
+        Sets prior-stage timestamps + populates dialogue_turns with the
+        opening turn for each prior stage + the opening turn for the
+        active stage. Mirrors the structure _build_dialogue_phases
+        expects (proposal §4.2 phase-as-chapter)."""
+        from apps.epilogue.tests import _SNAPSHOT  # noqa
+        defaults = {
+            'stage0_snapshot': _SNAPSHOT,
+            'dialogue_entered': True,
+        }
+        turns = [
+            {'stage': 1, 'role': 'assistant',
+             'content': 'Look Back opening from the agent.',
+             'model': 'gemini-2.5-flash', 'generated_at': 'x'},
+        ]
+        if active_stage >= 2:
+            defaults['stage1_completed_at'] = timezone.now()
+            turns.append({
+                'stage': 1, 'role': 'teacher',
+                'content': 'My Look Back reply.', 'generated_at': 'x',
+            })
+            turns.append({
+                'stage': 2, 'role': 'assistant',
+                'content': 'Look In opening from the agent.',
+                'model': 'gemini-2.5-flash', 'generated_at': 'x',
+            })
+        if active_stage >= 3:
+            defaults['stage2_completed_at'] = timezone.now()
+            turns.append({
+                'stage': 2, 'role': 'teacher',
+                'content': 'My Look In reply.', 'generated_at': 'x',
+            })
+            turns.append({
+                'stage': 3, 'role': 'assistant',
+                'content': 'Look Forward opening from the agent.',
+                'model': 'gemini-2.5-flash', 'generated_at': 'x',
+            })
+        defaults['dialogue_turns'] = turns
+        return EpilogueCompletion.objects.create(user=self.user, **defaults)
+
+    def test_dialogue_page_no_leaks_stage1_active(self):
+        self._dialogue_completion(active_stage=1)
+        self._assert_no_leaks(
+            'epilogue:dialogue',
+            label_for_error='dialogue (Stage 1 active)',
+        )
+
+    def test_dialogue_page_no_leaks_stage2_active(self):
+        self._dialogue_completion(active_stage=2)
+        self._assert_no_leaks(
+            'epilogue:dialogue',
+            label_for_error='dialogue (Stage 2 active)',
+        )
+
+    def test_dialogue_page_no_leaks_stage3_active(self):
+        """Stage 3 active with two collapsed prior phases — the
+        post-G.6c collapse pattern from proposal §4.2 is exercised
+        here. The collapsed <details> previews ('You said: …') must
+        not leak the forbidden labels either."""
+        self._dialogue_completion(active_stage=3)
+        self._assert_no_leaks(
+            'epilogue:dialogue',
+            label_for_error='dialogue (Stage 3 active, prior collapsed)',
+        )
+
+
+class DialoguePhaseSeamTest(EpilogueViewBase):
+    """G.6c phase-as-chapter regression guard (proposal §9.3).
+
+    The pre-G.6c dialogue layout rendered every turn in a flat
+    chronological scroll. At a stage transition (Stage 1 → Stage 2 or
+    Stage 2 → Stage 3) the closing assistant turn of stage N and the
+    opening assistant turn of stage N+1 appeared as two consecutive
+    .chat.chat-start bubbles — the phase-seam bug surfaced by the PI
+    on 2026-05-23.
+
+    The fix groups turns per phase and renders prior phases inside
+    <details> elements. The two boundary assistant turns end up on
+    opposite sides of a <details> wall — never visually adjacent.
+
+    This test verifies the structure structurally (not visually): the
+    rendered HTML, with <details> open in source, must not contain
+    two assistant turn elements for different stages within the same
+    <details>-less container.
+    """
+
+    def test_stage_transition_does_not_produce_consecutive_assistant_bubbles(self):
+        """At Stage 3 active with Stages 1+2 collapsed, the active
+        Stage 3 chapter contains its own opening assistant turn but
+        the prior Stages 1/2 opening + reply turns are inside the
+        collapsed <details>. Even with the details open in the
+        source HTML, the active phase's chapter (.phase-chapter:
+        not(.phase-chapter--collapsed)) cannot contain assistant
+        turns from any stage other than the active one — proven by
+        checking the source pattern."""
+        from apps.epilogue.tests import _SNAPSHOT  # noqa
+        EpilogueCompletion.objects.create(
+            user=self.user,
+            stage0_snapshot=_SNAPSHOT,
+            dialogue_entered=True,
+            stage1_completed_at=timezone.now(),
+            stage2_completed_at=timezone.now(),
+            dialogue_turns=[
+                # Stage 1: opening + teacher reply
+                {'stage': 1, 'role': 'assistant', 'content': 'S1 opening.',
+                 'model': 'gemini-2.5-flash', 'generated_at': 'x'},
+                {'stage': 1, 'role': 'teacher', 'content': 'S1 reply.',
+                 'generated_at': 'x'},
+                # Stage 2: opening + teacher reply
+                {'stage': 2, 'role': 'assistant', 'content': 'S2 opening.',
+                 'model': 'gemini-2.5-flash', 'generated_at': 'x'},
+                {'stage': 2, 'role': 'teacher', 'content': 'S2 reply.',
+                 'generated_at': 'x'},
+                # Stage 3: opening only (active)
+                {'stage': 3, 'role': 'assistant', 'content': 'S3 opening.',
+                 'model': 'gemini-2.5-flash', 'generated_at': 'x'},
+            ],
+        )
+        resp = self.client.get(reverse('epilogue:dialogue'))
+        self.assertEqual(resp.status_code, 200)
+        body = resp.content.decode('utf-8')
+
+        # The active chapter is a <article class="phase-chapter
+        # rfx-screen-in"> WITHOUT the --collapsed modifier. The
+        # collapsed prior chapters are <details class="phase-chapter
+        # phase-chapter--collapsed">. The phase-seam fix means the
+        # active <article> can contain ONLY the active stage's turns.
+        # We verify by extracting the active <article> block and
+        # asserting it does not contain the prior stages' content.
+        import re
+        active_match = re.search(
+            r'<article\b[^>]*class="[^"]*phase-chapter[^"]*rfx-screen-in[^"]*"[^>]*>(.*?)</article>',
+            body, re.DOTALL,
+        )
+        self.assertIsNotNone(
+            active_match,
+            'The dialogue page must render an active phase chapter '
+            'with the rfx-screen-in class (G.6c §4.2).',
+        )
+        active_inner = active_match.group(1)
+        self.assertIn(
+            'S3 opening.', active_inner,
+            'Active chapter must contain its own opening turn.',
+        )
+        self.assertNotIn(
+            'S1 opening.', active_inner,
+            'PHASE-SEAM REGRESSION: the active chapter must not '
+            'contain prior Stage 1 turns — those belong to a '
+            'collapsed <details>.',
+        )
+        self.assertNotIn(
+            'S2 opening.', active_inner,
+            'PHASE-SEAM REGRESSION: the active chapter must not '
+            'contain prior Stage 2 turns.',
+        )
+
+    def test_collapsed_prior_phases_render_as_details(self):
+        """Each prior phase must render as a <details class="…
+        phase-chapter--collapsed"> (the G.6c collapse pattern). The
+        <summary> shows the phase numeral + name + last-teacher
+        preview."""
+        from apps.epilogue.tests import _SNAPSHOT  # noqa
+        EpilogueCompletion.objects.create(
+            user=self.user,
+            stage0_snapshot=_SNAPSHOT,
+            dialogue_entered=True,
+            stage1_completed_at=timezone.now(),
+            stage2_completed_at=timezone.now(),
+            dialogue_turns=[
+                {'stage': 1, 'role': 'assistant', 'content': 'S1 open.',
+                 'model': 'gemini-2.5-flash', 'generated_at': 'x'},
+                {'stage': 1, 'role': 'teacher',
+                 'content': 'S1 teacher final reply.', 'generated_at': 'x'},
+                {'stage': 2, 'role': 'assistant', 'content': 'S2 open.',
+                 'model': 'gemini-2.5-flash', 'generated_at': 'x'},
+                {'stage': 2, 'role': 'teacher',
+                 'content': 'S2 teacher final reply.', 'generated_at': 'x'},
+                {'stage': 3, 'role': 'assistant', 'content': 'S3 open.',
+                 'model': 'gemini-2.5-flash', 'generated_at': 'x'},
+            ],
+        )
+        resp = self.client.get(reverse('epilogue:dialogue'))
+        body = resp.content.decode('utf-8')
+        # Two collapsed <details> for the two prior phases.
+        self.assertEqual(
+            body.count('phase-chapter--collapsed'), 2,
+            'Stages 1 and 2 must both render as collapsed chapters.',
+        )
+        # The teacher's last reply per prior phase appears in the
+        # collapsed summary as a 1-line preview.
+        self.assertIn('S1 teacher final reply.', body)
+        self.assertIn('S2 teacher final reply.', body)

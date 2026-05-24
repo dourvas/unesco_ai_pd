@@ -1,0 +1,152 @@
+{% load i18n %}
+{% load static %}
+{% comment %}
+G.6c — Phase chapter partial (proposal §4.2).
+
+Renders ONE reflective phase in one of three display modes:
+  - 'collapsed' : prior phase folded into <details> with the
+                  teacher's last message as a 1-line preview
+  - 'active'    : open chapter card with serif numeral + name +
+                  chat bubbles + (if can_respond) the message form
+                  + (if can_advance) the next-phase advance button.
+                  Carries the .rfx-screen-in animation class so the
+                  card fades + translates in when the phase becomes
+                  active (proposal §2.6, the Tab5 Phase F pattern;
+                  prefers-reduced-motion respected via CSS).
+  - 'upcoming'  : not rendered (the future phase has nothing to
+                  show yet; the pill nav already signals it).
+
+Expected context for the include:
+  phase         : the dict produced by _build_dialogue_phases() —
+                  {number, numeral, name, status, turns,
+                   last_teacher_preview, teacher_turn_count,
+                   has_skip_record, skip_record}
+  can_respond   : True if the active phase accepts a teacher reply
+  can_advance   : True if the advance-to-next-phase button shows
+  next_stage_label : button label (e.g. "Continue to Look In")
+  turns_remaining  : turns left in the per-phase ceiling
+
+The partial assumes a parent .epilogue-redesign wrapper and the CSS
+in static/css/epilogue.css §7-§8.
+{% endcomment %}
+
+{% if phase.status == 'collapsed' %}
+
+  <details class="phase-chapter phase-chapter--collapsed">
+    <summary>
+      <span class="numeral" style="font-size: 1.5rem;">{{ phase.numeral }}</span>
+      <span class="phase-title">{{ phase.name }}</span>
+      {% if phase.has_skip_record %}
+        <span class="phase-preview">
+          {% trans "Look In was set aside automatically — no juxtaposition material." %}
+        </span>
+      {% elif phase.last_teacher_preview %}
+        <span class="phase-preview">
+          {% blocktrans with preview=phase.last_teacher_preview %}You said: "{{ preview }}"{% endblocktrans %}
+        </span>
+      {% else %}
+        <span class="phase-preview">
+          {% trans "(no responses recorded)" %}
+        </span>
+      {% endif %}
+    </summary>
+    <div class="phase-chapter-body">
+      {% for turn in phase.turns %}
+        {% if turn.role == 'teacher' %}
+          <div class="chat chat-end">
+            <div class="chat-bubble chat-bubble-primary">{{ turn.content }}</div>
+          </div>
+        {% else %}
+          <div class="chat chat-start">
+            <div class="chat-aletheia-avatar" aria-hidden="true">
+              <img src="{% static 'images/aletheia/aletheia_avatar_256.png' %}" alt="">
+            </div>
+            <div class="chat-bubble">{{ turn.content }}</div>
+          </div>
+        {% endif %}
+      {% endfor %}
+    </div>
+  </details>
+
+{% elif phase.status == 'active' %}
+
+  {# id="dialogue-active" — POST→PRG→GET redirects from _dialogue_     #}
+  {# redirect() include #dialogue-active so the browser lands here    #}
+  {# (not at the top of the page where the new reply would be hidden  #}
+  {# below the fold). Combined with scroll-margin-top in epilogue.css #}
+  {# §7 so the sticky header does not overlap the anchor target.      #}
+  <article id="dialogue-active" class="phase-chapter rfx-screen-in">
+    <header class="phase-chapter-header">
+      <span class="numeral">{{ phase.numeral }}</span>
+      <div>
+        <p class="eyebrow">{% trans "Reflective phase" %}</p>
+        <h2 class="magazine-title" style="font-size: 1.5rem;">{{ phase.name }}</h2>
+      </div>
+    </header>
+
+    {% if phase.has_skip_record %}
+      {# Editorial skip card replaces the chat bubbles for Stage 2 #}
+      {# when the §6.4 threshold triggered. The skip is a property #}
+      {# of the data, not of the teacher's reflection — the copy #}
+      {# below names that explicitly (proposal §4.2). #}
+      <div class="callout text-sm">
+        {% blocktrans %}
+        This phase was set aside automatically. Your reflective record
+        did not have enough recurring tensions or thematic shifts to
+        support a juxtaposition for this phase. This is a reflection
+        of the data, not of your work.
+        {% endblocktrans %}
+      </div>
+    {% else %}
+      <div class="phase-chapter-body">
+        {% for turn in phase.turns %}
+          {% if turn.role == 'teacher' %}
+            <div class="chat chat-end">
+              <div class="chat-bubble chat-bubble-primary">{{ turn.content }}</div>
+            </div>
+          {% else %}
+            <div class="chat chat-start">
+              <div class="chat-aletheia-avatar" aria-hidden="true">
+                <img src="{% static 'images/aletheia/aletheia_avatar_256.png' %}" alt="">
+              </div>
+              <div class="chat-bubble">{{ turn.content }}</div>
+            </div>
+          {% endif %}
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    {% if can_respond and not phase.has_skip_record %}
+      <form method="post" action="{% url 'epilogue:dialogue' %}" class="mt-4">
+        {% csrf_token %}
+        <textarea name="message" rows="3" required
+                  class="textarea textarea-bordered w-full"
+                  placeholder="{% trans 'Write your response…' %}"></textarea>
+        <div class="flex justify-end mt-2 items-center gap-3">
+          {% if turns_remaining %}
+            <span class="text-xs text-base-content/60">
+              {% blocktrans count remaining=turns_remaining %}{{ remaining }} reply left in this phase{% plural %}{{ remaining }} replies left in this phase{% endblocktrans %}
+            </span>
+          {% endif %}
+          <button type="submit" class="btn btn-primary">{% trans "Send" %}</button>
+        </div>
+      </form>
+    {% elif not phase.has_skip_record %}
+      <div class="callout callout--subtle text-sm mt-4">
+        {% trans "You have reached the end of this reflective exchange. When you are ready, continue below." %}
+      </div>
+    {% endif %}
+
+    {% if can_advance and next_stage_label %}
+      <div class="flex justify-end mt-4">
+        <form method="post" action="{% url 'epilogue:dialogue_advance' %}" class="inline">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-primary">
+            {{ next_stage_label }}
+          </button>
+        </form>
+      </div>
+    {% endif %}
+  </article>
+
+{% endif %}
