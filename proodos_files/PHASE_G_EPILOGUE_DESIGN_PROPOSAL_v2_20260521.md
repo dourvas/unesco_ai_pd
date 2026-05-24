@@ -1269,6 +1269,122 @@ Verification artefact lands at
 `proodos_files/V24_PROMPT_VERIFICATION_<date>.md` after the live
 re-test.
 
+### 24.11 §24-revised — bare-repetition correction (2026-05-24, post first live re-test)
+
+The first live re-test of §24 against `mavros` (Stage 1, two
+continuing replies) surfaced an emergent failure mode the §24 spec
+had not anticipated: **bare verbatim parroting**. The relevant
+exchange:
+
+> *Teacher (turn 4):* "Yew indeed. I feel like I could be better."
+>
+> *Aletheia (turn 5, §24 mirror shape):* '"I feel like I could be better."'
+
+The reply is the teacher's quote with NO addition. Not even a
+small note. Pure echo.
+
+**Root cause analysis.** Three converging factors in the §24 prompt:
+
+1. **Mirror was positioned as the DEFAULT shape** ("Default shape
+   when the teacher named something concrete or expressed
+   uncertainty"). Almost every teacher reply contains a "concrete
+   phrase", so this default fired in ~80% of cases.
+2. **The mirror definition allowed "restate plainly, with no
+   question"** — the word "plainly" was interpreted by the model
+   as "without addition".
+3. **Stage 1 examples shipped four entries, two mirror-flavoured**
+   (one direct mirror + one uncertainty-pivot which is mirror+
+   anchor) — visual asymmetry that the model trained on.
+
+**The §5 evidence pattern was real but my correction overshot.**
+Pre-§24: agent over-questioned. Post-§24: agent under-contributed.
+Both fail reflective partnership, in opposite directions.
+
+**The §24-revised correction** (dual-reviewer cycle 2: Claude
+conversational + Gemini Flash self-reflection on the §24-revised
+draft, both endorsed it; Gemini caught one additional issue the
+Claude reviewer missed):
+
+- **Anti-parrot canon at the top of the three-shape block.** "Every
+  reply must contribute something beyond what the teacher just said
+  — an observation, a link, an anchor, or one open question. A
+  reply that is only a verbatim repetition of the teacher's words,
+  with no addition, is too thin and reads as the partner being
+  absent from the conversation." Centrally placed rule with
+  explicit *why* (LLMs follow rules better when the reason is
+  given).
+- **Removed "default" framing.** No shape is the default. Each is
+  triggered by a specific condition in the teacher's reply.
+- **Observation (b) takes priority over Mirror (a) when both
+  trigger** — juxtapositions deserve to be named before single
+  phrases get mirrored. Deterministic ordering.
+- **Mirror definition tightened.** "quote a phrase AND add a brief
+  grounding contribution from ONE of two sources: an anchor to
+  their reflective data above, OR a link to something they said
+  earlier in this dialogue. NEVER bare verbatim repetition."
+  Two safe addition options, anchored in the Stage 0 summary or
+  the dialogue history — both deterministically available.
+- **Gemini-specific tightening (catch the Claude reviewer
+  missed).** The pre-revised draft offered "structural note about
+  the phrase" as a third addition option ("the 'just' is doing
+  some work there"). Gemini, as the model that actually runs the
+  prompt, self-reported that Flash is brittle at linguistic-
+  structural analysis and risks sounding like "a philologist
+  correcting an essay". Option removed; an explicit "NEVER
+  linguistic analysis of word choice" guard added. The Stage 2
+  worked example that demonstrated the structural-note pattern
+  was also replaced.
+- **Example reorder.** Observation first (counter the recency/
+  priming bias that would otherwise push the model toward
+  whichever shape appears first).
+- **Varied-opening rule made testable.** "Do NOT begin two
+  consecutive replies with the same word".
+- **Fallback rule.** "If no anchor or link is available, choose
+  OBSERVATION (b) instead, not a bare mirror" — explicit
+  guidance for the case where Mirror's add-on conditions cannot
+  be satisfied.
+
+**Two divergences from Gemini's specific proposed wording**, both
+flagged in the §24.11 commit message:
+- Skipped "validates" framing (violates anti-evaluation rules
+  §6.2 / §23).
+- Skipped "emotion behind the word" framing (wrong register —
+  reflective companion, not therapist).
+
+**Methodological side-note on the dual-reviewer cycle.** The first
+review cycle (§24 itself) corrected interrogation behaviour. The
+revised version overshot toward parroting. The second cycle
+corrected the overshoot. This pattern — successive corrections
+through dual independent review — is the same epistemological
+move that drove the v2 §22 corrections during G.3. The
+intellectual honesty of recording each correction with its
+trigger and reasoning, rather than presenting only the final
+state, is methodologically important for the dissertation chapter
+on AI-mediated reflective tooling.
+
+**One reviewer caveat carried forward for future watching** (not
+applied now):
+- **Gemini Sigma1** — Observation trigger may over-fire if the
+  model always finds *some* pattern in the Stage 0 data. To be
+  measured in the next live test; if >80% of replies are
+  Observation, tighten Trigger to "must name a specific
+  identified element (a quote from earlier, a named theme, a
+  specific position) rather than generic gesture".
+- **Claude Sigma2** — varied-opening rule may be gameable by
+  starting with a different first word that follows the same
+  structure ("And you said..." instead of "You said..."). May
+  need to tighten to "no two consecutive replies with the same
+  opening *structure*". Wait to see if Flash actually games it.
+
+The implementation lands as part of the next commit. The §24.10
+verification spec is updated by §24.11 to also include:
+- **Layer 5 — bare-repetition guard.** Across 10+ replies, ZERO
+  bare verbatim repetitions of the teacher's words without
+  addition. Even one such reply means the anti-parrot canon
+  failed to land and the prompt needs more aggressive placement
+  (likely moving the canon to the LAST position in the prompt,
+  exploiting recency bias).
+
 ---
 
 *End of Phase G Epilogue design proposal v2.*

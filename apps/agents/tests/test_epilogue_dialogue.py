@@ -158,12 +158,14 @@ class EpilogueDialoguePromptTest(SimpleTestCase):
         self.assertIn('My view on oversight changed at M6.', prompt)
         self.assertIn('Teacher: My view on oversight', prompt)
         self.assertIn('Continue the Look Back dialogue', prompt)
-        # §24 Stage 1 continuing brief — references three-shape
-        # system + explicit honour-uncertainty + stay-with-it.
+        # §24-revised Stage 1 continuing brief — references three-
+        # shape system + observation priority + mirror with anchor
+        # (NEVER bare) + honour-uncertainty cue.
         self.assertIn('stay with that rather than steering', prompt)
-        self.assertIn('three closing shapes from the system prompt', prompt)
-        self.assertIn('mirror it', prompt)  # shape (a) cue inline
-        self.assertIn('honour it', prompt)  # uncertainty
+        self.assertIn('three shapes from the system prompt', prompt)
+        self.assertIn('observation has priority over mirror', prompt)
+        self.assertIn('never bare verbatim repetition', prompt)
+        self.assertIn('Honour uncertainty', prompt)
         # §24 four worked examples — three shapes + one
         # uncertainty-handling Stage 0 pivot example. Each carries
         # an explicit shape label per §24.5.
