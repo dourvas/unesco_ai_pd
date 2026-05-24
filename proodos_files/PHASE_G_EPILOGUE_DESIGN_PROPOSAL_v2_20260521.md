@@ -1387,4 +1387,63 @@ verification spec is updated by §24.11 to also include:
 
 ---
 
+## §25 — Deprecation notice (2026-05-24)
+
+**Status of this document after §24.12.** Sections §6 (Stages 1-3
+dialogue), §7 (Learning Portrait + PDF), §23 (Aletheia persona),
+§24 / §24.11 / §24.12 (three-shape reframe and successive
+prompt-engineering corrections) are **retained as historical
+record** of the design arc, but the surfaces they describe are
+**no longer shipped** in Phase G.
+
+**The decision.** Aletheia is removed from the PROODOS Epilogue.
+Final, by PI decision on 2026-05-24, after live re-testing of
+§24.12 showed the OBSERVATION example being recited verbatim —
+the third cycle in a family of prompt-engineering failures whose
+root cause is structural (Flash + reflective-companion register
++ Stage 0 evidence-only constraint), not prompt-surface.
+
+**Three reasons** (full rationale in deprecation doc §2):
+1. **Reflection fatigue** — PROODOS already carries 15 modules of
+   structured reflection; a 16th micro-reflection layer adds
+   cognitive load disproportionate to its synthesis value.
+2. **RPE framework dilution** — the dissertation's Reflective
+   Prompt Engineering contribution is taught *by* the teacher
+   *to* the model. A reflective chatbot in the Epilogue inverts
+   that direction and muddies the framework's theoretical line.
+3. **Technical fragility** — three prompt iterations (§24, §24.11,
+   §24.12) each fixed the prior failure but surfaced a new one in
+   the same family. Diminishing returns on prompt engineering.
+
+**What the Epilogue becomes.** Stage 0 dashboard + Continue
+button. M15-complete → Stage 0 → POST /epilogue/complete/ → T2 or
+home. Everything else in §1-5 / §8-22 of this proposal ships as
+documented.
+
+**What is preserved from §6-7 / §23-24 for later use:**
+- xhtml2pdf + Article 50(2) PDF metadata pattern → reusable in
+  **Phase H** (certificate of attendance).
+- Aletheia visual identity (logo + colour palette + classical-
+  Greek register) → reusable in **deferred Phase J** (chatbot
+  re-introduction, scope TBD).
+- Three-shape closing canon + anti-parrot rules + anti-recitation
+  guards → reusable as **engineering-lessons evidence** in the
+  dissertation methodology chapter (literature note §17).
+
+**Authoritative deprecation document:**
+[`PHASE_G_DIALOGUE_DEPRECATION_20260524.md`](./PHASE_G_DIALOGUE_DEPRECATION_20260524.md)
+— scope (stays/goes/defers), test handling plan, lessons learned,
+sequencing of the closure commit.
+
+**Reading guide for future researchers using this proposal as a
+historical artefact.** §1-5, §8-22 describe what shipped. §6-7,
+§23-24.12 describe what was designed, built, prompt-engineered
+through three correction cycles, live-tested, and ultimately
+removed for the structural reasons above. Both halves matter for
+the dissertation chapter: the second half is methodological
+evidence that some reflective-companion failures cannot be solved
+at the prompt surface.
+
+---
+
 *End of Phase G Epilogue design proposal v2.*

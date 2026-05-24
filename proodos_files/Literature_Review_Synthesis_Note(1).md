@@ -581,6 +581,60 @@ van Manen, M. (1990). *Researching Lived Experience: Human Science for an Action
 
 ---
 
+## 17. Phase G closure — methodology evidence: prompt-engineering diminishing returns + strategic deprecation (2026-05-24)
+
+**Σκοπός αυτής της ενότητας.** Καταγραφή της απόφασης απομάκρυνσης του Aletheia chatbot από το Epilogue (PROODOS Epilogue, Phase G) ως **ξεχωριστή methodological case study** για το κεφάλαιο της διατριβής περί AI-mediated reflective tooling. Η αφήγηση δεν είναι αφήγηση αποτυχίας — είναι αφήγηση **evidence-driven design**: μια feature σχεδιάστηκε, υλοποιήθηκε, υποβλήθηκε σε δύο γύρους dual-reviewer prompt-engineering refinement, υπέστη live testing, και αφαιρέθηκε όταν τα δεδομένα έδειξαν δομικό όριο. Τα τρία ευρήματα που ακολουθούν είναι ώριμα για άμεση χρήση στο methodology chapter.
+
+### 17.1 Finding A — Prompt-engineering diminishing returns σε reflective-companion register με Gemini 2.5 Flash
+
+**Empirical pattern.** Τρεις διαδοχικοί γύροι prompt refinement (§24 → §24.11 → §24.12 του master proposal v2) με dual independent review (Claude Code + Gemini) δούλεψαν ως εξής:
+
+- **Κύκλος 1 (§24).** Three-shape closing canon (mirror / observation / question) εισήχθη για να αντιμετωπίσει το interrogation pattern του βασικού prompt. **Επίλυσε** το pattern. **Ανέδειξε** νέο pattern: bare verbatim repetition του εκπαιδευτικού (parroting).
+- **Κύκλος 2 (§24.11).** Anti-parrot canon + observation priority. **Επίλυσε** το parroting. **Ανέδειξε** νέο pattern: verbatim recitation του ίδιου του παραδείγματος του canon (uncertainty example).
+- **Κύκλος 3 (§24.12).** Anti-recitation guard με fictional anchor + lexical-only uncertainty trigger. **Επίλυσε** το uncertainty-example recitation. **Ανέδειξε** το ίδιο recitation pattern σε **άλλο** παράδειγμα (observation example).
+
+**Δομικό συμπέρασμα.** Το Gemini 2.5 Flash, σε reflective-companion register με Stage 0 evidence-only constraint, αντιμετωπίζει τα well-matched worked examples ως templates παρά ως shape demonstrations. Prompt-level rules εμφανίζονται **ανεπαρκή** χωρίς programmatic post-processing (server-side guard) ή upgrade σε capable-er model (Gemini 2.5 Pro). Δεν είναι αδύνατο να φτιαχτεί. Είναι **disproportionately expensive** σε prompt-engineering effort για τη συγκεκριμένη pedagogical contribution.
+
+**Methodology citation.** Το pattern διαδοχικών cycles όπου κάθε λύση επιλύει το προηγούμενο και αναδεικνύει νέο στην ίδια family είναι το ίδιο pattern που οι Reynolds & McDonell (2021) περιγράφουν ως "**prompt-craft surface ceiling**" — η αντίληψη ότι η μη-γραμμική επιστροφή του prompt engineering πάνω από ένα ορισμένο επίπεδο sophistication σηματοδοτεί δομικό όριο του συγκεκριμένου model + register, όχι έλλειψη prompt expertise.
+
+  Reynolds, L., & McDonell, K. (2021). *Prompt programming for large language models: Beyond the few-shot paradigm.* In Extended Abstracts of the 2021 CHI Conference on Human Factors in Computing Systems (Article 314). https://doi.org/10.1145/3411763.3451760
+
+### 17.2 Finding B — Reflection fatigue σε ήδη reflection-dense platforms
+
+**Pedagogical pattern.** Η πλατφόρμα PROODOS προσφέρει **15 modules** δομημένης αναστοχαστικής εργασίας (TAB5 ανά module, RTM-driven tensions, DTP composites, peer synthesizer). Η προσθήκη ενός **16th micro-reflection layer** στο Epilogue (Stages 1-3 dialogue + Learning Portrait) αύξησε το cognitive load **δυσανάλογα** προς τη synthesis value της. Η ίδια συγκεντρωτική σύνθεση επιτυγχάνεται από το **Stage 0 Personal Evolution Dashboard** που παρουσιάζει την trajectory των DTP themes + RTM positions στατικά, χωρίς να ζητά νέα reflective εργασία.
+
+**Theoretical anchor.** Το ζήτημα αυτό συνδέεται με το concept της **reflective overload** (Boud, 2010 — αν και η Boud πρωτίστως εργάζεται με experiential learning contexts, όχι AI-mediated PD) και με την παρατήρηση των Korthagen & Vasalos (2005) ότι κάθε reflective layer πρέπει να έχει **διακριτό epistemic purpose** — αλλιώς οι reflective layers αρχίζουν να **καταναλώνουν** ο ένας τον άλλον.
+
+  Boud, D. (2010). Relocating reflection in the context of practice. In H. Bradbury, N. Frost, S. Kilminster, & M. Zukas (Eds.), *Beyond reflective practice: New approaches to professional lifelong learning* (pp. 25-36). Routledge.
+
+  Korthagen, F., & Vasalos, A. (2005). Levels in reflection: Core reflection as a means to enhance professional growth. *Teachers and Teaching: Theory and Practice*, 11(1), 47-71. https://doi.org/10.1080/1354060042000337093
+
+### 17.3 Finding C — Theoretical framework integrity: γιατί reflective chatbot dilutes RPE
+
+**Methodological pattern.** Η dissertation contribution της PROODOS είναι το **Reflective Prompt Engineering (RPE)** framework. Σε αυτό, ο εκπαιδευτικός εξασκείται στο prompt craft μέσω του οποίου το AI παράγει output που υπηρετεί την εκπαιδευτική του πρακτική — δηλαδή **ο εκπαιδευτικός διδάσκει στο μοντέλο**. Ένας reflective chatbot στο Epilogue **αντιστρέφει** αυτή την κατεύθυνση: το μοντέλο διδάσκει τον εκπαιδευτικό πώς να αναστοχαστεί.
+
+Αυτή η αντιστροφή δεν είναι κατ' ανάγκη κακή σε άλλα contexts (πολλά educational chatbots κάνουν ακριβώς αυτό). Αλλά **εντός του ίδιου dissertation system**, ζωντανά αναιρεί την theoretical line: το framework δεν μπορεί ταυτόχρονα να υποστηρίζει "ο εκπαιδευτικός διδάσκει τον AI" και "ο AI διδάσκει τον εκπαιδευτικό" χωρίς epistemic dilution.
+
+**Theoretical citation.** Το concept της "theoretical integrity in design research" (van den Akker et al., 2006) προβλέπει ακριβώς αυτή τη διάκριση: όταν ένα **design intervention** εισάγει feature που αντικρούει το theoretical framework που υποστηρίζει την υπόλοιπη παρέμβαση, η ενέργεια απαιτείται είναι **strategic removal**, όχι integration.
+
+  van den Akker, J., Gravemeijer, K., McKenney, S., & Nieveen, N. (Eds.). (2006). *Educational design research*. Routledge.
+
+### 17.4 Σύνθεση — γιατί η removal είναι **design contribution**, όχι failure mode
+
+Τα τρία ευρήματα παραπάνω συγκλίνουν στο εξής:
+
+> Η απόφαση απομάκρυνσης του Aletheia από το Epilogue δεν είναι αναγνώριση ότι η feature "δεν δούλεψε". Είναι αναγνώριση ότι **η evidence συνέκλινε σε τρεις ανεξάρτητους άξονες** (technical: prompt-engineering ceiling με Flash + reflective-companion register· pedagogical: reflection fatigue σε reflection-dense platform· methodological: theoretical framework dilution) που όλοι προέβλεψαν το ίδιο πράγμα — η feature δεν ανήκει εδώ. Αυτή η σύγκλιση είναι **design contribution**: ένα empirically grounded principle για το πότε reflective chatbots **δεν** ανήκουν σε ένα PD system.
+
+**Companion artefact for citation:** `proodos_files/PHASE_G_DIALOGUE_DEPRECATION_20260524.md` (πλήρες decision record + reasoning + scope of preservation). Master proposal v2 §25 (deprecation pointer + reading guide για τα retained historical sections §6-7 / §23-24.12 που τεκμηριώνουν το prompt-engineering arc).
+
+**Dual-reviewer methodology evidence:** `proodos_files/ALETHEIA_PROMPT_REVIEW_BRIEFING_20260524.md` (self-contained briefing για external review) + `V23_PROMPT_VERIFICATION_20260524.md` (live verification artefact με PRE/POST dialogue JSON snapshots).
+
+### 17.5 Reusable for Phase J — preserved infrastructure inventory
+
+Η removal διατηρεί όλο το reusable infrastructure για μελλοντική επαναχρησιμοποίηση: Aletheia visual identity + persona prompt-craft + multi-turn agent harness + Article 50(1/2) transparency wiring + xhtml2pdf certificate-pattern (το τελευταίο για Phase H, τα υπόλοιπα για deferred Phase J). Λεπτομερής inventory στο `PROODOS_UNIFIED_ROADMAP.md §3 Phase J`.
+
+---
+
 ## Project Context (ιστορικό snapshot — Απρίλιος 2026)
 
 > Το παρακάτω μπλοκ είναι snapshot **Απριλίου 2026**. Για την τρέχουσα κατάσταση φάσεων — Phase E (multi-agent refactor) ολοκληρωμένη, Phase D σε εξέλιξη (D.3a DTP redefinition done) — δες το `git log` και τα design proposals στο `proodos_files/`.

@@ -4,6 +4,7 @@ Covers the placeholder view, the completion view, and the routing
 helper that connects M15 completion to /epilogue/.
 """
 
+import unittest
 from unittest.mock import MagicMock, patch
 
 from django.contrib.auth.models import User
@@ -16,6 +17,19 @@ from apps.ailst.models import AilstResponse
 from apps.epilogue.models import EpilogueCompletion
 from apps.epilogue.services import get_post_module_epilogue_redirect_url
 from apps.users.models import TeacherProfile
+
+
+# Phase G closure (2026-05-24) — the Aletheia reflective dialogue
+# (Stages 1-3) and the Learning Portrait HITL flow were removed from
+# the Epilogue. The test classes that exercise the deleted views are
+# decorated with this constant so the skip reason is uniform across
+# the file. See:
+#   proodos_files/PHASE_G_DIALOGUE_DEPRECATION_20260524.md §4.1
+#   proodos_files/PHASE_G_EPILOGUE_DESIGN_PROPOSAL_v2_20260521.md §25
+DEACTIVATED_PHASE_G_CLOSURE = (
+    'Deactivated in Phase G closure 2026-05-24 — see '
+    'PHASE_G_DIALOGUE_DEPRECATION_20260524.md'
+)
 
 
 class EpilogueViewBase(TestCase):
@@ -433,6 +447,7 @@ def _mock_gemini(text):
     return mock
 
 
+@unittest.skip(DEACTIVATED_PHASE_G_CLOSURE)
 class Stage1DialogueTest(EpilogueViewBase):
     """The Stage 1 (Look Back) dialogue view. The agent's LLM is mocked
     at apps.agents.epilogue_dialogue.get_llm_client; the base user is
@@ -719,6 +734,7 @@ class Stage2PickerTest(TestCase):
         self.assertIn('pedagogical fit', text)
 
 
+@unittest.skip(DEACTIVATED_PHASE_G_CLOSURE)
 class Stage2DialogueTest(EpilogueViewBase):
     """The Stage 1 -> Stage 2 transition and Stage 2 dialogue handling."""
 
@@ -879,6 +895,7 @@ class Stage2DialogueTest(EpilogueViewBase):
 # ============================================================================
 
 
+@unittest.skip(DEACTIVATED_PHASE_G_CLOSURE)
 class Stage3DialogueTest(EpilogueViewBase):
     """Stage 2 -> Stage 3 transition, Stage 3 dialogue, and completion
     marking the right stage timestamps."""
@@ -1196,6 +1213,7 @@ class PortraitViewBase(EpilogueViewBase):
         return EpilogueCompletion.objects.create(user=self.user, **defaults)
 
 
+@unittest.skip(DEACTIVATED_PHASE_G_CLOSURE)
 class PortraitViewGatingTest(PortraitViewBase):
     """The Portrait page gates: dialogue must have been entered, and
     Stage 3 must have been completed (design proposal v2 §22.2)."""
@@ -1337,6 +1355,7 @@ class PortraitViewGatingTest(PortraitViewBase):
         )
 
 
+@unittest.skip(DEACTIVATED_PHASE_G_CLOSURE)
 class PortraitGenerateAndRenderTest(PortraitViewBase):
     """First-entry generation + subsequent revisit rendering."""
 
@@ -1401,6 +1420,7 @@ class PortraitGenerateAndRenderTest(PortraitViewBase):
         self.assertContains(resp, 'could not be generated')
 
 
+@unittest.skip(DEACTIVATED_PHASE_G_CLOSURE)
 class PortraitRegenerateTest(PortraitViewBase):
     """Regeneration is bounded to 2 (design proposal v2 §22.1)."""
 
@@ -1480,6 +1500,7 @@ class PortraitRegenerateTest(PortraitViewBase):
         self.assertEqual(len(proposals), 1)
 
 
+@unittest.skip(DEACTIVATED_PHASE_G_CLOSURE)
 class PortraitAcceptTest(PortraitViewBase):
     """Accept persists the text + PDF + provenance + completion in one
     atomic block (design proposal v2 §8.4)."""
@@ -1611,6 +1632,7 @@ class PortraitAcceptTest(PortraitViewBase):
         )
 
 
+@unittest.skip(DEACTIVATED_PHASE_G_CLOSURE)
 class PortraitPDFDownloadTest(PortraitViewBase):
 
     def test_pdf_view_404_when_no_portrait(self):
@@ -1648,6 +1670,7 @@ class PortraitPDFDownloadTest(PortraitViewBase):
         self.assertTrue(bool(row.learning_portrait_pdf))
 
 
+@unittest.skip(DEACTIVATED_PHASE_G_CLOSURE)
 class PortraitPDFArticle50MetadataTest(PortraitViewBase):
     """Strict variant — JSON-LD inside the PDF body plus PDF document
     metadata (design proposal v2 §22.3)."""
@@ -1720,10 +1743,11 @@ class TeacherFacingLabelLeakTest(EpilogueViewBase):
     'gemini-2.5-flash', and 'AILST' — those are machine-readable
     compliance markers, not teacher copy).
 
-    G.6b lands the Stage 0 surface check. G.6c will add the
-    dialogue surface in three active-stage states; G.6d will add
-    the Portrait surface in draft + accepted states. See proposal
-    §9.4 for the full fixture coverage rationale.
+    Phase G closure (2026-05-24) — dialogue + portrait fixtures
+    removed together with their views. The Stage 0 surface remains
+    the only teacher-facing Epilogue page; the label-leak check on
+    it stays active. See
+    proodos_files/PHASE_G_DIALOGUE_DEPRECATION_20260524.md §4.2.
     """
 
     # Word-boundary patterns — bare 'T0/T1/T2' would match prose like
@@ -1780,80 +1804,18 @@ class TeacherFacingLabelLeakTest(EpilogueViewBase):
         row.save(update_fields=['completed_at'])
         self._assert_no_leaks('epilogue:placeholder')
 
-    # --- Dialogue surface, three active-stage fixtures (G.6c) ---
-    # The dialogue label-leak rule must hold at every point in the
-    # flow, not only at end-state. G.6 proposal §9.4 rationale:
-    # a leak could surface in Stage 1 active and stay invisible to a
-    # test that only renders the post-Stage-3 collapsed view.
-
-    def _dialogue_completion(self, *, active_stage):
-        """Build an EpilogueCompletion at the requested active stage.
-
-        Sets prior-stage timestamps + populates dialogue_turns with the
-        opening turn for each prior stage + the opening turn for the
-        active stage. Mirrors the structure _build_dialogue_phases
-        expects (proposal §4.2 phase-as-chapter)."""
-        from apps.epilogue.tests import _SNAPSHOT  # noqa
-        defaults = {
-            'stage0_snapshot': _SNAPSHOT,
-            'dialogue_entered': True,
-        }
-        turns = [
-            {'stage': 1, 'role': 'assistant',
-             'content': 'Look Back opening from the agent.',
-             'model': 'gemini-2.5-flash', 'generated_at': 'x'},
-        ]
-        if active_stage >= 2:
-            defaults['stage1_completed_at'] = timezone.now()
-            turns.append({
-                'stage': 1, 'role': 'teacher',
-                'content': 'My Look Back reply.', 'generated_at': 'x',
-            })
-            turns.append({
-                'stage': 2, 'role': 'assistant',
-                'content': 'Look In opening from the agent.',
-                'model': 'gemini-2.5-flash', 'generated_at': 'x',
-            })
-        if active_stage >= 3:
-            defaults['stage2_completed_at'] = timezone.now()
-            turns.append({
-                'stage': 2, 'role': 'teacher',
-                'content': 'My Look In reply.', 'generated_at': 'x',
-            })
-            turns.append({
-                'stage': 3, 'role': 'assistant',
-                'content': 'Look Forward opening from the agent.',
-                'model': 'gemini-2.5-flash', 'generated_at': 'x',
-            })
-        defaults['dialogue_turns'] = turns
-        return EpilogueCompletion.objects.create(user=self.user, **defaults)
-
-    def test_dialogue_page_no_leaks_stage1_active(self):
-        self._dialogue_completion(active_stage=1)
-        self._assert_no_leaks(
-            'epilogue:dialogue',
-            label_for_error='dialogue (Stage 1 active)',
-        )
-
-    def test_dialogue_page_no_leaks_stage2_active(self):
-        self._dialogue_completion(active_stage=2)
-        self._assert_no_leaks(
-            'epilogue:dialogue',
-            label_for_error='dialogue (Stage 2 active)',
-        )
-
-    def test_dialogue_page_no_leaks_stage3_active(self):
-        """Stage 3 active with two collapsed prior phases — the
-        post-G.6c collapse pattern from proposal §4.2 is exercised
-        here. The collapsed <details> previews ('You said: …') must
-        not leak the forbidden labels either."""
-        self._dialogue_completion(active_stage=3)
-        self._assert_no_leaks(
-            'epilogue:dialogue',
-            label_for_error='dialogue (Stage 3 active, prior collapsed)',
-        )
+    # --- Dialogue + Portrait fixtures removed in Phase G closure ---
+    # The Stages 1-3 Aletheia dialogue and the Learning Portrait HITL
+    # flow were deactivated on 2026-05-24. The corresponding fixtures
+    # and label-leak tests
+    #   _dialogue_completion / test_dialogue_page_no_leaks_stage{1,2,3}_active
+    # were removed together with the views they exercised. The fixture
+    # patterns are recoverable from git history (commit before this
+    # closure) if Phase J ever re-introduces a teacher-facing chatbot
+    # surface that warrants the same label-leak guarantee.
 
 
+@unittest.skip(DEACTIVATED_PHASE_G_CLOSURE)
 class DialoguePhaseSeamTest(EpilogueViewBase):
     """G.6c phase-as-chapter regression guard (proposal §9.3).
 

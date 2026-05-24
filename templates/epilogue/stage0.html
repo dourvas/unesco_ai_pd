@@ -59,12 +59,12 @@ introduced by name ("Aletheia") in the dialogue invitation copy
 
   <p class="standfirst">
     {% blocktrans %}
-    You have completed your fifteen modules. Before the closing
-    reflection, take a moment to look back. Everything below is drawn
-    from your own reflective work — the themes that moved through your
-    writing, the trajectory of your thinking, and the professional
-    tensions you positioned yourself on. Nothing here is a grade or a
-    score; it is a description of your journey.
+    You have completed your fifteen modules. Take a moment to look
+    back. Everything below is drawn from your own reflective work —
+    the themes that moved through your writing, the trajectory of your
+    thinking, and the professional tensions you positioned yourself
+    on. Nothing here is a grade or a score; it is a description of
+    your journey.
     {% endblocktrans %}
   </p>
 
@@ -78,42 +78,26 @@ introduced by name ("Aletheia") in the dialogue invitation copy
 
   {% include 'epilogue/_stage0_panel.html' with snapshot=snapshot %}
 
+  {# Phase G closure (2026-05-24) — the reflective dialogue and the    #}
+  {# Learning Portrait flow were removed from the Epilogue. Stage 0 is #}
+  {# now the single teacher-facing surface; the only forward action is #}
+  {# "Continue" (POST /epilogue/complete/ → T2 or dashboard). See      #}
+  {# proodos_files/PHASE_G_DIALOGUE_DEPRECATION_20260524.md.            #}
   <div class="mt-10 border-t border-base-300 pt-6">
-    {% if already_completed %}
-      <form method="post" action="{% url 'epilogue:complete' %}"
-            class="flex justify-end gap-3">
-        {% csrf_token %}
-        <a href="{% url 'users:dashboard' %}" class="btn btn-ghost">
-          {% trans "Back to dashboard" %}
-        </a>
-        <button type="submit" class="btn btn-primary btn-lg">
+    <form method="post" action="{% url 'epilogue:complete' %}"
+          class="flex flex-wrap justify-end items-center gap-3">
+      {% csrf_token %}
+      <a href="{% url 'users:dashboard' %}" class="btn btn-ghost">
+        {% trans "Back to dashboard" %}
+      </a>
+      <button type="submit" class="btn btn-primary btn-lg">
+        {% if already_completed %}
           {% trans "Continue" %}
-        </button>
-      </form>
-    {% else %}
-      <p class="text-base mb-4">
-        {% blocktrans %}
-        You can now take part in a short reflective conversation with
-        Aletheia about your journey — an invitation to look back, look
-        in, and look forward. It is not assessed, and you can end it
-        whenever you wish.
-        {% endblocktrans %}
-      </p>
-      <div class="flex flex-wrap justify-end items-center gap-3">
-        <a href="{% url 'users:dashboard' %}" class="btn btn-ghost">
-          {% trans "Back to dashboard" %}
-        </a>
-        <form method="post" action="{% url 'epilogue:complete' %}" class="inline">
-          {% csrf_token %}
-          <button type="submit" class="btn btn-ghost">
-            {% trans "Continue without the conversation" %}
-          </button>
-        </form>
-        <a href="{% url 'epilogue:dialogue' %}" class="btn btn-primary btn-lg">
-          {% trans "Begin the conversation with Aletheia" %}
-        </a>
-      </div>
-    {% endif %}
+        {% else %}
+          {% trans "Continue" %}
+        {% endif %}
+      </button>
+    </form>
   </div>
 
 </div>

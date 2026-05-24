@@ -1,4 +1,29 @@
 """
+[DEACTIVATED 2026-05-24 — Phase G closure]
+
+This agent produced the Learning Portrait (300-400 word HITL
+narrative synthesis) that was strategically removed from the
+Epilogue together with the Aletheia dialogue. No live caller
+remains: the portrait views/URLs/templates were deleted in the
+same closure. The module is retained because:
+  (1) the apps/agents/tests/test_epilogue_portrait.py suite
+      exercises the prompt-craft + extract pipeline as pure-agent
+      behaviour and continues to pass without any view;
+  (2) the artefact_kind 'epilogue_portrait' remains a valid choice
+      in apps/compliance/models.AIArtefactProvenance — existing
+      provenance rows from G.3 live testing stay intact;
+  (3) the PDF generator pattern (xhtml2pdf + Article 50(2)
+      metadata) is preserved as a Phase H certificate-of-attendance
+      seed (see apps/epilogue/views.py::_generate_portrait_pdf).
+
+Decision rationale: see the matching banner on
+apps/agents/epilogue_dialogue.py and the full deprecation document
+proodos_files/PHASE_G_DIALOGUE_DEPRECATION_20260524.md.
+
+Below: the original docstring, preserved verbatim as design record.
+
+---
+
 EpiloguePortraitAgent — the Learning Portrait of the PROODOS Epilogue
 (Phase G, G.3).
 

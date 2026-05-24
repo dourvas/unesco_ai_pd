@@ -1,4 +1,30 @@
 """
+[DEACTIVATED 2026-05-24 — Phase G closure]
+
+This agent powered the Stages 1-3 Aletheia reflective dialogue that
+was strategically removed from the Epilogue. No live caller remains
+inside the platform: the dialogue views/URLs/templates were deleted
+in the same closure. The module is retained in code for two reasons:
+  (1) its tests in apps/agents/tests/test_epilogue_dialogue.py
+      continue to exercise the prompt-craft + extract pipeline as
+      pure-agent behaviour (no views needed);
+  (2) its persona prompt-craft (anti-parrot canon, three-shape
+      closing, anti-recitation guard, Aletheia identity, classical-
+      Greek register) is a reusable starting point for the deferred
+      Phase J chatbot re-introduction.
+
+Decision rationale: reflection fatigue (16th reflection layer over
+15 modules) + RPE framework dilution (reflective bot inverts the
+teacher-trains-the-model direction) + technical fragility (Gemini
+2.5 Flash + reflective-companion register; three prompt-engineering
+cycles each fixed a failure and surfaced a new one in the same
+family). See proodos_files/PHASE_G_DIALOGUE_DEPRECATION_20260524.md
+and master design proposal v2 §25.
+
+Below: the original docstring, preserved verbatim as design record.
+
+---
+
 EpilogueDialogueAgent — the three-phase reflective dialogue of the
 PROODOS Epilogue (Phase G, G.2).
 

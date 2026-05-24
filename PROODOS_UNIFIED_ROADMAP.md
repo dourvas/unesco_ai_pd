@@ -9,7 +9,7 @@
 
 1. Πρόλογος
 2. Τι έχει ολοκληρωθεί
-3. Φάσεις πορείας (A → I)
+3. Φάσεις πορείας (A → I, plus deferred J)
 4. Ξεπαρκαρισμένες ιδέες με αιτιολόγηση
 5. Παρκαρισμένες ιδέες (future work / v2.0)
 6. Σχεδιαστικές αρχές
@@ -29,9 +29,11 @@
 
 ---
 
-## Τρέχουσα κατάσταση (snapshot — 2026-05-20)
+## Τρέχουσα κατάσταση (snapshot — 2026-05-24)
 
-*Latest update (2026-05-21, Phase F complete): **Phase F COMPLETE** — the TAB5 redesign is delivered and verified end-to-end. TAB5 is now a five-screen magazine wizard (four parts + a review screen, in the TAB1/TAB2 editorial register) with voice input built in: per-screen microphone clusters on the Web Speech API, one reused SpeechRecognition instance, synchronised language selectors, feature detection, and an Article 50 notice. The post-submit feedback panels (RAG/RTM/DTP/peer) received a magazine visual pass with the Article 50 / XAI / HITL contract preserved; the completed-state DTP ordering was fixed (it had rendered before the other panels). Input modality (text/voice/mixed) is recorded on `reflection_input_modality` for the voice-vs-text research dimension. Six commits: 1705e27 (F.1a field), ba289c0 (stage 1 wizard), 4132455 (stage 2 voice), a35d1ac (stage 3 magazine pass), 37e0aa9 (DTP fix), 02720ef (stage 4 modality). Frontend-only after F.1a; one migration (the modality field). Canonical doc: `proodos_files/F_TAB5_REDESIGN_DESIGN_PROPOSAL_v1_20260520.md`. The voice-input notice wording was approved, and a design-refresh pass (screen-transition motion, review-screen polish, magazine result panels, a sticky post-submit results section-nav) was implemented and verified — commits 527bb48 and b8ee15f. Phase F is closed; no open items — the voice-input rationale was added to the literature note (`Literature_Review_Synthesis_Note(1).md` §14, 2026-05-21, four verified references). Remaining code-bearing work: Phase G, Phase H.*
+*Latest update (2026-05-24, Phase G closure): **Phase G COMPLETE — with strategic deprecation.** After G.0-G.3 shipped, G.6a-c implemented, and three sequential prompt-engineering correction cycles (§24 → §24.11 → §24.12) on the Aletheia dialogue agent, live re-testing of §24.12 showed example-verbatim recitation — the third failure in the same family. Root-cause analysis (reflection fatigue + RPE framework dilution + technical fragility of Flash + reflective-companion register) concluded that the problem is structural, not prompt-surface. **PI decision (2026-05-24): Aletheia is removed from the PROODOS Epilogue.** The Epilogue narrows to **Stage 0 Personal Evolution Dashboard + Continue button**. Dialogue + Portrait views/templates deactivated in place; PDF infrastructure preserved for Phase H certificate of attendance; Aletheia visual identity + persona prompt-craft preserved for new **Phase J** (deferred Aletheia chatbot re-introduction, scope TBD post-pilot, 4 candidate placements catalogued: onboarding companion, always-on help, AI literacy sandbox, post-pilot deferred). Deprecation doc: `proodos_files/PHASE_G_DIALOGUE_DEPRECATION_20260524.md`. Master proposal §25 amended with deprecation pointer + reading guide. Roadmap §3 Phase G marked complete with deprecation note; new §3 Phase J entry added. Remaining code-bearing work: **Phase G.4** (M15 content alignment, pre-pilot) + **Phase H** (closing flow + certificate of attendance, reuses preserved PDF + Article 50(2) pattern).*
+
+*Earlier (2026-05-21, Phase F complete): **Phase F COMPLETE** — the TAB5 redesign is delivered and verified end-to-end. TAB5 is now a five-screen magazine wizard (four parts + a review screen, in the TAB1/TAB2 editorial register) with voice input built in: per-screen microphone clusters on the Web Speech API, one reused SpeechRecognition instance, synchronised language selectors, feature detection, and an Article 50 notice. The post-submit feedback panels (RAG/RTM/DTP/peer) received a magazine visual pass with the Article 50 / XAI / HITL contract preserved; the completed-state DTP ordering was fixed (it had rendered before the other panels). Input modality (text/voice/mixed) is recorded on `reflection_input_modality` for the voice-vs-text research dimension. Six commits: 1705e27 (F.1a field), ba289c0 (stage 1 wizard), 4132455 (stage 2 voice), a35d1ac (stage 3 magazine pass), 37e0aa9 (DTP fix), 02720ef (stage 4 modality). Frontend-only after F.1a; one migration (the modality field). Canonical doc: `proodos_files/F_TAB5_REDESIGN_DESIGN_PROPOSAL_v1_20260520.md`. The voice-input notice wording was approved, and a design-refresh pass (screen-transition motion, review-screen polish, magazine result panels, a sticky post-submit results section-nav) was implemented and verified — commits 527bb48 and b8ee15f. Phase F is closed; no open items — the voice-input rationale was added to the literature note (`Literature_Review_Synthesis_Note(1).md` §14, 2026-05-21, four verified references). Remaining code-bearing work: Phase G, Phase H.*
 *Earlier (2026-05-20, Phase F redesign pivot): **Phase F redefined — TAB5 redesign with voice.** Two decisions after the voice-only scoping: (1) F.1b (server-side transcription agent) cancelled — a live Web Speech API test was satisfactory, so no server path, no toggle, no Platform Settings page, no second migration. (2) The per-part four-microphone build hit a Web Speech API multi-session reliability wall, so F.1 (voice) and the parked F.5 (TAB5 redesign) merge: Phase F becomes a single piece of work — rebuild TAB5 as a four-screen wizard in the magazine style (TAB1/TAB2 family) with voice built in, one microphone per screen (which sidesteps the multi-session problem). Backend untouched — no migration, no new endpoint, the submit/RAG/RTM/DTP pipeline unchanged; it is a rewrite of `tab5_reflection.html` plus a ~2-line view change for modality tracking. The `reflection_input_modality` field (F.1a commit 1) stays valid. Canonical doc: `proodos_files/F_TAB5_REDESIGN_DESIGN_PROPOSAL_v1_20260520.md` (draft, awaiting review); supersedes the F.1 voice proposal.*
 *Earlier (2026-05-20, Phase F kickoff): **Phase F scoped to voice-only.** F.2 (image input) removed from Phase F. Rationale: the TAB5 reflection is prospective — all four parts ask what the teacher learned and what they will do, before any AI-integrated lesson has been taught — so no classroom artefact exists at reflection time for an image upload to attach to. The F.2 pitch ("show me what you tried, don't just describe it") presupposes retrospective reflection on completed practice, which TAB5 is not; and the Mayer multimedia-learning justification concerned how learning content is presented to learners, not the reflection-input modality. Image-based reflection is re-filed as a candidate for Phase G (Epilogue), where reflection is retrospective and a real artefact exists. Phase F is now F.1 (voice) only; the F.5 redesign trigger updated accordingly.*
 *Earlier (2026-05-20, Phase D complete): **Phase D COMPLETE** — D.4 (the cohort dashboard) landed and Phase D is now fully done (D.1+D.2+D.3+D.4). D.4 added two cohort visualisations to the `/analytics/` dashboard — a UNESCO 5×3 completion matrix and a 16×15 RTM coverage heatmap; the dashboard was also made consent-restricted with date/subject filters. Analytics suite 24 tests pass. Canonical doc: `proodos_files/D4_DASHBOARD_DESIGN_PROPOSAL_v1_20260520.md`. A related observation — the teacher dashboard duplicates the Modules menu — is logged as TD-021 for a later UX pass. Remaining code-bearing work: Phase F, F.5, G, H.*
@@ -788,11 +790,24 @@ TAB5 should sit naturally in this family — same editorial register as TAB1/TAB
 
 ---
 
-### Phase G — PROODOS Epilogue
+### Phase G — PROODOS Epilogue — ✅ COMPLETE (with deprecation, 2026-05-24)
 
 **Στόχος:** Post-completion synthesis feature — methodologically distinct από τα 15 modules, ανάμεσα στο M15 και το AILST T2.
 
-**Status (2026-05-23):** G.0-G.3 ✅ shipped (κώδικας, tests, docs). G.6 ✅ design-complete (proposal v2-revised PI-approved 2026-05-23). G.4-G.5 ⏳ in-progress (η G.5 — αυτό το roadmap update + TD log + literature note — κλείνει 2026-05-23). G.6a-e ⏸ pending implementation.
+**Final shape (post-deprecation 2026-05-24):** Stage 0 Personal
+Evolution Dashboard (magazine register) + "Continue" button to
+T2. The Aletheia reflective dialogue (Stages 1-3) and Learning
+Portrait (in-page + PDF) are **deactivated** — see deprecation
+doc and master proposal §25. Reusable infrastructure preserved
+for **Phase H** (PDF + Article 50(2) for the certificate of
+attendance) and **deferred Phase J** (Aletheia chatbot
+repurposing, scope TBD).
+
+**Status (2026-05-24):** G.0-G.3 ✅ shipped. G.6a-b ✅ shipped (Aletheia aspect + Stage 0 magazine redesign). G.6c ✅ implemented through three live-test correction cycles (§24 / §24.11 / §24.12) before strategic deprecation. G.6d-e ❌ cancelled by deprecation. G.4 ⏳ pending — pre-pilot. G.5 ✅ closed.
+
+**Authoritative deprecation document:**
+- `proodos_files/PHASE_G_DIALOGUE_DEPRECATION_20260524.md` — full decision rationale (reflection fatigue + RPE framework dilution + technical fragility), scope (stays/goes/defers), test handling, lessons learned.
+- `proodos_files/PHASE_G_EPILOGUE_DESIGN_PROPOSAL_v2_20260521.md` §25 — deprecation pointer + reading guide for the historical sections (§6-7, §23-24.12) retained as methodological evidence.
 
 **Master design proposals (αρχεία αναφοράς):**
 - `proodos_files/PHASE_G_EPILOGUE_DESIGN_PROPOSAL_v2_20260521.md` — το «σύνταγμα» του Phase G (PI-approved 2026-05-21). 4-stage architecture, schema, agent contracts, HITL, compliance, bibliographic grounding, commit plan §19. **§22 amendment** (2026-05-23, during G.3): regen-counter via `dialogue_turns` (όχι νέο schema field), skip-dialogue bypass του Portrait, Article 50(2) strict PDF variant (JSON-LD + PDF Info dict). **§23 amendment** (2026-05-23, before G.6a): 5-line anti-anthropomorphisation rule στο `EpilogueDialogueAgent._SYSTEM_PROMPT` για την Aletheia persona.
@@ -814,11 +829,13 @@ TAB5 should sit naturally in this family — same editorial register as TAB1/TAB
 | **G.5** | Sweep — roadmap (this update) + TD-011 close + TD-022/023 open + literature note §16 + Desktop mirror | ✅ 2026-05-23 |
 | **G.6 design** | Magazine design upgrade proposal v2-revised (separate proposal, PI-approved before any G.6 code) | ✅ 2026-05-23 (this roadmap entry) |
 | **§23 prompt** | 5-line anti-anthropomorphisation rule on `EpilogueDialogueAgent._SYSTEM_PROMPT` + `test_persona_guards_present` (standalone, before G.6a) | ✅ 2026-05-23 `0e52044` |
-| **G.6a** | Aletheia aspect + `static/css/epilogue.css` register CSS, no markup change | ⏸ Pending |
-| **G.6b** | `stage0.html` redesign + `_stage0_panel.html` restyle + label-removal sweep on Stage 0 surface | ⏸ Pending |
-| **G.6c** | `dialogue.html` phase-as-chapter rewrite (fixes the phase-seam bug) + `_aletheia_header.html` + `_phase_chapter.html` partials + live sample-review + §23 two-layer verification | ⏸ Pending |
-| **G.6d** | `portrait.html` magazine spread + `pdf/learning_portrait.html` magazine register + olive ornament + Article 50(2) metadata regression re-run | ⏸ Pending |
-| **G.6e** | Test sweep + literature note §16 cross-check + roadmap design-complete badge | ⏸ Pending |
+| **G.6a** | Aletheia aspect + `static/css/epilogue.css` register CSS, no markup change | ✅ 2026-05-23 |
+| **G.6b** | `stage0.html` redesign + `_stage0_panel.html` restyle + label-removal sweep on Stage 0 surface | ✅ 2026-05-23 |
+| **G.6c** | `dialogue.html` phase-as-chapter rewrite (fixes seam bug) + `_aletheia_header.html` + `_phase_chapter.html` partials + live sample-review + §23 two-layer verification | ✅ 2026-05-23 (later deactivated in deprecation 2026-05-24) |
+| **§24 / §24.11 / §24.12** | Three sequential prompt-engineering correction cycles after live testing; each fixed prior failure but surfaced a new one in the same family — root cause structural, not prompt-surface | ✅ implemented + tested |
+| **G.6d** | `portrait.html` magazine spread + `pdf/learning_portrait.html` magazine register + olive ornament + Article 50(2) metadata regression re-run | ❌ Cancelled by deprecation |
+| **G.6e** | Test sweep + literature note §16 cross-check + roadmap design-complete badge | ❌ Cancelled by deprecation (replaced by closure commit) |
+| **G.deprecation** | Phase G closure: Aletheia removal from Epilogue (dialogue + portrait views + URLs + templates deactivated; PDF infrastructure preserved for Phase H; Aletheia identity preserved for Phase J) + deferred design Phase J | ⏳ 2026-05-24 (this entry) |
 
 **Tech-debt entries that Phase G opens / closes:**
 - **TD-011** (Full PROODOS Epilogue implementation) — ✅ CLOSED 2026-05-23 via G.0-G.3.
@@ -979,6 +996,83 @@ The Phase G crosswalk does not replace §H.5's Phase H variables (those still ho
 - "Multi-agent architecture for Reflective Teacher PD"
 - "Multimodal Reflection in AI-Mediated Teacher Development"
 - "Immediate vs Delayed Post-test Effects in AI-Mediated Teacher PD" (αν τα T2b data δείξουν divergence από T2a)
+
+---
+
+### Phase J — Aletheia chatbot re-introduction (DEFERRED, design only)
+
+**Στόχος:** Επανατοποθέτηση του Aletheia chatbot στην πλατφόρμα σε
+ένα πλαίσιο όπου τα τρία δομικά προβλήματα που οδήγησαν στην
+απομάκρυνσή του από το Epilogue *δεν* ισχύουν. Διατηρεί την
+επένδυση σε infrastructure (UI identity, persona prompt-craft,
+multi-turn agent harness, Article 50 transparency wiring) χωρίς να
+αναζωπυρώνει το reflection-fatigue και RPE-dilution πρόβλημα.
+
+**Status:** ⏸ Deferred — *no implementation before pilot ends*.
+Επανάληψη της απόφασης μετά το pilot debrief, όταν θα υπάρχουν
+empirical data για το πραγματικό cognitive load των 15 modules και
+το τι έλειψε από την εμπειρία του εκπαιδευτικού.
+
+**Trigger για re-evaluation:** Pilot debrief (Phase H.4 / start of
+Phase I writing). Αν το post-pilot interview material δείξει
+ξεκάθαρα ένα σημείο όπου ένας conversational companion προσθέτει
+αξία *χωρίς* να επαναλαμβάνει αυτό που ήδη κάνει ένα από τα 15
+modules ή το AILST framework, τότε ανοίγει το Phase J implementation
+ticket.
+
+**Reusable infrastructure (preserved 2026-05-24):**
+
+| Asset | Location | Reuse target |
+|---|---|---|
+| Aletheia visual identity (logo + 4 size assets + olive variant) | `static/images/aletheia/` + `Aletheia2048Square*.png` | All four candidate placements below |
+| Aletheia colour palette + classical-Greek register | `apps/modules/templatetags/module_design.py` `ALETHEIA_COLOURS` + `epilogue_aspect_colour` template tag | UI consistency wherever Aletheia surfaces |
+| Multi-turn agent harness | `apps/agents/epilogue_dialogue.py` (deactivated, in-place) | Any future conversational agent — rip out reflection-specific logic, keep turn-management + Gemini wiring + Article 50 |
+| Anti-parrot / anti-recitation / three-shape canon | Same file + master proposal §24.11 / §24.12 | Future companion prompt engineering — engineering lessons even if the specific rules don't transfer |
+| EU AI Act Article 50(1) banner pattern | Dialogue template (deactivated) | Any future model interaction surface |
+| EU AI Act Article 50(2) PDF metadata pattern (JSON-LD + PDF Info dict) | `_generate_portrait_pdf` helper in `apps/epilogue/views.py` (will be relocated in Phase H) | Phase H certificate of attendance (primary) + any future generated artefact |
+| Persona prompt craft (Aletheia identity, register, honour-uncertainty rule) | `EpilogueDialogueAgent._SYSTEM_PROMPT` segments §23 | Future companion persona — starting point, not finished product |
+
+**Four candidate placement options for the next design cycle**
+(όχι πρόταση — *checklist* από όπου θα ξεκινήσει το design
+proposal):
+
+1. **Onboarding companion (T0-side).** Aletheia ως guide στο
+   onboarding wizard για να εξηγεί τι θα συμβεί, να απαντά σε
+   "What does X mean?" ερωτήσεις, να συνοδεύει το consent step.
+   Δεν αναμετριέται με το reflection problem γιατί δεν ζητάει
+   reflection — απαντά σε γνωσιακές ερωτήσεις.
+
+2. **Always-on help (πανταχού παρόν, στο μενού).** Aletheia ως
+   help-bot με knowledge base για τα modules, RAG over the
+   teacher's own dashboard data ("τι έδειξα στο DTP του M5;"),
+   troubleshooting. Conversational αλλά utility-shaped, όχι
+   reflective.
+
+3. **AI literacy sandbox (νέο module / νέα ενότητα).** Aletheia
+   ως partner για ένα δομημένο "συνομίλησε με ένα AI για να
+   καταλάβεις πώς λειτουργεί" experience — εκπαιδευτικό
+   περιεχόμενο για το πώς να *χρησιμοποιείς* AI ως εκπαιδευτικός.
+   Αναβαθμίζει το RPE framework γιατί ο εκπαιδευτικός εξασκείται
+   στο prompt engineering με coaching.
+
+4. **Post-pilot deferred (κράτηση χωρίς απόφαση).** Αν τα pilot
+   data δείξουν ότι κανένα από τα τρία παραπάνω δεν προσθέτει
+   ξεκάθαρη αξία, παγώνει το infrastructure ως historical asset
+   και η dissertation χρησιμοποιεί τη συνολική εμπειρία (design →
+   build → live test → strategic removal) ως single methodological
+   case study στο evidence-driven AI-mediated tooling.
+
+**Design proposal ticket:** TBD — δεν δημιουργείται entry στο
+TD log τώρα γιατί τυπικά είναι "future work", όχι "tech debt". Θα
+ανοίξει ως νέο proposal file `proodos_files/PHASE_J_*.md` όταν
+ξεκινήσει το re-evaluation.
+
+**Αρχεία αναφοράς:**
+- `proodos_files/PHASE_G_DIALOGUE_DEPRECATION_20260524.md` — αιτιολογία απομάκρυνσης + scope of preserved infrastructure
+- `proodos_files/PHASE_G_EPILOGUE_DESIGN_PROPOSAL_v2_20260521.md` §6-7 + §23-24.12 — preserved historical design + prompt-engineering arc
+- `proodos_files/ALETHEIA_PROMPT_REVIEW_BRIEFING_20260524.md` — dual-reviewer methodology evidence
+- `proodos_files/V23_PROMPT_VERIFICATION_20260524.md` — live verification methodology pattern
+- `proodos_files/POST_V23_DIALOGUE_TURNS_mavros_20260524.json` + `PRE_V23_*.json` — empirical evidence για τι λειτούργησε και τι όχι
 
 ---
 
