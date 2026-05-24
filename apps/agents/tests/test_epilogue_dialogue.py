@@ -137,8 +137,8 @@ class EpilogueDialoguePromptTest(SimpleTestCase):
         self.assertNotIn('THE DIALOGUE SO FAR', prompt)
         # A worked example anchors the model's output shape, flagged
         # explicitly as shape-only so it is never copied.
-        self.assertIn('EXAMPLE of the expected form', prompt)
-        self.assertIn('model its shape, never its content', prompt)
+        self.assertIn('EXAMPLES of the expected form', prompt)
+        self.assertIn('model their SHAPE, never their CONTENT', prompt)
         self.assertIn('where your attention travelled', prompt)
 
     def test_continuing_prompt_carries_history(self):
@@ -170,7 +170,7 @@ class EpilogueDialoguePromptTest(SimpleTestCase):
         # uncertainty-handling Stage 0 pivot example. Each carries
         # an explicit shape label per §24.5.
         self.assertIn('a fitting reply would be:', prompt)
-        self.assertIn('model its shape, never its content', prompt)
+        self.assertIn('model their SHAPE, never their CONTENT', prompt)
         self.assertIn('EXAMPLE — MIRROR', prompt)
         self.assertIn('EXAMPLE — OBSERVATION', prompt)
         self.assertIn('EXAMPLE — OPEN QUESTION', prompt)
