@@ -1218,11 +1218,107 @@ class PortraitViewGatingTest(PortraitViewBase):
         )
 
     def test_stage3_not_complete_redirects_to_dialogue(self):
+        """Stage 3 not yet started: no teacher turn in Stage 3, so the
+        Portrait page bounces back to the dialogue. The G.3.1 hotfix
+        only fills in stage3_completed_at when there is substantive
+        Stage 3 engagement; an empty Stage 3 still gates correctly."""
         EpilogueCompletion.objects.create(
             user=self.user,
             stage0_snapshot=_SNAPSHOT,
             dialogue_entered=True,
             stage1_completed_at=timezone.now(),
+        )
+        resp = self.client.get(reverse('epilogue:portrait'))
+        self.assertRedirects(
+            resp, reverse('epilogue:dialogue'),
+            fetch_redirect_response=False,
+        )
+
+    def test_stage3_in_progress_visiting_portrait_sets_completed_at(self):
+        """G.3.1 hotfix (2026-05-24): the post-G.3 UX changed the
+        Stage 3 finish-button into a GET link ('Continue to your
+        Learning Portrait'). The pre-G.3 G.2c flow had this as a
+        POST to /complete/ which set stage3_completed_at as a side
+        effect; the GET link does not. Surfaced during the live §23
+        verification walkthrough against mavros 2026-05-24 — the
+        teacher had Stage 3 teacher turns but stage3_completed_at
+        was still NULL, so the Portrait page silently redirected
+        back to the dialogue.
+
+        Fix: in epilogue_portrait_view, if the teacher has ≥1
+        Stage 3 teacher turn but stage3_completed_at is NULL, treat
+        the Portrait visit as the implicit Stage 3 completion event
+        and set the timestamp under a row lock.
+
+        This test exercises the actual click path the user followed
+        — it does NOT use the _completion_post_stage3 fixture
+        shortcut (which short-circuits the bug by pre-setting
+        stage3_completed_at). It must FAIL on pre-hotfix code and
+        PASS on post-hotfix code.
+        """
+        ec = EpilogueCompletion.objects.create(
+            user=self.user,
+            stage0_snapshot=_SNAPSHOT,
+            dialogue_entered=True,
+            stage1_completed_at=timezone.now(),
+            stage2_completed_at=timezone.now(),
+            # stage3_completed_at intentionally NULL — the bug scenario.
+            dialogue_turns=[
+                {'stage': 3, 'role': 'assistant',
+                 'content': 'opening of Stage 3 from the agent',
+                 'model': 'gemini-2.5-flash', 'generated_at': 'x'},
+                {'stage': 3, 'role': 'teacher',
+                 'content': 'a substantive Stage 3 commitment reply',
+                 'generated_at': 'x'},
+                {'stage': 3, 'role': 'assistant',
+                 'content': 'continuing turn from the agent',
+                 'model': 'gemini-2.5-flash', 'generated_at': 'x'},
+            ],
+        )
+        self.assertIsNone(ec.stage3_completed_at)
+
+        with patch('apps.agents.epilogue_portrait.get_llm_client',
+                   return_value=_mock_portrait_gemini(_PORTRAIT_TEXT_A)):
+            resp = self.client.get(reverse('epilogue:portrait'))
+
+        # Hotfix outcome: stage3_completed_at now set + Portrait
+        # renders normally (proposal generated) — no redirect loop.
+        self.assertEqual(resp.status_code, 200)
+        self.assertTemplateUsed(resp, 'epilogue/portrait.html')
+        ec.refresh_from_db()
+        self.assertIsNotNone(
+            ec.stage3_completed_at,
+            'G.3.1 hotfix must fill stage3_completed_at on Portrait '
+            'entry when there is a Stage 3 teacher turn.',
+        )
+        # First Portrait proposal was also generated (the same first-
+        # entry behaviour as the existing test_first_get_generates_
+        # proposal_and_renders, but here triggered by the hotfix
+        # path instead of the fixture path).
+        proposals = [
+            t for t in ec.dialogue_turns
+            if t.get('stage') == 'portrait'
+            and t.get('event') == 'proposal'
+        ]
+        self.assertEqual(len(proposals), 1)
+
+    def test_stage3_only_assistant_turn_still_redirects(self):
+        """Defensive: stage3_completed_at gate must only auto-fill
+        when there is a TEACHER turn in Stage 3. An assistant-only
+        Stage 3 (the dialogue advanced but the teacher never
+        replied) is still 'Stage 3 in progress' and should bounce
+        back to the dialogue, not jump straight to the Portrait."""
+        EpilogueCompletion.objects.create(
+            user=self.user,
+            stage0_snapshot=_SNAPSHOT,
+            dialogue_entered=True,
+            stage1_completed_at=timezone.now(),
+            stage2_completed_at=timezone.now(),
+            dialogue_turns=[
+                {'stage': 3, 'role': 'assistant',
+                 'content': 'opening of Stage 3, no teacher reply yet',
+                 'model': 'gemini-2.5-flash', 'generated_at': 'x'},
+            ],
         )
         resp = self.client.get(reverse('epilogue:portrait'))
         self.assertRedirects(

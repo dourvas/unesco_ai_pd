@@ -663,8 +663,37 @@ def epilogue_portrait_view(request):
     if not completion.dialogue_entered:
         # Skip-dialogue teachers do not see the Portrait (§22.2).
         return redirect('epilogue:placeholder')
+
+    # G.3.1 hotfix (2026-05-24): the post-G.3 UX changed the Stage 3
+    # finish-button into a GET link ("Continue to your Learning
+    # Portrait" → GET /epilogue/portrait/). The pre-G.3 G.2c flow had
+    # this button as a POST to /epilogue/complete/, which set
+    # stage3_completed_at as a side effect; the new GET link does not.
+    # So a teacher who clicks Continue-to-Portrait after a substantive
+    # Stage 3 exchange (≥1 teacher turn) would hit the gate below with
+    # stage3_completed_at = NULL and silently bounce back to the
+    # dialogue — surfaced 2026-05-24 during the live §23 verification
+    # walkthrough against mavros. Fix here in the same view: if the
+    # teacher has at least one Stage 3 teacher turn, treat the visit
+    # to the Portrait page as the implicit Stage 3 completion event
+    # and set the timestamp idempotently under a row lock. Stage-3
+    # research record (turn count + transcript) is unaffected — only
+    # the missing timestamp is filled in.
     if completion.stage3_completed_at is None:
-        return redirect('epilogue:dialogue')
+        has_stage3_teacher_turn = any(
+            t.get('stage') == 3 and t.get('role') == 'teacher'
+            for t in completion.dialogue_turns or []
+        )
+        if not has_stage3_teacher_turn:
+            return redirect('epilogue:dialogue')
+        with transaction.atomic():
+            locked = EpilogueCompletion.objects.select_for_update().get(
+                pk=completion.pk,
+            )
+            if locked.stage3_completed_at is None:
+                locked.stage3_completed_at = timezone.now()
+                locked.save(update_fields=['stage3_completed_at'])
+        completion.refresh_from_db()
 
     proposal_failed = False
 
