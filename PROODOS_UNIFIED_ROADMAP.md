@@ -803,7 +803,7 @@ for **Phase H** (PDF + Article 50(2) for the certificate of
 attendance) and **deferred Phase J** (Aletheia chatbot
 repurposing, scope TBD).
 
-**Status (2026-05-24):** G.0-G.3 ✅ shipped. G.6a-b ✅ shipped (Aletheia aspect + Stage 0 magazine redesign). G.6c ✅ implemented through three live-test correction cycles (§24 / §24.11 / §24.12) before strategic deprecation. G.6d-e ❌ cancelled by deprecation. G.4 ⏳ pending — pre-pilot. G.5 ✅ closed.
+**Status (2026-05-24, late):** G.0-G.3 ✅ shipped. G.4 ✅ shipped — M15 content aligned with the D.3a dual-signal DTP redefinition; same edit pass swept the now-stale Phase-G-closure Epilogue dialogue references that were sitting in the same content rows; M15 RAG corpus re-ingested (43 fresh chunks across Main Content + Subject Examples). G.5 ✅ closed. G.6a-b ✅ shipped (Aletheia aspect + Stage 0 magazine redesign). G.6c ✅ implemented through three live-test correction cycles (§24 / §24.11 / §24.12) before strategic deprecation. G.6d-e ❌ cancelled by deprecation. **All of Phase G now complete.**
 
 **Authoritative deprecation document:**
 - `proodos_files/PHASE_G_DIALOGUE_DEPRECATION_20260524.md` — full decision rationale (reflection fatigue + RPE framework dilution + technical fragility), scope (stays/goes/defers), test handling, lessons learned.
@@ -825,7 +825,7 @@ repurposing, scope TBD).
 | **G.2b** | Stage 2 (Look In) — juxtaposition surfacing, §6.4 skip threshold, neutral-stance prompt | ✅ 2026-05-23 `a8efd30` |
 | **G.2c** | Stage 3 (Look Forward) — dialogue completion + skip path + prior-stages carry-forward | ✅ 2026-05-23 `39322a7` |
 | **G.3** | Learning Portrait + PDF + Article 50(2) strict variant + UX polish (accept→portrait + Continue) | ✅ 2026-05-23 `815c5fb` |
-| **G.4** | M15 content alignment (D.3a dual-signal DTP) + M15 RAG re-ingest | ⏳ Pending — pre-pilot (see §3.C.6 ordering note) |
+| **G.4** | M15 content alignment (D.3a dual-signal DTP) + Phase-G-closure Epilogue sweep + M15 RAG re-ingest | ✅ 2026-05-24 — 10 DML edits on 2 `modules_modulecontent` rows (id=925 main_content, id=958 assessment), 43 fresh RAG chunks |
 | **G.5** | Sweep — roadmap (this update) + TD-011 close + TD-022/023 open + literature note §16 + Desktop mirror | ✅ 2026-05-23 |
 | **G.6 design** | Magazine design upgrade proposal v2-revised (separate proposal, PI-approved before any G.6 code) | ✅ 2026-05-23 (this roadmap entry) |
 | **§23 prompt** | 5-line anti-anthropomorphisation rule on `EpilogueDialogueAgent._SYSTEM_PROMPT` + `test_persona_guards_present` (standalone, before G.6a) | ✅ 2026-05-23 `0e52044` |
