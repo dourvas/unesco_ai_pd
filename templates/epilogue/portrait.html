@@ -1,8 +1,13 @@
 {% extends 'base.html' %}
 {% load i18n %}
+{% load static %}
 {% load ai_provenance %}
 
 {% block title %}{% trans "PROODOS Epilogue — Learning Portrait" %}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/epilogue.css' %}">
+{% endblock %}
 
 {% block content %}
 {% comment %}

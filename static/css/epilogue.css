@@ -1,0 +1,539 @@
+/*
+ * PROODOS Epilogue — magazine design layer (G.6a, 2026-05-24).
+ *
+ * The TAB1 / TAB2 / TAB5 editorial register, applied to the Epilogue
+ * surfaces (Stage 0 dashboard, dialogue chapters, Learning Portrait
+ * in-page + PDF). Design proposal: proodos_files/
+ * PHASE_G_G6_DESIGN_PROPOSAL_v2_20260523.md §2 (the register), §3
+ * (the Aletheia persona), §4 (per-surface application).
+ *
+ * Bibliographic grounding:
+ *   §16.1 Bringhurst 2013 (typography hierarchy, drop cap)
+ *   §16.2 Norman 2013 (visible state transitions)
+ *   §16.3 Reeves & Nass 1996 + Bryson 2010 (named partner + counter)
+ *   §16.4 Heidegger 1927 §44 via van Manen 1990/2016 (the name)
+ * — Literature_Review_Synthesis_Note(1).md
+ *
+ * SCOPING DISCIPLINE: every selector below is prefixed with
+ * `.epilogue-redesign`. Loading this file is harmless for templates
+ * that do not opt in by adding the wrapper — the G.3 templates load
+ * the file but inherit zero rules because they do not carry the
+ * wrapper class. G.6b / G.6c / G.6d adopt the wrapper one surface
+ * at a time.
+ *
+ * COLOUR DISCIPLINE: every decorative colour reads from a
+ * `--aspect-*` CSS variable. The variables are injected at the
+ * wrapper level via the `{% epilogue_aspect_colour as %}` template
+ * tag (apps/modules/templatetags/module_design.py::epilogue_aspect_
+ * colour). Same injection pattern TAB1 / TAB2 / TAB5 use.
+ *
+ * PDF SAFETY (G.6 §1.3 measured render budget — verified
+ * empirically against xhtml2pdf): this stylesheet contains
+ * `column-count`, `:first-letter`, inline `<svg>`, and
+ * `linear-gradient(...)` — all four of which xhtml2pdf cannot
+ * render. None of these are used in the PDF template
+ * (templates/pdf/learning_portrait.html) — that template has its
+ * own PDF-safe styles. The PDF template render-budget guard test
+ * (G.6 §9.7) enforces this separation.
+ *
+ * Layered structure of this file:
+ *   §1 — Reset + wrapper
+ *   §2 — Typography (§2.1 of the proposal)
+ *   §3 — Editorial dividers and left-border rules (§2.3)
+ *   §4 — Aspect-tinted callout panels (§2.4)
+ *   §5 — Magazine hero (§4.1)
+ *   §6 — Aletheia header + phase-pill nav (§3.4 + §4.2)
+ *   §7 — Phase chapter cards + collapse pattern (§4.2)
+ *   §8 — rfx-screen-in transition + reduced-motion guard (§2.6)
+ *   §9 — Magazine Portrait spread (§4.3)
+ *  §10 — Olive ornament — completion mark (§4.3 / §4.4)
+ */
+
+
+/* =========================================================
+ * §1 — Reset + wrapper
+ * =======================================================*/
+
+.epilogue-redesign {
+  --aspect-main: #1A8A73;     /* fallback if template forgets injection */
+  --aspect-bg: #D4E8E2;
+  --aspect-text: #0D2A25;
+  --aspect-deep: #0F4A45;
+  --aspect-silver: #94A3B8;
+  --aspect-gem: #3FAFE0;
+  color: oklch(var(--bc));
+}
+
+
+/* =========================================================
+ * §2 — Typography (proposal §2.1)
+ * Serif numeral + sans title + eyebrow editorial signature.
+ * System fonts (ui-serif → Georgia → Times New Roman, ui-sans →
+ * Helvetica). No @font-face, no Google Fonts — keeps the load
+ * lean and stays consistent with TAB1/2/5.
+ * =======================================================*/
+
+.epilogue-redesign .eyebrow {
+  font-family: ui-sans-serif, system-ui, -apple-system, Helvetica, Arial,
+               sans-serif;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: oklch(var(--bc) / 0.6);
+  margin: 0 0 0.4rem 0;
+}
+
+.epilogue-redesign .numeral {
+  font-family: ui-serif, Georgia, "Times New Roman", serif;
+  font-size: 4rem;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -0.04em;
+  color: var(--aspect-main);
+}
+
+.epilogue-redesign .magazine-title {
+  font-family: ui-serif, Georgia, "Times New Roman", serif;
+  font-size: 2rem;
+  font-weight: 600;
+  line-height: 1.15;
+  margin: 0 0 0.5rem 0;
+  color: oklch(var(--bc));
+}
+
+.epilogue-redesign .standfirst {
+  font-family: ui-sans-serif, system-ui, -apple-system, Helvetica, Arial,
+               sans-serif;
+  font-size: 1.05rem;
+  line-height: 1.6;
+  color: oklch(var(--bc) / 0.85);
+  margin: 0 0 1.5rem 0;
+  max-width: 42rem;
+}
+
+.epilogue-redesign .section-title {
+  font-family: ui-serif, Georgia, "Times New Roman", serif;
+  font-size: 1.5rem;
+  font-weight: 600;
+  line-height: 1.25;
+  margin: 1.5rem 0 0.5rem 0;
+}
+
+@media (min-width: 768px) {
+  .epilogue-redesign .magazine-title {
+    font-size: 2.25rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .epilogue-redesign .numeral {
+    font-size: 3rem;
+  }
+}
+
+
+/* =========================================================
+ * §3 — Editorial dividers and left-border rules (proposal §2.3)
+ * The Tab2 part-rule (4pt main) signals a major chapter; the
+ * Tab5 review-rule (3pt muted) signals a secondary panel.
+ * =======================================================*/
+
+.epilogue-redesign .part-rule {
+  border-left: 4px solid var(--aspect-main);
+  padding-left: 1rem;
+  margin: 0 0 1.5rem 0;
+}
+
+.epilogue-redesign .review-rule {
+  border-left: 3px solid oklch(var(--bc) / 0.35);
+  padding-left: 0.875rem;
+  margin: 0 0 1rem 0;
+}
+
+
+/* =========================================================
+ * §4 — Aspect-tinted callout panels (proposal §2.4)
+ * Background = aspect-bg, text = aspect-text, no left rule,
+ * no heavy border. Used for intro stripes and collapsibles.
+ * =======================================================*/
+
+.epilogue-redesign .callout {
+  background-color: var(--aspect-bg);
+  color: var(--aspect-text);
+  padding: 0.875rem 1rem;
+  border-radius: 0.5rem;
+  margin: 0.5rem 0;
+}
+
+.epilogue-redesign .callout--subtle {
+  background-color: oklch(var(--b2));
+  color: oklch(var(--bc));
+}
+
+
+/* =========================================================
+ * §5 — Magazine hero (proposal §4.1)
+ * Mirrors the Tab1 hero — numeral + divider + title block +
+ * aspect badge. The hero numeral position is reserved for the
+ * Aletheia crystal icon (§3.4) on Epilogue surfaces; modules use
+ * their padded module number.
+ * =======================================================*/
+
+.epilogue-redesign .hero-block {
+  display: flex;
+  gap: 1.5rem;
+  align-items: center;
+  margin-bottom: 2rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid oklch(var(--b3));
+}
+
+.epilogue-redesign .hero-icon {
+  width: 5rem;
+  height: 5rem;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background-color: var(--aspect-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.epilogue-redesign .hero-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.epilogue-redesign .hero-content {
+  flex: 1;
+}
+
+.epilogue-redesign .aspect-badge {
+  display: inline-block;
+  padding: 0.2rem 0.6rem;
+  border-radius: 0.25rem;
+  background-color: var(--aspect-bg);
+  color: var(--aspect-text);
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  margin-top: 0.25rem;
+}
+
+@media (max-width: 640px) {
+  .epilogue-redesign .hero-block {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+  .epilogue-redesign .hero-icon {
+    width: 4rem;
+    height: 4rem;
+  }
+}
+
+
+/* =========================================================
+ * §6 — Aletheia header + phase-pill nav (proposal §3.4 + §4.2)
+ * Sticky horizontal pill strip that doubles as the Aletheia
+ * brand surface for the dialogue + Portrait pages. Three pills
+ * (Look Back · Look In · Look Forward) — no "Stage 1/2/3"
+ * labels, per the §5 label-relabel table.
+ * =======================================================*/
+
+.epilogue-redesign .aletheia-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 0;
+  background-color: oklch(var(--b1));
+  border-bottom: 1px solid oklch(var(--b3));
+  margin-bottom: 1.5rem;
+}
+
+.epilogue-redesign .aletheia-avatar {
+  width: 2rem;
+  height: 2rem;
+  flex-shrink: 0;
+  border-radius: 50%;
+  overflow: hidden;
+}
+
+.epilogue-redesign .aletheia-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.epilogue-redesign .aletheia-name {
+  font-family: ui-serif, Georgia, "Times New Roman", serif;
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: oklch(var(--bc));
+}
+
+.epilogue-redesign .phase-pills {
+  display: flex;
+  gap: 0.4rem;
+  margin-left: auto;
+  list-style: none;
+  padding: 0;
+}
+
+.epilogue-redesign .phase-pill {
+  padding: 0.25rem 0.7rem;
+  border-radius: 999px;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.78rem;
+  font-weight: 500;
+  border: 1px solid oklch(var(--b3));
+  color: oklch(var(--bc) / 0.55);
+  background-color: transparent;
+}
+
+.epilogue-redesign .phase-pill--active {
+  background-color: var(--aspect-main);
+  color: white;
+  border-color: var(--aspect-main);
+}
+
+.epilogue-redesign .phase-pill--passed {
+  background-color: var(--aspect-bg);
+  color: var(--aspect-text);
+  border-color: var(--aspect-bg);
+}
+
+
+/* =========================================================
+ * §7 — Phase chapter cards + collapse pattern (proposal §4.2)
+ * Each phase is a discrete chapter card with its own opening
+ * numeral + standfirst. Prior phases collapse into a
+ * <details> with the last teacher line as a one-line preview.
+ * Methodological-disclosure trade-off (§10 + §16.5 of the
+ * literature note): the collapse means the teacher composing
+ * a later phase may not see prior phases without reopening —
+ * dissertation methodology chapter discloses this when
+ * analysing the dialogue corpus.
+ * =======================================================*/
+
+.epilogue-redesign .phase-chapter {
+  margin: 0 0 2rem 0;
+  padding: 1.25rem;
+  border: 1px solid oklch(var(--b3));
+  border-radius: 0.75rem;
+  background-color: oklch(var(--b1));
+}
+
+.epilogue-redesign .phase-chapter--collapsed {
+  background-color: oklch(var(--b2) / 0.4);
+  padding: 0.75rem 1rem;
+}
+
+.epilogue-redesign .phase-chapter--collapsed summary {
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+}
+
+.epilogue-redesign .phase-chapter--collapsed summary::-webkit-details-marker {
+  display: none;
+}
+
+.epilogue-redesign .phase-chapter--collapsed .phase-title {
+  font-family: ui-serif, Georgia, "Times New Roman", serif;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--aspect-main);
+}
+
+.epilogue-redesign .phase-chapter--collapsed .phase-preview {
+  font-size: 0.85rem;
+  color: oklch(var(--bc) / 0.7);
+  font-style: italic;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+}
+
+.epilogue-redesign .phase-chapter-header {
+  display: flex;
+  align-items: baseline;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid oklch(var(--b3));
+}
+
+.epilogue-redesign .phase-chapter-header .numeral {
+  font-size: 2.5rem;
+}
+
+.epilogue-redesign .phase-chapter-body {
+  /* Chat bubbles live inside; rely on DaisyUI chat-* classes for the
+     bubble layout itself. This section provides spacing context only. */
+  margin-top: 0.5rem;
+}
+
+.epilogue-redesign .chat-aletheia-avatar {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.epilogue-redesign .chat-aletheia-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+
+/* =========================================================
+ * §8 — rfx-screen-in transition + reduced-motion guard
+ *     (proposal §2.6 — adopted verbatim from Tab5 Phase F)
+ *
+ * The Tab5 refresh keyframe that signals "a new screen has
+ * arrived". Used when a new phase chapter mounts after a
+ * phase transition. The reduced-motion variant respects OS
+ * preferences (§9.6 of the proposal).
+ * =======================================================*/
+
+@keyframes rfx-screen-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .epilogue-redesign .rfx-screen-in {
+    animation: rfx-screen-in 0.28s ease;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .epilogue-redesign .rfx-screen-in {
+    animation: none;
+  }
+}
+
+
+/* =========================================================
+ * §9 — Magazine Portrait spread (proposal §4.3)
+ * In-page only — the PDF surface uses its own template
+ * (templates/pdf/learning_portrait.html) with PDF-safe markup.
+ *
+ * Reading-width is constrained to 38rem (≈ 70 ch at this
+ * font) — the magazine convention for long-form prose.
+ * Drop cap via :first-letter (in-page only; PDF cannot
+ * honour the pseudo — §1.3 of the proposal).
+ * =======================================================*/
+
+.epilogue-redesign .portrait-spread {
+  max-width: 38rem;
+  margin: 0 auto;
+  padding: 1rem 0;
+}
+
+.epilogue-redesign .portrait-body {
+  font-family: ui-serif, Georgia, "Times New Roman", serif;
+  font-size: 1.05rem;
+  line-height: 1.65;
+  color: oklch(var(--bc) / 0.92);
+  border-left: 4px solid var(--aspect-main);
+  padding-left: 1.25rem;
+  white-space: pre-line;
+}
+
+.epilogue-redesign .portrait-body:first-letter {
+  /* Bringhurst §3.3 magazine-feature opening — in-page only.
+     The PDF template uses an explicit <span class="dropcap">
+     wrapper for the same effect, because xhtml2pdf cannot
+     render :first-letter (G.6 §1.3 render budget). */
+  font-size: 3rem;
+  font-weight: 600;
+  float: left;
+  line-height: 0.95;
+  padding-right: 0.5rem;
+  padding-top: 0.25rem;
+  color: var(--aspect-main);
+  font-family: ui-serif, Georgia, "Times New Roman", serif;
+}
+
+.epilogue-redesign .portrait-byline {
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.85rem;
+  color: oklch(var(--bc) / 0.6);
+  margin-bottom: 1.5rem;
+}
+
+.epilogue-redesign .portrait-byline strong {
+  color: oklch(var(--bc));
+}
+
+
+/* =========================================================
+ * §10 — Olive ornament — completion mark (proposal §4.3 / §4.4)
+ *
+ * Crystal = Aletheia (speaks); olive = completion of the
+ * teacher's journey. Two visual marks, two meanings, one
+ * identity. PROODOS (πρόοδος = progress) closes with the
+ * classical laurel — academic-completion symbol.
+ *
+ * The olive PNG is a cropped raster from the lower-right of
+ * the logo, scaled to ~32px. PDF surface uses the same PNG
+ * (xhtml2pdf handles raster fine — §1.3).
+ * =======================================================*/
+
+.epilogue-redesign .olive-ornament {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 2rem 0 1.5rem 0;
+  opacity: 0.55;
+}
+
+.epilogue-redesign .olive-ornament img {
+  width: 2rem;
+  height: 2rem;
+  object-fit: contain;
+}
+
+
+/* =========================================================
+ * Notes for future maintainers
+ * =======================================================*/
+
+/*
+ * Forbidden in this file going forward (per G.6 §1.3 measured
+ * render budget). These are fine here in the in-page
+ * stylesheet — they are NOT fine in
+ * templates/pdf/learning_portrait.html (where a code-enforced
+ * regex guard test will reject them — G.6 §9.7):
+ *
+ *   - column-count       → falls back to single column in PDF
+ *   - :first-letter      → pseudo-element not honoured in PDF
+ *   - inline <svg>       → not rendered in PDF
+ *   - linear-gradient(…) → collapses to first colour in PDF
+ *
+ * If you find yourself wanting these in the PDF template, look
+ * for an HTML/CSS workaround first — explicit <span> wrappers
+ * for the drop cap, raster PNG for shapes, flat colour for
+ * gradients, single-column with manual layout for two-up.
+ */

@@ -71,6 +71,41 @@ MODULE_TO_ASPECT = {
 }
 
 
+# ----------------------------------------------------------------------------
+# Aletheia aspect — the PROODOS Epilogue's own aspect (added G.6a, 2026-05-24)
+# ----------------------------------------------------------------------------
+# The Epilogue is methodologically distinct from the 15 modules — it has no
+# Module row, so MODULE_TO_ASPECT cannot key it. G.6 design proposal v2 §3.2
+# registers a synthetic "epilogue" aspect against this same template-tag pack
+# so the Epilogue templates can use the same `--aspect-main / --aspect-bg /
+# --aspect-text` CSS-variable injection that TAB1/TAB2/TAB5 use.
+#
+# Palette derivation (G.6 §3.1, audit trail): sampled by visual inspection of
+# `Aletheia2048Square.png` (2026-05-23, color-picker tool). The six hex anchors
+# are locked for the pilot to avoid mid-pilot visual drift — post-pilot
+# revision is fine, mid-pilot revision is forbidden so all teachers' PDFs
+# look consistent.
+#
+# Greek: ἀλήθεια — unconcealment / truth-revealing. The naming claim is
+# grounded in Heidegger §44 via van Manen 1990/2016 (the standard
+# phenomenology-in-teacher-education bridge); see
+# `Literature_Review_Synthesis_Note(1).md` §16.4 for the bibliographic
+# logic and the prepared committee-defense statement.
+ALETHEIA_COLOURS = {
+    # The four canonical aspect tokens, mapped to the same dict shape that
+    # ASPECT_COLOURS uses (drop-in compatibility with the existing
+    # tab1-redesign / tab2-magazine CSS variable injection pattern).
+    "main": "#1A8A73",   # mid-crystal facet — aspect-main accent
+    "bg":   "#D4E8E2",   # tinted callout panel background
+    "text": "#0D2A25",   # text on aspect-bg
+    "name": "Reflective Synthesis",
+    # Aletheia-specific extras (used by epilogue.css only, not by TAB CSS):
+    "deep":   "#0F4A45",   # background anchor, deep teal (logo background)
+    "silver": "#94A3B8",   # decorative rule / secondary border (logo ring)
+    "gem":    "#3FAFE0",   # highlight / gem-blue accent (brightest facet)
+}
+
+
 # Lucide SVG paths (MIT licensed, https://lucide.dev).
 # Each value is the inner markup of a 24x24 lucide icon.
 # Wrapped at render-time with stroke="currentColor" stroke-width="2"
@@ -222,6 +257,39 @@ def module_number_padded(module):
         except ValueError:
             return code
     return code
+
+
+# ----------------------------------------------------------------------------
+# Aletheia aspect — template tags (added G.6a, 2026-05-24)
+# ----------------------------------------------------------------------------
+@register.simple_tag
+def epilogue_aspect_colour():
+    """Return the Aletheia colour palette dict for the PROODOS Epilogue.
+
+    Used in the Epilogue templates the same way module_aspect_colour is
+    used in TAB1/TAB2/TAB5 — assign to a variable, then inject the
+    --aspect-* CSS variables on the wrapper element::
+
+        {% epilogue_aspect_colour as aspect_colour %}
+        <div class="epilogue-redesign"
+             style="--aspect-main:   {{ aspect_colour.main }};
+                    --aspect-bg:     {{ aspect_colour.bg }};
+                    --aspect-text:   {{ aspect_colour.text }};
+                    --aspect-deep:   {{ aspect_colour.deep }};
+                    --aspect-silver: {{ aspect_colour.silver }};
+                    --aspect-gem:    {{ aspect_colour.gem }};">
+
+    Returns the same {main, bg, text, name} keys that ASPECT_COLOURS
+    returns, plus three Aletheia-specific extras (deep / silver / gem) the
+    Epilogue surfaces use for the crystal + ring + olive composition.
+    """
+    return ALETHEIA_COLOURS
+
+
+@register.simple_tag
+def epilogue_aspect_name():
+    """Return the human-readable name of the Aletheia aspect."""
+    return ALETHEIA_COLOURS["name"]
 
 
 # ----------------------------------------------------------------------------
