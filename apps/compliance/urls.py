@@ -41,6 +41,12 @@ urlpatterns = [
         views.revoke_data_sharing_view,
         name='revoke_data_sharing',
     ),
+    # Phase H H.6 — Optional follow-up recruitment consent revoke.
+    path(
+        'profile/privacy/revoke/followup-recruitment/',
+        views.revoke_followup_recruitment_view,
+        name='revoke_followup_recruitment',
+    ),
     path(
         'profile/privacy/export/',
         views.export_data_view,

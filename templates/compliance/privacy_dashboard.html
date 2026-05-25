@@ -173,6 +173,48 @@
                     {% endif %}
                 </div>
             </div>
+
+            {# --- Phase H H.6 — Followup Recruitment (optional pool consent) --- #}
+            <div class="p-4 bg-base-200 rounded-lg">
+                <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-3">
+                    <div class="flex-1">
+                        <h3 class="font-semibold text-base">
+                            {% trans "Future research contact (optional)" %}
+                        </h3>
+                        <p class="text-sm mt-1">
+                            {% trans "Optional pool consent. Allows the research team to invite you to a possible future post-pilot follow-up study (separate consent at the time of invitation; no automatic enrolment)." %}
+                        </p>
+                        <p class="text-xs mt-2 text-base-content/70">
+                            {% if followup_recruitment_state.state == 'active' %}
+                                <span class="badge badge-success badge-sm">{% trans "Active" %}</span>
+                                {% blocktrans with granted=followup_recruitment_state.granted_at|date:"M d, Y" version=followup_recruitment_state.version %}
+                                Granted on {{ granted }} (version {{ version }}).
+                                {% endblocktrans %}
+                            {% elif followup_recruitment_state.state == 'revoked' %}
+                                <span class="badge badge-warning badge-sm">{% trans "Revoked" %}</span>
+                                {% blocktrans with revoked=followup_recruitment_state.revoked_at|date:"M d, Y" %}
+                                Revoked on {{ revoked }}.
+                                {% endblocktrans %}
+                            {% else %}
+                                <span class="badge badge-ghost badge-sm">{% trans "Never granted" %}</span>
+                            {% endif %}
+                        </p>
+                        <p class="text-xs mt-1 text-base-content/70">
+                            {% trans "Withdrawing this consent removes you from the future-contact invitation pool. It does not affect your participation in the PROODOS pilot." %}
+                        </p>
+                    </div>
+                    {% if followup_recruitment_state.state == 'active' %}
+                        <form method="post"
+                              action="{% url 'compliance:revoke_followup_recruitment' %}"
+                              class="shrink-0">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-outline btn-warning btn-sm">
+                                {% trans "Withdraw" %}
+                            </button>
+                        </form>
+                    {% endif %}
+                </div>
+            </div>
         </div>
     </div>
 

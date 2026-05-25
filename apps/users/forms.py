@@ -250,6 +250,16 @@ class GoalsPreferencesForm(forms.ModelForm):
         label=_('I consent to data sharing for secondary research'),
     )
 
+    # Phase H H.6 — Optional follow-up recruitment consent (added 2026-05-25).
+    # Pool consent for possible post-pilot follow-up study — see
+    # apps/compliance/copy.py::FOLLOWUP_RECRUITMENT_TEXT_V1_PRE_IRB and
+    # PHASE_H_CLOSING_FLOW_DESIGN_PROPOSAL §6.
+    consent_followup_recruitment = forms.BooleanField(
+        required=False,
+        widget=forms.CheckboxInput(attrs={'class': 'checkbox checkbox-primary'}),
+        label=_('I consent to be contacted about possible future follow-up research'),
+    )
+
     class Meta:
         model = TeacherProfile
         fields = [
@@ -295,6 +305,14 @@ class GoalsPreferencesForm(forms.ModelForm):
                 ConsentRecord.objects.filter(
                     user_id=self.instance.user_id,
                     consent_type='data_sharing',
+                    granted=True,
+                    revoked_at__isnull=True,
+                ).exists()
+            )
+            self.initial['consent_followup_recruitment'] = (
+                ConsentRecord.objects.filter(
+                    user_id=self.instance.user_id,
+                    consent_type='followup_recruitment',
                     granted=True,
                     revoked_at__isnull=True,
                 ).exists()

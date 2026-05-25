@@ -305,6 +305,65 @@ AI_IMPACT_ASSESSMENT_V1_PRE_IRB = [
 ]
 
 
+# ============================================================
+# Phase H H.6 — Optional follow-up recruitment consent
+# ============================================================
+# A third, fully-optional consent collected at onboarding Step 3
+# alongside the existing RESEARCH_PARTICIPATION + DATA_SHARING.
+# Establishes a pool of teachers who may be invited to a possible
+# future post-pilot follow-up study (delayed AILST wave + interviews,
+# see PHASE_H_CLOSING_FLOW_DESIGN_PROPOSAL §6 and roadmap §I.6).
+#
+# This consent does NOT enrol the teacher in any future study. If a
+# follow-up study is launched, it will have its own IRB protocol and
+# its own study-specific consent form delivered at the time of
+# invitation. The teacher remains free to decline at that point.
+#
+# Versioned independently — when IHU IRB feedback arrives, add a V2
+# constant and bump settings.FOLLOWUP_RECRUITMENT_CURRENT_VERSION.
+
+FOLLOWUP_RECRUITMENT_TEXT_V1_PRE_IRB = """\
+Optional — Future Research Contact
+
+While completing the PROODOS pilot, you may opt in to allow the
+research team to contact you at a later date about a possible
+follow-up study. Such a study has not been designed at the time you
+grant this consent; if it goes ahead it will typically involve a
+short questionnaire and/or an interview, conducted approximately
+4-6 weeks after you complete the programme.
+
+What this consent does:
+  - Allows the research team to retain your contact email address
+    for the sole purpose of inviting you to a possible future
+    follow-up.
+
+What this consent does NOT do:
+  - Does not automatically enrol you in any future study.
+  - Does not alter your primary participation in the PROODOS pilot.
+  - Does not affect your access to the programme certificate of
+    attendance.
+
+If a follow-up study is launched, you will receive a separate
+study-specific information sheet and a separate consent form at the
+time of invitation. You will remain free to decline.
+
+Your right to withdraw:
+  You may revoke this consent at any time via the Privacy dashboard,
+  independently of all other consents. Revocation removes your
+  email from the follow-up invitation pool.
+
+Optional consent:
+  This consent is OPTIONAL. Declining it does NOT affect your
+  participation in the research, your access to the platform, or
+  your programme certificate.
+
+Your acknowledgment:
+  By checking "I consent to be contacted about possible future
+  follow-up research" you confirm that you have read and understood
+  the above.
+"""
+
+
 DATA_SHARING_TEXT_V1_PRE_IRB = """\
 Data Sharing for Secondary Research
 
@@ -337,3 +396,82 @@ Your acknowledgment:
   By checking "I consent to data sharing" you confirm that you have
   read and understood the above.
 """
+
+
+# ============================================================
+# Phase H — AI Impact Assessment V2 (Phase G closure cleanup)
+# ============================================================
+# V1's section §2 promised "the PROODOS Epilogue will add a Personal
+# Evolution Dashboard, a three-stage Gemini dialogue, and a Learning
+# Portrait PDF. These are currently scaffolded but not yet
+# implemented for participants."
+#
+# After Phase G closure (2026-05-24,
+# PHASE_G_DIALOGUE_DEPRECATION_20260524.md), the three-stage dialogue
+# and the Learning Portrait were deactivated. V2 brings §2 in line
+# with what the platform actually ships post-G-closure: the Personal
+# Evolution Dashboard (Stage 0) is the sole Epilogue surface.
+#
+# All other sections (§1, §3-§7) are kept byte-identical to V1. V1
+# is preserved verbatim above for existing-row IRB-defensibility,
+# per the versioning workflow at the top of this module.
+
+AI_IMPACT_ASSESSMENT_VERSION_V2 = 'v2_post_g_closure'
+
+AI_IMPACT_ASSESSMENT_V2_POST_G_CLOSURE = [
+    AI_IMPACT_ASSESSMENT_V1_PRE_IRB[0],  # §1 unchanged
+    {
+        'heading': '2. AI components in PROODOS',
+        'body': (
+            "Four AI-driven features are active during a participant's "
+            "journey:\n"
+            "\n"
+            "  - RAG-based reflection feedback: after each module's "
+            "reflection submission, a retrieval-augmented generation "
+            "pipeline (Google Gemini 2.5 Flash) produces a personalised "
+            "feedback narrative grounded in pedagogy literature.\n"
+            "  - Reflective Tension Mapper (RTM): from the participant's "
+            "reflection text, the system extracts up to three pedagogical "
+            "tensions and asks the participant to self-position on a "
+            "5-point scale between two contrasting poles.\n"
+            "  - Developmental Trajectory Predictor (DTP): a narrative "
+            "summary of the participant's reflection trajectory across "
+            "modules. Available from Module 2 onwards.\n"
+            "  - Peer synthesis: drawing on pseudonymised peer "
+            "reflections, this produces a comparative view of how other "
+            "participants engaged with the same content.\n"
+            "\n"
+            "After Module 15, the PROODOS Epilogue presents a Personal "
+            "Evolution Dashboard synthesising the participant's "
+            "developmental trajectory across the 15 modules. The "
+            "Epilogue is a non-AI synthesis surface: it aggregates "
+            "existing AI outputs (DTP themes, RTM tension trajectories) "
+            "and existing platform telemetry into a single read-only "
+            "view; no new AI inference runs during the Epilogue itself."
+        ),
+    },
+    AI_IMPACT_ASSESSMENT_V1_PRE_IRB[2],  # §3 unchanged
+    AI_IMPACT_ASSESSMENT_V1_PRE_IRB[3],  # §4 unchanged
+    AI_IMPACT_ASSESSMENT_V1_PRE_IRB[4],  # §5 unchanged
+    AI_IMPACT_ASSESSMENT_V1_PRE_IRB[5],  # §6 unchanged
+    {
+        'heading': '7. Contact',
+        'body': (
+            "For questions about this platform's AI use or your data:\n"
+            "\n"
+            "  - Principal Investigator: John Dourvas, doctoral "
+            "researcher - idourvas@ihu.gr.\n"
+            "  - Academic Supervisor: Asst. Prof. Georgios Kokkonis - "
+            "IHU, Department of Information and Electronic Systems "
+            "Engineering.\n"
+            "  - Institution: International Hellenic University (IHU, "
+            "Διεθνές Πανεπιστήμιο της Ελλάδος), Thessaloniki.\n"
+            "\n"
+            "This document is version v2_post_g_closure (May 2026). "
+            "Section 2 was updated to reflect the Phase G closure "
+            "(2026-05-24) which removed the planned three-stage "
+            "Gemini dialogue and Learning Portrait PDF from the "
+            "Epilogue. It will be revised again after IHU IRB review."
+        ),
+    },
+]

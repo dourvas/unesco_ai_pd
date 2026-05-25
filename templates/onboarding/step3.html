@@ -108,6 +108,34 @@
                     {% endif %}
                 </div>
 
+                <!-- Phase H H.6 — Optional follow-up recruitment consent.
+                     Visually distinct from the required RESEARCH_PARTICIPATION
+                     and the existing DATA_SHARING: separated by a horizontal
+                     rule, prominent "Optional" heading, muted body typography
+                     (text-base-content/70), default unchecked. Per design
+                     proposal §6.4 — guards against consent fatigue (teacher
+                     mistakenly checks thinking it is required) while keeping
+                     the block salient enough to actually be read. -->
+                <hr class="optional-consent-separator border-t-2 border-dashed border-base-300 my-6">
+                <div class="optional-consent form-control mb-6">
+                    <div class="bg-base-200/60 rounded-lg p-5 mb-3 text-base-content/70">
+                        <h3 class="font-bold text-base mb-3 text-base-content/80">
+                            <span class="badge badge-ghost badge-sm mr-2">{% trans "Optional" %}</span>
+                            {% trans "Future Research Contact" %}
+                        </h3>
+                        <div class="text-sm leading-relaxed prose prose-sm max-w-none">{{ followup_recruitment_text|consent_format }}</div>
+                    </div>
+                    <label class="label cursor-pointer justify-start gap-3 p-3 border-2 border-base-300 rounded-lg hover:border-primary transition-colors">
+                        {{ form.consent_followup_recruitment }}
+                        <span class="label-text">{{ form.consent_followup_recruitment.label }}</span>
+                    </label>
+                    {% if form.consent_followup_recruitment.errors %}
+                        <label class="label">
+                            <span class="label-text-alt text-error">{{ form.consent_followup_recruitment.errors.0 }}</span>
+                        </label>
+                    {% endif %}
+                </div>
+
                 <div class="divider">{% trans "Contact preferences" %}</div>
 
                 <!-- Contact for Research (NOT a consent — direct boolean) -->

@@ -450,6 +450,174 @@ class ConsentRetentionPruneCommandTest(TestCase):
         self.assertIn('ai_disclosure=1', report)
 
 
+# ============================================================================
+# Phase H H.6 — Optional follow-up recruitment consent tests
+# ============================================================================
+
+
+class FollowupRecruitmentConsentChoiceTest(TestCase):
+    """Sanity: the new consent_type appears in ConsentRecord.CONSENT_TYPE_CHOICES."""
+
+    def test_followup_recruitment_in_choices(self):
+        choice_keys = [k for k, _label in ConsentRecord.CONSENT_TYPE_CHOICES]
+        self.assertIn('followup_recruitment', choice_keys)
+
+
+class FollowupRecruitmentRecordConsentTest(TestCase):
+    """record_consent + revoke_consent work with the new consent_type.
+
+    No migration was added (Django choices do not create DB-level CHECK
+    constraints) — this test confirms the model accepts the new value at
+    write time.
+    """
+
+    def setUp(self):
+        self.user = _make_user('followup_user')
+
+    def test_record_creates_active_row(self):
+        from apps.compliance.copy import FOLLOWUP_RECRUITMENT_TEXT_V1_PRE_IRB
+        from apps.compliance.services import record_consent
+
+        record_consent(
+            user=self.user,
+            consent_type='followup_recruitment',
+            consent_text=FOLLOWUP_RECRUITMENT_TEXT_V1_PRE_IRB,
+            version='v1_pre_irb',
+            ip_address='192.0.2.7',
+        )
+        row = ConsentRecord.objects.get(
+            user=self.user, consent_type='followup_recruitment',
+        )
+        self.assertTrue(row.granted)
+        self.assertIsNone(row.revoked_at)
+        self.assertEqual(row.consent_text, FOLLOWUP_RECRUITMENT_TEXT_V1_PRE_IRB)
+
+    def test_revoke_marks_row_revoked(self):
+        from apps.compliance.copy import FOLLOWUP_RECRUITMENT_TEXT_V1_PRE_IRB
+        from apps.compliance.services import record_consent, revoke_consent
+
+        record_consent(
+            user=self.user,
+            consent_type='followup_recruitment',
+            consent_text=FOLLOWUP_RECRUITMENT_TEXT_V1_PRE_IRB,
+            version='v1_pre_irb',
+            ip_address='192.0.2.7',
+        )
+        revoke_consent(user=self.user, consent_type='followup_recruitment')
+        row = ConsentRecord.objects.get(
+            user=self.user, consent_type='followup_recruitment',
+        )
+        self.assertIsNotNone(row.revoked_at)
+
+
+class FollowupRecruitmentRevokeViewTest(TestCase):
+    """POST /profile/privacy/revoke/followup-recruitment/ marks the row revoked.
+
+    Mirror of the existing revoke_data_sharing_view tests. Uses an inline
+    profile-complete setUp instead of `_PrivacyTestBase` to avoid a forward
+    reference (the base class is defined below this section in this module).
+    """
+
+    def setUp(self):
+        from apps.users.models import TeacherProfile
+        from apps.compliance.copy import FOLLOWUP_RECRUITMENT_TEXT_V1_PRE_IRB
+        from apps.compliance.services import record_consent
+
+        self.user = User.objects.create_user(
+            username='revoke_followup', password='pw',
+        )
+        # Profile with ai_disclosure_acknowledged_at + research_consent=True
+        # so the user passes AIDisclosureMiddleware and the research-gating
+        # middleware without redirect.
+        TeacherProfile.objects.create(
+            user=self.user,
+            subject_area='mathematics',
+            grade_level='primary',
+            teaching_years='6-15',
+            school_location='urban',
+            average_class_size='medium',
+            ai_experience='basic',
+            preferred_communication_style='balanced',
+            ai_disclosure_acknowledged_at=timezone.now(),
+            profile_completed=True,
+            research_consent=True,
+        )
+        from django.test import Client
+        self.client = Client()
+        self.client.force_login(self.user)
+        record_consent(
+            user=self.user,
+            consent_type='followup_recruitment',
+            consent_text=FOLLOWUP_RECRUITMENT_TEXT_V1_PRE_IRB,
+            version='v1_pre_irb',
+            ip_address='192.0.2.7',
+        )
+
+    def test_post_revokes_row(self):
+        response = self.client.post(
+            '/profile/privacy/revoke/followup-recruitment/',
+        )
+        # Redirects back to privacy dashboard on success (302).
+        self.assertEqual(response.status_code, 302)
+        row = ConsentRecord.objects.get(
+            user=self.user, consent_type='followup_recruitment',
+        )
+        self.assertIsNotNone(row.revoked_at)
+
+    def test_get_not_allowed(self):
+        response = self.client.get(
+            '/profile/privacy/revoke/followup-recruitment/',
+        )
+        # @require_POST → 405 Method Not Allowed.
+        self.assertEqual(response.status_code, 405)
+
+
+class AIImpactAssessmentV2PostGClosureTest(TestCase):
+    """V2 cleanup of section 2 after Phase G closure (2026-05-24).
+
+    V1 §2 promised "the PROODOS Epilogue will add ... a three-stage
+    Gemini dialogue and a Learning Portrait PDF". The Phase G closure
+    deactivated those surfaces; V2 §2 must not reference them.
+    Sections 1, 3, 4, 5, 6 must be byte-identical to V1 (only §2 and
+    §7 change).
+    """
+
+    def test_v2_section_2_omits_deactivated_surfaces(self):
+        from apps.compliance.copy import (
+            AI_IMPACT_ASSESSMENT_V2_POST_G_CLOSURE,
+        )
+        section_2_body = AI_IMPACT_ASSESSMENT_V2_POST_G_CLOSURE[1]['body']
+        # Removed surfaces — must not appear anywhere in the new body.
+        self.assertNotIn('three-stage Gemini dialogue', section_2_body)
+        self.assertNotIn('Learning Portrait', section_2_body)
+        self.assertNotIn('three-stage', section_2_body)
+        # Replacement framing — must appear.
+        self.assertIn('Personal Evolution Dashboard', section_2_body)
+        self.assertIn('non-AI synthesis surface', section_2_body)
+
+    def test_v2_preserves_v1_sections_1_3_4_5_6_byte_identical(self):
+        from apps.compliance.copy import (
+            AI_IMPACT_ASSESSMENT_V1_PRE_IRB,
+            AI_IMPACT_ASSESSMENT_V2_POST_G_CLOSURE,
+        )
+        for idx in (0, 2, 3, 4, 5):  # §1, §3, §4, §5, §6
+            self.assertEqual(
+                AI_IMPACT_ASSESSMENT_V1_PRE_IRB[idx],
+                AI_IMPACT_ASSESSMENT_V2_POST_G_CLOSURE[idx],
+                f'Section index {idx} must be byte-identical between V1 and V2',
+            )
+
+    def test_v2_has_same_section_count_as_v1(self):
+        from apps.compliance.copy import (
+            AI_IMPACT_ASSESSMENT_V1_PRE_IRB,
+            AI_IMPACT_ASSESSMENT_V2_POST_G_CLOSURE,
+        )
+        self.assertEqual(
+            len(AI_IMPACT_ASSESSMENT_V1_PRE_IRB),
+            len(AI_IMPACT_ASSESSMENT_V2_POST_G_CLOSURE),
+        )
+
+
 # ============================================================
 # Phase C C.2.0 — AI Disclosure middleware + view tests
 # ============================================================

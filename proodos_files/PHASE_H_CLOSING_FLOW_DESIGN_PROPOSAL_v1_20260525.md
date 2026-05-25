@@ -12,6 +12,16 @@ dashboard-redundancy ticket.*
 
 ## Version history
 
+- **v1.1.2 (2026-05-25, H.6 implementation finding):** §6.3 corrected.
+  The v1 assumption that adding a new `consent_type` requires no DB
+  migration was wrong — the `valid_consent_type` CHECK constraint
+  enforces the enum at the database level. Migration 0007 generated,
+  pg_dump-backed, sqlmigrate-reviewed, applied. The
+  TeacherProfile-boolean-accessor item from the original §6.3 was
+  also dropped: follow-up recruitment is not gated on the platform
+  itself, so the denormalised cache serves no live use case. Lesson
+  preserved in §6.3 for any future change to enum-CHECKed columns
+  (e.g. AILST timepoint values in `apps/ailst/models.py:197`).
 - **v1.1.1 (2026-05-25, second-pass review):** Three follow-up
   refinements from second external review:
   - §7.4 LAD framing rewritten to more accurately render Verbert
@@ -605,24 +615,47 @@ added. The version-pinned regression test
 (`test_stored_consent_text_matches_copy_module_exactly`) extends to
 the new constant.
 
-### 6.3 Schema additions
+### 6.3 Schema additions (correction recorded in v1.1.2)
 
-The `ConsentRecord` model in `apps/compliance/models.py` already
-supports arbitrary `consent_type` values (the existing
-`research_participation` and `data_sharing` types are not enum-bound).
-A new logical type `followup_recruitment` is added by:
+**Original v1 assumption (later disproved):** "No DB schema migration
+required — the consent record table already holds arbitrary types."
 
-1. Documenting the type in the model docstring and the
-   `compliance/services.py::record_consent` helper.
-2. Adding a corresponding revoke endpoint in
-   `apps/compliance/urls.py` matching the existing pattern (one revoke
-   URL per consent type, per IRB Article 7(3) requirement).
-3. Adding a `consent_followup_recruitment` accessor on
-   `TeacherProfile` parallel to the existing `consent_data_sharing`
-   accessor.
+**What the H.6 implementation actually found (2026-05-25):** the
+`ConsentRecord` model carries a Django `CheckConstraint` named
+`valid_consent_type` ([models.py:100-108](apps/compliance/models.py:100))
+that enumerates the valid `consent_type` values at the **database
+level**, not only at form-validation level. Adding `'followup_
+recruitment'` therefore requires a real DB migration that drops the
+old CHECK and re-creates it with the extended value set.
 
-No DB schema migration required — the consent record table already
-holds arbitrary types.
+**Actual change set for H.6:**
+
+1. `ConsentRecord.CONSENT_TYPE_CHOICES` extended with the new
+   `'followup_recruitment'` choice (model-level).
+2. `ConsentRecord.Meta.constraints[valid_consent_type]` `condition=`
+   list extended with `'followup_recruitment'` (database-level).
+3. Migration `apps/compliance/migrations/0007_add_followup_
+   recruitment_consent_type.py` (auto-generated, three-op transaction:
+   DROP CONSTRAINT → ALTER FIELD (no-op for choices) → ADD CONSTRAINT).
+   `pg_dump` backup taken (`pre_migration_backup_phase_h_h6_20260525.sql`,
+   22,317 lines, 52MB) and `sqlmigrate` reviewed before apply.
+4. Revoke endpoint added in `apps/compliance/urls.py` matching the
+   existing pattern (one revoke URL per consent type, per IRB Article
+   7(3) requirement).
+5. **No `TeacherProfile` boolean accessor added** for `consent_
+   followup_recruitment`. The denormalised booleans on `TeacherProfile`
+   exist for things the platform must gate on quickly (research
+   participation, data sharing); follow-up recruitment never gates
+   anything on the platform itself (the gate is downstream, at the
+   time a follow-up study sends invitations), so the canonical
+   `ConsentRecord` query is sufficient. Avoids adding a column that
+   serves no live use case.
+
+This finding is preserved as a lesson — design proposals must verify
+DB-level constraint state before claiming "no migration required",
+not just check Django model choices. The same constraint pattern is
+used in `apps/ailst/models.py:197` for AILST timepoint values, so any
+future change to AILST timepoints will hit the same lesson.
 
 ### 6.4 Step 3 template changes — with visual distinction
 

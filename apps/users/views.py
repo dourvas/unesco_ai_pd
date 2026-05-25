@@ -136,8 +136,15 @@ def onboarding_step2(request):
     return render(request, 'onboarding/step2.html', context)
 
 
-def _apply_step3_consents(*, user, research_checked, data_sharing_checked, ip_address):
-    """Phase C C.2.2 — Step 3 research-consent policy.
+def _apply_step3_consents(
+    *,
+    user,
+    research_checked,
+    data_sharing_checked,
+    followup_recruitment_checked,
+    ip_address,
+):
+    """Phase C C.2.2 + Phase H H.6 — Step 3 research-consent policy.
 
     Translates the Step 3 checkbox state into ConsentRecord writes via the
     canonical record_consent / revoke_consent helpers. The M6 sync signal
@@ -146,6 +153,10 @@ def _apply_step3_consents(*, user, research_checked, data_sharing_checked, ip_ad
     This helper centralises the Step-3-specific mapping:
       - 'consent_research_participation' checkbox -> consent_type='research_participation'
       - 'consent_data_sharing' checkbox          -> consent_type='data_sharing'
+      - 'consent_followup_recruitment' checkbox  -> consent_type='followup_recruitment'
+        (Phase H H.6, added 2026-05-25 — optional pool consent for
+        possible post-pilot follow-up study; no TeacherProfile boolean
+        cache since there is no gating decision that depends on it)
 
     Idempotent: re-submitting the same checkbox state is a no-op (the
     record_consent supersede check returns the existing active row;
@@ -155,6 +166,7 @@ def _apply_step3_consents(*, user, research_checked, data_sharing_checked, ip_ad
 
     from apps.compliance.copy import (
         DATA_SHARING_TEXT_V1_PRE_IRB,
+        FOLLOWUP_RECRUITMENT_TEXT_V1_PRE_IRB,
         RESEARCH_PARTICIPATION_TEXT_V1_PRE_IRB,
     )
     from apps.compliance.services import record_consent, revoke_consent
@@ -186,6 +198,17 @@ def _apply_step3_consents(*, user, research_checked, data_sharing_checked, ip_ad
     else:
         revoke_consent(user=user, consent_type='data_sharing')
 
+    if followup_recruitment_checked:
+        record_consent(
+            user=user,
+            consent_type='followup_recruitment',
+            consent_text=FOLLOWUP_RECRUITMENT_TEXT_V1_PRE_IRB,
+            version=version,
+            ip_address=ip_address,
+        )
+    else:
+        revoke_consent(user=user, consent_type='followup_recruitment')
+
 
 def _step3_client_ip(request):
     """Best-effort client IP for ConsentRecord rows (auto-redacted after 30 days
@@ -209,6 +232,7 @@ def onboarding_step3(request):
 
     from apps.compliance.copy import (
         DATA_SHARING_TEXT_V1_PRE_IRB,
+        FOLLOWUP_RECRUITMENT_TEXT_V1_PRE_IRB,
         RESEARCH_PARTICIPATION_TEXT_V1_PRE_IRB,
     )
 
@@ -229,6 +253,7 @@ def onboarding_step3(request):
                 user=request.user,
                 research_checked=form.cleaned_data['consent_research_participation'],
                 data_sharing_checked=form.cleaned_data['consent_data_sharing'],
+                followup_recruitment_checked=form.cleaned_data['consent_followup_recruitment'],
                 ip_address=_step3_client_ip(request),
             )
 
@@ -248,6 +273,7 @@ def onboarding_step3(request):
         # _apply_step3_consents stores via record_consent.
         'research_text': RESEARCH_PARTICIPATION_TEXT_V1_PRE_IRB,
         'data_sharing_text': DATA_SHARING_TEXT_V1_PRE_IRB,
+        'followup_recruitment_text': FOLLOWUP_RECRUITMENT_TEXT_V1_PRE_IRB,
         'consent_version': settings.RESEARCH_CONSENT_CURRENT_VERSION,
     }
 
