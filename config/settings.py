@@ -44,6 +44,8 @@ INSTALLED_APPS = [
     'apps.ailst',
     # Phase C C.2.5 — PROODOS Epilogue stub (2026-05)
     'apps.epilogue',
+    # Phase H H.3 — Certificate of Attendance (2026-05)
+    'apps.certification',
     # Phase E commit 1 — agent layer (BaseAIAgent + RAGFeedbackAgent live
     # alongside rag_query_system.py; monolith still serves traffic).
     'apps.agents',
