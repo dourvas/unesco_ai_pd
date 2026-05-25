@@ -186,6 +186,7 @@ def _seed_modules():
             description=f'Module {i} description',
             order_index=i,
             estimated_hours=4,
+            is_published=True,  # default False; matrix filters on it
         )
 
 

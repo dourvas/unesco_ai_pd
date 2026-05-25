@@ -429,7 +429,18 @@ def profile_edit(request):
 @login_required
 def dashboard(request):
     """
-    Dashboard - requires completed profile.
+    Dashboard — requires completed profile.
+
+    Phase H.7 redesign (TD-021 resolution, 2026-05-25): replaces the
+    duplicate-of-the-Modules-menu module list with a personal UNESCO
+    5x3 progress matrix + a single contextual next-action card + a
+    Certificate of Attendance panel that surfaces the cert once the
+    closing AILST measurement (T2) is complete.
+
+    Hard constraint preserved per TD-021 line 435: the dashboard is
+    completion-structure, NOT developmental-evolution. DTP curves
+    and RTM tension trajectories belong to the Epilogue Stage 0
+    surface, not here.
 
     Guards:
       - No TeacherProfile row -> send to onboarding welcome.
@@ -439,6 +450,12 @@ def dashboard(request):
         contents only make sense once the user has filled in their
         teaching context, AI experience, and goals.
     """
+    from apps.users.services import (
+        build_personal_unesco_matrix,
+        certificate_state_for_dashboard,
+        next_action_for_dashboard,
+    )
+
     try:
         profile = TeacherProfile.objects.get(user=request.user)
     except TeacherProfile.DoesNotExist:
@@ -448,30 +465,14 @@ def dashboard(request):
     if not profile.profile_completed:
         messages.info(request, 'Please finish your onboarding before opening the dashboard.')
         return redirect('users:onboarding_welcome')
-    
-    # Build modules with progress
-    from apps.modules.models import Module, UserModuleProgress
-    
-    modules = Module.objects.filter(is_published=True)
-    modules_with_progress = []
-    for module in modules:
-        try:
-            progress = UserModuleProgress.objects.get(user=request.user, module=module)
-            prog_data = {
-                'started': True,
-                'percentage': progress.completion_percentage,
-                'completed': progress.completed_at is not None,
-            }
-        except UserModuleProgress.DoesNotExist:
-            prog_data = {'started': False, 'percentage': 0, 'completed': False}
-        
-        modules_with_progress.append({'module': module, 'progress': prog_data})
-    
+
     context = {
         'profile': profile,
-        'modules_with_progress': modules_with_progress,
+        'personal_matrix': build_personal_unesco_matrix(request.user),
+        'next_action': next_action_for_dashboard(request.user),
+        'certificate_state': certificate_state_for_dashboard(request.user),
     }
-    
+
     return render(request, 'home.html', context)
 
 def landing_page(request):

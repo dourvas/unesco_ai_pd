@@ -488,6 +488,12 @@ def cohort_unesco_matrix(filters=None):
         })
 
     return {
+        # Phase H.7 (2026-05-25): 'kind' added so the shared partial
+        # templates/partials/_unesco_matrix.html can branch its cell
+        # rendering between cohort (heat-shaded rate) and personal
+        # (state badge + module link). The cohort callers always pass
+        # 'cohort'; the per-teacher callers pass 'personal'.
+        'kind': 'cohort',
         'levels': list(LEVEL_ORDER),
         'rows': rows,
         'total_teachers': total_teachers,

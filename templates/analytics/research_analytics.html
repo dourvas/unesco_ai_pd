@@ -421,37 +421,8 @@ Never linked from a teacher-facing page (measurement-reactivity guard).
             does not narrow this matrix.{% endif %}
         </p>
     </div>
-    <div class="overflow-x-auto mb-8">
-        <table class="table table-sm">
-            <thead>
-                <tr>
-                    <th>Aspect</th>
-                    {% for level in unesco_matrix.levels %}
-                    <th class="text-center">{{ level }}</th>
-                    {% endfor %}
-                </tr>
-            </thead>
-            <tbody>
-                {% for row in unesco_matrix.rows %}
-                <tr>
-                    <td class="font-medium">{{ row.aspect_label }}</td>
-                    {% for cell in row.cells %}
-                    <td class="text-center">
-                        {% if cell %}
-                        <div class="rounded p-1" style="background-color: rgba(34,197,94,{% if cell.rate %}{{ cell.rate }}{% else %}0{% endif %});">
-                            <div class="font-semibold">{{ cell.module_code }}</div>
-                            <div class="text-xs">
-                                {% if cell.rate is not None %}{{ cell.rate }}{% else %}—{% endif %}
-                                <span class="text-base-content/50">({{ cell.completed }}/{{ cell.total }})</span>
-                            </div>
-                        </div>
-                        {% else %}<span class="text-base-content/30">—</span>{% endif %}
-                    </td>
-                    {% endfor %}
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+    <div class="mb-8">
+        {% include 'partials/_unesco_matrix.html' with matrix=unesco_matrix %}
     </div>
 
     {# ============================================================ #}

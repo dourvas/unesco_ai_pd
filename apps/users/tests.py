@@ -391,3 +391,278 @@ class OnboardingConfirmInterstitialTest(TestCase):
         self.assertNotIn('Continue to AI Literacy baseline', body)
         # And a navigation back to confirm must exist.
         self.assertIn('Back to confirmation', body)
+
+
+# ============================================================================
+# Phase H.7 — Dashboard redesign tests (TD-021 resolution)
+# ============================================================================
+
+from django.urls import reverse
+from django.utils import timezone as _tz
+
+from apps.ailst.models import AilstResponse
+from apps.epilogue.models import EpilogueCompletion
+from apps.modules.models import Module, UserModuleProgress
+from apps.users.services import (
+    build_personal_unesco_matrix,
+    certificate_state_for_dashboard,
+    next_action_for_dashboard,
+)
+
+
+def _h7_seed_modules():
+    """15 published modules across the 5x3 grid; required by the matrix."""
+    grid = [
+        ('human_centered', 'Acquire'), ('ethics', 'Acquire'),
+        ('ai_foundations', 'Acquire'), ('ai_pedagogy', 'Acquire'),
+        ('professional_development', 'Acquire'),
+        ('human_centered', 'Deepen'), ('ethics', 'Deepen'),
+        ('ai_foundations', 'Deepen'), ('ai_pedagogy', 'Deepen'),
+        ('professional_development', 'Deepen'),
+        ('human_centered', 'Create'), ('ethics', 'Create'),
+        ('ai_foundations', 'Create'), ('ai_pedagogy', 'Create'),
+        ('professional_development', 'Create'),
+    ]
+    for i, (aspect, level) in enumerate(grid, start=1):
+        Module.objects.create(
+            code=f'M{i}', unesco_aspect=aspect, proficiency_level=level,
+            title=f'Module {i} title', description='-', order_index=i,
+            is_published=True,  # default is False; matrix filters on it
+        )
+
+
+def _h7_make_user(username='h7_user'):
+    user = User.objects.create_user(username=username, password='pw')
+    TeacherProfile.objects.create(
+        user=user, subject_area='mathematics', grade_level='primary',
+        teaching_years='6-15', school_location='urban',
+        average_class_size='medium', ai_experience='basic',
+        preferred_communication_style='balanced',
+        ai_disclosure_acknowledged_at=_tz.now(),
+        profile_completed=True, research_consent=True,
+    )
+    return user
+
+
+class PersonalUnescoMatrixTest(TestCase):
+    """Per-teacher 5x3 matrix classifies each cell as locked / in_progress / complete."""
+
+    def setUp(self):
+        _h7_seed_modules()
+        self.user = _h7_make_user()
+
+    def test_all_cells_locked_when_no_progress(self):
+        m = build_personal_unesco_matrix(self.user)
+        self.assertEqual(m['kind'], 'personal')
+        states = [cell['state']
+                  for row in m['rows'] for cell in row['cells'] if cell]
+        self.assertEqual(set(states), {'locked'})
+
+    def test_started_module_is_in_progress(self):
+        m1 = Module.objects.get(code='M1')
+        UserModuleProgress.objects.create(user=self.user, module=m1)
+        matrix = build_personal_unesco_matrix(self.user)
+        m1_cell = matrix['rows'][0]['cells'][0]
+        self.assertEqual(m1_cell['state'], 'in_progress')
+
+    def test_completed_module_is_complete(self):
+        m1 = Module.objects.get(code='M1')
+        UserModuleProgress.objects.create(
+            user=self.user, module=m1, completed_at=_tz.now(),
+        )
+        matrix = build_personal_unesco_matrix(self.user)
+        self.assertEqual(matrix['rows'][0]['cells'][0]['state'], 'complete')
+
+    def test_cell_carries_module_link(self):
+        matrix = build_personal_unesco_matrix(self.user)
+        self.assertIn('/modules/M1/', matrix['rows'][0]['cells'][0]['url'])
+
+    def test_outer_shape_matches_cohort(self):
+        """Same outer keys as analytics.cohort_unesco_matrix so the
+        shared partial can render both interchangeably."""
+        m = build_personal_unesco_matrix(self.user)
+        for key in ('kind', 'levels', 'rows', 'total_teachers'):
+            self.assertIn(key, m)
+
+
+class NextActionForDashboardTest(TestCase):
+    """4 contextual states ordered by precedence."""
+
+    def setUp(self):
+        _h7_seed_modules()
+        self.user = _h7_make_user('next_user')
+
+    def test_state_continue_module_when_modules_remain(self):
+        action = next_action_for_dashboard(self.user)
+        self.assertEqual(action['state'], 'continue_module')
+        self.assertIn('M1', action['title'])
+        self.assertIn('/modules/M1/', action['cta_url'])
+
+    def test_state_visit_epilogue_after_all_modules_complete(self):
+        for m in Module.objects.all():
+            UserModuleProgress.objects.create(
+                user=self.user, module=m, completed_at=_tz.now(),
+            )
+        action = next_action_for_dashboard(self.user)
+        self.assertEqual(action['state'], 'visit_epilogue')
+        self.assertEqual(action['cta_url'], '/epilogue/')
+
+    def test_state_complete_ailst_t2_after_epilogue_completed(self):
+        for m in Module.objects.all():
+            UserModuleProgress.objects.create(
+                user=self.user, module=m, completed_at=_tz.now(),
+            )
+        EpilogueCompletion.objects.create(
+            user=self.user, completed_at=_tz.now(),
+        )
+        action = next_action_for_dashboard(self.user)
+        self.assertEqual(action['state'], 'complete_ailst_t2')
+        self.assertEqual(action['cta_url'], '/ailst/t2/')
+
+    def test_state_programme_complete_after_t2(self):
+        for m in Module.objects.all():
+            UserModuleProgress.objects.create(
+                user=self.user, module=m, completed_at=_tz.now(),
+            )
+        EpilogueCompletion.objects.create(
+            user=self.user, completed_at=_tz.now(),
+        )
+        AilstResponse.objects.create(
+            user=self.user, timepoint='T2', completed_at=_tz.now(),
+            responses={f'P{i}': 4 for i in range(1, 37)},
+            instrument_version='ning_2025_v1',
+        )
+        action = next_action_for_dashboard(self.user)
+        self.assertEqual(action['state'], 'programme_complete')
+        self.assertEqual(action['cta_url'], '/certification/download/')
+
+    def test_teacher_facing_text_does_not_leak_internal_labels(self):
+        """Per the no-internal-labels rule: no 'Stage 0/1/2/3', 'T2',
+        'AILST', 'DTP', 'RTM' in teacher-facing copy."""
+        for m in Module.objects.all():
+            UserModuleProgress.objects.create(
+                user=self.user, module=m, completed_at=_tz.now(),
+            )
+        EpilogueCompletion.objects.create(
+            user=self.user, completed_at=_tz.now(),
+        )
+        action = next_action_for_dashboard(self.user)
+        combined = (action['title'] + action['body'] + action['cta_label'])
+        for label in ('Stage 0', 'Stage 1', 'Stage 2', 'Stage 3',
+                      'AILST', 'T2', 'T0', 'T1', 'DTP', 'RTM'):
+            self.assertNotIn(label, combined,
+                             f'Internal label {label!r} leaked: {combined!r}')
+
+
+class CertificateStateForDashboardTest(TestCase):
+    """Three states: locked (pre-T2), available (T2 done, no cert), issued."""
+
+    def setUp(self):
+        _h7_seed_modules()
+        self.user = _h7_make_user('cert_state_user')
+
+    def test_locked_when_no_t2(self):
+        s = certificate_state_for_dashboard(self.user)
+        self.assertEqual(s['state'], 'locked')
+        self.assertIsNone(s['verification_code'])
+
+    def test_available_after_t2_no_cert_yet(self):
+        AilstResponse.objects.create(
+            user=self.user, timepoint='T2', completed_at=_tz.now(),
+            responses={f'P{i}': 4 for i in range(1, 37)},
+            instrument_version='ning_2025_v1',
+        )
+        s = certificate_state_for_dashboard(self.user)
+        self.assertEqual(s['state'], 'available')
+        self.assertIsNone(s['verification_code'])
+
+    def test_issued_after_certificate_row_exists(self):
+        AilstResponse.objects.create(
+            user=self.user, timepoint='T2', completed_at=_tz.now(),
+            responses={f'P{i}': 4 for i in range(1, 37)},
+            instrument_version='ning_2025_v1',
+        )
+        from apps.certification.services import get_or_issue_certificate
+        cert = get_or_issue_certificate(self.user)
+        s = certificate_state_for_dashboard(self.user)
+        self.assertEqual(s['state'], 'issued')
+        self.assertEqual(s['verification_code'], cert.verification_code)
+        self.assertIsNotNone(s['issued_at'])
+
+
+class DashboardViewRedesignTest(TestCase):
+    """The /dashboard/ view drops modules_with_progress and renders the
+    redesigned home.html with the personal matrix, the next-action card,
+    and the certificate panel."""
+
+    def setUp(self):
+        _h7_seed_modules()
+        self.user = _h7_make_user('dashboard_user')
+        self.client.force_login(self.user)
+
+    def test_context_drops_modules_with_progress(self):
+        resp = self.client.get(reverse('users:dashboard'))
+        self.assertEqual(resp.status_code, 200)
+        # Old context key must NOT appear; new ones must.
+        self.assertNotIn('modules_with_progress', resp.context)
+        self.assertIn('personal_matrix', resp.context)
+        self.assertIn('next_action', resp.context)
+        self.assertIn('certificate_state', resp.context)
+
+    def test_renders_matrix_partial(self):
+        resp = self.client.get(reverse('users:dashboard'))
+        body = resp.content.decode('utf-8')
+        # Shared partial puts the 15 module codes into the matrix cells.
+        for i in range(1, 16):
+            self.assertIn(f'>M{i}<', body)
+
+    def test_renders_certificate_locked_pre_t2(self):
+        resp = self.client.get(reverse('users:dashboard'))
+        body = resp.content.decode('utf-8')
+        self.assertIn('Locked', body)
+        self.assertIn('closing self-assessment', body)
+
+    def test_inline_emojis_removed(self):
+        """Per workflow rule 5 (no emojis in code) — the previous
+        home.html had inline emojis (📊 📚 🚀 ✓). The redesign removes
+        them."""
+        resp = self.client.get(reverse('users:dashboard'))
+        body = resp.content.decode('utf-8')
+        for em in ('📊', '📚', '🚀', '✓'):
+            self.assertNotIn(em, body,
+                             f'Emoji {em!r} should have been removed.')
+
+
+class AnalyticsCohortMatrixRegressionTest(TestCase):
+    """Verify the analytics cohort matrix still renders correctly after the
+    partial-lift refactor (the shared partial must handle both kinds)."""
+
+    def setUp(self):
+        _h7_seed_modules()
+        self.staff = User.objects.create_user(
+            username='analytics_staff', password='pw',
+            is_staff=True,
+        )
+        TeacherProfile.objects.create(
+            user=self.staff, subject_area='mathematics', grade_level='primary',
+            teaching_years='6-15', school_location='urban',
+            average_class_size='medium', ai_experience='basic',
+            preferred_communication_style='balanced',
+            ai_disclosure_acknowledged_at=_tz.now(),
+            profile_completed=True, research_consent=True,
+        )
+        self.client.force_login(self.staff)
+
+    def test_cohort_matrix_still_renders(self):
+        resp = self.client.get('/analytics/')
+        self.assertEqual(resp.status_code, 200)
+        body = resp.content.decode('utf-8')
+        # All 15 module codes should appear in the matrix.
+        for i in range(1, 16):
+            self.assertIn(f'>M{i}<', body)
+
+    def test_cohort_matrix_has_rate_shading(self):
+        """Cohort branch of the partial uses the green-rate shading."""
+        resp = self.client.get('/analytics/')
+        body = resp.content.decode('utf-8')
+        self.assertIn('rgba(34,197,94', body)

@@ -1,0 +1,77 @@
+{% comment %}
+  Shared UNESCO 5x3 competency-matrix partial.
+
+  Two callers:
+    - apps/analytics — cohort completion rates (researcher dashboard)
+    - apps/users — per-teacher progress state (teacher dashboard)
+
+  Both feed the same outer shape (matrix.rows / matrix.levels /
+  matrix.kind); cells carry either cohort fields (rate/completed/total)
+  or personal fields (state/url), depending on matrix.kind.
+
+  Per PHASE_H_CLOSING_FLOW_DESIGN_PROPOSAL §7.3 (D.4 partial lift) +
+  §7.4 (pedagogical-evolution boundary preserved: this matrix is
+  completion-structure, NOT developmental-evolution; the Epilogue
+  Stage 0 owns evolution).
+
+  Required context:
+    matrix.kind         — 'cohort' or 'personal'
+    matrix.levels       — list of level labels (column headers)
+    matrix.rows         — list of {aspect, aspect_label, cells: [cell|None, ...]}
+    matrix.total_teachers — int (cohort only; informational text)
+{% endcomment %}
+
+<div class="overflow-x-auto">
+    <table class="table table-sm">
+        <thead>
+            <tr>
+                <th>{% if matrix.kind == 'personal' %}Aspect{% else %}Aspect{% endif %}</th>
+                {% for level in matrix.levels %}
+                <th class="text-center">{{ level }}</th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in matrix.rows %}
+            <tr>
+                <td class="font-medium">{{ row.aspect_label }}</td>
+                {% for cell in row.cells %}
+                <td class="text-center">
+                    {% if cell %}
+                        {% if matrix.kind == 'cohort' %}
+                            {% comment %} Cohort cell — color shading on completion rate. {% endcomment %}
+                            <div class="rounded p-1" style="background-color: rgba(34,197,94,{% if cell.rate %}{{ cell.rate }}{% else %}0{% endif %});">
+                                <div class="font-semibold">{{ cell.module_code }}</div>
+                                <div class="text-xs">
+                                    {% if cell.rate is not None %}{{ cell.rate }}{% else %}—{% endif %}
+                                    <span class="text-base-content/50">({{ cell.completed }}/{{ cell.total }})</span>
+                                </div>
+                            </div>
+                        {% else %}
+                            {% comment %} Personal cell — state badge + link to module. {% endcomment %}
+                            <a href="{{ cell.url }}" class="block rounded p-1 border-2 hover:border-primary transition-colors
+                                {% if cell.state == 'complete' %}bg-success/20 border-success/40
+                                {% elif cell.state == 'in_progress' %}bg-warning/20 border-warning/40
+                                {% else %}bg-base-200 border-base-300{% endif %}">
+                                <div class="font-semibold">{{ cell.module_code }}</div>
+                                <div class="text-xs">
+                                    {% if cell.state == 'complete' %}
+                                        <span class="text-success">Complete</span>
+                                    {% elif cell.state == 'in_progress' %}
+                                        <span class="text-warning">In progress</span>
+                                    {% else %}
+                                        <span class="text-base-content/60">Not started</span>
+                                    {% endif %}
+                                </div>
+                            </a>
+                        {% endif %}
+                    {% else %}
+                        <span class="text-base-content/30">—</span>
+                    {% endif %}
+                </td>
+                {% endfor %}
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>

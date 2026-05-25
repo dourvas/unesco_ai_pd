@@ -1,88 +1,136 @@
 {% extends 'base.html' %}
+{% load i18n %}
 
-{% block title %}Dashboard - UNESCO AI PD{% endblock %}
+{% block title %}Dashboard | PROODOS{% endblock %}
 
 {% block content %}
 <div class="max-w-6xl mx-auto">
-    
+
+    {% comment %} === Welcome / profile snapshot === {% endcomment %}
     <div class="hero bg-base-100 rounded-box shadow-xl mb-8">
-        <div class="hero-content text-center py-12">
+        <div class="hero-content text-center py-10">
             <div class="max-w-md">
-                <h1 class="text-5xl font-bold">Welcome!</h1>
-                <p class="py-6 text-lg">
-                    To the professional development platform for educators in Artificial Intelligence.
+                <h1 class="text-4xl font-bold">{% trans "Welcome" %}{% if profile.user.first_name %}, {{ profile.user.first_name }}{% endif %}</h1>
+                <p class="py-4 text-base text-base-content/70">
+                    {% trans "Your PROODOS dashboard — where you are in the framework, what is next, and how to download your certificate when the time comes." %}
                 </p>
-                
-                {% if not profile.profile_completed and not profile.profile_skipped %}
-                    <a href="{% url 'users:onboarding_welcome' %}" class="btn btn-primary btn-lg">
-                        🚀 Start Your Profile
-                    </a>
-                {% endif %}
             </div>
         </div>
     </div>
 
+    {% comment %} === Profile snapshot (slim, kept) === {% endcomment %}
     {% if profile.profile_completed %}
-    <div class="card bg-base-100 shadow-xl mb-8">
+    <div class="card bg-base-100 shadow-xl mb-6">
         <div class="card-body">
-            <h2 class="card-title">📊 Your Profile</h2>
-            <div class="stats stats-vertical lg:stats-horizontal shadow">
-                <div class="stat">
-                    <div class="stat-title">Completion</div>
-                    <div class="stat-value text-primary">{{ profile.completion_percentage }}%</div>
-                    <div class="stat-desc">{{ profile.profile_summary }}</div>
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div>
+                    <h2 class="card-title text-lg">{% trans "Your profile" %}</h2>
+                    <p class="text-sm text-base-content/70">
+                        {{ profile.get_grade_level_display }} &middot;
+                        {{ profile.get_subject_area_display }} &middot;
+                        {% trans "Profile completion" %}: {{ profile.completion_percentage }}%
+                    </p>
                 </div>
-                <div class="stat">
-                    <div class="stat-title">Grade Level</div>
-                    <div class="stat-value text-sm">{{ profile.get_grade_level_display }}</div>
+                <div>
+                    <a href="{% url 'users:profile_view' %}" class="btn btn-outline btn-sm">
+                        {% trans "View profile" %}
+                    </a>
                 </div>
-                <div class="stat">
-                    <div class="stat-title">Subject Area</div>
-                    <div class="stat-value text-sm">{{ profile.get_subject_area_display }}</div>
-                </div>
-            </div>
-            <div class="card-actions justify-end mt-4">
-                <a href="{% url 'users:profile_view' %}" class="btn btn-outline btn-sm">View Profile</a>
             </div>
         </div>
     </div>
     {% endif %}
 
-    <div class="card bg-base-100 shadow-xl">
-    <div class="card-body">
-        <h2 class="card-title">📚 Professional Development Modules</h2>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-            {% for item in modules_with_progress %}
-            <div class="card bg-base-200 hover:bg-base-300 transition-colors">
-                <div class="card-body">
-                    <h3 class="card-title text-sm">{{ item.module.code }}: {{ item.module.title }}</h3>
-                    
-                    {% if item.progress.completed %}
-                        <div class="badge badge-success">✓ Completed</div>
-                        <progress class="progress progress-success w-full" value="100" max="100"></progress>
-                    {% elif item.progress.started %}
-                        <div class="badge badge-warning">In Progress</div>
-                        <progress class="progress progress-warning w-full" 
-                                  value="{{ item.progress.percentage }}" max="100"></progress>
-                        <span class="text-xs text-gray-500">{{ item.progress.percentage }}%</span>
-                    {% else %}
-                        <div class="badge badge-info">Available</div>
-                    {% endif %}
-                    
-                    <div class="card-actions justify-end mt-2">
-                        <a href="{% url 'modules:detail' item.module.code %}" 
-                           class="btn btn-sm btn-primary">
-                            {% if item.progress.started %}Continue{% else %}Start{% endif %}
+    {% comment %}
+      Next action card (4 states: continue_module, visit_epilogue,
+      complete_ailst_t2, programme_complete).
+      Teacher-facing language only; no internal labels (Stage 0/1/2/3,
+      T2, AILST, DTP, RTM) per the project-wide no-internal-labels rule.
+    {% endcomment %}
+    <div class="card bg-primary text-primary-content shadow-xl mb-6">
+        <div class="card-body">
+            <p class="text-xs uppercase tracking-widest opacity-80">{% trans "Next" %}</p>
+            <h2 class="card-title text-2xl">{{ next_action.title }}</h2>
+            <p class="opacity-90 mb-3">{{ next_action.body }}</p>
+            <div class="card-actions">
+                <a href="{{ next_action.cta_url }}" class="btn btn-secondary">
+                    {{ next_action.cta_label }}
+                </a>
+            </div>
+        </div>
+    </div>
+
+    {% comment %} === Personal UNESCO 5x3 progress matrix === {% endcomment %}
+    <div class="card bg-base-100 shadow-xl mb-6">
+        <div class="card-body">
+            <h2 class="card-title text-xl">
+                {% trans "Your progress through the UNESCO competency framework" %}
+            </h2>
+            <p class="text-sm text-base-content/70 mb-3">
+                {% trans "Five aspects across three proficiency levels (Acquire, Deepen, Create). Each cell is one module — click to open it." %}
+            </p>
+            {% include 'partials/_unesco_matrix.html' with matrix=personal_matrix %}
+        </div>
+    </div>
+
+    {% comment %}
+      Certificate of Attendance panel — three states:
+        - locked    : pre-T2, "available after closing measurement"
+        - available : T2 complete, download issues the cert
+        - issued    : cert row exists, download + verification code shown
+    {% endcomment %}
+    <div class="card bg-base-100 shadow-xl mb-8">
+        <div class="card-body">
+            {% if certificate_state.state == 'locked' %}
+                <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                    <div>
+                        <p class="text-xs uppercase tracking-widest text-base-content/60">{% trans "Certificate of Attendance" %}</p>
+                        <h2 class="card-title text-xl mt-1">{% trans "Locked" %}</h2>
+                        <p class="text-sm text-base-content/70 mt-1">
+                            {% trans "Your Certificate of Attendance becomes available once you complete the closing self-assessment measurement at the end of the programme." %}
+                        </p>
+                    </div>
+                    <div>
+                        <button class="btn btn-disabled btn-outline" disabled>
+                            {% trans "Download" %}
+                        </button>
+                    </div>
+                </div>
+            {% elif certificate_state.state == 'available' %}
+                <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                    <div>
+                        <p class="text-xs uppercase tracking-widest text-base-content/60">{% trans "Certificate of Attendance" %}</p>
+                        <h2 class="card-title text-xl mt-1">{% trans "Ready to download" %}</h2>
+                        <p class="text-sm text-base-content/70 mt-1">
+                            {% trans "Click below to issue and download your bilingual Certificate of Attendance (EN + EL)." %}
+                        </p>
+                    </div>
+                    <div>
+                        <a href="{{ certificate_state.download_url }}" class="btn btn-primary">
+                            {% trans "Download Certificate" %}
                         </a>
                     </div>
                 </div>
-            </div>
-            {% empty %}
-            <p class="text-gray-500 col-span-3">No modules available yet.</p>
-            {% endfor %}
+            {% else %}{% comment %} issued {% endcomment %}
+                <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                    <div>
+                        <p class="text-xs uppercase tracking-widest text-base-content/60">{% trans "Certificate of Attendance" %}</p>
+                        <h2 class="card-title text-xl mt-1">{% trans "Issued" %}</h2>
+                        <p class="text-sm text-base-content/70 mt-1">
+                            {% blocktrans with issued=certificate_state.issued_at|date:"d F Y" %}Issued on {{ issued }}.{% endblocktrans %}
+                            {% trans "Verification code:" %}
+                            <code class="text-xs bg-base-200 px-1.5 py-0.5 rounded">{{ certificate_state.verification_code }}</code>
+                        </p>
+                    </div>
+                    <div>
+                        <a href="{{ certificate_state.download_url }}" class="btn btn-primary">
+                            {% trans "Download again" %}
+                        </a>
+                    </div>
+                </div>
+            {% endif %}
         </div>
     </div>
-</div>
 
 </div>
 {% endblock %}
