@@ -219,7 +219,10 @@ class OnboardingStep3ConsentTest(TestCase):
             user=self.user, consent_type='research_participation',
         )
         self.assertTrue(cr.is_active)
-        self.assertEqual(cr.version, 'v1_pre_irb')
+        # Phase H H.6 (2026-05-25): version bumped from v1_pre_irb to
+        # v2_followup_bundled when the follow-up-pool permission was
+        # bundled into the research_participation consent text.
+        self.assertEqual(cr.version, 'v2_followup_bundled')
 
     def test_research_consent_unchecked_does_not_create_consentrecord(self):
         self._post_step3(research=False)
@@ -269,16 +272,24 @@ class OnboardingStep3ConsentTest(TestCase):
         self.assertFalse(self.profile.research_consent)
 
     def test_consent_text_stored_verbatim_matches_copy_module(self):
-        """Regression: stored consent_text == RESEARCH_PARTICIPATION_TEXT_V1_PRE_IRB
+        """Regression: stored consent_text matches the active V2 constant
         verbatim. Catches text drift without an explicit version bump.
+
+        Phase H H.6 (2026-05-25): bumped from V1 to V2 when the
+        follow-up-pool permission was bundled into the consent text.
         """
-        from apps.compliance.copy import RESEARCH_PARTICIPATION_TEXT_V1_PRE_IRB
+        from apps.compliance.copy import (
+            RESEARCH_PARTICIPATION_TEXT_V2_FOLLOWUP_BUNDLED,
+        )
 
         self._post_step3(research=True)
         cr = ConsentRecord.objects.get(
             user=self.user, consent_type='research_participation',
         )
-        self.assertEqual(cr.consent_text, RESEARCH_PARTICIPATION_TEXT_V1_PRE_IRB)
+        self.assertEqual(
+            cr.consent_text,
+            RESEARCH_PARTICIPATION_TEXT_V2_FOLLOWUP_BUNDLED,
+        )
 
     def test_signal_syncs_booleans_after_step3_submission(self):
         """M6 signal updates TeacherProfile.research_consent boolean to mirror

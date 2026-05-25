@@ -221,8 +221,6 @@ def privacy_dashboard_view(request):
         'ai_disclosure_state': _consent_state(request.user, 'ai_disclosure'),
         'research_state': _consent_state(request.user, 'research_participation'),
         'data_sharing_state': _consent_state(request.user, 'data_sharing'),
-        'followup_recruitment_state': _consent_state(
-            request.user, 'followup_recruitment'),
         'profile': getattr(request.user, 'teacher_profile', None),
         'counts': counts,
         'ai_outputs': ai_outputs,
@@ -404,30 +402,8 @@ def revoke_data_sharing_view(request):
     return redirect('compliance:privacy_dashboard')
 
 
-@login_required
-@require_POST
-def revoke_followup_recruitment_view(request):
-    """POST /profile/privacy/revoke/followup-recruitment/.
-
-    Phase H H.6 — followup_recruitment is an OPTIONAL pool consent
-    (FOLLOWUP_RECRUITMENT_TEXT_V1_PRE_IRB). The teacher may have
-    opted in at onboarding to be contacted about a possible future
-    post-pilot follow-up study. Revoking it:
-      - Marks the ConsentRecord row revoked.
-      - Removes the teacher from the future-contact invitation pool.
-      - Does NOT affect research participation, AILST gating, or
-        platform access in any way.
-      - Does NOT affect a follow-up study that may already have
-        invited the teacher (that invitation has its own separate
-        consent at the time of acceptance).
-      - User stays logged in.
-    """
-    revoke_consent(user=request.user, consent_type='followup_recruitment')
-
-    messages.info(
-        request,
-        _('Follow-up contact consent withdrawn. You will not be invited '
-          'to any future follow-up research. Your participation in the '
-          'PROODOS pilot is unaffected.'),
-    )
-    return redirect('compliance:privacy_dashboard')
+# 2026-05-25 redesign: revoke_followup_recruitment_view removed.
+# The follow-up email-retention permission bundled into the
+# research_participation V2 consent — withdrawing research consent
+# (revoke_research_view) is the only revocation path. See proposal
+# §6 (v1.1.3 redesign).

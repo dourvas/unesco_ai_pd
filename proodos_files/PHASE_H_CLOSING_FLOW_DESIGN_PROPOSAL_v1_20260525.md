@@ -12,6 +12,37 @@ dashboard-redundancy ticket.*
 
 ## Version history
 
+- **v1.1.3 (2026-05-25, H.6 redesign after dashboard browser-test
+  prep):** PI decision to consolidate the separate optional
+  follow-up consent into the existing research_participation
+  consent text as one additional bullet under "What participation
+  involves:". Rationale: one decision, all uses listed; cleaner IRB
+  packet; pragmatically simpler for the teacher.
+  - Replaced `FOLLOWUP_RECRUITMENT_TEXT_V1_PRE_IRB` (removed) with
+    `RESEARCH_PARTICIPATION_TEXT_V2_FOLLOWUP_BUNDLED`. V1 retained
+    byte-identical per the versioning workflow. New bullet wording
+    pinned in §6 of this proposal.
+  - Migration 0008 rolled back the `followup_recruitment` choice
+    + DB CHECK that 0007 introduced. 0 stale rows confirmed before
+    apply; atomic transaction; pg_dump backup taken.
+  - All separate-consent UI surfaces removed: Step 3 third
+    checkbox + form field + view kwarg, Privacy dashboard fourth
+    card, revoke endpoint + URL route. The single-broad-consent
+    revocation goes through `revoke_research_view` (existing).
+  - `settings.RESEARCH_CONSENT_CURRENT_VERSION` bumped from
+    `v1_pre_irb` to `v2_followup_bundled`. Pre-existing rows with
+    `version='v1_pre_irb'` remain IRB-defensible (their granted
+    text was V1 — they consented to T0/T1/T2 + analysis only, no
+    follow-up pool). Post-migration users grant V2 and are in the
+    invitation pool by default.
+  - Trade-off acknowledged: loses statistical filtering of
+    "% of consenters who opted into the pool" (everyone in the
+    pool now); gains clarity for teacher + IRB. Acceptable for the
+    pilot's research design.
+  - Ethical framing: the bundled bullet permits the INVITATION
+    only. If a follow-up study is launched, it carries its own IRB
+    protocol + own information sheet + own consent form at the
+    time of invitation; the teacher remains free to decline.
 - **v1.1.2 (2026-05-25, H.6 implementation finding):** §6.3 corrected.
   The v1 assumption that adding a new `consent_type` requires no DB
   migration was wrong — the `valid_consent_type` CHECK constraint
@@ -541,7 +572,42 @@ backfill.
 
 ---
 
-## 6. Optional follow-up consent at onboarding Step 3 (H.6)
+## 6. Follow-up consent bundled into research_participation V2 (H.6)
+
+**v1.1.3 (2026-05-25) redesign note.** Sections 6.1–6.5 below
+describe the original *separate-consent* design that was implemented
+in commit `34742c3` and rolled back the same day after the dashboard
+browser-test-prep review. The current implementation bundles the
+follow-up email-retention permission into the
+`RESEARCH_PARTICIPATION_TEXT_V2_FOLLOWUP_BUNDLED` text as one bullet
+under "What participation involves:". The original sub-sections are
+preserved below as the design-history record (what was tried, what
+was rejected, why) — read them as historical, not normative.
+
+### 6.0 — The V2 bundled bullet (current, normative)
+
+The one additional bullet added to V1 to produce V2:
+
+> Allowing the research team to retain your contact email address
+> for possible invitation to a follow-up study approximately 4-6
+> weeks after programme completion. This consent permits the
+> invitation only; if a follow-up study is launched, it will carry
+> its own separate information sheet and consent form at the time
+> of invitation, which you remain free to decline.
+
+The V1 withdrawal clause is also extended in V2 to say "Your email
+address is removed from the follow-up invitation pool as part of
+the same withdrawal" — single revocation path.
+
+`settings.RESEARCH_CONSENT_CURRENT_VERSION` flips to
+`v2_followup_bundled`; new users grant V2 (which carries the bullet).
+V1 stays in code for IRB-defensibility of any rows already granted
+against it (whose holders consented to T0/T1/T2 + analysis only, not
+to the pool).
+
+### Below: original design-history record (rejected after one day)
+
+
 
 ### 6.1 Why onboarding, not T2 completion
 

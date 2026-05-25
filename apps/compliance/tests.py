@@ -451,125 +451,88 @@ class ConsentRetentionPruneCommandTest(TestCase):
 
 
 # ============================================================================
-# Phase H H.6 — Optional follow-up recruitment consent tests
+# Phase H H.6 (2026-05-25 redesign) — research_participation V2 bundled
+# follow-up + DB constraint rollback tests
 # ============================================================================
 
 
-class FollowupRecruitmentConsentChoiceTest(TestCase):
-    """Sanity: the new consent_type appears in ConsentRecord.CONSENT_TYPE_CHOICES."""
+class ResearchParticipationV2FollowupBundledTest(TestCase):
+    """V2 of the research_participation consent text bundles the follow-up
+    email-retention permission as one bullet under "What participation
+    involves:". V1 is preserved byte-identical for any rows already
+    granted against it.
+    """
 
-    def test_followup_recruitment_in_choices(self):
+    def test_v2_includes_followup_bullet(self):
+        from apps.compliance.copy import (
+            RESEARCH_PARTICIPATION_TEXT_V2_FOLLOWUP_BUNDLED,
+        )
+        v2 = RESEARCH_PARTICIPATION_TEXT_V2_FOLLOWUP_BUNDLED
+        # Key wording from the new bullet must appear.
+        self.assertIn('follow-up study approximately 4-6', v2)
+        self.assertIn('separate information sheet and consent form', v2)
+        self.assertIn('invitation only', v2)
+
+    def test_v2_keeps_v1_required_bullets(self):
+        """Sanity: V2 is V1-plus-one-bullet, not a rewrite."""
+        from apps.compliance.copy import (
+            RESEARCH_PARTICIPATION_TEXT_V1_PRE_IRB,
+            RESEARCH_PARTICIPATION_TEXT_V2_FOLLOWUP_BUNDLED,
+        )
+        # Each unchanged bullet from V1 must still be in V2.
+        for marker in (
+            'AI Literacy Scale for Teachers (AILST)',
+            'Module 6 without completing T1',
+            'completion certificate without completing T2',
+            'platform interaction data to be analysed',
+        ):
+            self.assertIn(marker, RESEARCH_PARTICIPATION_TEXT_V1_PRE_IRB)
+            self.assertIn(marker, RESEARCH_PARTICIPATION_TEXT_V2_FOLLOWUP_BUNDLED)
+
+    def test_v2_withdrawal_clause_extends_to_followup_pool(self):
+        from apps.compliance.copy import (
+            RESEARCH_PARTICIPATION_TEXT_V2_FOLLOWUP_BUNDLED,
+        )
+        # Withdrawal must explicitly cover the email/pool dimension.
+        self.assertIn(
+            'email address is removed from',
+            RESEARCH_PARTICIPATION_TEXT_V2_FOLLOWUP_BUNDLED,
+        )
+
+    def test_current_version_setting_points_to_v2(self):
+        from django.conf import settings
+        self.assertEqual(
+            settings.RESEARCH_CONSENT_CURRENT_VERSION,
+            'v2_followup_bundled',
+        )
+
+
+class FollowupRecruitmentRolledBackTest(TestCase):
+    """The separate followup_recruitment consent_type added in migration
+    0007 was rolled back in 0008. Verify the rollback at three levels:
+    Django choices, DB CHECK constraint, and revoke URL absence.
+    """
+
+    def test_choice_removed_from_consent_type_choices(self):
         choice_keys = [k for k, _label in ConsentRecord.CONSENT_TYPE_CHOICES]
-        self.assertIn('followup_recruitment', choice_keys)
+        self.assertNotIn('followup_recruitment', choice_keys)
 
+    def test_db_constraint_rejects_followup_recruitment_writes(self):
+        """The 0008 migration re-installed the CHECK without followup."""
+        from django.db.utils import IntegrityError
+        user = _make_user('rollback_test_user')
+        with self.assertRaises(IntegrityError):
+            ConsentRecord.objects.create(
+                user=user,
+                consent_type='followup_recruitment',
+                consent_text='attempted rollback bypass',
+                version='v1_pre_irb',
+            )
 
-class FollowupRecruitmentRecordConsentTest(TestCase):
-    """record_consent + revoke_consent work with the new consent_type.
-
-    No migration was added (Django choices do not create DB-level CHECK
-    constraints) — this test confirms the model accepts the new value at
-    write time.
-    """
-
-    def setUp(self):
-        self.user = _make_user('followup_user')
-
-    def test_record_creates_active_row(self):
-        from apps.compliance.copy import FOLLOWUP_RECRUITMENT_TEXT_V1_PRE_IRB
-        from apps.compliance.services import record_consent
-
-        record_consent(
-            user=self.user,
-            consent_type='followup_recruitment',
-            consent_text=FOLLOWUP_RECRUITMENT_TEXT_V1_PRE_IRB,
-            version='v1_pre_irb',
-            ip_address='192.0.2.7',
-        )
-        row = ConsentRecord.objects.get(
-            user=self.user, consent_type='followup_recruitment',
-        )
-        self.assertTrue(row.granted)
-        self.assertIsNone(row.revoked_at)
-        self.assertEqual(row.consent_text, FOLLOWUP_RECRUITMENT_TEXT_V1_PRE_IRB)
-
-    def test_revoke_marks_row_revoked(self):
-        from apps.compliance.copy import FOLLOWUP_RECRUITMENT_TEXT_V1_PRE_IRB
-        from apps.compliance.services import record_consent, revoke_consent
-
-        record_consent(
-            user=self.user,
-            consent_type='followup_recruitment',
-            consent_text=FOLLOWUP_RECRUITMENT_TEXT_V1_PRE_IRB,
-            version='v1_pre_irb',
-            ip_address='192.0.2.7',
-        )
-        revoke_consent(user=self.user, consent_type='followup_recruitment')
-        row = ConsentRecord.objects.get(
-            user=self.user, consent_type='followup_recruitment',
-        )
-        self.assertIsNotNone(row.revoked_at)
-
-
-class FollowupRecruitmentRevokeViewTest(TestCase):
-    """POST /profile/privacy/revoke/followup-recruitment/ marks the row revoked.
-
-    Mirror of the existing revoke_data_sharing_view tests. Uses an inline
-    profile-complete setUp instead of `_PrivacyTestBase` to avoid a forward
-    reference (the base class is defined below this section in this module).
-    """
-
-    def setUp(self):
-        from apps.users.models import TeacherProfile
-        from apps.compliance.copy import FOLLOWUP_RECRUITMENT_TEXT_V1_PRE_IRB
-        from apps.compliance.services import record_consent
-
-        self.user = User.objects.create_user(
-            username='revoke_followup', password='pw',
-        )
-        # Profile with ai_disclosure_acknowledged_at + research_consent=True
-        # so the user passes AIDisclosureMiddleware and the research-gating
-        # middleware without redirect.
-        TeacherProfile.objects.create(
-            user=self.user,
-            subject_area='mathematics',
-            grade_level='primary',
-            teaching_years='6-15',
-            school_location='urban',
-            average_class_size='medium',
-            ai_experience='basic',
-            preferred_communication_style='balanced',
-            ai_disclosure_acknowledged_at=timezone.now(),
-            profile_completed=True,
-            research_consent=True,
-        )
-        from django.test import Client
-        self.client = Client()
-        self.client.force_login(self.user)
-        record_consent(
-            user=self.user,
-            consent_type='followup_recruitment',
-            consent_text=FOLLOWUP_RECRUITMENT_TEXT_V1_PRE_IRB,
-            version='v1_pre_irb',
-            ip_address='192.0.2.7',
-        )
-
-    def test_post_revokes_row(self):
-        response = self.client.post(
-            '/profile/privacy/revoke/followup-recruitment/',
-        )
-        # Redirects back to privacy dashboard on success (302).
-        self.assertEqual(response.status_code, 302)
-        row = ConsentRecord.objects.get(
-            user=self.user, consent_type='followup_recruitment',
-        )
-        self.assertIsNotNone(row.revoked_at)
-
-    def test_get_not_allowed(self):
-        response = self.client.get(
-            '/profile/privacy/revoke/followup-recruitment/',
-        )
-        # @require_POST → 405 Method Not Allowed.
-        self.assertEqual(response.status_code, 405)
+    def test_revoke_followup_recruitment_url_removed(self):
+        from django.urls import NoReverseMatch, reverse
+        with self.assertRaises(NoReverseMatch):
+            reverse('compliance:revoke_followup_recruitment')
 
 
 class AIImpactAssessmentV2PostGClosureTest(TestCase):

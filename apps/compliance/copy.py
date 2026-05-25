@@ -306,61 +306,81 @@ AI_IMPACT_ASSESSMENT_V1_PRE_IRB = [
 
 
 # ============================================================
-# Phase H H.6 — Optional follow-up recruitment consent
+# Phase H H.6 — Research participation V2 (follow-up bundled)
 # ============================================================
-# A third, fully-optional consent collected at onboarding Step 3
-# alongside the existing RESEARCH_PARTICIPATION + DATA_SHARING.
-# Establishes a pool of teachers who may be invited to a possible
-# future post-pilot follow-up study (delayed AILST wave + interviews,
-# see PHASE_H_CLOSING_FLOW_DESIGN_PROPOSAL §6 and roadmap §I.6).
+# 2026-05-25 redesign (PI decision): rather than collecting a third,
+# separate "followup_recruitment" consent at onboarding Step 3, the
+# follow-up-contact provision is bundled into the existing
+# RESEARCH_PARTICIPATION consent as one additional bullet under
+# "What participation involves:". The teacher gives a single broad
+# research consent that covers (a) platform data analysis,
+# (b) AILST administrations, and (c) email retention for possible
+# future follow-up invitation.
 #
-# This consent does NOT enrol the teacher in any future study. If a
-# follow-up study is launched, it will have its own IRB protocol and
-# its own study-specific consent form delivered at the time of
-# invitation. The teacher remains free to decline at that point.
+# Ethical framing: the bundled bullet permits the INVITATION only.
+# If a follow-up study is launched, it will carry its own IRB
+# protocol + its own study-specific information sheet + its own
+# consent form at the time of invitation, which the teacher remains
+# free to decline. The pool consent is a "right to invite", not
+# "participation in an unknown future study".
 #
-# Versioned independently — when IHU IRB feedback arrives, add a V2
-# constant and bump settings.FOLLOWUP_RECRUITMENT_CURRENT_VERSION.
+# Trade-off vs the earlier separate-consent design: loses the
+# statistical filtering ("X% of consenters opted into the pool" —
+# everyone in the pool now) but gains clarity for the teacher
+# (one decision, all uses listed) and for the IRB (one consent
+# packet, no granularity layers).
+#
+# V1 retained byte-identical above per the versioning workflow.
 
-FOLLOWUP_RECRUITMENT_TEXT_V1_PRE_IRB = """\
-Optional — Future Research Contact
+RESEARCH_PARTICIPATION_TEXT_V2_FOLLOWUP_BUNDLED = """\
+Research Participation — PROODOS Doctoral Research
 
-While completing the PROODOS pilot, you may opt in to allow the
-research team to contact you at a later date about a possible
-follow-up study. Such a study has not been designed at the time you
-grant this consent; if it goes ahead it will typically involve a
-short questionnaire and/or an interview, conducted approximately
-4-6 weeks after you complete the programme.
+PROODOS is the empirical instrument of a doctoral dissertation at the
+International Hellenic University (Διεθνές Πανεπιστήμιο της Ελλάδος, IHU),
+Thessaloniki. The principal investigator is John Dourvas, doctoral
+researcher, under the supervision of Asst. Prof. Georgios Kokkonis,
+Department of Information and Electronic Systems Engineering.
 
-What this consent does:
-  - Allows the research team to retain your contact email address
-    for the sole purpose of inviting you to a possible future
-    follow-up.
+Your platform interactions are research data. This includes:
+  - Your responses to module activities and reflection prompts
+  - Your AILST questionnaire responses (3 administrations)
+  - Your AI dispute submissions when you contest AI feedback
+  - Your module progress and completion data
+  - The personalization fields you provide in your profile
 
-What this consent does NOT do:
-  - Does not automatically enrol you in any future study.
-  - Does not alter your primary participation in the PROODOS pilot.
-  - Does not affect your access to the programme certificate of
-    attendance.
-
-If a follow-up study is launched, you will receive a separate
-study-specific information sheet and a separate consent form at the
-time of invitation. You will remain free to decline.
+What participation involves:
+  - Completing the AI Literacy Scale for Teachers (AILST) at three
+    points: once after onboarding (T0), once after Module 5 (T1), and
+    once after Module 15 (T2). Each administration takes approximately
+    7 minutes.
+  - These three AILST administrations are required parts of the
+    programme. You cannot proceed to Module 6 without completing T1,
+    or receive a completion certificate without completing T2.
+  - Allowing your platform interaction data to be analysed for the
+    dissertation and any peer-reviewed publications arising from it.
+  - Allowing the research team to retain your contact email address
+    for possible invitation to a follow-up study approximately 4-6
+    weeks after programme completion. This consent permits the
+    invitation only; if a follow-up study is launched, it will carry
+    its own separate information sheet and consent form at the time
+    of invitation, which you remain free to decline.
 
 Your right to withdraw:
-  You may revoke this consent at any time via the Privacy dashboard,
-  independently of all other consents. Revocation removes your
-  email from the follow-up invitation pool.
+  You may withdraw from the research at any time without consequence
+  using the Logout option (and, once available, through the Privacy
+  dashboard in your account settings). On withdrawal, your platform
+  data will be handled per the Privacy Policy and applicable provisions
+  of the EU General Data Protection Regulation (Regulation 2016/679,
+  'GDPR') and Greek Law 4624/2019. Your email address is removed from
+  the follow-up invitation pool as part of the same withdrawal.
 
-Optional consent:
-  This consent is OPTIONAL. Declining it does NOT affect your
-  participation in the research, your access to the platform, or
-  your programme certificate.
+Contact:
+  For questions about the research, contact John Dourvas at
+  idourvas@ihu.gr.
 
 Your acknowledgment:
-  By checking "I consent to be contacted about possible future
-  follow-up research" you confirm that you have read and understood
-  the above.
+  By checking "I consent to participate in this research" you confirm
+  that you have read and understood the above.
 """
 
 

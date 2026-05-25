@@ -220,5 +220,5 @@ LOGGING = {
 # After IRB feedback, mint 'v2_irb_revised' in apps/compliance/copy.py
 # and update this value. record_consent's supersede pattern revokes
 # old-version active rows when a user re-consents under the new version.
-RESEARCH_CONSENT_CURRENT_VERSION = 'v1_pre_irb'
+RESEARCH_CONSENT_CURRENT_VERSION = 'v2_followup_bundled'
 

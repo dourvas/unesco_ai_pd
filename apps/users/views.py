@@ -141,10 +141,10 @@ def _apply_step3_consents(
     user,
     research_checked,
     data_sharing_checked,
-    followup_recruitment_checked,
     ip_address,
 ):
-    """Phase C C.2.2 + Phase H H.6 — Step 3 research-consent policy.
+    """Phase C C.2.2 + Phase H H.6 (2026-05-25 redesign) — Step 3
+    research-consent policy.
 
     Translates the Step 3 checkbox state into ConsentRecord writes via the
     canonical record_consent / revoke_consent helpers. The M6 sync signal
@@ -152,32 +152,48 @@ def _apply_step3_consents(
 
     This helper centralises the Step-3-specific mapping:
       - 'consent_research_participation' checkbox -> consent_type='research_participation'
+        (Phase H V2: this text now bundles the follow-up email-retention
+        permission as one bullet under "What participation involves:" —
+        a single broad consent, no separate checkbox)
       - 'consent_data_sharing' checkbox          -> consent_type='data_sharing'
-      - 'consent_followup_recruitment' checkbox  -> consent_type='followup_recruitment'
-        (Phase H H.6, added 2026-05-25 — optional pool consent for
-        possible post-pilot follow-up study; no TeacherProfile boolean
-        cache since there is no gating decision that depends on it)
 
     Idempotent: re-submitting the same checkbox state is a no-op (the
     record_consent supersede check returns the existing active row;
     revoke_consent on already-empty active set returns 0).
+
+    The current research_participation text stored verbatim per submission
+    is read from settings.RESEARCH_CONSENT_CURRENT_VERSION (V2 ships with
+    the bundled-followup bullet; V1 lingers for IRB-defensibility of
+    already-granted rows).
     """
     from django.conf import settings
 
     from apps.compliance.copy import (
         DATA_SHARING_TEXT_V1_PRE_IRB,
-        FOLLOWUP_RECRUITMENT_TEXT_V1_PRE_IRB,
         RESEARCH_PARTICIPATION_TEXT_V1_PRE_IRB,
+        RESEARCH_PARTICIPATION_TEXT_V2_FOLLOWUP_BUNDLED,
     )
     from apps.compliance.services import record_consent, revoke_consent
 
     version = settings.RESEARCH_CONSENT_CURRENT_VERSION
 
+    # Select the verbatim text that matches the active version pointer.
+    # If the version pointer flips back to v1_pre_irb (rollback), the
+    # corresponding text is written; if it flips forward to a future V3,
+    # add the constant + branch here.
+    research_text_by_version = {
+        'v1_pre_irb': RESEARCH_PARTICIPATION_TEXT_V1_PRE_IRB,
+        'v2_followup_bundled': RESEARCH_PARTICIPATION_TEXT_V2_FOLLOWUP_BUNDLED,
+    }
+    research_text = research_text_by_version.get(
+        version, RESEARCH_PARTICIPATION_TEXT_V2_FOLLOWUP_BUNDLED,
+    )
+
     if research_checked:
         record_consent(
             user=user,
             consent_type='research_participation',
-            consent_text=RESEARCH_PARTICIPATION_TEXT_V1_PRE_IRB,
+            consent_text=research_text,
             version=version,
             ip_address=ip_address,
         )
@@ -197,17 +213,6 @@ def _apply_step3_consents(
         )
     else:
         revoke_consent(user=user, consent_type='data_sharing')
-
-    if followup_recruitment_checked:
-        record_consent(
-            user=user,
-            consent_type='followup_recruitment',
-            consent_text=FOLLOWUP_RECRUITMENT_TEXT_V1_PRE_IRB,
-            version=version,
-            ip_address=ip_address,
-        )
-    else:
-        revoke_consent(user=user, consent_type='followup_recruitment')
 
 
 def _step3_client_ip(request):
@@ -232,8 +237,8 @@ def onboarding_step3(request):
 
     from apps.compliance.copy import (
         DATA_SHARING_TEXT_V1_PRE_IRB,
-        FOLLOWUP_RECRUITMENT_TEXT_V1_PRE_IRB,
         RESEARCH_PARTICIPATION_TEXT_V1_PRE_IRB,
+        RESEARCH_PARTICIPATION_TEXT_V2_FOLLOWUP_BUNDLED,
     )
 
     profile = get_object_or_404(TeacherProfile, user=request.user)
@@ -253,7 +258,6 @@ def onboarding_step3(request):
                 user=request.user,
                 research_checked=form.cleaned_data['consent_research_participation'],
                 data_sharing_checked=form.cleaned_data['consent_data_sharing'],
-                followup_recruitment_checked=form.cleaned_data['consent_followup_recruitment'],
                 ip_address=_step3_client_ip(request),
             )
 
@@ -270,10 +274,15 @@ def onboarding_step3(request):
         'total_steps': 3,
         'progress_percentage': 100,
         # Verbatim consent texts shown to user; must match what
-        # _apply_step3_consents stores via record_consent.
-        'research_text': RESEARCH_PARTICIPATION_TEXT_V1_PRE_IRB,
+        # _apply_step3_consents stores via record_consent. The research
+        # text rendered to the user follows the active version setting
+        # (V2 bundles the follow-up-contact bullet inline).
+        'research_text': (
+            RESEARCH_PARTICIPATION_TEXT_V2_FOLLOWUP_BUNDLED
+            if settings.RESEARCH_CONSENT_CURRENT_VERSION == 'v2_followup_bundled'
+            else RESEARCH_PARTICIPATION_TEXT_V1_PRE_IRB
+        ),
         'data_sharing_text': DATA_SHARING_TEXT_V1_PRE_IRB,
-        'followup_recruitment_text': FOLLOWUP_RECRUITMENT_TEXT_V1_PRE_IRB,
         'consent_version': settings.RESEARCH_CONSENT_CURRENT_VERSION,
     }
 

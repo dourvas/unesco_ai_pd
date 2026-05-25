@@ -39,13 +39,13 @@ class ConsentRecord(models.Model):
         ('data_sharing', 'Data sharing with affiliated researchers'),
         ('video_recording', 'Video recording (interviews/focus groups)'),
         ('ai_disclosure', 'EU AI Act Article 50 disclosure acknowledgment'),
-        # Phase H H.6 — Optional follow-up recruitment consent. Distinct
-        # from data_sharing: this consent governs FUTURE CONTACT (email
-        # retention for invitation to a possible later study), not data
-        # sharing with affiliated researchers. See
-        # apps/compliance/copy.py::FOLLOWUP_RECRUITMENT_TEXT_V1_PRE_IRB
-        # and PHASE_H_CLOSING_FLOW_DESIGN_PROPOSAL §6.
-        ('followup_recruitment', 'Future research contact (optional)'),
+        # Phase H H.6 (2026-05-25 redesign): the separate
+        # 'followup_recruitment' consent_type added in migration 0007 was
+        # rolled back in migration 0008. The follow-up email-retention
+        # permission now bundles into the research_participation consent
+        # V2 (RESEARCH_PARTICIPATION_TEXT_V2_FOLLOWUP_BUNDLED) as one
+        # bullet under "What participation involves:". One unified
+        # consent, clearer IRB packet.
     ]
 
     user = models.ForeignKey(
@@ -99,18 +99,16 @@ class ConsentRecord(models.Model):
         ]
         constraints = [
             models.CheckConstraint(
-                # Phase H H.6 (2026-05-25): 'followup_recruitment' added.
-                # Keep this list in sync with CONSENT_TYPE_CHOICES above.
-                # NB: changes here require a DB migration (the constraint
-                # is enforced at the database level, not just at form
-                # validation level). The CONSENT_TYPE_CHOICES + this list
-                # were assumed in PHASE_H_CLOSING_FLOW_DESIGN_PROPOSAL
-                # §6.3 to be Django-only — that was a mistake; this
-                # constraint is the reason H.6 needs migration 0007.
+                # Phase H H.6 (2026-05-25 redesign): removed
+                # 'followup_recruitment' here when migration 0008
+                # rolled back the separate consent_type. Bundled into
+                # research_participation V2. Keep this list in sync
+                # with CONSENT_TYPE_CHOICES above; changes here require
+                # a DB migration (the constraint is enforced at the
+                # database level, not just at form validation level).
                 condition=models.Q(consent_type__in=[
                     'platform_use', 'research_participation', 'data_sharing',
                     'video_recording', 'ai_disclosure',
-                    'followup_recruitment',
                 ]),
                 name='valid_consent_type',
             ),
