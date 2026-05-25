@@ -35,6 +35,9 @@ urlpatterns = [
     # 8. Researcher-facing analytics (D.1 relevance profile) — staff-only
     path('analytics/', include('apps.analytics.urls', namespace='analytics')),
 
+    # 9. Certificate of Attendance (Phase H.3) — teacher download + public verification
+    path('certification/', include('apps.certification.urls', namespace='certification')),
+
 ]
 
 # Serve media and static files in development

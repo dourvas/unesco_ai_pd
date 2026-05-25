@@ -1,19 +1,24 @@
-"""URL routes for the certification app.
-
-Phase H.3 skeleton — namespace declared. Routes for the download view
-and the public verification view land in task #7 (Certificate PDF
-service + template + download view).
-"""
+"""URL routes for the certification app — Phase H.3 part 2."""
 
 from django.urls import path
 
-# from apps.certification import views  # populated in task #7
+from apps.certification import views
 
 
 app_name = 'certification'
 
 urlpatterns = [
-    # Populated in task #7:
-    #   path('download/', views.certificate_download_view, name='download'),
-    #   path('verify/<str:code>/', views.certificate_verify_view, name='verify'),
+    # Authenticated teacher-facing download endpoint.
+    path(
+        'download/',
+        views.certificate_download_view,
+        name='download',
+    ),
+    # Public verification endpoint (no login required).
+    # 16-char verification code is high-entropy + not enumerable.
+    path(
+        'verify/<str:code>/',
+        views.certificate_verify_view,
+        name='verify',
+    ),
 ]
