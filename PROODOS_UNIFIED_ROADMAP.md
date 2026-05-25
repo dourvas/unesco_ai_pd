@@ -73,7 +73,7 @@ Bird's-eye view. Αυτό το block ενημερώνεται σε κάθε sess
 | Item | Effort | Reference |
 |---|---|---|
 | **Phase G** — Full PROODOS Epilogue (Stage 0..3 + Gemini dialogue + Learning Portrait PDF — TD-011) | Multi-session | §3 Phase G |
-| **Phase H** — Closing flow (T2a immediate post-test + Certificate + T2b delayed post-test 4-6 weeks later) | Multi-session | §3 Phase H |
+| **Phase H** — Closing flow (3-timepoint T0/T1/T2 design + Certificate of Attendance PDF + Dashboard redesign per TD-021 + Optional follow-up consent at onboarding) | Multi-session | §3 Phase H |
 | **Phase I** — Dissertation writing | External (John) | §3 Phase I |
 
 ### Pre-production tasks (post-all-phases — executed once before pilot launch)
@@ -848,111 +848,96 @@ repurposing, scope TBD).
 
 ---
 
-### Phase H — Closing Flow (Post-Programme Measurement & Certification)
+### Phase H — Closing Flow + Certificate + Dashboard Redesign
 
-**Στόχος:** Καλά σχεδιασμένη ροή τέλους που μεγιστοποιεί τόσο τη research value όσο και την εμπειρία του εκπαιδευτικού.
+**Στόχος:** Καθαρή ροή τέλους που: (α) σέβεται το Ning validation envelope με 3 timepoints, (β) δίνει στον εκπαιδευτικό μια permanent landing surface (redesigned dashboard) με το certificate αναγνωρισμένο εκεί, (γ) κρατάει ανοιχτή την πόρτα για ξεχωριστή follow-up μελέτη χωρίς να δεσμεύεται σε in-platform infrastructure τώρα.
 
-Η ροή αυτή ακολουθεί μια διεθνώς αναγνωρισμένη παράδοση στην εκπαιδευτική έρευνα: τρι-φασικό post-test (immediate + delayed) που διαχωρίζει την άμεση από τη διατηρούμενη επίδραση.
+**Canonical design proposal:** `proodos_files/PHASE_H_CLOSING_FLOW_DESIGN_PROPOSAL_v1_20260525.md` (σχεδιάστηκε 2026-05-25, supersedes την προηγούμενη pre-G-closure version του παρόντος §H block).
+
+**Rescissions από prior roadmap §H** (2026-05-25): η delayed-post-test scope (T2b, email cron, classroom-integration questionnaires, in-platform interview cohort) αφαιρέθηκε από το Phase H. Justification στο proposal §2.2: το AILST paper (Ning et al. 2025) είναι cross-sectional CFA — δεν προβλέπει delayed administration· ο longitudinal gap του Erhardt et al. (2025) απαντιέται από το DTP cross-module tracking (15 timepoints), όχι από delayed AILST· η honest βιβλιογραφία για delayed post-test (Kirkpatrick / Guskey / Joyce-Showers) δεν είναι στο lit-note. Delayed wave επιστρέφει ως **Future Work** (βλ. §I.6) αν τα DTP pilot data αναδείξουν ερώτημα που μόνο αυτή μπορεί να απαντήσει — τότε σχεδιάζεται ως **ξεχωριστή μελέτη με δικό της IRB protocol**, όχι ως extension της πλατφόρμας.
 
 #### H.1 — Πλήρης ροή τέλους
 
 ```
 M15 ολοκλήρωση
     ↓
-PROODOS Epilogue (Stage 0–3 + Learning Portrait PDF)
+/epilogue/                  (Stage 0 Personal Evolution Dashboard,
+                             magazine register)
+    ↓ "Continue"
+POST /epilogue/complete/    (_post_epilogue_destination → T2)
     ↓
-AILST T2a — Immediate post-test (36 items, υποχρεωτικό για βεβαίωση)
-    ↓
-[προαιρετικά] Σύντομο satisfaction/UX survey (5–7 items)
-    ↓
-Βεβαίωση Παρακολούθησης (auto-generated PDF)
-    ↓
-[4–6 εβδομάδες αργότερα] AILST T2b — Delayed post-test
-    + Email reminder
-    + Classroom integration questions (5–7 items)
-    ↓
-[προαιρετικά για όσους απαντούν] Cohort entry για follow-up interviews
+/ailst/t2/                  (AILST 36 items, 4 pages)
+    ↓ final page POST
+ailst_complete_view         (acknowledgement, no scores per C.2.3 D4)
+    ↓ "Go to dashboard"
+/dashboard/                 (REDESIGNED — TD-021 resolution:
+                             - UNESCO 5×3 progress matrix
+                             - Next-action card
+                             - Certificate panel ENABLED:
+                               "Download Certificate of Attendance")
 ```
 
-#### H.2 — Γιατί έτσι (research justification)
+#### H.2 — Research justification (Ning-anchored)
 
-**Άμεσο post-test (T2a):**
-- 100% response rate → καθαρή σύγκριση T0 → T1 → T2a (immediate gains)
-- Μετράει γνώση + αυτο-αποτελεσματικότητα + στάσεις στην κορύφωση της εμπειρίας
-- Συνδέεται με τη βεβαίωση → ηθικά καθαρό (μέρος του deal που συμφώνησαν στο consent), αλλά εξασφαλίζει το primary research variable
+- T0 (post-onboarding) / T1 (post-M5) / T2 (post-M15) — paired comparisons T0→T1, T1→T2, T0→T2 ανά παράγοντα + Cohen's d for paired samples (Ning's convention)
+- DTP composite trajectories = within-pilot longitudinal συμπλήρωμα (15 timepoints)
+- **Three acknowledged limitations** στο methods chapter: (L1) cross-sectional validation envelope του Ning paper, (L2) Greek translation provenance, (L3) single-site / single-cohort / single-PI pilot (n≈110)
+- Πλήρες reasoning στο proposal §4 + `Literature_Review_Synthesis_Note(1).md` §5 (rewritten 2026-05-25)
 
-**Καθυστερημένο post-test (T2b):**
-- ~50–60% response rate (αναμενόμενο)
-- Μετράει knowledge retention + sustained efficacy + real classroom integration
-- Δείχνει τι ενσωματώθηκε στην πράξη, όχι "μνήμη της εκπαίδευσης"
-- Απαντάει ευθέως στο gap που η βιβλιογραφία αναγνωρίζει: *"Longitudinal evidence λείπει"* (Erhardt et al., 2025) και *"It cannot evaluate the long-term effects"* (TAB1 chapter limitation)
+#### H.3 — Certificate of Attendance
 
-**Διπλή ανάλυση στη διατριβή:**
-- "Άμεση επίδραση" (T0 → T2a) — ασφαλές, υποχρεωτικό research finding
-- "Διατηρούμενη επίδραση" (T2a → T2b) — ισχυρότερο, βιβλιογραφικά πιο "ακριβό" finding
-- Δύο διαφορετικά research questions με ένα design
+- Νέο app `apps/certification/` με `CertificateOfAttendance` model (OneToOneField, frozen `teacher_display` + `modules_summary` at issue time, 16-char URL-safe verification code)
+- Gate = T2 submission (εξαλείφεται "completion certificate without completing T2" προϋπόθεση του current consent text)
+- PDF generation επαναχρησιμοποιεί το dormant `_generate_portrait_pdf` του `apps/epilogue/views.py:193` + Article 50(2) machinery (JSON-LD + PDF Info dict)
+- **"No AI involved" provenance footer** — το certificate δεν είναι AI artefact (deterministic generation από submitted data)
+- Public verification endpoint `/certification/verify/<code>/` — scope ανοιχτό (βλ. proposal §10 Q2)
 
-#### H.3 — Σχεδιασμός βεβαίωσης παρακολούθησης
+#### H.6 — Optional follow-up consent στο onboarding Step 3
 
-- Auto-generated PDF μετά την υποβολή του T2a
-- Περιλαμβάνει: όνομα, ημερομηνία ολοκλήρωσης, λίστα 15 modules με τίτλους UNESCO Aspect/Level, διάρκεια συμμετοχής
-- Κωδικός επαλήθευσης (verification code) που δένει το PDF με συγκεκριμένο user_id
-- Δεν αναφέρει AILST scores — η βεβαίωση πιστοποιεί συμμετοχή, όχι επίδοση
-- AI provenance footer (συνέπεια με Phase C.3)
+- Νέο `FOLLOWUP_RECRUITMENT_TEXT_V1_PRE_IRB` constant στο `apps/compliance/copy.py`
+- Τρίτο checkbox δίπλα στα δύο υπάρχοντα (RESEARCH_PARTICIPATION + DATA_SHARING) — ίδιο component pattern, ίδιο versioning workflow
+- `ConsentRecord` με `consent_type='followup_recruitment'` (no DB migration — table accepts arbitrary types)
+- Revoke endpoint στο Privacy dashboard
+- **Consent V2 bump** μαζί — cleanup του stale dialogue/portrait reference στο `AI_IMPACT_ASSESSMENT_V1_PRE_IRB` §2 (Phase G closure follow-up)
+- **Δεν υπόσχεται μελλοντική μελέτη** — μόνο pool για πιθανή πρόσκληση· in-context re-consent στη στιγμή της πρόσκλησης αν τελικά γίνει
 
-#### H.4 — Σχεδιασμός delayed follow-up
+#### H.7 — Dashboard redesign (TD-021 resolution)
 
-**Email infrastructure (1–2 μέρες δουλειάς):**
-- Cron job που 4 εβδομάδες μετά το T2a στέλνει email πρόσκληση
-- Reminder στις 6 εβδομάδες αν δεν έχει απαντήσει
-- Cutoff στις 8 εβδομάδες (τελευταία ευκαιρία)
+- **Option (a) + slim (b) hybrid:** per-teacher UNESCO 5×3 progress matrix + next-action card + certificate panel
+- Lift του D.4 cohort 5×3 component σε shared partial (`templates/partials/_unesco_matrix.html`); cohort + personal callers, μία visual asset
+- **Hard constraint preserved:** dashboard = completion-structure, **όχι** developmental-evolution (Epilogue Stage 0 owns evolution)
+- Cleanup: `modules_with_progress` flat list αφαιρείται από `templates/home.html` + view context· inline emojis αφαιρούνται (workflow rule)
 
-**Περιεχόμενο T2b:**
-- AILST 36 items (ταυτόσημο με T0/T1/T2a — απαραίτητο για direct comparison)
-- 5–7 classroom integration questions: "Έχεις χρησιμοποιήσει AI tools στην τάξη μετά την εκπαίδευση;", "Ποιο module σε επηρέασε περισσότερο στην πράξη;", κλπ
-- Optional: ενδιαφέρον για follow-up interview
+#### H.8 — Housekeeping
 
-**Cohort για interviews (qualitative material):**
-- Όσοι απαντούν στο T2b και δηλώνουν διαθεσιμότητα → καλούνται σε 30-λεπτη συνέντευξη
-- Ημι-δομημένη: focus σε classroom integration patterns, identity shifts, RTM tensions που έλυσαν ή όχι
-- Qualitative material για το dissertation discussion chapter
+- TD-016 resolution: `apps/compliance/management/commands/prune_old_consent_records.py` — dry-run default, `--apply` flag, mirror of `redact_old_consent_ips` pattern
+- Run by external scheduler (cron / Windows Task Scheduler) — πλατφόρμα δεν schedule
 
 #### H.5 — Τι κερδίζει η διατριβή
 
 | Διάσταση | Πριν την Phase H | Μετά την Phase H |
 |---|---|---|
-| Measurement | Pre/Post (T0, T1, T2) | Pre/Post + Delayed (T0, T1, T2a, T2b) |
-| Research questions | 1 (immediate gains) | 2 (immediate + sustained) |
-| Limitations | "Cannot evaluate long-term effects" | Limitation αφαιρείται από τη διατριβή |
-| Qualitative corpus | Reflections + RTM comments + dispute comments + Learning Portraits | + classroom integration responses + interview transcripts |
-| Νοβελλιστική συμβολή | RTM/DTP/Peer/TCS/AILST | + delayed follow-up design pattern για AI-mediated PD |
+| Measurement | Pre/Post (T0, T1, T2) — αλλά χωρίς clean closing surface | Pre/Post (T0, T1, T2) με Ning-anchored design + ρητές acknowledged limitations + clean closing flow |
+| Certificate | Promise στο consent χωρίς υλοποίηση | Auto-generated PDF με verification code + Article 50(2) machinery |
+| Dashboard | Duplicate του Modules menu (TD-021) | Distinct surface: UNESCO 5×3 personal progress + certificate landing |
+| Compliance | Stale dialogue/portrait references στο AI Impact Assessment + 7-year retention TD open | Consent V2 cleanup + retention command shipped |
+| Future research | Καμία door για delayed wave | Optional pool consent στο onboarding — pool υπάρχει αν αποφασιστεί ξεχωριστή μελέτη |
 
-**Phase G crosswalk (added 2026-05-23 per PROODOS Epilogue v2 §13).** Phase G's Epilogue produces **additional research variables** that this §H.5 table inherits. Per the v2 §13 measurement crosswalk:
+**Phase G crosswalk (καταγεγραμμένο 2026-05-23, μερικώς υπερβλέπεται μετά G closure 2026-05-24):** οι Phase G qualitative-corpus rows (`dialogue_turns`, `learning_portrait_text`) **δεν υφίστανται** πια ως teacher-facing surfaces μετά την Aletheia deprecation — τα fields διατηρούνται σχηματικά αλλά δεν συμπληρώνονται. Οι quantitative engagement rows (`dialogue_entered`, per-stage timestamps, turn counts, `stage2_skipped`) επίσης παύουν να είναι zero/null για όλους τους post-deprecation χρήστες. Το `EpilogueCompletion.completed_at` παραμένει ο μόνος ενεργός Phase G research variable. Πλήρες record: `PHASE_G_DIALOGUE_DEPRECATION_20260524.md`.
 
-| Phase G variable | Source | Dissertation use | §H.5 mapping |
-|---|---|---|---|
-| `dialogue_entered` | `EpilogueCompletion.dialogue_entered` (Boolean — Q5 measured variable, SDT-grounded) | Binary covariate in the T0→T1→T2 analysis: did the teacher engage the dialogue. | Quantitative — moderator variable |
-| Per-stage completion timestamps | `stage1/2/3_completed_at` | Engagement duration and depth-reached. | Quantitative |
-| Dialogue turn counts per stage | `dialogue_turns` | Engagement intensity / verbosity. | Quantitative |
-| `stage2_skipped` + metrics | `dialogue_turns` skip record (`distinct_tensions`, `dtp_composites_with_shift`) | Data-sufficiency covariate; lets sparse-data teachers be analysed separately. | Quantitative |
-| Dialogue corpus | `dialogue_turns` (teacher + Aletheia text across Stages 1-3) | Thematic / discourse analysis in the discussion chapter. **Subject to the G.6c collapsed-prior-phases methodological disclosure** (Literature_Review_Synthesis_Note(1).md §16.5) — coding rules must treat thematic continuity across phases as evidence of teacher memory + carry-forward summary, not co-present text. | Qualitative corpus — **extends §H.5** |
-| Stage 2 interpretive responses | `dialogue_turns` (Stage 2 only) | How the teacher names a juxtaposition (development / context / tension). | Qualitative |
-| Learning Portrait text | `EpilogueCompletion.learning_portrait_text` | Narrative synthesis corpus per teacher (300-400 words, accepted version). | Qualitative — already named in §H.5 |
+#### H.9 — Κόστος και tradeoffs
 
-The Phase G crosswalk does not replace §H.5's Phase H variables (those still hold); it extends the qualitative-corpus row and adds the quantitative engagement-measurement rows that depend on the Epilogue having shipped.
-
-#### H.6 — Κόστος και τradeoffs
-
-- **Email infrastructure:** 1–2 μέρες implementation
-- **Παράταση χρόνου διατριβής:** 4–6 εβδομάδες πριν τα T2b data είναι έτοιμα
-- **Πτώση response rate στο T2b:** αναγνωρίζεται ρητά ως limitation, μετριάζεται με follow-up reminders
-- **Interview overhead:** ~30 λεπτά × N εκπαιδευτικοί που δηλώνουν διαθεσιμότητα
+- **Total effort:** ~8–10 working days (H.1+H.2 = 1d, H.3 = 2-3d, H.6 = 1-2d, H.7 = 3-4d, H.8 = 0.5d)
+- **Zero AI cost** — καμία LLM call σε όλη την Phase H
+- **Open questions** (proposal §10): Verbert et al. 2014 verification, public verification view scope, Greek certificate timing, future delayed post-test placement
+- **Migrations:** ένα (H.3 `certification` app skeleton + CertificateOfAttendance model) — pg_dump backup + sqlmigrate dry-run πριν apply
 
 **Αρχεία αναφοράς:**
-- `Literature_Review_Synthesis_Note.md` Section 5 — AILST measurement plan + longitudinal evidence gap
-- `TAB1_DISSERTATION_CHAPTER_FULL_v2.md` Section 7.4 — limitations που αφαιρούνται
-- `M16_CAPSTONE_REFLECTION_SPEC.md` — Epilogue ως pre-T2a synthesis moment
-- `EU_AI_ACT_COMPLIANCE_PLAN_APR2026.md` Section 5 (Συμπλήρωμα 4) — GDPR-compliant data retention για τα T2b data
+- `proodos_files/PHASE_H_CLOSING_FLOW_DESIGN_PROPOSAL_v1_20260525.md` (canonical design)
+- `Literature_Review_Synthesis_Note(1).md` Section 5 (rewritten 2026-05-25 — Ning-anchored 3-timepoint design + L1/L2/L3 limitations)
+- `proodos_files/PHASE_G_DIALOGUE_DEPRECATION_20260524.md` (Phase G closure decision record + preserved infrastructure inventory)
+- `TAB1_DISSERTATION_CHAPTER_FULL_v2.md` Section 7.4 — limitations να ξαναγραφούν να αντικατοπτρίζουν L1/L2/L3 (όχι T2b removal)
+- `TECH_DEBT_LOG.md` TD-016 + TD-021 (scheduled to resolve in this phase)
 
 ---
 
@@ -986,16 +971,34 @@ The Phase G crosswalk does not replace §H.5's Phase H variables (those still ho
 #### I.4 — Cross-cutting chapters
 - System Design (πλήρης αρχιτεκτονική, multi-agent)
 - Trustworthy AI Positioning (XAI + HITL + EU AI Act)
-- Onboarding & AILST measurement framework
-- Closing Flow & Delayed Post-test Design (Phase H)
+- Onboarding & AILST 3-timepoint measurement framework (Ning-anchored, L1/L2/L3 limitations)
+- Closing Flow & Certificate Design (Phase H — `PHASE_H_CLOSING_FLOW_DESIGN_PROPOSAL_v1_20260525.md`)
 - Multimodal Reflection (Phase F)
-- Discussion + limitations + future work
+- Discussion + limitations + future work (including delayed post-test as separate future study — see proposal §10 Q4)
 
 #### I.5 — Παράλληλα: δημοσιεύσεις
 - "Implementing EU AI Act Limited Risk Compliance in Teacher PD Platforms" (AIED 2027 / EC-TEL)
 - "Multi-agent architecture for Reflective Teacher PD"
 - "Multimodal Reflection in AI-Mediated Teacher Development"
-- "Immediate vs Delayed Post-test Effects in AI-Mediated Teacher PD" (αν τα T2b data δείξουν divergence από T2a)
+- (Conditional) "Immediate vs Delayed Post-test Effects in AI-Mediated Teacher PD" — depends on §I.6 below being activated
+
+#### I.6 — Future Work: Delayed post-test study (conditional, post-pilot)
+
+**Status:** Conditional — not committed. Activates only if a specific condition is met (see Trigger below).
+
+**Στόχος:** Εξωτερική μελέτη που μετράει AILST 4-6 εβδομάδες μετά την ολοκλήρωση του pilot (T2b), συν 5-7 classroom-integration questions + ημι-δομημένες συνεντεύξεις σε υποσύνολο των ανταποκριθέντων. **Όχι in-platform extension** — ξεχωριστή μελέτη με δικό της IRB protocol, δικό της consent form (στη στιγμή της πρόσκλησης), δικό της data infrastructure (πχ Google Forms / Qualtrics + Zoom interviews).
+
+**Trigger για activation:** Τα DTP pilot data αναδείκνυουν ερώτημα που μόνο μια delayed AILST wave μπορεί να απαντήσει — πχ μη-μονοτονικά trajectories που υπαινίσσονται delayed integration patterns, ή divergence μεταξύ DTP composite signal και T2 AILST score που χρειάζεται post-pilot disambiguation.
+
+**Recruitment pool:** Οι συμμετέχοντες που έδωσαν optional follow-up consent στο onboarding Step 3 (Phase H.6 — `FOLLOWUP_RECRUITMENT_TEXT_V1_PRE_IRB`). Η συναίνεση στο pool **ΔΕΝ είναι συναίνεση στη μελέτη** — εφόσον η μελέτη ξεκινήσει, στέλνεται νέο study-specific information sheet + νέο consent form. Καμία αυτόματη εγγραφή.
+
+**Βιβλιογραφική θεμελίωση (προαπαιτούμενο πριν activation):** Το lit-note σήμερα δεν έχει references για delayed post-test design. Πριν activation, πρέπει να γίνει expansion με Kirkpatrick (1959/1994) Level 3/4, Guskey (2002) 5-level PD evaluation framework, Joyce & Showers (2002) transfer-of-training literature — μετά verify-before-cite rule. Χωρίς αυτή τη βάση, η μελέτη δεν είναι defensible.
+
+**Dependencies:** (1) optional follow-up consent pool υπάρχει (delivered από H.6), (2) DTP pilot analysis ολοκληρωμένη (delivered από Phase I), (3) lit-note expansion πραγματοποιήθηκε, (4) ξεχωριστή IRB submission εγκριμένη.
+
+**Αν activate:** η §I.5 conditional paper γίνεται feasible.
+
+**Reasoning record:** `PHASE_H_CLOSING_FLOW_DESIGN_PROPOSAL_v1_20260525.md` §2.2 + §10 Q4 για το rationale αφαίρεσης από την Phase H + τις συνθήκες re-opening.
 
 ---
 
@@ -1013,7 +1016,7 @@ multi-turn agent harness, Article 50 transparency wiring) χωρίς να
 empirical data για το πραγματικό cognitive load των 15 modules και
 το τι έλειψε από την εμπειρία του εκπαιδευτικού.
 
-**Trigger για re-evaluation:** Pilot debrief (Phase H.4 / start of
+**Trigger για re-evaluation:** Pilot debrief (post-Phase H / start of
 Phase I writing). Αν το post-pilot interview material δείξει
 ξεκάθαρα ένα σημείο όπου ένας conversational companion προσθέτει
 αξία *χωρίς* να επαναλαμβάνει αυτό που ήδη κάνει ένα από τα 15

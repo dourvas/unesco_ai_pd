@@ -346,6 +346,110 @@ class IPRedactionCommandTest(TestCase):
         self.assertEqual(recent.ip_address, '192.0.2.99')
 
 
+class ConsentRetentionPruneCommandTest(TestCase):
+    """prune_old_consent_records management command behaviour (TD-016 / Phase H.8).
+
+    Two eligibility criteria for deletion: (a) granted_at older than the
+    retention threshold (default 7 years), AND (b) owning user is
+    anonymised (is_active=False + username matches the
+    ERASURE_USERNAME_TEMPLATE 'anonymized_{id}' sentinel pattern set by
+    services.anonymize_user). Active users' consent records are retained
+    regardless of age.
+    """
+
+    SEVEN_YEARS_DAYS = int(365.25 * 7)
+
+    def _anonymise(self, user):
+        """Apply the same sentinel pattern services.anonymize_user uses."""
+        from apps.compliance.services import (
+            ERASURE_EMAIL_TEMPLATE,
+            ERASURE_USERNAME_TEMPLATE,
+        )
+        user.username = ERASURE_USERNAME_TEMPLATE.format(user_id=user.id)
+        user.email = ERASURE_EMAIL_TEMPLATE.format(user_id=user.id)
+        user.is_active = False
+        user.save()
+
+    def setUp(self):
+        self.anonymised_user = _make_user('to_anonymise_a')
+        self._anonymise(self.anonymised_user)
+        self.active_user = _make_user('still_active')
+
+    def test_dry_run_does_not_delete(self):
+        row = ConsentRecord.objects.create(
+            user=self.anonymised_user, consent_type='research_participation',
+            consent_text='x', version='v1',
+            granted_at=timezone.now() - timedelta(days=self.SEVEN_YEARS_DAYS + 1),
+        )
+        call_command('prune_old_consent_records')  # default dry-run
+        self.assertTrue(ConsentRecord.objects.filter(pk=row.pk).exists())
+
+    def test_commit_deletes_eligible_row(self):
+        ConsentRecord.objects.create(
+            user=self.anonymised_user, consent_type='research_participation',
+            consent_text='x', version='v1',
+            granted_at=timezone.now() - timedelta(days=self.SEVEN_YEARS_DAYS + 1),
+        )
+        call_command('prune_old_consent_records', '--commit')
+        self.assertFalse(
+            ConsentRecord.objects.filter(user=self.anonymised_user).exists()
+        )
+
+    def test_boundary_row_just_inside_window_is_kept(self):
+        """7y - 1 day → not yet eligible, must survive --commit."""
+        row = ConsentRecord.objects.create(
+            user=self.anonymised_user, consent_type='research_participation',
+            consent_text='x', version='v1',
+            granted_at=timezone.now() - timedelta(days=self.SEVEN_YEARS_DAYS - 1),
+        )
+        call_command('prune_old_consent_records', '--commit')
+        self.assertTrue(ConsentRecord.objects.filter(pk=row.pk).exists())
+
+    def test_active_user_consent_kept_regardless_of_age(self):
+        """Even if 10 years old, an active user's row survives."""
+        row = ConsentRecord.objects.create(
+            user=self.active_user, consent_type='research_participation',
+            consent_text='x', version='v1',
+            granted_at=timezone.now() - timedelta(days=int(365.25 * 10)),
+        )
+        call_command('prune_old_consent_records', '--commit')
+        self.assertTrue(ConsentRecord.objects.filter(pk=row.pk).exists())
+
+    def test_inactive_but_non_sentinel_username_kept(self):
+        """is_active=False but username does NOT match the anonymised pattern.
+
+        Guards against accidentally deleting records for users who were
+        deactivated manually (e.g., admin lockout) without going through
+        anonymize_user(). Only fully-anonymised users' records are eligible.
+        """
+        odd_user = _make_user('manually_disabled')
+        odd_user.is_active = False
+        odd_user.save()  # no username rewrite
+        row = ConsentRecord.objects.create(
+            user=odd_user, consent_type='research_participation',
+            consent_text='x', version='v1',
+            granted_at=timezone.now() - timedelta(days=self.SEVEN_YEARS_DAYS + 1),
+        )
+        call_command('prune_old_consent_records', '--commit')
+        self.assertTrue(ConsentRecord.objects.filter(pk=row.pk).exists())
+
+    def test_per_type_breakdown_reported_in_output(self):
+        """Output names the per-consent_type breakdown for audit."""
+        for ctype in ('research_participation', 'data_sharing', 'ai_disclosure'):
+            ConsentRecord.objects.create(
+                user=self.anonymised_user, consent_type=ctype,
+                consent_text='x', version='v1',
+                granted_at=timezone.now() - timedelta(days=self.SEVEN_YEARS_DAYS + 1),
+            )
+        from io import StringIO
+        out = StringIO()
+        call_command('prune_old_consent_records', stdout=out)
+        report = out.getvalue()
+        self.assertIn('research_participation=1', report)
+        self.assertIn('data_sharing=1', report)
+        self.assertIn('ai_disclosure=1', report)
+
+
 # ============================================================
 # Phase C C.2.0 — AI Disclosure middleware + view tests
 # ============================================================

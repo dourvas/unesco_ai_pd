@@ -323,8 +323,8 @@ The JSON form is the canonical Art. 15 deliverable and is enough for compliance.
 
 ## TD-016 — 7-year ConsentRecord retention cleanup
 
-**Status:** Active. Defer to Phase H (production-scale operations).
-**Where:** `apps/compliance/management/commands/expire_old_consents.py` (new) + scheduled task.
+**Status:** Scheduled to resolve in Phase H — see `PHASE_H_CLOSING_FLOW_DESIGN_PROPOSAL_v1_20260525.md` §8. Command name finalised as `prune_old_consent_records` (parallels existing `redact_old_consent_ips`); dry-run by default, `--apply` flag to delete.
+**Where:** `apps/compliance/management/commands/prune_old_consent_records.py` (new) + external scheduler (cron / Windows Task Scheduler).
 
 ConsentRecord rows are kept indefinitely post-erasure per D12 of the C.4 design (IRB / GDPR audit window of 7 years). Beyond 7 years, rows can and should be deleted under data minimisation. This needs:
 
@@ -427,7 +427,7 @@ These are framed as **post-hoc exploratory** questions, NOT as primary research 
 
 ## TD-021 — Teacher dashboard duplicates the Modules menu
 
-**Status:** Active. Defer to a focused UX pass (candidate: alongside Phase F.5 TAB5 redesign, or post-pilot).
+**Status:** Scheduled to resolve in Phase H — see `PHASE_H_CLOSING_FLOW_DESIGN_PROPOSAL_v1_20260525.md` §7. Decision finalised as **option (a) + slim (b) hybrid**: per-teacher UNESCO 5×3 progress matrix (lift of the D.4 cohort matrix to individual grain) + next-action card + certificate panel (the H.3 download landing point). Reaffirms the hard constraint: dashboard remains completion-structure, NOT developmental-evolution (Epilogue Stage 0 owns evolution).
 **Where:** `apps/users/views.py::dashboard`, `templates/home.html`, the Modules navigation menu.
 
 **Problem.** The teacher dashboard (`/dashboard/`, rendering `home.html`) builds `modules_with_progress` — every published module with its per-module completion percentage — and displays it. This is the same information the Modules navigation menu already presents. The dashboard, as it stands, is a second module list, not a distinct surface. Raised by John, 2026-05-20.

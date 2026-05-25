@@ -243,18 +243,37 @@ Systematic review 42 μελετών. Τριεπίπεδο framework (Gibson et a
 
 ## 5. Measurement Plan για το Pilot
 
-### AILST (Ning et al.) — Pre/Post
-- T0 (πριν M1): baseline
-- T1 (μετά M5): αλλαγή Acquire level
-- T2 (μετά M15): συνολική αλλαγή
-- Συσχέτιση με TAB4 scores + DTP trajectory
+### AILST (Ning et al., 2025) — Three-timepoint design
+
+| Timepoint | Στιγμή | Σκοπός |
+|---|---|---|
+| T0 | πριν M1 (post-onboarding) | baseline AILST score στους 4 παράγοντες |
+| T1 | μετά M5 | mid-programme αλλαγή στο Acquire level |
+| T2 | μετά M15 | end-of-programme αλλαγή στο πλήρες Create level |
+
+Analytical use: paired comparisons T0→T1, T1→T2, T0→T2 ανά παράγοντα + overall change score + Cohen's d for paired samples (Ning's convention). Το DTP composite trajectory δίνει within-pilot longitudinal συμπλήρωμα με 15 timepoints.
+
+**Anchoring statement (Phase H 2026-05-25).** Το PROODOS T0/T1/T2 design **κάθεται εντός του validation envelope του Ning paper** (proposed practical use = pre/post). Δεν επεκτείνει σε delayed administration γιατί:
+1. Το paper είναι cross-sectional CFA (n=604) — δεν έχει validated change-sensitivity, test-retest, ή practice-effect δεδομένα.
+2. Ο longitudinal gap του Erhardt et al. (2025) απαντιέται από το **DTP cross-module tracking**, όχι από delayed AILST wave (διπλο-αναφορά στις γραμμές 238, 278 του παρόντος).
+3. Η honest βιβλιογραφία για delayed post-test (Kirkpatrick L3/L4, Guskey 2002, Joyce & Showers 2002) δεν είναι στο παρόν note — αν χρειαστεί στο μέλλον, **πρώτα expansion, μετά implementation**.
+
+### Three acknowledged limitations (συνοδεύουν τη χρήση)
+
+- **L1 — Cross-sectional validation envelope.** Το Ning paper δεν έχει test-retest reliability ή sensitivity-to-change. Αναγνωρίζεται στο methods chapter.
+- **L2 — Greek translation.** Το `ning_2025_v1_el` παράγεται από τη συνολική Greek translation pass· provenance + cognitive-interview validation αναφέρονται στο methods chapter όταν η μετάφραση ολοκληρωθεί.
+- **L3 — Single-site / single-cohort / single-PI pilot (n≈110).** Καμία γενίκευση εκτός Greek K-12 / IHU network· multi-site replication = future work.
 
 ### AI-TPACK (Eyal) — Συμπληρωματικό
 - 14 κριτήρια, 65 δείκτες, κλίμακα 1-4
 - Εφαρμογή σε Teacher Toolbox outputs από TAB3
 - Εντοπισμός τύπου εκπαιδευτικού → ευθυγράμμιση με DTP
 
-**Αποτέλεσμα:** Μετατροπή feasibility study σε μελέτη με μετρήσιμα αποτελέσματα.
+### Future Work — Delayed post-test (deferred)
+
+Αναγνωρίζεται ως future work, **όχι in-platform**: αν τα DTP pilot data αναδείξουν ερώτημα που μόνο delayed AILST wave μπορεί να απαντήσει, σχεδιάζεται ως **ξεχωριστή μελέτη με δικό της IRB protocol** (όχι extension της πλατφόρμας). Στην optional consent στο onboarding Step 3 (Phase H.6) κρατάμε pool εθελοντών που μπορούν να προσκληθούν αν αυτή η μελέτη ξεκινήσει — η συναίνεση στο pool ΔΕΝ είναι συναίνεση στη μελέτη. Πλήρες reasoning: `PHASE_H_CLOSING_FLOW_DESIGN_PROPOSAL_v1_20260525.md` §10 Q4.
+
+**Αποτέλεσμα:** Μετατροπή feasibility study σε μελέτη με μετρήσιμα αποτελέσματα, στηριγμένη ξεκάθαρα στο Ning validation envelope.
 
 ---
 
@@ -432,6 +451,10 @@ Buçinca, Z., Malaya, M. B., & Gajos, K. Z. (2021). To trust or to think: Cognit
 
 Paradis, E., & Sutkin, G. (2017). Beyond a good story: From Hawthorne Effect to reactivity in health professions education research. *Medical Education, 51*, 31–39. https://doi.org/10.1111/medu.13122
 
+### 12.4 — Engagement ≠ agency at scale: cross-reference (Borchers et al., 2026)
+
+Βλ. §18.1. Το AAF του Borchers et al. αναπτύσσει εκτενώς (§3.2 του paper) ότι behavioral engagement metrics δεν επαρκούν για να συναχθεί learner agency — και ότι at scale, τα behavioral proxies κινδυνεύουν να υποκαταστήσουν meaningful control. Συμπληρώνει το Lee & See (§12.1) με L@S-centric επιχείρημα: όχι μόνο το trust calibration χρειάζεται δύο άξονες, αλλά γενικότερα κάθε agency claim πρέπει να γίνεται στο επίπεδο decision authority allocation, όχι behavioral observation. Στηρίζει την construct-validity επιλογή του D.1 να είναι researcher-facing reliance signal, όχι ground-truth-anchored calibration ή agency metric. (Πλήρης αναφορά στο §18.1.)
+
 ---
 
 ## 13. Engagement — Στήριξη για το D.2
@@ -447,6 +470,10 @@ Fredricks, J. A., Blumenfeld, P. C., & Paris, A. H. (2004). School engagement: P
 
 ### 13.2 — Measurement reactivity (Paradis & Sutkin, 2017)
 Βλ. §12.3. Η ίδια αναφορά στηρίζει και για το D.2 την απόφαση το EDS να είναι researcher-facing only: το `position_confirmed` είναι behavioural telemetry, και αν το σκορ γινόταν ορατό στον εκπαιδευτικό θα μετατρεπόταν σε στόχο προς βελτιστοποίηση (επιδεικτικό άγγιγμα sliders).
+
+### 13.3 — Engagement ≠ agency: cross-reference (Borchers et al., 2026)
+
+Βλ. §18.1. Στο §3.1 του AAF paper, οι Borchers et al. ορίζουν ρητά: *"engagement (observable participation that need not entail control or consequential choice)"* — και διαχωρίζουν την engagement από την agency. Το D.2 EDS ήδη δηλώνει (μέσω Fredricks, §13.1) ότι είναι μόνο behavioural engagement· το AAF δίνει την πιο σύγχρονη και L@S-specific διατύπωση αυτής της διάκρισης, και ένα ισχυρότερο επιχείρημα γιατί το EDS **δεν** υπερ-διεκδικεί agency or self-regulation — μετράει μόνο active interaction με τις RTM tensions. (Πλήρης αναφορά στο §18.1.)
 
 ---
 
@@ -635,6 +662,130 @@ van Manen, M. (1990). *Researching Lived Experience: Human Science for an Action
 
 ---
 
+## 18. Bounded Agency και Decision Authority Allocation — Cross-cutting στήριξη (Phase E + D.1 + D.2 + D.3b)
+
+Προστέθηκε 2026-05-24 για το **AAF (Agency Allocation Framework)** ως αναλυτικό vocabulary πάνω από το system design (Phase E multi-agent) και τα analytics της Phase D. Το paper εντοπίστηκε από εξωτερική σύσταση (chat external) και επαληθεύτηκε με αναζήτηση + ολόκληρο διάβασμα του arXiv preprint (2604.13534v2, 9 Μαΐου 2026) πριν τη χρήση του — η no-hallucination πολιτική εντόπισε τρεις loose mappings στην αρχική σύνοψη και τις διόρθωσε πριν την εισαγωγή εδώ.
+
+### 18.1 — Το AAF και η έννοια του «bounded agency» (Borchers, Viberg & Kizilcec, 2026)
+
+Position paper στο ACM Learning @ Scale 2026 (Σεούλ, Ιούνιος–Ιούλιος 2026). Εισάγει το **Agency Allocation Framework (AAF)** — ένα analytic five-step framework για να εξεταστεί πού κάθεται η decision authority σε AI-mediated learning systems: (1) specify the focal decision (task / course / pathway level), (2) identify decision-makers and their form of authority (choose / veto / override), (3) describe the choice architecture (defaults, constraints, transparency των trade-offs), (4) define what counts as evidence and who is accountable for errors, (5) set the evaluation horizon (within-task / weeks / months–years, με reversibility & opportunity costs).
+
+**Comparative literature review του ίδιου του paper.** Οι συγγραφείς περιόρισαν σκόπιμα την ανασκόπησή τους στα ACM L@S proceedings· βρήκαν **μόλις δέκα papers** με όρους σχετικούς με agency (learner control, self-directed learning, metacognitive control, help-seeking), και **μόνο ένα** με την «learner agency» ρητά στον τίτλο (Xie et al., 2020). Συμπέρασμα του paper: η agency στην L@S literature είναι «weakly theorized and inconsistently operationalized». Αυτό το research gap **είναι ακριβώς το ίδιο** που η §2 της εκάστοτε διατριβής του PROODOS τεκμηριώνει για AI-mediated teacher PD — απλώς για διαφορετικό πληθυσμό (εκπαιδευτικοί σε PD vs. learners at scale).
+
+**Το κρίσιμο construct για το PROODOS — bounded agency.** Στο §3.3 conclusion, οι Borchers et al. ορίζουν την κατεύθυνση που το AAF προτείνει για L@S design:
+
+> *"systems that preserve scalable structure while creating targeted, developmentally appropriate decision points where learner control is meaningful and learnable."*
+
+Αυτή είναι σχεδόν λεκτικό μάτς για τη σχεδιαστική φιλοσοφία του PROODOS: scalable structure (15 modules · 5 UNESCO Aspects × 3 levels · fixed TAB δομή), targeted decision points (RTM positioning, prompt-craft στο TAB3, reflection στο TAB5), developmentally appropriate (Acquire/Deepen/Create progression), meaningful + learnable (το ίδιο το telos του RPE framework). Η ορολογία **«bounded agency»** είναι ακριβέστερη και πιο defensible από το «HITL» framing όταν χρειαστεί να περιγραφεί η συνολική agency-σχεδιαστική επιλογή του PROODOS στη διατριβή.
+
+**Κρίσιμη διάκριση που το AAF επιβάλλει.** Στο §3.1 (σ. 4) οι συγγραφείς ρητά διαχωρίζουν την agency-as-decision-authority-allocation από έξι παραπλήσιες έννοιες:
+
+> *"This distinguishes agency as described in the AAF from learner control... self-regulated learning... autonomy support... **human-in-the-loop and contestability (design features that affect but are not equivalent to where authority resides)**, and engagement (observable participation that need not entail control or consequential choice)."*
+
+Η σημασία για τη διατριβή: το PROODOS **δεν** μπορεί να επικαλεστεί απευθείας το «HITL = agency preservation». Το HITL είναι design feature, όχι agency· η agency claim πρέπει να γίνει στο επίπεδο **πού κάθεται η decision authority** για κάθε decision type (RAG feedback acceptance, RTM positioning, DTP narrative, prompt revision, peer synthesis opt-in). Το AAF δίνει ακριβώς το vocabulary για να γίνει αυτή η ανάλυση explicit.
+
+**AAF ↔ PROODOS mapping (sober version).** Σε αντίθεση με μια αρχική χαλαρή σύνοψη που εξωτερικά υποβλήθηκε, το παρακάτω mapping κρατά μόνο τα στιβαρά σημεία:
+
+| AAF Step | Στιβαρή αντιστοίχιση PROODOS |
+|---|---|
+| 1. Specify the decision | Task-level: RTM tension positioning, prompt revision στο TAB3, reflection submission στο TAB5· Course-level: module activity sequence εντός tab· Pathway-level: εθελοντική συμμετοχή σε peer synthesis. (Δεν περιλαμβάνεται το ίδιο το TAB5 reflection prompt — αυτό είναι reflective task, όχι decision point.) |
+| 2. Identify decision-makers | Learner = εκπαιδευτικός (override on all agent outputs), Algorithm/AI (RAG/RTM/DTP/XAI generate, never finalize), Institution (15-module curriculum locks Aspect×Level matrix). Δεν εμπλέκονται family/instructor — research PD context, όχι K-12. |
+| 3. Choice architecture | Mouse-only controlled choices στο TAB3 (no LLM-bypass), default activity sequence εντός module, opt-in peer synthesizer, reversible RTM positioning, transparency μέσω D.3b XAI narrative. |
+| 4. Evidence & accountability | D.1 AI Output Relevance Profile (researcher-facing only) + D.2 Engagement Depth Score (behavioural only) + `AIOutputDispute` instrument + D.3a «describe, do not evaluate» principle. «What remains unobserved»: intent και refusal — ρητά μη μετρημένα, σύμφωνα με Step 4 του AAF. |
+| 5. Evaluation horizon | DTP longitudinal tracking cross-module, AILST T0/T1/T2, pilot post-completion follow-up. Reversibility: όλες οι reflective εργασίες είναι revisable· καμία decision δεν είναι gated. |
+
+**Translation από learner → teacher agency.** Το AAF είναι αναπτυγμένο γύρω από student learning (το sample application στο §5 είναι intelligent tutoring system, focal decision = how a learner proceeds when encountering difficulty). Στο PROODOS, ο μαθητευόμενος είναι ο **εκπαιδευτικός σε PD**. Η μεταφορά δεν είναι αυτονόητη: ο εκπαιδευτικός φέρει διπλό decision space — agency over **τη δική του PD experience** + (έμμεσα) agency over **τη μελλοντική παιδαγωγική πρακτική** που η PD διαμορφώνει. Αυτή η διαμεσολάβηση πρέπει να γραφεί ρητά στο dissertation system-design chapter όταν επικαλεστείς το AAF — όχι σιωπηλή υπόθεση ότι το framework μεταφέρεται αυτούσιο.
+
+**Σύνδεση με EU regulatory framework.** Οι Borchers et al. (§1.2, §3.4 του paper) ρητά συνδέουν το AAF με GDPR και EU AI Act — operationalizing learner agency ως «compliance and human rights design imperative». Ευθυγραμμίζεται με Phase B compliance work του PROODOS (Article 13 transparency, Article 50(1/2) AI disclosure).
+
+**Δύο honest caveats για το paper.** (i) **Position paper** — προτείνει αναλυτικό εργαλείο, δεν παρέχει empirical validation του AAF (reliability/validity μετρικές απουσιάζουν). (ii) **Σκόπιμα limited review** (μόνο ACM L@S proceedings)· οι ίδιοι αναγνωρίζουν (§7 Limitations) ότι HCI, AI ethics, learning sciences underrepresented. Άρα: το AAF αξιοποιείται ως **analytic vocabulary**, όχι ως empirically validated taxonomy.
+
+*Ρόλος για τη διατριβή — cross-cutting reference:* (α) **System Design chapter (Phase E multi-agent)** — analyze decision authority allocation σε κάθε agent (RAGFeedbackAgent, RTMAgent, DTPAgent, XAIAgent) με AAF vocabulary· (β) **construct-validity support για D.1 §12 και D.2 §13** (cross-refs §12.4, §13.3 εκεί) — engagement ≠ agency διάκριση, με L@S-centric authority· (γ) **Phase B compliance chapter** — regulatory framing GDPR + EU AI Act· (δ) **methodological alignment** — το research gap που οι Borchers et al. εντοπίζουν στο L@S corpus αντιστοιχεί στο gap που η διατριβή τεκμηριώνει για AI-mediated teacher PD (διαφορετικός πληθυσμός, ίδια θεμελιώδης παρατήρηση).
+
+Borchers, C., Viberg, O., & Kizilcec, R. F. (2026). Who decides in AI-mediated learning? The Agency Allocation Framework. In *Proceedings of the Thirteenth ACM Conference on Learning @ Scale (L@S '26)*, June 29–July 3, 2026, Seoul, Republic of Korea. ACM. https://doi.org/10.1145/3774398.3811627
+
+### 18.2 — «Metacognitive laziness»: πλήρης εμπειρική εγγραφή (Fan et al., 2025)
+
+Πρωτογενές εμπειρικό paper για τον όρο **«metacognitive laziness»**. Επαληθεύτηκε με ολόκληρο διάβασμα του PDF (66 σελίδες, 2026-05-24) μετά την αρχική citation-chain εγγραφή του §18.1. Η εγγραφή αναβαθμίστηκε από pointer σε πλήρη βιβλιογραφική αναφορά. Affiliations: Peking University Graduate School of Education + Monash University Centre for Learning Analytics + Zhejiang Lab. Funding: NSFC Grant 62407001 + SoLAR ECR Research Grant 2023.
+
+**Study design (verified).** Lab-based randomised experimental study, Ιούλιος–Σεπτέμβριος 2023. N=117 πανεπιστημιακοί φοιτητές (μ.ο. ηλικίας 22.61, SD=3.39, 70% γυναίκες, 55% προπτυχιακοί), L2 English speakers. Δίστατο reading-and-writing task (γράψτε δοκίμιο για «the future of education in 2035» ενσωματώνοντας τρία θέματα: AI, differentiated teaching, scaffolding teaching). 4 ομάδες με διαφορετική υποστήριξη στο Στάδιο 2: **CN** (control, no extra support, n=30), **AI** (ChatGPT 4.0 embedded via OpenAI API, restricted στο task, n=35), **HE** (chat με human expert ακαδημαϊκής γραφής, n=25), **CL** (writing-analytics checklist tools — spelling/grammar, academic style, originality, rhetorical structure, n=27). Στάδιο 1: 2-ώρο reading+writing (κοινό για όλους). Στάδιο 2: 1-ώρο revising με differentiated support.
+
+**SRL framework + 7 process codes.** Θεμελιωμένο σε **Zimmerman (2000, 2002)** — three-phase model: forethought / performance / self-reflection — συν Flavell (1979) για metacognition. Trace data (navigational logs, click streams, mouse movement, keystrokes) parsed σε επτά SRL processes μέσω «trace parser approach» (Fan et al., 2022a,b):
+- **MC.O** = Orientation process (metacognitive — task instruction, rubric review)
+- **MC.P** = Planning process (metacognitive)
+- **MC.M** = Monitoring process (metacognitive)
+- **MC.E** = Evaluation process (metacognitive)
+- **LC.FR** = Reading process (low-level cognition)
+- **HC.EO** = Elaboration and Organisation process (high-level cognition — writing)
+- **Other** = interaction with agent (ChatGPT chat, human expert chat, checklist usage)
+
+Process maps κατασκευάστηκαν με process mining (pMineR R library, first-order Markov Model). Differences σε transition probabilities >10% επισημάνθηκαν με red/green edges.
+
+**Operational definition of metacognitive laziness — verbatim (σ. 18):**
+
+> *"In the context of human-AI interaction, we define metacognitive laziness as learners' dependence on AI assistance, offloading metacognitive load, and less effectively associating responsible metacognitive processes with learning tasks."*
+
+Θεμελιωμένη σε δύο prior frameworks: **Risko & Gilbert (2016)** cognitive offloading + **Alter et al. (2007)** «metacognitive disfluency activates analytical reasoning» (System 2). Δηλαδή: όταν το AI αφαιρεί την disfluency, ο μαθητευόμενος δεν ενεργοποιεί αναλυτική σκέψη, και η ικανότητα μεταγνωστικής **συσχέτισης** (όχι μόνο η ένταση μεμονωμένων διεργασιών αλλά τα **transitions** μεταξύ τους) ατονεί.
+
+**Key empirical findings (verified, με actual numbers).**
+
+*RQ1 — Intrinsic motivation (IMI, post-task).* **Καμία στατιστικά σημαντική διαφορά** μεταξύ των 4 ομάδων σε καμία από τις 4 διαστάσεις του IMI: Interest/Enjoyment (F=1.087, p=.358, η²=.029), Perceived Competence (F=.453, p=.716, η²=.012), Effort/Importance (F=1.152, p=.332, η²=.030), Pressure/Tension (F=.546, p=.652, η²=.015). Cronbach's α συνολικό 0.82· subscales 0.86–0.94. **Συμπέρασμα:** οι διαφορές διεργασιών και απόδοσης που ακολουθούν *δεν* εξηγούνται από motivation — απομονώνεται καθαρά ο ρόλος του agent.
+
+*RQ2 — SRL processes (το κρίσιμο εύρημα).* Στάδιο 1 (κοινό): καμία ουσιαστική διαφορά. Στάδιο 2 (revising):
+- AI, HE, CL groups έδειξαν περισσότερα Elaboration & Organisation (HC.EO) και Orientation (MC.O) από CN.
+- AI και HE groups έδειξαν **λιγότερο Reading (LC.FR)** από CN/CL — γιατί η revision μέσω συνομιλίας με agent αντικατέστησε την επιστροφή στα κείμενα-πηγή.
+- **AI group έδειξε σχετικά λιγότερα metacognitive processes (evaluation, orientation) σε σύγκριση με HE και CL.**
+- **Process mining (FOMM)**: η AI ομάδα **κυριαρχείτο από loop Other ↔ HC.EO ↔ MC.E** (όλα τα transitions red). Δηλαδή: revisit ChatGPT → revise text → πρόχειρη evaluation → ξανά ChatGPT. Η HE ομάδα **δεν** σχημάτισε ανάλογο closed loop με τον expert· αντίθετα έδειξε πιο πλούσιες μεταβάσεις HC.EO ↔ LC.FR και MC.O ↔ MC.E (διανεμημένες μεταγνωστικές συσχετίσεις).
+- Η **CL ομάδα έδειξε στατιστικά σημαντική αύξηση Evaluation processes (MC.E)** — μηχανισμός που οι συγγραφείς αποδίδουν στον σχεδιασμό των checklist tools, που καθοδηγούν τη χρήση rubric για **self-evaluation** (όχι AI-evaluation).
+
+*RQ3 — Performance (τρεις διαστάσεις).*
+- **Essay score improvement**: AI ομάδα σημαντικά υπερτερεί όλων (F=4.549, **p=.005**, η²=.108). Pairwise (Tukey HSD): AI vs CL Δ=2.20 (p=.012), AI vs CN Δ=1.97 (p=.025), AI vs HE Δ=2.12 (p=.037). Αξιοσημείωτο: η AI ομάδα ξεπέρασε **και** τον human expert.
+- **Knowledge gain** (pre/post test, AI in education): καμία σημαντική διαφορά (F=.913, p=.438).
+- **Knowledge transfer** (test σε AI in healthcare): **καμία διαφορά, μηδενικό effect** (F=.019, p=.996, η²=.000).
+
+**Authors' mechanism + lab observation.** Η out-performance της AI ομάδας ερμηνεύεται ως «AI-empowered learning skills» — βελτιστοποίηση επιφανειακής απόδοσης με κόστος γνήσιων δεξιοτήτων. Lab observation: παρά τα prompt-level περιορισμούς για να μη γράφει το ChatGPT απευθείας, μερικοί μαθητές αντέγραψαν παραδείγματα του ChatGPT στο δοκίμιο για να ταιριάξουν με το scoring rubric. *Verbatim:* «metacognitive laziness may prompt short-term performance improvements and long-term skill stagnation, which deserves attention and future research».
+
+**Stated limitations (verified).** (i) N=117 + 70% γυναίκες — limited generalizability. (ii) Single task (reading+writing) — δεν καλύπτει diversity διεργασιών. (iii) Lack of long-term follow-up. (iv) **«Lack of targeted and matured measures for assessing metacognitive laziness within the study's design»** — οι ίδιοι αναγνωρίζουν ότι ο όρος *προτάθηκε* αλλά δεν είχε ad hoc validated instrument. Άρα στη διατριβή πρέπει να χρησιμοποιείται ως **θεωρητικά τεκμηριωμένο φαινόμενο με indirect operationalization** (process pattern asymmetry στα trace data), όχι ως εγκυροποιημένη latent μεταβλητή.
+
+**Implications for PROODOS — alignment με existing design + δύο νέες ιδέες.**
+
+*Επιβεβαιωμένες υπάρχουσες σχεδιαστικές επιλογές.*
+- **TAB3 mouse-only activities** εμπειρικά αιτιολογημένες: η lab observation του Fan ότι μαθητές παρακάμπτουν prompt-level restrictions επιβεβαιώνει ότι αν αφεθεί ελεύθερο text input με LLM στα practical activities, το AI-bypass είναι δομικά αναμενόμενο.
+- **TAB5 sequence** (reflection πρώτα → RAG feedback μετά) ευθυγραμμίζεται με τα ευρήματα: το loop Other ↔ HC.EO ↔ MC.E της AI ομάδας του Fan αναπαριστά ακριβώς το pattern που η TAB5 σειρά αποτρέπει. Η αναστοχαστική παραγωγή πριν την έκθεση σε feedback διατηρεί ενεργά τα MC.P (Planning) και MC.O (Orientation) processes.
+- **D.3a DTP «describe, do not evaluate»**: ο RAG δεν λειτουργεί ως evaluative rubric-scorer — άρα δεν αναπαράγει το μηχανισμό «AI scores rubric → learner optimises to rubric» που οι Fan et al. εντοπίζουν ως αιτία της short-term-gain / long-term-stagnation ανισορροπίας.
+
+*Δύο νέες ιδέες για την πλατφόρμα (design hypotheses, όχι committed features).*
+
+**Ιδέα 1 — Rubric-anchored self-evaluation prompt στο TAB5.** Το πιο διαγνωστικό εύρημα του Fan: η CL ομάδα αύξησε σημαντικά τα Evaluation processes (MC.E) επειδή το checklist tool κατεύθυνε τη χρήση rubric για **self-evaluation πριν** την AI assistance. Στο PROODOS, το D.3b XAI narrative ήδη grounding στις UNESCO Aspects, αλλά δεν ζητά ρητά από τον εκπαιδευτικό να αυτο-αξιολογηθεί απέναντι σε αυτές πριν δει το XAI feedback. Πρόταση: μια micro-step προσθήκη στο TAB5 — «πριν δεις τι παρατηρεί το PROODOS για την κίνησή σου σε αυτό το module, διάλεξε σε ποιο/α από τα 5 UNESCO Aspects θεωρείς ότι κινήθηκες περισσότερο» — με τιμές «teacher-prior» αποθηκευμένες και συγκρίσιμες με την DTP εκτίμηση. Δύο πλεονεκτήματα: (α) εμπειρικά τεκμηριωμένος ενεργοποιητής metacognitive evaluation processes· (β) δίνει νέο research signal για το αν οι εκπαιδευτικοί υπερ-/υπο-εκτιμούν τη δική τους κίνηση — calibration-style αναλυτικό χωρίς το construct-validity πρόβλημα του «Trust Calibration Score» (βλ. §12.1 Lee & See).
+
+**Ιδέα 2 — Process-pattern telemetry ως pilot follow-up ανάλυση.** Το Fan δείχνει ότι η πιο διαγνωστική μετρική για AI-loop convergence δεν είναι το επίπεδο μιας μεταβλητής αλλά οι **transitions μεταξύ διεργασιών**. Αν το PROODOS λογγάρει event-stream σε μορφή που να επιτρέπει χαρτογράφηση σε SRL process codes (TAB2 reading events, TAB3 prompt-craft events, TAB5 reflection submission, RAG interaction, peer synthesis interaction), η ίδια pMineR/FOMM ανάλυση μπορεί να αναδείξει αν εκπαιδευτικοί συγκλίνουν σε «PROODOS-loop» αναλόγου του ChatGPT-loop του Fan. Δεν χρειάζεται νέο feature στο runtime — είναι **methodological hypothesis** για post-pilot ανάλυση που θα ανανεώσει την theoretical contribution της διατριβής. Επίσης δίνει σύνδεση με Phase E (multi-agent) — διαφορετικοί agents (RTM, DTP, XAI, peer) διανέμουν decision authority διαφορετικά, άρα η process-pattern ανάλυση συνδέεται φυσικά με το AAF του §18.1.
+
+**Performance-vs-transfer divergence ως pilot warning.** Η AI ομάδα του Fan βελτίωσε σημαντικά το άμεσο output αλλά **όχι** το knowledge gain ή transfer. Για το PROODOS pilot: μην εμπιστευτούμε μόνο TAB-completion ή RAG-acceptance ως evidence μαθησιακού αποτελέσματος. Το AILST T0/T1/T2 ήδη αντιμετωπίζει αυτό· το paper εμπλουτίζει την επιχειρηματολογία γιατί η T2 (μετά M15) είναι **απαραίτητη και όχι προαιρετική** — και γιατί η AI-TPACK artifact-based αξιολόγηση (§6, Eyal) είναι ορθογώνια προς το AILST self-report.
+
+*Ρόλος για τη διατριβή.* (α) **Empirical anchor** για τη σχεδιαστική επιλογή «no AI-bypass + reflection-first sequencing» (TAB3, TAB5). (β) **Methodological reference** για post-pilot process-pattern analysis. (γ) **Construct support** για το D.3a «describe, do not evaluate» — εμπειρική απόδειξη γιατί ο evaluative AI scoring προκαλεί short-term-gain / long-term-stagnation. (δ) **Συμπλήρωμα στο §18.1 Borchers et al.** — το AAF αναφέρει το metacognitive laziness ως concept· το Fan το έδειξε εμπειρικά με process mining.
+
+Fan, Y., Tang, L., Le, H., Shen, K., Tan, S., Zhao, Y., Shen, Y., Li, X., & Gašević, D. (2025). Beware of metacognitive laziness: Effects of generative artificial intelligence on learning motivation, processes, and performance. *British Journal of Educational Technology, 56*(2), 489–530. https://doi.org/10.1111/bjet.13544
+
+---
+
+## §19 — Learning Analytics Dashboards: awareness vs reflection (Verbert et al., 2014)
+
+*Προστέθηκε 2026-05-25 για στήριξη του Phase H §7.4 dashboard redesign (TD-021 resolution).*
+
+Verbert, K., Govaerts, S., Duval, E., Santos, J. L., Van Assche, F., Parra, G., & Klerkx, J. (2014). Learning dashboards: an overview and future research opportunities. *Personal and Ubiquitous Computing, 18*(6), 1499–1514. https://doi.org/10.1007/s00779-013-0751-2
+
+**Verification status:** Verified 2026-05-25 via WebSearch (Springer link + ResearchGate + Eindhoven research portal + EPFL Infoscience entries all align on authors/year/journal/volume/pages/DOI). Abstract verbatim: *"Dashboards typically capture and visualize traces of learning activities, in order to promote awareness, reflection, and sense-making, and to enable learners to define goals and track progress toward these goals."*
+
+**Ρόλος για το Phase H §7.4.** Στηρίζει την επιλογή να **διακρίνουμε** το redesigned `/dashboard/` (completion-structure → awareness-type LAD) από το Epilogue Stage 0 (developmental trajectory → reflection-type LAD). Οι δύο surfaces έχουν **διακριτό σκοπό** μέσα στη Verbert taxonomy — όχι ανταγωνισμό, όχι duplication. Αυτή είναι η βιβλιογραφική απάντηση στο TD-021 hard constraint ([TECH_DEBT_LOG.md:435]) ότι το dashboard δεν πρέπει να γίνει "personal evolution view".
+
+**Honest framing.** Το Verbert paper εισάγει τα awareness/reflection/sense-making ως **σκοπούς** LADs (όχι ως αυστηρή ταξονομία LAD types). Η ταξονομία ως δίκτυο διακριτών τύπων (awareness-type vs reflection-type) δομείται από μετέπειτα βιβλιογραφία (πχ Bodily & Verbert 2017, Sedrakyan et al. 2020 — αυτές οι αναφορές **δεν** έχουν verified ακόμα και δεν citάρονται στο proposal). Για το PROODOS Phase H αρκεί η Verbert source: δύο διακριτοί σκοποί → δύο διακριτές surfaces.
+
+**Συμπληρωματική πηγή (added 2026-05-25 σε v1.1 revision).** Schwendimann, B. A., Rodríguez-Triana, M. J., Vozniuk, A., Prieto, L. P., Boroujeni, M. S., Holzer, A., Gillet, D., & Dillenbourg, P. (2017). Perceiving Learning at a Glance: A Systematic Literature Review of Learning Dashboard Research. *IEEE Transactions on Learning Technologies, 10*(1), 30–41. [ERIC EJ1141028](https://eric.ed.gov/?id=EJ1141028). **Verified 2026-05-25 via WebSearch.** Systematic review 55 LAD studies, διαμέσου multiple dimensions (context × user × indicator × representation). Στηρίζει τη γενικότερη θέση ότι multiple purpose-bearing LAD surfaces μπορούν να συνυπάρχουν σε μία πλατφόρμα χωρίς functional overlap — δηλαδή, dashboard awareness surface + Epilogue reflection surface = legitimate dual-LAD design, όχι duplication. Δεν επιβεβαιώθηκε χωρίς direct paper read ότι το Schwendimann κάνει specifically την awareness-vs-reflection clean cut.
+
+**Cross-reference.** §7.4 του `PHASE_H_CLOSING_FLOW_DESIGN_PROPOSAL_v1_20260525.md` invokes αυτή την αναφορά. Architecture chapter §6 (νέα Phase H section) θα ενσωματώσει το ίδιο reasoning όταν γραφεί.
+
+---
+
 ## Project Context (ιστορικό snapshot — Απρίλιος 2026)
 
 > Το παρακάτω μπλοκ είναι snapshot **Απριλίου 2026**. Για την τρέχουσα κατάσταση φάσεων — Phase E (multi-agent refactor) ολοκληρωμένη, Phase D σε εξέλιξη (D.3a DTP redefinition done) — δες το `git log` και τα design proposals στο `proodos_files/`.
@@ -652,4 +803,4 @@ van Manen, M. (1990). *Researching Lived Experience: Human Science for an Action
 
 ---
 
-*Τελευταία ενημέρωση: 23 Μαΐου 2026 — η §16 (PROODOS Epilogue G.6 + Aletheia persona) ολοκληρώθηκε: §16.1 Bringhurst 2013 (typography hierarchy / drop cap pattern), §16.2 Norman 2013 (visible state transitions, phase-as-chapter fix), §16.3 Reeves & Nass 1996 + Bryson 2010 (AI partner naming + counter-weight), §16.4 Heidegger 1927/1962 §44 μέσω van Manen 1990/2016 (η ονομασία Aletheia ως linguistic claim), §16.5 μεθοδολογική διευκρίνιση (collapsed-phases trade-off για το dissertation chapter). Σχεδιαστικό αρχείο: `PHASE_G_G6_DESIGN_PROPOSAL_v2_20260523.md`. Δύο reviewer passes διαμόρφωσαν το proposal — η no-hallucination πολιτική κράτησε εκτός μια unverified πρόταση (Gallagher 2018) υπέρ του verified van Manen 1990/2016. Master proposal §23 amendment ενσωμάτωσε το anti-anthropomorphisation rule στο ίδιο το dialogue agent prompt, όχι μόνο στα templates. Προηγούμενη ενημέρωση: 21 Μαΐου 2026 — η §15 (PROODOS Epilogue — στήριξη για το Phase G) ολοκληρώθηκε με §15.1 (CLT / split-attention, Q2), §15.2 (SDT, Q5), §15.3 (τρίφαση δομή· Korthagen / Mezirow / Schön μέσω RPE· Brookfield εξετάστηκε και απορρίφθηκε).*
+*Τελευταία ενημέρωση: 24 Μαΐου 2026 (β' πέρασμα) — το §18.2 αναβαθμίστηκε από citation-chain pointer σε **πλήρη εμπειρική εγγραφή** μετά ολόκληρο διάβασμα του Fan et al. 2025 PDF (66 σελίδες, BJET 56(2):489–530, DOI 10.1111/bjet.13544). Προστέθηκαν: verbatim operational definition («learners' dependence on AI assistance, offloading metacognitive load, and less effectively associating responsible metacognitive processes with learning tasks»), study design (N=117, 4 ομάδες CN/AI/HE/CL, randomised lab experiment Jul–Sep 2023), Zimmerman SRL framework + 7 process codes (MC.O/MC.P/MC.M/MC.E/LC.FR/HC.EO/Other), key empirical findings με actual F/p/η² τιμές για τα RQ1–RQ3, και τα stated limitations με το ρητό caveat ότι οι ίδιοι οι συγγραφείς δηλώνουν «lack of targeted and matured measures» — άρα ο όρος χρησιμοποιείται ως θεωρητικά τεκμηριωμένο φαινόμενο με indirect operationalization, όχι ως validated latent μεταβλητή. Επιπλέον, το §18.2 πρότεινε **δύο νέες ιδέες για βελτίωση της πλατφόρμας** ως design hypotheses (όχι committed): (1) rubric-anchored self-evaluation micro-step στο TAB5 (εμπειρικά τεκμηριωμένο από την CL ομάδα του Fan όπου το checklist tool αύξησε σημαντικά τα MC.E processes)· (2) process-pattern telemetry ως post-pilot analytical hypothesis (pMineR/FOMM σε event logs για ανίχνευση «PROODOS-loop convergence» αναλόγου του ChatGPT-loop του Fan). Προηγούμενη ενημέρωση α' πέρασμα της ίδιας μέρας: προστέθηκε η §18 (Bounded Agency και Decision Authority Allocation) ως cross-cutting στήριξη για Phase E + D.1 + D.2 + D.3b. §18.1 Borchers, Viberg & Kizilcec (2026) — Agency Allocation Framework (AAF) ως analytic five-step framework + η έννοια του «bounded agency» (§3.3 του paper) ως ακριβέστερη ορολογία από «HITL» για το PROODOS design philosophy. Cross-references προστέθηκαν στο §12.4 και §13.3 (engagement ≠ agency συμπλήρωμα προς Lee & See και Fredricks αντίστοιχα). Το AAF paper εντοπίστηκε από εξωτερική σύσταση· η no-hallucination πολιτική εντόπισε και διόρθωσε τρεις loose mappings στην αρχική σύνοψη πριν την εισαγωγή (HITL ≠ agency allocation σύμφωνα με το ίδιο το paper· TAB5 reflection ≠ decision specification· XAI grounding quotes ≠ AAF Step 4 evidence). Προηγούμενη ενημέρωση: 23 Μαΐου 2026 — η §16 (PROODOS Epilogue G.6 + Aletheia persona) ολοκληρώθηκε: §16.1 Bringhurst 2013 (typography hierarchy / drop cap pattern), §16.2 Norman 2013 (visible state transitions, phase-as-chapter fix), §16.3 Reeves & Nass 1996 + Bryson 2010 (AI partner naming + counter-weight), §16.4 Heidegger 1927/1962 §44 μέσω van Manen 1990/2016 (η ονομασία Aletheia ως linguistic claim), §16.5 μεθοδολογική διευκρίνιση (collapsed-phases trade-off για το dissertation chapter). Σχεδιαστικό αρχείο: `PHASE_G_G6_DESIGN_PROPOSAL_v2_20260523.md`. Δύο reviewer passes διαμόρφωσαν το proposal — η no-hallucination πολιτική κράτησε εκτός μια unverified πρόταση (Gallagher 2018) υπέρ του verified van Manen 1990/2016. Master proposal §23 amendment ενσωμάτωσε το anti-anthropomorphisation rule στο ίδιο το dialogue agent prompt, όχι μόνο στα templates. Προηγούμενη ενημέρωση: 21 Μαΐου 2026 — η §15 (PROODOS Epilogue — στήριξη για το Phase G) ολοκληρώθηκε με §15.1 (CLT / split-attention, Q2), §15.2 (SDT, Q5), §15.3 (τρίφαση δομή· Korthagen / Mezirow / Schön μέσω RPE· Brookfield εξετάστηκε και απορρίφθηκε).*
