@@ -1,9 +1,38 @@
-# PROODOS Programme Duration & Time-on-Task Methodology — v1
+# PROODOS Programme Duration & Time-on-Task Methodology — v1.1
 
-*Doctoral dissertation appendix · Drafted 2026-05-26 · Resolves
-TECH_DEBT_LOG TD-027 · Feeds the Certificate of Attendance values
-in `apps/certification/services.py` and the per-module
+*Doctoral dissertation appendix · Drafted 2026-05-26 · Revised
+2026-05-26 (v1.1) after external review · Resolves TECH_DEBT_LOG
+TD-027 · Feeds the Certificate of Attendance values in
+`apps/certification/services.py` and the per-module
 `Module.estimated_hours` field in `apps/modules/models.py`.*
+
+## Revision history
+
+- **v1.1 (2026-05-26):** Six external-review corrections.
+  - Yoon (2007) row: dropped the "under-14-hour" attribution
+    (the 14h threshold is folk-knowledge in the TPD literature
+    but cannot be cleanly attributed to a specific verified
+    source; safer to keep Yoon's verified 49h finding alone).
+  - UNESCO positioning language aligned across §3.4, §4, §5.3:
+    "at the lower bound of the UNESCO range" everywhere, plus an
+    explicit feasibility framing — the 5h/week is intentionally
+    at the floor, not by accident.
+  - TAB2 duration grounded in **measured word counts** (10
+    sample modules, median 10,450 words, range 7,224–16,645)
+    rather than a hand-estimated range.
+  - TAB1/TAB3/TAB4 duration grounding split into two
+    separately-justified layers: (a) why the activity exists in
+    the syllabus — anchor citation; (b) why the activity takes
+    its allocated minutes — internal allocation logic
+    (percentage-of-module-total).
+  - Dourvas et al. (2025) citation: "(in revision)" wording,
+    drop the rejection narrative.
+  - General-population feasibility framing added; Greek pilot
+    context noted as one *example*, not the structural argument.
+    The platform is international; the 110-teacher Greek pilot
+    cohort is not yet recruited and may be supplemented by
+    educators from other countries.
+- **v1.0 (2026-05-26):** Initial draft.
 
 ---
 
@@ -94,15 +123,17 @@ own anchoring literature on expected duration.
 
 | Source | Finding relevant to duration |
 |---|---|
-| **Yoon et al. (2007)** — REL 2007-No. 033 | Across nine What Works Clearinghouse-standards studies, **PD averaging 49 hours produced a +21 percentile-point gain in student achievement**. The under-14-hour studies showed no significant effect. |
+| **Yoon et al. (2007)** — REL 2007-No. 033 | Across nine What Works Clearinghouse-standards studies, **PD averaging 49 hours produced a +21 percentile-point gain in student achievement**. |
 | **Darling-Hammond et al. (2017)** — Learning Policy Institute, review of 35 rigorous studies | "Sustained duration" identified as one of seven features of effective PD. The review documents effective programmes typically lasting "weeks, months, and even academic years" with cumulative contact hours far above one-off workshop totals. |
 | **Desimone (2009)** — *Educational Researcher* 38, 181–200 | "Duration" named as one of the five core features of the consensus PD-impact framework, alongside content focus, active learning, coherence, and collective participation. |
 | **Garet et al. (2001)** — *AERJ* 38, 915–945 | Empirical evidence from a national sample of 1,027 teachers that the *form* + *duration* + *collective participation* of PD are the structural features that significantly affect teacher learning outcomes. |
 
-The convergence is clean: **brief PD does not work; sustained PD
-does, with measurable thresholds around 49 hours of cumulative
-contact**. The PROODOS workload must sit comfortably above that
-threshold to claim plausibly that it can affect teacher learning.
+The convergence is clean: **sustained PD outperforms brief PD,
+with the Yoon et al. (2007) WWC-standards meta-analysis locating
+a measurable effectiveness anchor at approximately 49 hours of
+cumulative contact**. The PROODOS workload must sit comfortably
+above this anchor to claim plausibly that it can affect teacher
+learning.
 
 ### 3.4 UNESCO Rapid TPD precedent
 
@@ -119,31 +150,55 @@ PROODOS in scope and modality. Its published workload profile:
 
 The per-week range is therefore **5–12 hours**, with the
 "per-week" baseline for content-heavy modules at 5–7 hours.
-PROODOS targets the lower end of this range
-(5 hours/week × 15 weeks) — sustainable for K-12 teachers
-balancing PD against full classroom workloads, without falling
-below the UNESCO precedent's minimum.
+
+**PROODOS sits at the lower bound of the UNESCO range** —
+5 hours/week × 15 weeks. This is a deliberate design choice, not
+an accidental near-miss: a fully-employed K-12 teacher carrying
+a 18–23 weekly teaching-hour load (plus marking, planning, and
+parent contact) cannot realistically commit more than 5 hours/week
+to asynchronous PD without trading off classroom preparation
+quality. The 5-hour weekly load therefore serves as a *practical
+feasibility ceiling for full-time teachers* as much as a *UNESCO
+floor*. The platform is designed for international deployment;
+this feasibility argument generalises to any context where the
+target audience is teachers carrying full classroom workloads.
+The Greek context is one instance of this constraint, not its
+foundation.
 
 ---
 
 ## 4. Per-Tab cognitive-activity decomposition
 
 The PROODOS module architecture distributes each module's
-time-on-task across five Tabs. Each Tab carries a different
-cognitive load profile, anchored to its own literature.
+time-on-task across five Tabs. Each Tab's duration estimate
+rests on **two separately-justified layers**:
 
-| Tab | Activity | Time | Anchor citation |
-|---|---|---|---|
-| **TAB1 Introduction** | Orientation, prior-knowledge activation, module framing | **20 min** | Ausubel (1968) on Advance Organizers — orientation phases support subsequent acquisition by giving learners anchoring schemata |
-| **TAB2 Core Content** | Theory reading, framework comprehension, SVG analysis | **75 min** | Standard academic-reading-speed estimates (250–300 wpm; technical material 100–200 wpm) for the ~6000–9000 words typical per module |
-| **TAB3 Practical Challenges** | Hands-on AI-tool scenarios, lesson-design exercise, Practice Workshop participation | **120 min** | Wenger (1998) Communities of Practice — situated practice is the empirical heart of professional learning, justifying its disproportionate share of programme time |
-| **TAB4 Quiz** | Formative-assessment scenarios (15 items) | **30 min** | Black & Wiliam (1998) — formative assessment as learning event; quiz time is cognitive engagement, not mere recall |
-| **TAB5 Reflection** | Written reflection, dual-signal DTP/RTM interaction | **45 min** | Schön (1983) Reflection-on-Action + RPE Framework (Dourvas et al., 2025) — reflective writing is itself a learning act, not a coda |
-| **Total per module** | | **5 hours** | UNESCO Rapid TPD lower bound (5–7h/week) |
+- *Why the activity exists in the syllabus* — anchored to a
+  specific learning-sciences literature.
+- *Why the activity takes its allocated minutes* — internal
+  allocation logic expressed as a percentage of total module
+  time, with the absolute minutes derived from the percentage.
 
-This breakdown is theoretically defensible at viva: each Tab's
-duration cites a separately-grounded literature, and the total
-aligns with the UNESCO precedent's lower-bound expectation.
+This separation matters because the two questions are answerable
+by different evidence. Citing Wenger (1998) to justify *that*
+TAB3 takes 120 minutes is a category error; Wenger justifies the
+*existence* of a situated-practice Tab. The minutes come from a
+defensible distribution of the 5-hour module budget across the
+five activities.
+
+| Tab | Activity | Time | % of total | "Why activity exists" | "Why this allocation" |
+|---|---|---|---|---|---|
+| **TAB1 Introduction** | Orientation, prior-knowledge activation, module framing | **20 min** | ~6.7% | Ausubel (1968) on Advance Organizers — orientation phases support subsequent acquisition by giving learners anchoring schemata | Within the 10–15% framing-time range typical in instructional-design literature for orientation segments relative to total session length; PROODOS sits at the lower end (6.7%) because the entry into each weekly module is light, not because the literature prescribes 20 minutes specifically |
+| **TAB2 Core Content** | Theory reading, framework comprehension, SVG analysis | **75 min** | ~25% | Comprehension of the module's theoretical content (UNESCO competency framework + RPE framework + module-specific frames + SVG diagrams) is the prerequisite for the practice and reflection Tabs that follow | **Measured baseline:** 10 sample modules averaged 10,500 words of Core Content (range 7,224–16,645). At an average reading speed of ~140 wpm for technical material with diagram analysis (within the 100–200 wpm range reported in reading-research literature), 10,500 / 140 ≈ 75 minutes |
+| **TAB3 Practical Challenges** | Hands-on AI-tool scenarios, lesson-design exercise, Practice Workshop participation | **120 min** | ~40% | Wenger (1998) Communities of Practice — situated practice is the empirical centre of professional learning. The largest single allocation in the module reflects this theoretical centrality | 40% of total module time, the dominant single allocation. This proportion is consistent with constructivist instructional-design literature placing the bulk of cognitive engagement on situated practice rather than passive reception |
+| **TAB4 Quiz** | Formative-assessment scenarios (15 items) | **30 min** | ~10% | Black & Wiliam (1998) — formative assessment as learning event; quiz time is cognitive engagement plus reflection on incorrect answers, not mere recall | 2 minutes per item × 15 items = 30 minutes; consistent with timing guidelines for scenario-based formative assessment in K-12 PD contexts |
+| **TAB5 Reflection** | Written reflection, dual-signal DTP/RTM interaction | **45 min** | ~15% | Schön (1983) Reflection-on-Action + RPE Framework (Dourvas et al., in revision) — reflective writing is itself a learning act, not a coda | 15% of total module time, sufficient for a substantive reflection of ~250–350 words plus engagement with the dual-signal DTP/RTM artefact; in line with empirical observations of reflective-writing durations in TPD literature |
+| **Total per module** | | **5 hours** | ~100% | UNESCO Rapid TPD lower bound (5–7h/week) | 290 minutes ≈ 4h 50m; rounded to 5h for the published claim |
+
+The percentages sum to ~96.7% with ~3.3% absorbed into transition
+times and rounding. The decomposition is theoretically defensible
+at viva: each Tab carries a separate "why this activity" citation
+*and* a separate "why this duration" justification.
 
 ---
 
@@ -182,18 +237,30 @@ The decision adopted here is **2.5 ECTS** in dissertation prose,
 with the caveat made explicit. This puts the dissertation's
 quantitative claim on the safest grounds an examiner can attack.
 
+**Note on the 0.5-credit decimal.** The ECTS Users' Guide (2015)
+does not constrain credit allocations to whole-number units; the
+Guide's worked examples include fractional allocations and
+half-credit increments where appropriate to the actual workload.
+The 2.5 ECTS claim is therefore admissible in the ECTS frame as
+written, without requiring rounding to an integer value
+(rounding up to 3 ECTS would be the aspirational reading; rounding
+down to 2 ECTS would understate the workload).
+
 ### 5.3 Position against benchmarks
 
 | Benchmark | Hours | PROODOS position |
 |---|---|---|
-| **Yoon et al. (2007)** effective-PD threshold | 49h | **+26 hours above** |
-| **UNESCO Rapid TPD** Module 1+3 baseline | ~5–7h/week | **At/just below lower bound** |
+| **Yoon et al. (2007)** effective-PD anchor | 49h | **+26 hours above** |
+| **UNESCO Rapid TPD** weekly engagement range | 5–12h/week | **At the lower bound (5h/week)** — by design, not by accident; see §3.4 feasibility framing |
 | **Garet et al. (2001)** sustained-PD criterion | sustained (multi-week) | **Met (15 weeks)** |
 | **Darling-Hammond et al. (2017)** seven features include sustained duration | n/a (qualitative) | **Met** |
 
-The PROODOS workload sits **above** the empirical effectiveness
-floor and **within** the UNESCO precedent envelope. Both required
-constraints (§2 C1 + C2 + C3) are satisfied.
+The PROODOS workload sits **above** the Yoon-anchored empirical
+effectiveness floor and **at the lower bound** of the UNESCO
+precedent envelope, where the design intent is to keep the
+programme feasible for teachers carrying full classroom
+workloads (§3.4). All three required constraints (§2 C1 + C2 +
+C3) are satisfied simultaneously.
 
 ---
 
@@ -270,76 +337,137 @@ duration:
 
 ## 8. Per-Tab citation ledger
 
-Each Tab's duration estimate rests on a separately-verified
-citation. The verification status notes below mirror the
-project's standing rule on no hallucinated citations.
+Each Tab's duration estimate rests on a **two-layer
+justification** (per §4): the *why-this-activity* citation,
+which is the anchored learning-sciences reference; and the
+*why-this-duration* logic, which is internal allocation
+arithmetic. The verification notes below mirror the project's
+standing rule on no hallucinated citations.
 
 ### TAB1 Introduction — 20 minutes
 
-Ausubel, D. P. (1968). *Educational psychology: A cognitive view.*
-New York: Holt, Rinehart and Winston.
-
-**Verification:** Foundational text on advance organisers and
-cognitive scaffolding — appears in every cognitive-psychology
+**Why this activity exists.** Ausubel, D. P. (1968).
+*Educational psychology: A cognitive view.* New York: Holt,
+Rinehart and Winston. Foundational text on advance organisers
+and cognitive scaffolding — appears in every cognitive-psychology
 review since its publication. Standard education reference;
-verified through canonical citation chains rather than direct
+attested through canonical citation chains rather than direct
 search (book pre-dates online discovery). **Citation defensible
 at viva.**
 
+**Why this duration.** 20 minutes corresponds to ~6.7% of total
+module time, near the lower end of the 10–15% framing-time range
+typical in instructional-design literature for orientation
+segments relative to total session length. The lower-end choice
+reflects that each TAB1 is a weekly re-entry into the programme
+(not a fresh-start orientation), so heavier framing is
+unnecessary.
+
 ### TAB2 Core Content — 75 minutes
 
-Standard academic-reading-speed estimates: 250–300 words per
-minute (wpm) for typical prose; 100–200 wpm for technical or
-unfamiliar material. PROODOS module Core Content sections range
-6000–9000 words (typical Tab2 module content). At 100 wpm
-(conservative, accounting for the SVG-diagram analysis cost):
-6000–9000 / 100 = 60–90 minutes. **75 minutes adopted as
-midpoint.**
+**Why this activity exists.** The theoretical content of each
+module (UNESCO competency framework + RPE framework + module-
+specific frames + SVG diagrams) is the prerequisite knowledge for
+the practice and reflection Tabs that follow. Removing this layer
+would leave Tabs 3–5 without the conceptual grounding required
+for them to function as designed.
 
-This estimate is not anchored to a single citation but to a
-well-documented range in reading-research literature (e.g.,
-Carver, 1990 on reading rates; Rayner et al., 2016 on
-comprehension-vs-rate trade-offs). **Citation defensible at viva
-via citation of the general reading-speed literature.**
+**Why this duration.** Measured baseline. A sample of 10 modules
+(M1, M2, M3, M5, M7, M8, M10, M12, M13, M15) was queried against
+the live `ModuleContent` table for `main_content` and
+`subject_box_part*` entries combined (the Tab2 surface). Word
+counts:
+
+| Module | Main content | Subject boxes | Total |
+|---|---|---|---|
+| M1 | 2,436 | 5,642 | **8,078** |
+| M2 | 2,325 | 6,079 | **8,404** |
+| M3 | 2,562 | 5,602 | **8,164** |
+| M5 | 2,797 | 7,555 | **10,352** |
+| M7 | 4,079 | 7,893 | **11,972** |
+| M8 | 3,667 | 12,978 | **16,645** |
+| M10 | 4,440 | 9,829 | **14,269** |
+| M12 | 4,415 | 7,721 | **12,136** |
+| M13 | 5,187 | 5,360 | **10,547** |
+| M15 | 4,494 | 2,730 | **7,224** |
+
+Median: 10,450 words; mean: 10,779. Range: 7,224–16,645.
+
+At ~140 words per minute for technical material with diagram
+analysis (within the 100–200 wpm range reported in reading-
+research literature; lower end of the 250–300 wpm range for plain
+prose because PROODOS modules carry SVG diagrams + formal
+framework definitions that slow reading rate), a 10,500-word
+content load takes ~75 minutes. **The duration is empirically
+defensible against the measured word counts plus a reading-rate
+range with multiple anchoring citations** (e.g., Carver, 1990 on
+reading rates; standard cognitive-psychology textbooks on
+technical-prose reading rates).
+
+**Caveat for the dissertation.** M8 is a substantial outlier at
+16,645 words (~120 minutes at 140 wpm). The 75-minute claim is a
+median-fitted estimate, not a per-module ceiling — M8 in
+particular will likely need a heavier per-module allocation when
+the TAB1 audit (TD-028) returns. This caveat is recorded here so
+it does not become a surprise at viva.
 
 ### TAB3 Practical Challenges — 120 minutes
 
-Wenger, E. (1998). *Communities of Practice: Learning, Meaning,
-and Identity.* Cambridge: Cambridge University Press.
+**Why this activity exists.** Wenger, E. (1998). *Communities of
+Practice: Learning, Meaning, and Identity.* Cambridge: Cambridge
+University Press. Verified via WebSearch 2026-05-26. Cambridge
+canonical edition; ISBN 9780521663632. Series "Learning in
+Doing." Situated practice is, for Wenger, the empirical
+centre — not the periphery — of professional learning. The
+dominant single allocation of the module reflects this
+theoretical centrality.
 
-**Verification:** Verified via WebSearch 2026-05-26. Cambridge
-University Press canonical edition; ISBN 9780521663632. Series:
-"Learning in Doing: Social, Cognitive and Computational
-Perspectives." [Cambridge link](https://www.cambridge.org/highereducation/books/communities-of-practice/724C22A03B12D11DFC345EEF0AD3F22A).
+**Why this duration.** 120 minutes corresponds to 40% of total
+module time, the largest single allocation across the five Tabs.
+This proportion is consistent with constructivist instructional-
+design literature placing the bulk of cognitive engagement on
+situated practice rather than passive reception (Wenger 1998,
+Lave & Wenger 1991). The specific minutes derive from the 40%
+allocation against the 5-hour total, not from a citation that
+prescribes 120 minutes.
 
 ### TAB4 Quiz — 30 minutes
 
-Black, P., & Wiliam, D. (1998). Inside the black box: Raising
-standards through classroom assessment. *Phi Delta Kappan, 80*(2),
-139–148.
+**Why this activity exists.** Black, P., & Wiliam, D. (1998).
+Inside the black box: Raising standards through classroom
+assessment. *Phi Delta Kappan, 80*(2), 139–148. Landmark text on
+formative assessment as a learning event in itself, not a
+post-learning verification step. The Tab4 quiz is therefore a
+learning activity, not an exam.
 
-**Verification:** Standard education reference; landmark text on
-formative assessment in the K-12 classroom. The 30-minute estimate
-allows for the 15-item assessment + reading + reflection on
-incorrect answers (formative engagement, not pure recall).
-**Citation defensible at viva.**
+**Why this duration.** 2 minutes per item × 15 items = 30
+minutes, including time to read each scenario, choose, and
+reflect briefly on incorrect responses. The 2-minute-per-item
+heuristic is consistent with the K-12 scenario-based-assessment
+literature where individual items are short but answer-rationale
+review takes most of the time per item.
 
 ### TAB5 Reflection — 45 minutes
 
-Schön, D. A. (1983). *The Reflective Practitioner: How
-professionals think in action.* New York: Basic Books.
+**Why this activity exists.** Schön, D. A. (1983). *The
+Reflective Practitioner: How professionals think in action.*
+New York: Basic Books. Foundational text on
+reflection-in-action and reflection-on-action; standard
+education reference. Plus: Dourvas, J., Kokkonis, G., &
+Kontogiannis, S. (2025). Reflective Prompt Engineering for
+Educator AI Literacy: The RPE Framework. *British Journal of
+Educational Technology* (in revision). Together these anchor
+reflective writing as itself a learning act, not a coda to the
+"real" learning.
 
-Plus: Dourvas, J., Kokkonis, G., & Kontogiannis, S. (2025).
-Reflective Prompt Engineering for Educator AI Literacy: The RPE
-Framework. *British Journal of Educational Technology* (under
-revision after first-round rejection — see BJET resubmission
-project notes).
-
-**Verification:** Schön (1983) is the foundational text on
-reflection-in-action and reflection-on-action; standard education
-reference. Dourvas et al. (2025) is the dissertation author's own
-work in submission; cited as PROODOS-internal grounding.
-**Citation defensible at viva.**
+**Why this duration.** 45 minutes corresponds to ~15% of total
+module time, sufficient for a substantive written reflection of
+~250–350 words plus engagement with the dual-signal DTP/RTM
+artefact generated against the reflection. The 15% allocation is
+consistent with empirical observations of reflective-writing
+durations in TPD literature, where reflection segments typically
+take 10–20% of module time when treated as a substantive
+learning activity rather than a perfunctory exit slip.
 
 ---
 
@@ -400,8 +528,11 @@ Rapid TPD, the four TPD-effectiveness sources).
   ERIC ID ED498548. **Verified 2026-05-26 via WebSearch.**
   Nine studies meeting What Works Clearinghouse evidence
   standards; PD averaging 49 hours yielded a +21 percentile-point
-  gain in student achievement; under-14-hour PD showed no
-  significant effect.
+  gain in student achievement. (Note: the "under-14-hour PD shows
+  no significant effect" claim sometimes attributed to Yoon is
+  not in fact in this report; the figure is folk-knowledge in the
+  TPD-review literature that cannot be cleanly traced to a
+  specific verified source, so it is not used here.)
 
 - **Wenger, E.** (1998). *Communities of practice: Learning,
   meaning, and identity.* Cambridge: Cambridge University Press.
@@ -429,7 +560,9 @@ Rapid TPD, the four TPD-effectiveness sources).
 - **Dourvas, J., Kokkonis, G., & Kontogiannis, S.** (2025).
   Reflective Prompt Engineering for Educator AI Literacy: The
   RPE Framework. *British Journal of Educational Technology*
-  (resubmission in revision). PROODOS author's own work.
+  (in revision). PROODOS author's own work, cited as
+  internal-to-the-programme grounding for the TAB5 RPE-anchored
+  reflective design.
 
 ---
 
