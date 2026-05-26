@@ -620,7 +620,15 @@ parallel + tests).
 
 ## TD-027 — Bibliographic-grounded re-design of programme duration
 
-**Status:** Active. Open research question raised by PI 2026-05-26.
+**Status:** Resolved (aggregate) 2026-05-26 — see
+`proodos_files/PROODOS_PROGRAMME_DURATION_METHODOLOGY_v1_20260526.md`
+for the full bibliographically-grounded methodology document. The
+aggregate workload (75 hours / 15 weeks / 2.5 ECTS) is settled and
+shipped via `settings.CERTIFICATE_PROGRAMME_*` constants. Per-module
+non-uniform hour allocation remains open pending the TAB1 audit
+(see "What remains" below).
+
+**Original status (historical):** Active. Open research question raised by PI 2026-05-26.
 
 **Where:** `apps/modules/models.py::Module.estimated_hours` (current
 default = 4h per module, set at C.2 initial model creation; no
@@ -675,9 +683,77 @@ two duration values that TD-026 will print on the certificate.
 **Effort:** ~1 day for the lit-note exploration + decision; ~0.5
 day for model + service + certificate edits.
 
+**What remains (TAB1-audit-dependent):**
+- Per-module `Module.estimated_hours` non-uniformity, if the audit
+  reveals modules whose Tab content distribution genuinely diverges
+  from the methodology's §4 default decomposition (5h uniform).
+- Possible flip of `Module.estimated_hours` default from 4 → 5
+  (one additive migration) if the audit confirms uniform 5h works
+  for all 15 modules.
+- TAB1 Learning Objectives + About this Module per-module update
+  is tracked separately under TD-028 (TAB1 audit, created
+  2026-05-26).
+
 **Discovered in:** Phase H.3 browser test pass, 2026-05-26 — the
 certificate copy revision (TD-026) surfaced the implicit
 unjustified-defaults problem.
+
+---
+
+## TD-028 — TAB1 audit (Learning Objectives + About this Module vs CONTENT_VALIDATION_MATRIX)
+
+**Status:** Active. New session. Raised by PI 2026-05-26
+alongside TD-027 resolution.
+
+**Where:** Per-module TAB1 content. Authoritative reference:
+`proodos_files/CONTENT_VALIDATION_MATRIX.md` §74 "Αναλυτική
+Τεκμηρίωση ανά Module" — the per-module justification of
+content choices. The TAB1 fields *Learning Objectives* and
+*About this Module* must mirror that justification accurately.
+
+**Why this matters.** After the large content pass across all 15
+modules during Phases A–G, the static TAB1 fields may no longer
+reflect the current TAB content distribution. PI observation:
+"μετά από το μεγάλο πέρασμα στο περιεχόμενο που κάναμε από όλες
+τις ενότητες ίσως δεν αντικατοπτρίζει την αλήθεια" (2026-05-26).
+Two consequences if left unchecked: (a) onboarding teachers see
+outdated module orientations and form wrong expectations, (b) any
+viva examiner who cross-reads TAB1 against the methodology
+document or against the CONTENT_VALIDATION_MATRIX will hit an
+inconsistency.
+
+**Forward path:**
+
+1. **Per-module read** of CONTENT_VALIDATION_MATRIX §74 entry for
+   M1 through M15 in order.
+2. **Per-module compare** with the current TAB1 fields stored on
+   the Module model (`Module.about_this_module`,
+   `Module.learning_objectives` or whichever fields hold these
+   values — confirm the exact field names at audit start).
+3. **Per-module update** where the matrix entry and the current
+   TAB1 content diverge. Updates are content-only; no schema
+   change.
+4. **Per-module Tab-distribution check** for the purposes of
+   resolving TD-027's open per-module hour-allocation question.
+   If a module's Tab content distribution genuinely diverges from
+   the methodology's §4 default decomposition
+   (`PROODOS_PROGRAMME_DURATION_METHODOLOGY_v1_20260526.md`),
+   record the divergence so Module.estimated_hours can be set
+   non-uniformly with the 75h total preserved.
+5. **TD-027 close** once the audit lands. TD-026 (certificate
+   copy revision) also closes at that point — the certificate
+   prints the methodology's settled values.
+
+**Effort:** ~1 day (15 modules × ~3 minutes each per audit cell +
+~10 minutes per module needing a real rewrite + the Tab-distribution
+check). Best done in a session focused on this single task.
+
+**Dependencies:**
+- `proodos_files/CONTENT_VALIDATION_MATRIX.md` (read-only reference).
+- `proodos_files/PROODOS_PROGRAMME_DURATION_METHODOLOGY_v1_20260526.md`
+  (read-only reference; supplies the §4 Tab-distribution baseline).
+
+**Resolved at:** future session — separate from TD-027 commit.
 
 ---
 

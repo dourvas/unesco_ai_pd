@@ -786,6 +786,34 @@ Verbert, K., Govaerts, S., Duval, E., Santos, J. L., Van Assche, F., Parra, G., 
 
 ---
 
+## §20 — Programme Duration & Time-on-Task Framework (TD-027 resolution)
+
+*Προστέθηκε 2026-05-26 ως pointer στην autoritative version. Το πλήρες κείμενο της μεθοδολογίας ζει σε ξεχωριστό αρχείο για να διατηρηθεί lean το παρόν note.*
+
+**Canonical document:** `proodos_files/PROODOS_PROGRAMME_DURATION_METHODOLOGY_v1_20260526.md`
+
+**Τι αποφασίστηκε (2026-05-26):**
+
+- Συνολική διάρκεια προγράμματος: **75 ώρες / 15 εβδομάδες / 2.5 ECTS** (conservative claim· aspirational 3 ECTS at 25h/credit).
+- Time-on-Task ανά module: 5 ώρες σταθερά (provisional uniform — εκκρεμεί TAB1 audit για ενδεχόμενη per-module non-uniform allocation).
+- Tab decomposition: TAB1 20m + TAB2 75m + TAB3 120m + TAB4 30m + TAB5 45m = 290m = 4h 50m ≈ 5h.
+
+**Βιβλιογραφική βάση (όλες verified 2026-05-26):**
+
+- European Commission (2015) *ECTS Users' Guide* — 1 ECTS = 25-30 working hours, total student workload includes private study + reflection + practice.
+- UNESCO (2021) *Rapid Teacher Training Programme on Distance, Open and Online Learning* — 5-7 ώρες/εβδομάδα για content modules· PROODOS κάθεται στο lower bound.
+- Yoon et al. (2007) REL Report — PD ≈ 49 ώρες δίνει +21 percentile point student achievement gain (κάτω από 14h δίνει zero effect). PROODOS 75h είναι +26 ώρες πάνω από το threshold.
+- Darling-Hammond, Hyler & Gardner (2017) Learning Policy Institute — sustained duration ως μία από τις 7 features of effective PD.
+- Desimone (2009) — 5-feature framework: duration ως core feature.
+- Garet et al. (2001) — εμπειρική επιβεβαίωση duration + collective participation + form ως significant structural features.
+- Wenger (1998), Schön (1983), Black & Wiliam (1998), Ausubel (1968) — anchors των per-Tab cognitive activity estimates (TAB3 CoP, TAB5 reflection, TAB4 formative assessment, TAB1 advance organisers).
+
+**Ρόλος στο dissertation.** §6 του methodology doc δίνει το draft text για το Methodology chapter (sub-section on programme duration). Όταν γραφτεί το chapter, αντιγράφει verbatim από εκεί.
+
+**Open items μέσω TD-027 (μεταφέρθηκαν σε TD-028):** Per-module hour non-uniformity, αν η TAB1 audit αναδείξει modules που αποκλίνουν από τη default §4 Tab-distribution. Διατηρείται το 75h ως sum constraint. Module.estimated_hours field default (4) ή flip σε 5 αποφασίζεται μαζί με την TAB1 audit conclusion.
+
+---
+
 ## Project Context (ιστορικό snapshot — Απρίλιος 2026)
 
 > Το παρακάτω μπλοκ είναι snapshot **Απριλίου 2026**. Για την τρέχουσα κατάσταση φάσεων — Phase E (multi-agent refactor) ολοκληρωμένη, Phase D σε εξέλιξη (D.3a DTP redefinition done) — δες το `git log` και τα design proposals στο `proodos_files/`.
