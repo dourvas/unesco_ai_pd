@@ -486,7 +486,12 @@ class PersonalUnescoMatrixTest(TestCase):
 
     def test_cell_carries_module_link(self):
         matrix = build_personal_unesco_matrix(self.user)
-        self.assertIn('/modules/M1/', matrix['rows'][0]['cells'][0]['url'])
+        # The modules app is mounted at /modules/ in config/urls.py and
+        # its own urlpatterns start with 'modules/<str:code>/', so the
+        # canonical detail URL is /modules/modules/<code>/.
+        self.assertEqual(
+            matrix['rows'][0]['cells'][0]['url'], '/modules/modules/M1/',
+        )
 
     def test_outer_shape_matches_cohort(self):
         """Same outer keys as analytics.cohort_unesco_matrix so the
@@ -507,7 +512,9 @@ class NextActionForDashboardTest(TestCase):
         action = next_action_for_dashboard(self.user)
         self.assertEqual(action['state'], 'continue_module')
         self.assertIn('M1', action['title'])
-        self.assertIn('/modules/M1/', action['cta_url'])
+        # /modules/modules/M1/ — the modules app is mounted at /modules/
+        # and its own URLConf prefixes 'modules/<str:code>/'.
+        self.assertEqual(action['cta_url'], '/modules/modules/M1/')
 
     def test_state_visit_epilogue_after_all_modules_complete(self):
         for m in Module.objects.all():

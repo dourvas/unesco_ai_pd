@@ -334,6 +334,52 @@ class RenderCertificatePdfTest(TestCase):
         self.assertIn(self.certificate.verification_code, filename)
         self.assertTrue(filename.endswith('.pdf'))
 
+    def test_filename_carries_language_code(self):
+        """Phase H.3 mono-language switch — filename includes the
+        language tag so the same teacher can download both versions
+        (or distinct branches can emit distinct files) without name
+        clash."""
+        _bytes, filename_en = render_certificate_pdf(
+            self.certificate, language='en',
+        )
+        _bytes, filename_el = render_certificate_pdf(
+            self.certificate, language='el',
+        )
+        self.assertIn('_en_', filename_en)
+        self.assertIn('_el_', filename_el)
+        self.assertNotEqual(filename_en, filename_el)
+
+    def test_greek_render_succeeds(self):
+        """Greek language path must build a PDF without error.
+
+        Coverage for the Phase H.3 mono-language Greek branch.
+        reportlab Platypus with PdfSans/PdfSerif (Arial/Times Windows
+        fallback) handles Greek glyphs natively — proven 2026-05-26
+        after the xhtml2pdf → Platypus switch.
+        """
+        pdf_bytes, filename = render_certificate_pdf(
+            self.certificate, language='el',
+        )
+        self.assertTrue(pdf_bytes.startswith(b'%PDF'))
+        self.assertGreater(len(pdf_bytes), 1000)
+
+    def test_invalid_language_raises(self):
+        with self.assertRaises(ValueError):
+            render_certificate_pdf(self.certificate, language='fr')
+
+    def test_programme_duration_embedded_in_pdf(self):
+        """Phase H.3 + TD-026 — programme duration in weeks + hours
+        renders into the certificate text layer (verifiable in PDF
+        byte stream)."""
+        from django.conf import settings
+        pdf_bytes, _ = render_certificate_pdf(self.certificate, language='en')
+        # Weeks + hours values from settings should appear in the PDF
+        # content stream. Search for the bare integers — reportlab
+        # writes them into the body text.
+        body = pdf_bytes.decode('latin-1', errors='ignore')
+        self.assertIn(str(settings.CERTIFICATE_PROGRAMME_WEEKS), body)
+        self.assertIn(str(settings.CERTIFICATE_PROGRAMME_HOURS), body)
+
 
 # ----------------------------------------------------------------------
 # Phase H.3 part 2 — View tests

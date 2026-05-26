@@ -222,3 +222,28 @@ LOGGING = {
 # old-version active rows when a user re-consents under the new version.
 RESEARCH_CONSENT_CURRENT_VERSION = 'v2_followup_bundled'
 
+# Phase H.3 — Certificate of Attendance language
+# ------------------------------------------------
+# The certificate is mono-language; the choice is fixed per deploy
+# (English on this branch, 'el' on the planned Greek branch). The
+# render service reads this flag and emits exactly one language
+# block — no in-PDF toggle, no per-user detection. The Greek branch
+# will override this setting to 'el'.
+CERTIFICATE_LANGUAGE = 'en'
+
+# Phase H.3 — Programme duration values shown on the certificate
+# --------------------------------------------------------------
+# Provisional placeholders pending TD-027 (bibliographic-grounded
+# re-design of programme duration). Current values: 15 weeks ×
+# ~5h/week = 75h total, well above the Yoon et al. (2007) 14h
+# threshold and within the Darling-Hammond et al. (2017) sustained-PD
+# duration band. PI-set 2026-05-26.
+#
+# Caveat: 75h / 15 modules = 5h per module, which contradicts the
+# Module.estimated_hours default (4h) currently in the model. The
+# discrepancy resolves under TD-027 — either Module.estimated_hours
+# defaults flip to 5, or per-module hours become non-uniform and
+# the total is recomputed from the sum.
+CERTIFICATE_PROGRAMME_WEEKS = 15
+CERTIFICATE_PROGRAMME_HOURS = 75
+

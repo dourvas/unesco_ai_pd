@@ -45,3 +45,7 @@ Thumbs.db
 
 # --- Claude Code session cache ---
 .claude/
+
+# Phase H.3 diagnostic PDFs (do not commit one-off renders)
+certificate_*.pdf
+diag_*.pdf

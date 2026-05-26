@@ -86,6 +86,8 @@ def build_personal_unesco_matrix(user) -> dict:
         ],
       }
     """
+    from django.urls import reverse
+
     from apps.modules.models import Module, UserModuleProgress
 
     aspect_labels, aspect_order, level_order = _aspect_and_level_orders()
@@ -121,7 +123,7 @@ def build_personal_unesco_matrix(user) -> dict:
                 'module_code': module.code,
                 'module_title': module.title,
                 'state': state,
-                'url': f'/modules/{module.code}/',
+                'url': reverse('modules:detail', kwargs={'code': module.code}),
                 # cohort-only — None on personal cells
                 'rate': None,
                 'completed': None,
@@ -168,6 +170,8 @@ def next_action_for_dashboard(user) -> dict:
     "AILST" acronym, no "DTP/RTM". Per the project-wide
     no-internal-labels rule.
     """
+    from django.urls import reverse
+
     from apps.ailst.models import AilstResponse
     from apps.epilogue.models import EpilogueCompletion
     from apps.modules.models import Module, UserModuleProgress
@@ -190,7 +194,7 @@ def next_action_for_dashboard(user) -> dict:
             'title': f'Continue with module {next_code}',
             'body': 'Pick up where you left off in the programme.',
             'cta_label': 'Open module',
-            'cta_url': f'/modules/{next_code}/',
+            'cta_url': reverse('modules:detail', kwargs={'code': next_code}),
         }
 
     # State 2 — all modules done, Epilogue not yet completed?

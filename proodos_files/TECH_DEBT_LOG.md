@@ -573,6 +573,114 @@ Until then: backups remain in git history; they don't slow normal development.
 
 ---
 
+## TD-026 — Certificate of Attendance copy revision (Phase H.3 follow-up)
+
+**Status:** Active. PI feedback during browser test 2026-05-26 — three
+edits to the bilingual `templates/pdf/certificate_of_attendance.html`
+template before the certificate is finalised for the pilot.
+
+**Where:** `templates/pdf/certificate_of_attendance.html` (the EN
+front-face body block + Greek parallel block), parallel changes in
+both languages.
+
+**Three edits:**
+
+1. **Remove the AILST prerequisite paragraph.** Current body text
+   ends with:
+   > "The closing AI Literacy Scale for Teachers (AILST,
+   > Ning et al., 2025; version `ning_2025_v1`) self-assessment was
+   > completed as the certification prerequisite."
+   PI feedback: this is not relevant to the recipient of a
+   participation certificate and reads as research-instrument
+   bleed-through (an internal label leak per the project-wide rule).
+   Drop the paragraph entirely from both EN and EL blocks. The fact
+   that a closing measurement was taken is already implicit in
+   "completed the 15-module PROODOS programme" — no need to name
+   the instrument on the certificate face.
+
+2. **Add programme duration in weeks.** A new line under the
+   standfirst showing the total programme length. **Provisional
+   value committed 2026-05-26: 15 weeks** (PI-set, pending TD-027
+   bibliographic refinement).
+
+3. **Add total programme hours.** A second new line showing the
+   aggregate teacher hours. **Provisional value committed
+   2026-05-26: 75 hours** (15 weeks × ~5h/week). The 75h figure
+   contradicts the `Module.estimated_hours=4` default — TD-027
+   resolves whether the per-module default flips to 5, or hours
+   become non-uniform per module and the total is recomputed
+   from the sum.
+
+**Effort:** ~1 hour once TD-027 lands (template edit + EN/EL
+parallel + tests).
+
+**Discovered in:** Phase H.3 browser test pass, 2026-05-26.
+
+---
+
+## TD-027 — Bibliographic-grounded re-design of programme duration
+
+**Status:** Active. Open research question raised by PI 2026-05-26.
+
+**Where:** `apps/modules/models.py::Module.estimated_hours` (current
+default = 4h per module, set at C.2 initial model creation; no
+bibliographic justification was attached at the time), the implicit
+total programme length (currently undocumented anywhere), and the
+two duration values that TD-026 will print on the certificate.
+
+**The question (PI wording, 2026-05-26):**
+> "The matter of the total programme duration and the hours
+> required per module must be re-negotiated and we should look at
+> it with reference to the literature so we can take decisions."
+
+**Why this matters:**
+
+- The certificate (TD-026) prints "Programme duration: N weeks" and
+  "Total study hours: N hours" — these are claims that ΕΗΔΕ ΔΙ.ΠΑ.Ε.
+  may scrutinise and that the participant will use externally
+  (portfolio, professional credit). The values must be defensible.
+- The current `Module.estimated_hours = 4` default is a
+  placeholder, not a bibliographically-grounded estimate.
+- Teacher professional-development literature (Darling-Hammond,
+  Hyler & Gardner 2017; Desimone 2009; Yoon et al. 2007) has
+  established findings on effective PD duration thresholds —
+  typically at least 14-20 contact hours, often spread over weeks
+  for sustained-impact PD. PROODOS should sit within (or above)
+  the empirically-supported range and justify the choice.
+
+**Forward path:**
+
+1. **Literature exploration** in `Literature_Review_Synthesis_Note(1).md` —
+   new section on effective TPD duration. Verify candidates:
+   Darling-Hammond et al. 2017 (Learning Policy Institute review),
+   Desimone 2009 (5-feature PD framework + duration), Yoon et al.
+   2007 (meta-analysis — 14h threshold), plus the Erhardt et al.
+   2025 systematic review already in the lit-note for cross-
+   reference. Each reference verified before citation per the
+   project standing rule.
+2. **Decision dialogue** between PI and the lit-note evidence —
+   what duration profile does PROODOS commit to? Per-module hours,
+   spread across how many weeks?
+3. **Update `Module.estimated_hours`** values + add a model-level
+   docstring citing the lit-note section. If per-module hours are
+   not uniform (e.g., Acquire modules lighter than Create modules),
+   the seed data needs editing too.
+4. **Compute total programme hours + weeks** from the per-module
+   values (helper function in `apps/modules/services.py`).
+5. **Feed back into TD-026** — the certificate prints these
+   bibliographically-grounded values.
+6. **Mirror into the dissertation methods chapter** — the duration
+   defence becomes part of the doctoral argument.
+
+**Effort:** ~1 day for the lit-note exploration + decision; ~0.5
+day for model + service + certificate edits.
+
+**Discovered in:** Phase H.3 browser test pass, 2026-05-26 — the
+certificate copy revision (TD-026) surfaced the implicit
+unjustified-defaults problem.
+
+---
+
 ## TD entry conventions
 
 When adding a new entry:
