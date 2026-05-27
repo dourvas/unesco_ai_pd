@@ -757,6 +757,71 @@ check). Best done in a session focused on this single task.
 
 ---
 
+## TD-029 — TAB1 LO + overview voice/length consistency pass
+
+**Status:** Active. Deferred to post-pilot polish or pre-final-defence review.
+**Where:** `Module.learning_objectives` + `Module.module_overview` across all 15 modules; data migrations under `apps/modules/migrations/`.
+
+**Problem.** Post-TD-028, the 15 Module rows have meaningfully different LO/overview voice and length depending on whether they were rewritten in 0017/0018 (M2, M4, M6, M7, M8, M9, M11, M12, M14) or left as their original C.2-era authoring (M1, M3, M5, M10, M13, M15):
+
+- **Length variance per LO item:** the rewritten modules have LOs in the 100-200 char range; the unchanged modules have LOs in the 60-110 char range. M11 LO5 (added in 0018) is 234 chars.
+- **Specificity variance:** the rewritten LOs name specific frameworks/tools verbatim (Pedagogical Fit Test, RPE Strategies 1-5, Five Roles Framework, Decoration Test); the unchanged LOs use broader phrasing.
+- **Voice variance:** the rewritten overviews adopt a "Across N parts ... module's centrepiece is X" register; the unchanged overviews adopt a "In this module you will explore ... and develop strategies for" register.
+
+A teacher reading multiple modules in sequence will notice the register shift. This is cosmetic, not factual — both styles are accurate against the matrix — but it weakens the platform's stylistic coherence.
+
+**Forward path.**
+
+1. Choose a canonical voice from the two patterns above (the rewritten "specific frameworks named" voice is the stronger doctoral-defence position).
+2. Rewrite the 6 unchanged modules' LO + overview to match.
+3. Trim the longest rewritten LOs (M7 LO5, M11 LO5, M12 LO3) to fit within ~140 char target.
+4. Apply via a single follow-up data migration (similar pattern to 0017).
+5. Re-mirror methodology if changes warrant a note.
+
+**Estimated effort:** ~3-4 hours including matrix re-read for the 6 unchanged modules.
+
+**Discovered in:** TD-028 final consolidated audit re-read (2026-05-27) — flagged as "good enough for IRB and viva, but worth polish".
+
+**Resolved at:** post-pilot polish, or pre-defence final review.
+
+---
+
+## TD-030 — TAB1 collapsible UNESCO indicators box (deferred)
+
+**Status:** Active. Deferred per PI decision 2026-05-27.
+**Where:** `apps/modules/models.py::Module` (would gain a new `unesco_indicators` JSONField) + `templates/modules/tabs/tab1_introduction.html` (would gain a new collapsible `<details>` section).
+
+**Proposal.** Add a collapsible "UNESCO competency alignment" box to every module's TAB1 that surfaces, in a teacher-friendly form, exactly which UNESCO indicators the module addresses. The data is already curated per module in `proodos_files/CONTENT_VALIDATION_MATRIX.md` (the line of indicator codes appears at the top of each module's section — e.g. M1: "CG1.1.1, CG1.1.2, CG1.1.3, CG1.1.4, LO1.1.1–LO1.1.4").
+
+**Proposed two-level display (collapsed by default):**
+
+- *Layer 1 (always visible inside the open box):* friendly summary, e.g., "This module addresses: UNESCO Human-Centred Mindset (Acquire) — agency, AI literacy basics, critical evaluation of AI claims".
+- *Layer 2 (sub-expandable):* full indicator codes (CG1.1.1, LO1.1.2, …) for researchers and curriculum designers.
+
+**Rationale for deferral.** Per PI 2026-05-27: not urgent for the pilot launch. UNESCO indicator codes are research/auditor-facing; the conservative "1 week + 5 hours" badge added today (commit forthcoming) supplies the teacher-facing transparency that was the primary TAB1 audit driver. The full UNESCO alignment surfacing is preserved as a future enhancement when the platform shifts from pilot to wider release.
+
+**Forward path.**
+
+1. New `Module.unesco_indicators` JSONField with shape:
+   ```json
+   {
+     "summary": "Human-Centred Mindset (Acquire) — agency, AI literacy basics, critical evaluation of AI claims",
+     "codes": ["CG1.1.1", "CG1.1.2", "CG1.1.3", "CG1.1.4",
+               "LO1.1.1", "LO1.1.2", "LO1.1.3", "LO1.1.4"]
+   }
+   ```
+2. Data migration populating all 15 modules from the matrix.
+3. Template snippet (~30 lines) with two-level `<details>` for the box.
+4. Test coverage: existence + correct structure for all 15 modules.
+
+**Estimated effort:** ~2 hours (model field + migration + template + tests).
+
+**Discovered in:** TD-028 follow-up discussion 2026-05-27.
+
+**Resolved at:** Post-pilot enhancement window.
+
+---
+
 ## TD entry conventions
 
 When adding a new entry:
