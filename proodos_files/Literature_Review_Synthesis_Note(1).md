@@ -275,6 +275,30 @@ Analytical use: paired comparisons T0→T1, T1→T2, T0→T2 ανά παράγο
 
 **Αποτέλεσμα:** Μετατροπή feasibility study σε μελέτη με μετρήσιμα αποτελέσματα, στηριγμένη ξεκάθαρα στο Ning validation envelope.
 
+### Programme duration methodology (added 2026-05-27 σε post-TD-028 update)
+
+Διακριτό dissertation appendix: `proodos_files/PROODOS_PROGRAMME_DURATION_METHODOLOGY_v1_20260526.md` (v1.2). Θεμελιώνει τη συνολική διάρκεια του PROODOS (~75 ώρες, 15 εβδομάδες, ~2.5 ECTS) μέσω τριών συγκλινόντων κριτηρίων:
+
+- **C1 — UNESCO precedent envelope**: UNESCO Rapid TPD Programme on Distance, Open and Online Learning (5-12h/week range, modules typically 1 week each). **PROODOS κάθεται στο lower bound** (5h/week) ως design choice για feasibility με full-time educators.
+- **C2 — TPD-impact threshold**: Yoon et al. (2007) WWC meta-analysis: 49h+ aggregate PD = +21 percentile-point gain. PROODOS +26h above floor.
+- **C3 — ECTS compatibility**: ECTS Users' Guide (2015) — 75h = 2.5 ECTS (admissible fractional allocation).
+
+Per-Tab decomposition citations που χρειάστηκε να προστεθούν για το §4 breakdown (όλες **already in matrix** verified):
+
+- **Ausubel (1968)** — Advance Organizers για TAB1 framing
+- **Mayer (2014)** — Cognitive Theory of Multimedia Learning για TAB2 video overview (4-8 min)
+- **Lave & Wenger (1991)** — Legitimate Peripheral Participation για Community Forum (~12 min/module) + Practice Workshop (+25 min για M9/M13/M14)
+- **Wenger (1998)** — Communities of Practice (already in §3 references)
+- **Black & Wiliam (1998)** — formative assessment για TAB4 quiz
+- **Schön (1983)** — Reflection-on-Action για TAB5 + RPE Framework (Dourvas et al. in revision)
+
+Όλες οι αναφορές verified ή pre-existing στο lit-note. Programme-wide cross-15-module average από §4 = ~5h 13m/module — υποστηρίζει το **uniform 5h/module** που εφαρμόστηκε στο `Module.estimated_hours` post-TD-028 (migrations 0017+0018 commits `c3c6ecc`+`317c099`). M8 outlier (16,645 words Tab2) preserved ως methodological footnote αντί per-row variance.
+
+Cross-references:
+- TD-027 closure record: TECH_DEBT_LOG.md
+- TD-028 closure record: TECH_DEBT_LOG.md (TAB1 audit + 8-module content corrections + M11 LO addition)
+- Certificate alignment: `CERTIFICATE_PROGRAMME_HOURS=75` στο `config/settings.py` matches exact DB sum (15×5=75h)
+
 ---
 
 ## 6. Νέες Αρχιτεκτονικές Προτάσεις
