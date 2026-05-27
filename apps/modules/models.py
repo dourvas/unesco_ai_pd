@@ -57,8 +57,20 @@ class Module(models.Model):
         help_text="Display order (1-15)"
     )
     estimated_hours = models.IntegerField(
-        default=4,
-        help_text="Estimated completion time in hours"
+        default=5,
+        help_text=(
+            "Estimated time-on-task per module in hours. "
+            "Phase H TD-028 (2026-05-27) standardised this to 5 hours "
+            "uniformly across all 15 modules, anchored to the §4 "
+            "decomposition in PROODOS_PROGRAMME_DURATION_METHODOLOGY_v1.2: "
+            "20m TAB1 + 6m video overview + 75m TAB2 reading + 120m TAB3 "
+            "practice + 12m Community Forum + 30m TAB4 quiz + 45m TAB5 "
+            "reflection = 308min ≈ 5h 8m standard module; +25min Practice "
+            "Workshop for M9/M13/M14 only. Programme-wide average across "
+            "all 15 modules: ~5h 13m. The 5h-uniform value is conservative "
+            "relative to that measured aggregate. Module sum (15×5=75h) "
+            "matches the certificate's CERTIFICATE_PROGRAMME_HOURS exactly."
+        ),
     )
     
     # Tab 1 (Introduction) Content

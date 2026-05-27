@@ -1,13 +1,30 @@
-# PROODOS Programme Duration & Time-on-Task Methodology — v1.1
+# PROODOS Programme Duration & Time-on-Task Methodology — v1.2
 
 *Doctoral dissertation appendix · Drafted 2026-05-26 · Revised
-2026-05-26 (v1.1) after external review · Resolves TECH_DEBT_LOG
+twice on 2026-05-26 (v1.1 + v1.2) · Resolves TECH_DEBT_LOG
 TD-027 · Feeds the Certificate of Attendance values in
 `apps/certification/services.py` and the per-module
 `Module.estimated_hours` field in `apps/modules/models.py`.*
 
 ## Revision history
 
+- **v1.2 (2026-05-27):** TAB1 audit (TD-028) surfaced three Tab2/
+  cross-tab pillars that were missing from the v1.1 §4
+  decomposition: (a) the 4-8 minute video overview that opens
+  every module's Tab2; (b) cross-module Community Forum
+  participation; (c) Practice Workshop activities wired into
+  M9, M13, M14 specifically (Tier 3 wiring). Adding these brings
+  the standard-module average from ~290 min (v1.1) to ~308 min
+  (5h 8m), and the workshop-module average to ~333 min (5h 33m).
+  Programme-wide cross-15-module average lands at **~313 min ≈
+  5h 13m/module** — empirically supports the 5h-per-module value
+  used in `Module.estimated_hours` after the TD-028 unification.
+  §4 table extended with three new rows; programme-total
+  recomputed; bibliography extended with Wenger (1998) Community
+  citation for the forum + Lave & Wenger (1991) for situated
+  practice anchoring the Workshop. Total programme hours
+  remains 75h (15 modules × 5h, post-TD-028 uniform allocation),
+  matching the certificate claim exactly.
 - **v1.1 (2026-05-26):** Six external-review corrections.
   - Yoon (2007) row: dropped the "under-14-hour" attribution
     (the 14h threshold is folk-knowledge in the TPD literature
@@ -188,17 +205,44 @@ five activities.
 
 | Tab | Activity | Time | % of total | "Why activity exists" | "Why this allocation" |
 |---|---|---|---|---|---|
-| **TAB1 Introduction** | Orientation, prior-knowledge activation, module framing | **20 min** | ~6.7% | Ausubel (1968) on Advance Organizers — orientation phases support subsequent acquisition by giving learners anchoring schemata | Within the 10–15% framing-time range typical in instructional-design literature for orientation segments relative to total session length; PROODOS sits at the lower end (6.7%) because the entry into each weekly module is light, not because the literature prescribes 20 minutes specifically |
-| **TAB2 Core Content** | Theory reading, framework comprehension, SVG analysis | **75 min** | ~25% | Comprehension of the module's theoretical content (UNESCO competency framework + RPE framework + module-specific frames + SVG diagrams) is the prerequisite for the practice and reflection Tabs that follow | **Measured baseline:** 10 sample modules averaged 10,500 words of Core Content (range 7,224–16,645). At an average reading speed of ~140 wpm for technical material with diagram analysis (within the 100–200 wpm range reported in reading-research literature), 10,500 / 140 ≈ 75 minutes |
-| **TAB3 Practical Challenges** | Hands-on AI-tool scenarios, lesson-design exercise, Practice Workshop participation | **120 min** | ~40% | Wenger (1998) Communities of Practice — situated practice is the empirical centre of professional learning. The largest single allocation in the module reflects this theoretical centrality | 40% of total module time, the dominant single allocation. This proportion is consistent with constructivist instructional-design literature placing the bulk of cognitive engagement on situated practice rather than passive reception |
+| **TAB1 Introduction** | Orientation, prior-knowledge activation, module framing | **20 min** | ~6.4% | Ausubel (1968) on Advance Organizers — orientation phases support subsequent acquisition by giving learners anchoring schemata | Within the 10–15% framing-time range typical in instructional-design literature for orientation segments relative to total session length; PROODOS sits at the lower end (6.4%) because the entry into each weekly module is light, not because the literature prescribes 20 minutes specifically |
+| **TAB2 Video Overview** *(opens TAB2)* | 4–8 minute video introducing the module's framing, deliverables, and connection to the wider programme | **6 min** | ~2% | Mayer (2014) Cognitive Theory of Multimedia Learning — narrated visual openings reduce cognitive load by pre-organising the learner's attention before text-dense content. Empirically present in every PROODOS module's TAB2 head | Median of the 4–8 minute range observed across the 15 modules' video overviews; ~2% of total module time, intentionally short to act as a primer not a substitute for the text |
+| **TAB2 Core Content** | Theory reading, framework comprehension, SVG analysis | **75 min** | ~24% | Comprehension of the module's theoretical content (UNESCO competency framework + RPE framework + module-specific frames + SVG diagrams) is the prerequisite for the practice and reflection Tabs that follow | **Measured baseline:** 10 sample modules averaged 10,500 words of Core Content (range 7,224–16,645). At an average reading speed of ~140 wpm for technical material with diagram analysis (within the 100–200 wpm range reported in reading-research literature), 10,500 / 140 ≈ 75 minutes |
+| **TAB3 Practical Challenges** | Hands-on AI-tool scenarios, lesson-design exercise, Practice Workshop participation | **120 min** | ~38% | Wenger (1998) Communities of Practice — situated practice is the empirical centre of professional learning. The largest single allocation in the module reflects this theoretical centrality | 38% of total module time, the dominant single allocation. This proportion is consistent with constructivist instructional-design literature placing the bulk of cognitive engagement on situated practice rather than passive reception |
+| **Community Forum** *(cross-tab)* | Subject-area discussion threads, peer responses to challenge artefacts, async reflection-in-community | **12 min** | ~4% | Lave & Wenger (1991) Situated Learning + Wenger (1998) Communities of Practice — legitimate peripheral participation in a discipline-of-practice forum is itself a learning act. Present across every module via the Community Forum app, deepened in M10's CoP-focused Tab2 work | Average ~12 minutes of asynchronous forum engagement per module per learner (estimated from typical-load assumptions in CoP-mediated TPD literature: 2–3 short posts of 100–150 words + light reading of peer threads). PROODOS does not require a posting quota; the 12 min is a typical-engagement estimate |
 | **TAB4 Quiz** | Formative-assessment scenarios (15 items) | **30 min** | ~10% | Black & Wiliam (1998) — formative assessment as learning event; quiz time is cognitive engagement plus reflection on incorrect answers, not mere recall | 2 minutes per item × 15 items = 30 minutes; consistent with timing guidelines for scenario-based formative assessment in K-12 PD contexts |
-| **TAB5 Reflection** | Written reflection, dual-signal DTP/RTM interaction | **45 min** | ~15% | Schön (1983) Reflection-on-Action + RPE Framework (Dourvas et al., in revision) — reflective writing is itself a learning act, not a coda | 15% of total module time, sufficient for a substantive reflection of ~250–350 words plus engagement with the dual-signal DTP/RTM artefact; in line with empirical observations of reflective-writing durations in TPD literature |
-| **Total per module** | | **5 hours** | ~100% | UNESCO Rapid TPD lower bound (5–7h/week) | 290 minutes ≈ 4h 50m; rounded to 5h for the published claim |
+| **TAB5 Reflection** | Written reflection, dual-signal DTP/RTM interaction | **45 min** | ~14% | Schön (1983) Reflection-on-Action + RPE Framework (Dourvas et al., in revision) — reflective writing is itself a learning act, not a coda | 14% of total module time, sufficient for a substantive reflection of ~250–350 words plus engagement with the dual-signal DTP/RTM artefact; in line with empirical observations of reflective-writing durations in TPD literature |
+| **Practice Workshop** *(M9, M13, M14 only)* | Submit artefact (lesson design / workflow canvas / gamified unit plan), receive peer responses | **+25 min** *(3 modules only)* | adds ~8% to those modules | Lave & Wenger (1991) Legitimate Peripheral Participation — sharing a designed artefact for peer dialogue moves the learner from private practice into community-validated practice. Tier 3 wiring (May 2026) opted M9 + M13 + M14 into the Practice Workshop pattern as the modules whose Challenge 3 outputs are coherent enough to share | Additional ~25 minutes for the 3 workshop-wired modules: 5 min to opt in + 10 min to author the share metadata + 10 min to skim peer responses on prior submissions. Average across the 15 modules: +25×3/15 = +5 min/module amortised |
+| **Standard module subtotal** | 20+6+75+120+12+30+45 | **308 min ≈ 5h 8m** | ~100% | | |
+| **Workshop module subtotal** (M9, M13, M14) | standard + 25 | **333 min ≈ 5h 33m** | ~108% | | |
+| **Programme-wide average** | (12×308 + 3×333) / 15 | **~313 min ≈ 5h 13m** | | UNESCO Rapid TPD lower bound (5–7h/week) | Cross-15-module mean; provides the empirical floor for the **5h-per-module** value used uniformly in `Module.estimated_hours` after the TD-028 unification |
 
-The percentages sum to ~96.7% with ~3.3% absorbed into transition
-times and rounding. The decomposition is theoretically defensible
-at viva: each Tab carries a separate "why this activity" citation
-*and* a separate "why this duration" justification.
+The decomposition now reflects the platform's actual surfaces:
+TAB2 video overviews open every module, the Community Forum is
+continuously active across all modules, and the Practice
+Workshop is wired into the three modules (M9, M13, M14) whose
+Challenge 3 artefacts are coherent enough to share for peer
+dialogue. The programme-wide average of ~5h 13m comfortably
+supports the uniform 5h/module value committed in the
+post-TD-028 data migration: the 5h figure is conservative
+relative to the measured aggregate, leaving small headroom for
+individual learners who engage the forum more deeply or revisit
+content.
+
+**TD-028 outcome — uniform 5h per module.** The post-TD-028 PI
+decision was to standardise `Module.estimated_hours = 5` across
+all 15 modules, anchored to this §4 average. Two alternatives
+were considered and rejected: (a) keeping the default at 4 with
+selective overrides — sums to 63h, fails to match the certificate
+claim of 75h; (b) per-module non-uniform allocation (e.g., M8 at
+6h reflecting its 16,645-word Tab2 content) — more accurate but
+would require a separate bibliographic argument for non-uniform
+distribution, deferred to future work. The uniform 5h decision
+is methodologically simpler, empirically supported by the §4
+aggregate, and matches the certificate claim exactly
+(15×5 = 75h). The M8 outlier acknowledged here is preserved as
+a methodological footnote for the dissertation rather than
+encoded as a per-row variance.
 
 ---
 
