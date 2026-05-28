@@ -198,6 +198,9 @@
         </div>
     </footer>
     {% include "community/partials/quick_post_modal.html" %}
+    {% if user.is_authenticated %}
+        {% include "partials/_aletheia_help.html" %}
+    {% endif %}
     <!-- Extra JavaScript Block -->
     {% block extra_js %}{% endblock %}
 </body>

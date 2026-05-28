@@ -1,0 +1,213 @@
+{% comment %}
+Aletheia always-on help chat bubble — Phase J.1.
+
+Floats bottom-right on all authenticated pages (included from base.html).
+Collapses to a chat icon; click to expand the panel. State persisted in
+sessionStorage so it survives page navigation within a session.
+
+Article 50(1) EU AI Act disclosure in the panel header.
+Session conversation cleared server-side on logout.
+{% endcomment %}
+{% url 'users:help_chat' as help_chat_url %}
+
+<!-- Aletheia Help Chat Bubble -->
+<div id="aletheia-help" class="fixed bottom-6 right-6 z-[100] flex flex-col items-end gap-3">
+
+  <!-- Chat Panel (hidden by default) -->
+  <div id="aletheia-panel"
+       class="hidden flex-col w-80 max-h-[28rem] bg-base-100 rounded-2xl shadow-2xl border border-base-300 overflow-hidden">
+
+    <!-- Header -->
+    <div class="bg-primary text-primary-content px-4 py-3 flex items-center justify-between shrink-0">
+      <div class="flex items-center gap-2">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-3 3v-3z"/>
+        </svg>
+        <span class="font-semibold text-sm">Aletheia — Help</span>
+      </div>
+      <button id="aletheia-close"
+              class="btn btn-ghost btn-xs btn-circle text-primary-content hover:bg-primary-focus"
+              aria-label="Close help chat">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Article 50(1) disclosure -->
+    <div class="bg-base-200 px-3 py-1.5 text-xs text-base-content/60 shrink-0 leading-tight">
+      Powered by Gemini 2.5 Flash (Google DeepMind). Aletheia is an AI assistant, not a human advisor.
+    </div>
+
+    <!-- Messages area -->
+    <div id="aletheia-messages"
+         class="flex-1 overflow-y-auto px-3 py-3 flex flex-col gap-3 text-sm min-h-0">
+      <!-- Welcome message -->
+      <div class="chat chat-start">
+        <div class="chat-bubble chat-bubble-primary text-sm">
+          Hello! Ask anything about the platform, modules, or AI features.
+        </div>
+      </div>
+    </div>
+
+    <!-- Input area -->
+    <div class="shrink-0 px-3 py-3 border-t border-base-300 bg-base-100">
+      <div class="flex gap-2">
+        <input id="aletheia-input"
+               type="text"
+               placeholder="Ask a question..."
+               maxlength="500"
+               class="input input-bordered input-sm flex-1 text-sm"
+               autocomplete="off"/>
+        <button id="aletheia-send"
+                class="btn btn-primary btn-sm px-3"
+                aria-label="Send">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+          </svg>
+        </button>
+      </div>
+      <div id="aletheia-limit-notice" class="hidden text-xs text-warning mt-1">
+        Session limit reached. Contact <a href="mailto:idourvas@ihu.gr" class="link">idourvas@ihu.gr</a> for further help.
+      </div>
+    </div>
+  </div>
+
+  <!-- Floating bubble button -->
+  <button id="aletheia-bubble"
+          class="btn btn-primary btn-circle shadow-lg w-14 h-14"
+          aria-label="Open Aletheia help chat"
+          title="Help">
+    <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-3 3v-3z"/>
+    </svg>
+  </button>
+
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  const CHAT_URL = '{{ help_chat_url }}';
+  const STORAGE_KEY = 'aletheia_open';
+
+  const panel   = document.getElementById('aletheia-panel');
+  const bubble  = document.getElementById('aletheia-bubble');
+  const closeBtn = document.getElementById('aletheia-close');
+  const msgs    = document.getElementById('aletheia-messages');
+  const input   = document.getElementById('aletheia-input');
+  const sendBtn = document.getElementById('aletheia-send');
+  const limitNotice = document.getElementById('aletheia-limit-notice');
+
+  function open() {
+    panel.classList.remove('hidden');
+    panel.classList.add('flex');
+    bubble.classList.add('hidden');
+    sessionStorage.setItem(STORAGE_KEY, '1');
+    input.focus();
+    scrollToBottom();
+  }
+
+  function close() {
+    panel.classList.add('hidden');
+    panel.classList.remove('flex');
+    bubble.classList.remove('hidden');
+    sessionStorage.removeItem(STORAGE_KEY);
+  }
+
+  function scrollToBottom() {
+    msgs.scrollTop = msgs.scrollHeight;
+  }
+
+  function appendMessage(role, text) {
+    const wrap = document.createElement('div');
+    wrap.className = role === 'user' ? 'chat chat-end' : 'chat chat-start';
+    const bubble = document.createElement('div');
+    bubble.className = role === 'user'
+      ? 'chat-bubble chat-bubble-neutral text-sm'
+      : 'chat-bubble chat-bubble-primary text-sm';
+    bubble.textContent = text;
+    wrap.appendChild(bubble);
+    msgs.appendChild(wrap);
+    scrollToBottom();
+  }
+
+  function appendTyping() {
+    const wrap = document.createElement('div');
+    wrap.className = 'chat chat-start';
+    wrap.id = 'aletheia-typing';
+    const b = document.createElement('div');
+    b.className = 'chat-bubble chat-bubble-primary text-sm';
+    b.textContent = '...';
+    wrap.appendChild(b);
+    msgs.appendChild(wrap);
+    scrollToBottom();
+    return wrap;
+  }
+
+  function getCsrfToken() {
+    const cookie = document.cookie.split(';').find(c => c.trim().startsWith('csrftoken='));
+    return cookie ? cookie.trim().split('=')[1] : '';
+  }
+
+  function setLoading(on) {
+    sendBtn.disabled = on;
+    input.disabled = on;
+  }
+
+  async function sendMessage() {
+    const question = input.value.trim();
+    if (!question) return;
+    input.value = '';
+    appendMessage('user', question);
+    const typing = appendTyping();
+    setLoading(true);
+
+    try {
+      const resp = await fetch(CHAT_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': getCsrfToken(),
+        },
+        body: JSON.stringify({ question }),
+      });
+      const data = await resp.json();
+      typing.remove();
+      appendMessage('assistant', data.reply || 'No response received.');
+      if (data.at_limit) {
+        limitNotice.classList.remove('hidden');
+        input.disabled = true;
+        sendBtn.disabled = true;
+      }
+    } catch (err) {
+      typing.remove();
+      appendMessage('assistant', 'Something went wrong. Please try again.');
+    } finally {
+      setLoading(false);
+      if (!limitNotice.classList.contains('hidden') === false) {
+        input.focus();
+      }
+    }
+  }
+
+  bubble.addEventListener('click', open);
+  closeBtn.addEventListener('click', close);
+  sendBtn.addEventListener('click', sendMessage);
+  input.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  });
+
+  // Restore open state from sessionStorage
+  if (sessionStorage.getItem(STORAGE_KEY)) {
+    open();
+  }
+})();
+</script>

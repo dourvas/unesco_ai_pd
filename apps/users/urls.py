@@ -28,4 +28,7 @@ urlpatterns = [
     # 5. Profile Management
     path('profile/', views.profile_view, name='profile_view'),
     path('profile/edit/', views.profile_edit, name='profile_edit'),
+
+    # 6. Aletheia Help Chat — Phase J.1 (session-only, AJAX)
+    path('help-chat/', views.help_chat_view, name='help_chat'),
 ]

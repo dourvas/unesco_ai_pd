@@ -3,16 +3,20 @@ Onboarding Views - UNESCO AI Teacher PD Platform
 Multi-step onboarding system with session management
 """
 
-from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth.decorators import login_required
+import json
+
 from django.contrib import messages
+from django.contrib.auth import login, authenticate, logout
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.models import User
+from django.http import JsonResponse
+from django.shortcuts import render, redirect, get_object_or_404
 from django.utils import timezone
-from django.views.decorators.http import require_http_methods
+from django.views.decorators.csrf import csrf_protect
+from django.views.decorators.http import require_http_methods, require_POST
+
 from .models import TeacherProfile
 from .forms import TeachingContextForm, AIExperienceForm, GoalsPreferencesForm, ProfileEditForm
-
-from django.contrib.auth import login, authenticate, logout
-from django.contrib.auth.models import User
 
 # ============================================================================
 # ONBOARDING FLOW VIEWS
@@ -583,3 +587,72 @@ def logout_view(request):
     logout(request)
     messages.success(request, 'You have been logged out successfully')
     return redirect('users:landing')
+
+
+# ============================================================================
+# ALETHEIA HELP CHAT (Phase J.1)
+# ============================================================================
+
+_HELP_SESSION_KEY = 'help_turns'
+
+@login_required
+@require_POST
+@csrf_protect
+def help_chat_view(request):
+    """AJAX endpoint for the Aletheia always-on help bot.
+
+    Receives a JSON POST with {question: str}. Manages the conversation
+    history in request.session['help_turns']. Enforces the 20-turn hard
+    limit. Returns JSON {reply, turn_count, at_limit, error?}.
+
+    No DB writes — conversation is session-only, cleared on logout.
+    """
+    from apps.agents.help_agent import HelpAgent, HELP_TURN_LIMIT
+
+    try:
+        body = json.loads(request.body)
+        question = (body.get('question') or '').strip()
+    except (json.JSONDecodeError, AttributeError):
+        return JsonResponse({'error': 'invalid_request'}, status=400)
+
+    if not question:
+        return JsonResponse({'error': 'empty_question'}, status=400)
+
+    turns: list = request.session.get(_HELP_SESSION_KEY, [])
+    turn_count = sum(1 for t in turns if t.get('role') == 'user')
+
+    if turn_count >= HELP_TURN_LIMIT:
+        return JsonResponse({
+            'reply': (
+                'The maximum number of help messages per session has been reached. '
+                'For further support, please contact idourvas@ihu.gr.'
+            ),
+            'turn_count': turn_count,
+            'at_limit': True,
+        })
+
+    agent = HelpAgent()
+    reply = agent.extract(history=turns, question=question)
+
+    if reply is None:
+        return JsonResponse({
+            'reply': (
+                'The help service is temporarily unavailable. Please try again '
+                'in a moment, or contact idourvas@ihu.gr.'
+            ),
+            'turn_count': turn_count,
+            'at_limit': False,
+            'error': 'api_failure',
+        })
+
+    turns.append({'role': 'user', 'content': question})
+    turns.append({'role': 'assistant', 'content': reply})
+    request.session[_HELP_SESSION_KEY] = turns
+    request.session.modified = True
+
+    new_turn_count = sum(1 for t in turns if t.get('role') == 'user')
+    return JsonResponse({
+        'reply': reply,
+        'turn_count': new_turn_count,
+        'at_limit': new_turn_count >= HELP_TURN_LIMIT,
+    })
