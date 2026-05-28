@@ -632,7 +632,7 @@ def help_chat_view(request):
         })
 
     agent = HelpAgent()
-    reply = agent.extract(history=turns, question=question)
+    reply = agent.extract(history=list(turns), question=question)
 
     if reply is None:
         return JsonResponse({

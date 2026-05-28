@@ -1016,7 +1016,7 @@ ailst_complete_view         (acknowledgement, no scores per C.2.3 D4)
 δεν έχει πού να ρωτήσει εκτός από async forum. Δεν ζητάει reflection, δεν
 αναπαράγει τα research instruments — απαντά σε γνωσιακές ερωτήσεις.
 
-**Status (2026-05-27): ACTIVE — design proposal approved, implementation starts today.**
+**Status (2026-05-28): J.1 COMPLETE — floating help bot live on all authenticated pages (46 tests pass). J.2 (AI Literacy Sandbox) pending.**
 
 **Scope:**
 - Floating Aletheia chat bubble, fixed bottom-right, σε όλες τις authenticated σελίδες
@@ -1037,8 +1037,8 @@ ailst_complete_view         (acknowledgement, no scores per C.2.3 D4)
 | Commit | Content |
 |---|---|
 | **J.1a** | `HelpAgent` class + static knowledge base JSON + session management + cost tracking | ✅ 2026-05-28 |
-| **J.1b** | `_aletheia_help.html` partial + `help_view` endpoint + `base.html` include + Article 50 notice |
-| **J.1c** | Tests (view integration) + roadmap update |
+| **J.1b** | `_aletheia_help.html` partial + `help_view` endpoint + `base.html` include + Article 50 notice | ✅ 2026-05-28 |
+| **J.1c** | Tests (view integration) + roadmap update | ✅ 2026-05-28 |
 
 **Reusable infrastructure (από Phase G deprecation):**
 
